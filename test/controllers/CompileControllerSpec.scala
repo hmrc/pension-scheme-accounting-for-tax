@@ -16,30 +16,34 @@
 
 package controllers
 
+import com.google.inject.Injector
+import config.AppConfig
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.{Configuration, Environment, Mode}
+import play.api.{Application, Configuration, Environment, Mode}
 import play.api.http.Status
-import play.api.test.Helpers._
+import play.api.libs.json.Json
 import play.api.test.{FakeRequest, Helpers}
+import play.api.test.Helpers._
 import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
-import config.AppConfig
 
-class MicroserviceHelloWorldControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite {
+class CompileControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite {
 
-  private val fakeRequest = FakeRequest("GET", "/")
+  val injector = app.injector
+  val fakeRequest = FakeRequest("GET", "/")
 
-  private val env           = Environment.simple()
-  private val configuration = Configuration.load(env)
+  val env: Environment = Environment.simple()
+  val configuration: Configuration = Configuration.load(env)
 
-  private val serviceConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Dev))
-  private val appConfig     = new AppConfig(configuration, serviceConfig)
+  val serviceConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Dev))
+  def appConfig: AppConfig = injector.instanceOf[AppConfig]
 
-  private val controller = new MicroserviceHelloWorldController(appConfig, Helpers.stubControllerComponents())
+  private val controller = new CompileController(appConfig, Helpers.stubControllerComponents())
 
-  "GET /" should {
+  "Compile" should {
     "return 200" in {
-      val result = controller.hello()(fakeRequest)
+      val jsonBody = Json.obj()
+      val result = controller.fileReturn()(fakeRequest.withJsonBody(jsonBody).withHeaders("pstr"->""))
       status(result) shouldBe Status.OK
     }
   }
