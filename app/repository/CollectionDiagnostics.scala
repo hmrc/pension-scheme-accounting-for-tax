@@ -17,9 +17,10 @@
 package repository
 
 import play.api.Logger
+import reactivemongo.api.ReadConcern
 import reactivemongo.play.json.collection.JSONCollection
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 case class IndexDef(name: String, fields: Seq[String], unique: Boolean, ttl: Option[Int])
@@ -31,7 +32,7 @@ object CollectionDiagnostics {
     indexInfo(collection) map {
       indexes =>
         Logger.warn(
-          s"Diagnostic information for collection ${collection.name}\n\n" +
+          message = s"Diagnostic information for collection ${collection.name}\n\n" +
             s"Index definitions\n\n" +
             (indexes.map {
               index =>
@@ -43,9 +44,9 @@ object CollectionDiagnostics {
         )
     }
 
-    collection.count().foreach { count =>
+    collection.count(None, None, skip = 0, None, ReadConcern.Local).foreach { count =>
       Logger.warn(
-        s"\nRow count for collection ${collection.name} : $count\n\n"
+        message = s"\nRow count for collection ${collection.name} : $count\n\n"
       )
     }
   }

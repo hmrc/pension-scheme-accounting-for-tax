@@ -39,7 +39,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
   import DataCacheController._
 
   implicit lazy val mat: Materializer = app.materializer
-  private val app = new GuiceApplicationBuilder().configure("run.mode" -> "Test").build()
+  private val app = new GuiceApplicationBuilder().configure(conf = "run.mode" -> "Test").build()
   private val cc = app.injector.instanceOf[ControllerComponents]
   private val config = app.injector.instanceOf[Configuration]
   private val repo = mock[DataCacheRepository]
@@ -56,7 +56,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
 
           val result = controller.get(FakeRequest())
           status(result) mustEqual OK
-          contentAsJson(result) mustEqual Json.obj("testId" -> "data")
+          contentAsJson(result) mustEqual Json.obj(fields = "testId" -> "data")
         }
       }
 
@@ -116,7 +116,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         running(app) {
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
-          val result = controller.save(FakeRequest("POST", "/").withJsonBody(Json.obj("value" -> "data")))
+          val result = controller.save(FakeRequest("POST", "/").withJsonBody(Json.obj(fields = "value" -> "data")))
           an[InternalIdNotFoundFromAuth] must be thrownBy status(result)
         }
       }

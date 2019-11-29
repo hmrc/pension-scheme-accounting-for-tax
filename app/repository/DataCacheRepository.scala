@@ -70,7 +70,7 @@ class DataCacheRepository @Inject()(
   }
 
   def get(id: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
-    collection.find(BSONDocument("id" -> id)).one[DataCache].map {
+    collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).one[DataCache].map {
       _.map {
         dataEntry =>
           dataEntry.data
