@@ -68,7 +68,7 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
   "An AFTReturn Transformer" - {
     "must transform from UserAnswers to ETMP AFT Return format" in {
       val transformer = new AFTReturnTransformer(chargeATransformer, chargeFTransformer)
-      val transformedEtmpJson = userAnswersRequestJson.transform(transformer.tranformToETMPFormat).asOpt.value
+      val transformedEtmpJson = userAnswersRequestJson.transform(transformer.transformToETMPFormat).asOpt.value
       transformedEtmpJson mustBe etmpResponseJson
     }
   }

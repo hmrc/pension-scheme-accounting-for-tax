@@ -23,14 +23,14 @@ import play.api.libs.json.{JsObject, Reads, __}
 
 class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer, chargeFTransformer: ChargeFTransformer) {
 
-  lazy val tranformToETMPFormat: Reads[JsObject] =
-    transformToAFTDetails and
+  lazy val transformToETMPFormat: Reads[JsObject] =
+    (transformToAFTDetails and
       chargeATransformer.transformToETMPData and
-      chargeFTransformer.transformToETMPData reduce
+      chargeFTransformer.transformToETMPData).reduce
 
   private def transformToAFTDetails: Reads[JsObject] = {
-    (__ \ 'aftDetails \ 'aftStatus).json.copyFrom((__ \ "aftStatus").json.pick) and
+    ((__ \ 'aftDetails \ 'aftStatus).json.copyFrom((__ \ "aftStatus").json.pick) and
       (__ \ 'aftDetails \ 'quarterStartDate).json.copyFrom((__ \ "quarterStartDate").json.pick) and
-      (__ \ 'aftDetails \ 'quarterEndDate).json.copyFrom((__ \ "quarterEndDate").json.pick) reduce
+      (__ \ 'aftDetails \ 'quarterEndDate).json.copyFrom((__ \ "quarterEndDate").json.pick)).reduce
   }
 }

@@ -25,10 +25,10 @@ class ChargeATransformer {
   def transformToETMPData: Reads[JsObject] =
     (__ \ 'chargeADetails).readNullable {
       __.read(
-        (__ \ 'chargeDetails \ 'chargeTypeADetails \ 'numberOfMembers).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
+        ((__ \ 'chargeDetails \ 'chargeTypeADetails \ 'numberOfMembers).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
           (__ \ 'chargeDetails \ 'chargeTypeADetails \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'totalAmtOfTaxDueAtLowerRate).json.pick) and
           (__ \ 'chargeDetails \ 'chargeTypeADetails \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom((__ \ 'totalAmtOfTaxDueAtHigherRate).json.pick) and
-          (__ \ 'chargeDetails \ 'chargeTypeADetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick) reduce
+          (__ \ 'chargeDetails \ 'chargeTypeADetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
       )
     }.map {
       _.getOrElse(Json.obj())
