@@ -17,12 +17,12 @@
 package controllers.cache
 
 import com.google.inject.Inject
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import play.api.{Configuration, Logger}
 import repository.DataCacheRepository
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, Enrolment}
-import uk.gov.hmrc.http.UnauthorizedException
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
+import uk.gov.hmrc.http.{HeaderCarrier, UnauthorizedException}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -34,48 +34,52 @@ class DataCacheController @Inject()(
                                      val authConnector: AuthConnector,
                                      cc: ControllerComponents
                                    ) extends BackendController(cc) with AuthorisedFunctions {
+
   import DataCacheController._
 
   def save: Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.internalId) {
-        case Some(id) =>
+      withIdFromAuth { id =>
         request.body.asJson.map {
           jsValue =>
             repository.save(id, jsValue)
               .map(_ => Created)
         } getOrElse Future.successful(BadRequest)
-        case None =>
-          Future.failed(InternalIdNotFoundFromAuth())
       }
   }
 
   def get: Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.internalId) {
-        case Some(id) =>
+      withIdFromAuth { id =>
         repository.get(id).map { response =>
           Logger.debug(message = s"DataCacheController.get: Response for request Id $id is $response")
           response.map {
             Ok(_)
           } getOrElse NotFound
         }
-        case None =>
-          Future.failed(InternalIdNotFoundFromAuth())
       }
   }
 
   def remove: Action[AnyContent] = Action.async {
     implicit request =>
-      authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.internalId) {
-        case Some(id) =>
+      withIdFromAuth { id =>
         repository.remove(id).map(_ => Ok)
-        case None =>
-          Future.failed(InternalIdNotFoundFromAuth())
       }
   }
+
+  private def withIdFromAuth(block: String => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.internalId) {
+      case Some(id) =>
+        block(id)
+      case None =>
+        Future.failed(InternalIdNotFoundFromAuth())
+    }
+  }
 }
+
 object DataCacheController {
+
   case class InternalIdNotFoundFromAuth(msg: String = "Not Authorised - Unable to retrieve Internal Id")
     extends UnauthorizedException(msg)
+
 }
