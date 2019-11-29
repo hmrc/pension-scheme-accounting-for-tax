@@ -18,25 +18,24 @@ package connectors
 
 import com.google.inject.{ImplementedBy, Inject}
 import config.AppConfig
-import play.Logger
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@ImplementedBy(classOf[CompileConnectorImpl])
-trait CompileConnector {
-  def fileReturn(pstr:String, data: JsValue):Future[HttpResponse]
+@ImplementedBy(classOf[DesConnectorImpl])
+trait DesConnector {
+  def compileFileReturn(pstr:String, data: JsValue)(implicit headerCarrier: HeaderCarrier,
+                                                    ec: ExecutionContext):Future[HttpResponse]
 }
 
-class CompileConnectorImpl @Inject()(http: HttpClient, config: AppConfig)(implicit headerCarrier: HeaderCarrier,
-                                     ec: ExecutionContext) extends CompileConnector {
+class DesConnectorImpl @Inject()(http: HttpClient, config: AppConfig) extends DesConnector {
 
-  private def fileReturnURL(pstr:String):String = config.compileFileReturnURL.format(pstr)
+  private def compileFileReturnURL(pstr:String):String = config.compileFileReturnURL.format(pstr)
 
-  def fileReturn(pstr:String, data: JsValue):Future[HttpResponse] = {
-    Logger.debug(s"[Compile-File-Return-Outgoing-Payload] - ${data.toString()}")
-    http.POST(fileReturnURL(pstr), data)
+  def compileFileReturn(pstr:String, data: JsValue)(implicit headerCarrier: HeaderCarrier,
+                                                    ec: ExecutionContext):Future[HttpResponse] = {
+    http.POST(compileFileReturnURL(pstr), data)
   }
 }

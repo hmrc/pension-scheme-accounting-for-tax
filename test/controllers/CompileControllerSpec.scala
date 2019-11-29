@@ -16,35 +16,58 @@
 
 package controllers
 
-import com.google.inject.Injector
+import akka.stream.Materializer
 import config.AppConfig
-import org.scalatest.{Matchers, WordSpec}
+import connectors.DesConnector
+import org.mockito.Matchers.any
+import org.mockito.Mockito._
+import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.{Application, Configuration, Environment, Mode}
 import play.api.http.Status
 import play.api.libs.json.Json
-import play.api.test.{FakeRequest, Helpers}
+import play.api.mvc.Results
 import play.api.test.Helpers._
-import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
+import play.api.test.{FakeRequest, Helpers}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
-class CompileControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite {
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-  val injector = app.injector
-  val fakeRequest = FakeRequest("GET", "/")
+class CompileControllerSpec extends WordSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar with Results with Status with BeforeAndAfter {
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  val env: Environment = Environment.simple()
-  val configuration: Configuration = Configuration.load(env)
+  implicit lazy val mat: Materializer = app.materializer
 
-  val serviceConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Dev))
-  def appConfig: AppConfig = injector.instanceOf[AppConfig]
+  private val injector = app.injector
+  private val fakeRequest = FakeRequest("GET", "/")
 
-  private val controller = new CompileController(appConfig, Helpers.stubControllerComponents())
+  private def appConfig: AppConfig = injector.instanceOf[AppConfig]
+
+  private val mockDesConnector = mock[DesConnector]
+
+  private val controller = new CompileController(appConfig, Helpers.stubControllerComponents(), mockDesConnector)
+
+  private val pstr = "12345678RD"
+
+  private val json = Json.obj("aaa"->"bbb")
+
+  private def upstreamResponseMessage(actionName: String, status: Int, responseBody: String): String =
+    s"$actionName' returned $status. Response body: '$responseBody'"
+
+  before {
+    reset(mockDesConnector)
+  }
 
   "Compile" should {
-    "return 200" in {
-      val jsonBody = Json.obj()
-      val result = controller.fileReturn()(fakeRequest.withJsonBody(jsonBody).withHeaders("pstr"->""))
-      status(result) shouldBe Status.OK
+    "return OK when valid response from DES" in {
+      running(app) {
+        when(mockDesConnector.compileFileReturn(any(), any())(any(), any()))
+          .thenReturn(Future.successful(HttpResponse(OK, Some(json))))
+
+        val result = controller.fileReturn()(fakeRequest.withJsonBody(json).withHeaders("pstr" -> pstr))
+        status(result) shouldBe OK
+      }
     }
   }
 }

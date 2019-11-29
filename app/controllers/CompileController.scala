@@ -17,11 +17,12 @@
 package controllers
 
 import config.AppConfig
-import connectors.CompileConnector
+import connectors.DesConnector
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.http.BadRequestException
+import play.api.libs.json.JsValue
+import play.api.mvc._
+import uk.gov.hmrc.http.{Request => _, _}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -29,17 +30,31 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton()
 class CompileController @Inject()(appConfig: AppConfig,
                                   cc: ControllerComponents,
-                                  compileConnector: CompileConnector)(implicit ec: ExecutionContext)
-    extends BackendController(cc) {
+                                  desConnector: DesConnector
+                                 )(implicit ec: ExecutionContext)
+  extends BackendController(cc) with HttpErrorFunctions with Results {
+
+  private def upstreamResponseMessage(actionName: String, status: Int, responseBody: String): String =
+    s"$actionName' returned $status. Response body: '$responseBody'"
+
+  private def withRequestDetails(request: Request[AnyContent], actionName:String)(block:(String,JsValue) => Future[Result]):Future[Result] = {
+    val json = request.body.asJson
+    Logger.debug(s"[$actionName: Incoming-Payload]$json")
+    (request.headers.get("pstr"), json) match {
+      case (Some(pstr), Some(js)) =>
+        block(pstr, js)
+      case headerValues =>
+        Future.failed(new BadRequestException(s"Bad Request without pstr (${headerValues._1}) or request body (${headerValues._2}})"))
+    }
+  }
 
   def fileReturn(): Action[AnyContent] = Action.async { implicit request =>
-    val json = request.body.asJson
-    Logger.debug(s"[Compile-File-Return-Incoming-Payload]$json")
-
-    (request.headers.get("pstr"), json) match {
-      case (Some(pstr), Some(jsValue)) =>
-        compileConnector.fileReturn(pstr, jsValue).map(response => Ok(response.body))
-      case _ => Future.failed(new BadRequestException("Bad Request without pstr or request body"))
+    val actionName = "Compile File Return"
+    withRequestDetails(request, actionName){ (pstr, jsValue) =>
+        desConnector.compileFileReturn(pstr, jsValue).map { response =>
+          Logger.debug(s"[$actionName: Incoming-Payload]${response.body}")
+          Ok(response.body)
+        }
     }
   }
 }
