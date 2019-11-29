@@ -14,10 +14,21 @@
  * limitations under the License.
  */
 
-package transformations
+package transformations.userAnswersToETMP
 
-import play.api.libs.json.{JsObject, Json, Reads, __}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json.{__, _}
 
-trait JsonTransformer{
-  val doNothing: Reads[JsObject] = __.json.put(Json.obj())
+class ChargeFTransformer {
+
+  def transformToETMPData: Reads[JsObject] =
+    (__ \ 'chargeFDetails).readNullable {
+      __.read(
+        (__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick) and
+          (__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'dateRegiWithdrawn).json.copyFrom((__ \ 'dateRegiWithdrawn).json.pick) reduce
+      )
+    }.map {
+      _.getOrElse(Json.obj())
+    }
 }

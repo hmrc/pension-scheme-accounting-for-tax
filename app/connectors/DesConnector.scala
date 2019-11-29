@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-package controllers
+package connectors
 
-import javax.inject.{Inject, Singleton}
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import com.google.inject.Inject
 import config.AppConfig
+import play.api.libs.json.JsValue
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-@Singleton()
-class MicroserviceHelloWorldController @Inject()(appConfig: AppConfig, cc: ControllerComponents)
-    extends BackendController(cc) {
+class DesConnector @Inject()(http: HttpClient, config: AppConfig) {
 
-  def hello(): Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok("Hello world"))
+  private def fileAFTReturnURL(pstr:String):String = config.fileAFTReturnURL.format(pstr)
+
+  def fileAFTReturn(pstr:String, data: JsValue)(implicit headerCarrier: HeaderCarrier,
+                                                ec: ExecutionContext):Future[HttpResponse] = {
+    http.POST(fileAFTReturnURL(pstr), data)
   }
 }

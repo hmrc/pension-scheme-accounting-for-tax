@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-package transformations
+package transformations.helpers
 
-import play.api.libs.functional.syntax._
-import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json.{JsObject, Json, Reads, __}
 
-class AFTDetailsTransformer extends JsonTransformer {
-
-  def transformToAFTDetails: Reads[JsObject] = {
-    (__ \ 'aftDetails \ 'aftStatus).json.copyFrom((__ \ "aftStatus").json.pick) and
-    (__ \ 'aftDetails \ 'quarterStartDate).json.copyFrom((__ \ "quarterStartDate").json.pick) and
-    (__ \ 'aftDetails \ 'quarterEndDate).json.copyFrom((__ \ "quarterEndDate").json.pick) reduce
-  }
+object JsonTransformer{
+  val doNothing: Reads[JsObject] = __.json.put(Json.obj())
 }

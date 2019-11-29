@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package transformations
+package transformations.userAnswersToETMP
 
+import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json.{JsObject, Reads, __}
 
-class ChargeFTransformer extends JsonTransformer {
+class AFTReturnTransformer @Inject()(chargeFTransformer: ChargeFTransformer) {
 
-  def transformToETMPData: Reads[JsObject] = {
-    (__ \ 'chargeTypeFDetails \ 'totalAmount).json.copyFrom((__ \ 'chargeTypeFDetails \ 'totalAmount).json.pick) and
-    (__ \ 'chargeTypeFDetails \ 'dateRegiWithdrawn).json.copyFrom((__ \ 'chargeTypeFDetails \ 'dateRegiWithdrawn).json.pick) reduce
+  lazy val tranformToETMPFormat: Reads[JsObject] =
+    transformToAFTDetails and
+      chargeFTransformer.transformToETMPData reduce
+
+  private def transformToAFTDetails: Reads[JsObject] = {
+    (__ \ 'aftDetails \ 'aftStatus).json.copyFrom((__ \ "aftStatus").json.pick) and
+      (__ \ 'aftDetails \ 'quarterStartDate).json.copyFrom((__ \ "quarterStartDate").json.pick) and
+      (__ \ 'aftDetails \ 'quarterEndDate).json.copyFrom((__ \ "quarterEndDate").json.pick) reduce
   }
 }

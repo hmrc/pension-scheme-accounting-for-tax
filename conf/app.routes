@@ -1,6 +1,6 @@
 # microservice specific routes
 
-GET        /hello-world                             controllers.MicroserviceHelloWorldController.hello
+POST         /compile/file-return            controllers.AFTController.fileReturn
 
 GET         /journey-cache/aft                      controllers.cache.DataCacheController.get
 POST        /journey-cache/aft                      controllers.cache.DataCacheController.save

@@ -14,28 +14,16 @@
  * limitations under the License.
  */
 
-package transformations.toETMP
+package transformations.generators
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.{FreeSpec, MustMatchers, OptionValues}
+import org.scalatest.{MustMatchers, OptionValues}
 import play.api.libs.json.{JsObject, Json}
 
 trait AFTGenerators extends MustMatchers with GeneratorDrivenPropertyChecks with OptionValues {
-
-  val chargeFGenerator: Gen[JsObject] =
-    for {
-      totalAmount <- arbitrary[String]
-      dateRegiWithdrawn <- arbitrary[Option[String]]
-    } yield Json.obj(
-      fields = "chargeTypeFDetails" ->
-        Json.obj(
-          fields = "totalAmount" -> totalAmount,
-          "dateRegiWithdrawn" -> dateRegiWithdrawn
-        ))
-
-  val aftDetailsGenerator: Gen[JsObject] =
+  val aftDetailsUserAnswersGenerator: Gen[JsObject] =
     for {
       aftStatus <- Gen.oneOf(Seq("Compiled", "Submitted"))
       quarterStartDate <- arbitrary[String]
@@ -45,4 +33,24 @@ trait AFTGenerators extends MustMatchers with GeneratorDrivenPropertyChecks with
       "quarterStartDate" -> quarterStartDate,
       "quarterEndDate" -> quarterEndDate
     )
+
+  val chargeFUserAnswersGenerator: Gen[JsObject] =
+    for {
+      totalAmount <- arbitrary[String]
+      dateRegiWithdrawn <- arbitrary[Option[String]]
+    } yield Json.obj(
+      fields = "chargeFDetails" ->
+        Json.obj(
+          fields = "totalAmount" -> totalAmount,
+          "dateRegiWithdrawn" -> dateRegiWithdrawn
+        ))
+
+  val aftReturnUserAnswersGenerator: Gen[JsObject] = {
+    for {
+      aftDetails <- aftDetailsUserAnswersGenerator
+      chargeFDetails <- chargeFUserAnswersGenerator
+    } yield {
+      aftDetails ++ chargeFDetails
+    }
+  }
 }
