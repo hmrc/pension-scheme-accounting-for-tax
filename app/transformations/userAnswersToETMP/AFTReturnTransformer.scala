@@ -21,10 +21,11 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{JsObject, Reads, __}
 
-class AFTReturnTransformer @Inject()(chargeFTransformer: ChargeFTransformer) {
+class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer, chargeFTransformer: ChargeFTransformer) {
 
   lazy val tranformToETMPFormat: Reads[JsObject] =
     transformToAFTDetails and
+      chargeATransformer.transformToETMPData and
       chargeFTransformer.transformToETMPData reduce
 
   private def transformToAFTDetails: Reads[JsObject] = {

@@ -23,12 +23,19 @@ import transformations.generators.AFTGenerators
 class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
 
   private val chargeFTransformer = new ChargeFTransformer
+  private val chargeATransformer = new ChargeATransformer
 
   private val userAnswersRequestJson = Json.parse(
     """{
       |  "aftStatus": "Compiled",
       |  "quarterStartDate": "2019-01-01",
       |  "quarterEndDate": "2019-03-31",
+      |  "chargeADetails": {
+      |      "numberOfMembers": 2,
+      |      "totalAmtOfTaxDueAtLowerRate": 200.02,
+      |      "totalAmtOfTaxDueAtHigherRate": 200.02,
+      |      "totalAmount": 200.02
+      |    },
       |  "chargeFDetails": {
       |    "totalAmount": 200.02,
       |    "dateRegiWithdrawn": "1980-02-29"
@@ -43,18 +50,24 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
       |    "quarterEndDate": "2019-03-31"
       |  },
       |  "chargeDetails": {
-      |    "chargeTypeFDetails": {
-      |      "totalAmount": 200.02,
-      |      "dateRegiWithdrawn": "1980-02-29"
-      |    }
-      |  }
+      |     "chargeTypeADetails": {
+      |         "numberOfMembers": 2,
+      |         "totalAmtOfTaxDueAtLowerRate": 200.02,
+      |         "totalAmtOfTaxDueAtHigherRate": 200.02,
+      |         "totalAmount": 200.02
+      |       },
+      |       "chargeTypeFDetails": {
+      |         "totalAmount": 200.02,
+      |         "dateRegiWithdrawn": "1980-02-29"
+      |       }
+      |     }
       |}
       |
       |""".stripMargin)
 
   "An AFTReturn Transformer" - {
     "must transform from UserAnswers to ETMP AFT Return format" in {
-      val transformer = new AFTReturnTransformer(chargeFTransformer)
+      val transformer = new AFTReturnTransformer(chargeATransformer, chargeFTransformer)
       val transformedEtmpJson = userAnswersRequestJson.transform(transformer.tranformToETMPFormat).asOpt.value
       transformedEtmpJson mustBe etmpResponseJson
     }

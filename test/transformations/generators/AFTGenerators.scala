@@ -36,7 +36,7 @@ trait AFTGenerators extends MustMatchers with GeneratorDrivenPropertyChecks with
 
   val chargeFUserAnswersGenerator: Gen[JsObject] =
     for {
-      totalAmount <- arbitrary[String]
+      totalAmount <- arbitrary[BigDecimal]
       dateRegiWithdrawn <- arbitrary[Option[String]]
     } yield Json.obj(
       fields = "chargeFDetails" ->
@@ -45,12 +45,18 @@ trait AFTGenerators extends MustMatchers with GeneratorDrivenPropertyChecks with
           "dateRegiWithdrawn" -> dateRegiWithdrawn
         ))
 
-  val aftReturnUserAnswersGenerator: Gen[JsObject] = {
+  val chargeAUserAnswersGenerator: Gen[JsObject] =
     for {
-      aftDetails <- aftDetailsUserAnswersGenerator
-      chargeFDetails <- chargeFUserAnswersGenerator
-    } yield {
-      aftDetails ++ chargeFDetails
-    }
-  }
+      numberOfMembers <- arbitrary[Int]
+      totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
+      totalAmtOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
+      totalAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      fields = "chargeADetails" ->
+        Json.obj(
+          fields = "numberOfMembers" -> numberOfMembers,
+          "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
+          "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate,
+          "totalAmount" -> totalAmount
+        ))
 }
