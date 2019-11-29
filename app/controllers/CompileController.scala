@@ -34,27 +34,28 @@ class CompileController @Inject()(appConfig: AppConfig,
                                  )(implicit ec: ExecutionContext)
   extends BackendController(cc) with HttpErrorFunctions with Results {
 
-  private def upstreamResponseMessage(actionName: String, status: Int, responseBody: String): String =
-    s"$actionName' returned $status. Response body: '$responseBody'"
-
-  private def withRequestDetails(request: Request[AnyContent], actionName:String)(block:(String,JsValue) => Future[Result]):Future[Result] = {
+  private def withRequestDetails(request: Request[AnyContent], actionName: String)
+                                (block: (String, JsValue) => Future[Result]): Future[Result] = {
     val json = request.body.asJson
-    Logger.debug(s"[$actionName: Incoming-Payload]$json")
+
+    Logger.debug(message = s"[$actionName: Incoming-Payload]$json")
+
     (request.headers.get("pstr"), json) match {
       case (Some(pstr), Some(js)) =>
         block(pstr, js)
-      case headerValues =>
-        Future.failed(new BadRequestException(s"Bad Request without pstr (${headerValues._1}) or request body (${headerValues._2}})"))
+      case (pstr, jsValue) =>
+        Future.failed(new BadRequestException(s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
     }
   }
 
   def fileReturn(): Action[AnyContent] = Action.async { implicit request =>
     val actionName = "Compile File Return"
-    withRequestDetails(request, actionName){ (pstr, jsValue) =>
-        desConnector.compileFileReturn(pstr, jsValue).map { response =>
-          Logger.debug(s"[$actionName: Incoming-Payload]${response.body}")
-          Ok(response.body)
-        }
+
+    withRequestDetails(request, actionName) { (pstr, jsValue) =>
+      desConnector.compileFileReturn(pstr, jsValue).map { response =>
+        Logger.debug(message = s"[$actionName: Incoming-Payload]${response.body}")
+        Ok(response.body)
+      }
     }
   }
 }
