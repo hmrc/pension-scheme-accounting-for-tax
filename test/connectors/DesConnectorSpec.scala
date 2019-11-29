@@ -32,7 +32,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val pstr = "test-pstr"
   private val aftSubmitUrl = s"/pension-online/pstr/$pstr/aft/return"
 
-  ".submitAFTReturn" must {
+  "fileAFTReturn" must {
 
     "return successfully when ETMP has returned OK" in {
       val data = Json.obj(fields = "Id" -> "value")

@@ -1,6 +1,6 @@
 # microservice specific routes
 
-POST         /compile/file-return            controllers.AFTController.fileReturn
+POST         /aft-file-return                       controllers.AFTController.fileReturn
 
 GET         /journey-cache/aft                      controllers.cache.DataCacheController.get
 POST        /journey-cache/aft                      controllers.cache.DataCacheController.save

@@ -36,7 +36,7 @@ import scala.concurrent.Future
 
 class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSugar with BeforeAndAfter {
 
-  "Compile" should {
+  "fileReturn" must {
     "return OK when valid response from DES" in {
       running(app) {
         when(mockDesConnector.fileAFTReturn(any(), any())(any(), any()))
