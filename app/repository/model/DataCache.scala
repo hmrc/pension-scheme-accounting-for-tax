@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package controllers
+package repository.model
 
-import javax.inject.{Inject, Singleton}
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import config.AppConfig
+import org.joda.time.DateTime
+import play.api.libs.json.{Format, JsValue, Json}
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import scala.concurrent.Future
+case class DataCache(id: String, data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
 
-@Singleton()
-class MicroserviceHelloWorldController @Inject()(appConfig: AppConfig, cc: ControllerComponents)
-    extends BackendController(cc) {
+object DataCache {
+  def applyDataCache(id: String, data: JsValue, lastUpdated: DateTime = DateTime.now(), expireAt: DateTime): DataCache =
+    DataCache(id, data, lastUpdated, expireAt)
 
-  def hello(): Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok("Hello world"))
-  }
+  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+  implicit val format: Format[DataCache] = Json.format[DataCache]
 }
