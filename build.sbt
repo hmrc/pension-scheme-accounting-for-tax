@@ -10,8 +10,8 @@ lazy val microservice = Project(appName, file("."))
     majorVersion                     := 0,
     libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test
   )
-  .settings(publishingSettings: _*,
-    PlayKeys.devSettings += "play.server.http.port" -> "8207")
+  .settings(publishingSettings: _*)
+  .settings(PlayKeys.devSettings += "play.server.http.port" -> "8207")
   .configs(IntegrationTest)
   .settings(integrationTestSettings(): _*)
   .settings(resolvers += Resolver.jcenterRepo)
