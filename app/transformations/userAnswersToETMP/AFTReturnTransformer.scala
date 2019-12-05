@@ -30,7 +30,7 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer, cha
 
   private def transformToAFTDetails: Reads[JsObject] = {
     ((__ \ 'aftDetails \ 'aftStatus).json.copyFrom((__ \ "aftStatus").json.pick) and
-      (__ \ 'aftDetails \ 'quarterStartDate).json.copyFrom((__ \ "quarterStartDate").json.pick) and
-      (__ \ 'aftDetails \ 'quarterEndDate).json.copyFrom((__ \ "quarterEndDate").json.pick)).reduce
+      (__ \ 'aftDetails \ 'quarterStartDate).json.copyFrom((__ \ "quarter" \"startDate").json.pick) and
+      (__ \ 'aftDetails \ 'quarterEndDate).json.copyFrom((__ \ "quarter" \"endDate").json.pick)).reduce
   }
 }
