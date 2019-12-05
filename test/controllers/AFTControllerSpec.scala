@@ -76,11 +76,13 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val json =
     """{
       |  "aftStatus": "Compiled",
-      |  "quarterStartDate": "2019-01-01",
-      |  "quarterEndDate": "2019-03-31",
+      |  "quarter": {
+      |       "startDate": "2019-01-01",
+      |       "endDate": "2019-03-31"
+      |  },
       |  "chargeFDetails": {
-      |    "totalAmount": 200.02,
-      |    "dateRegiWithdrawn": "1980-02-29"
+      |    "amountTaxDue": 200.02,
+      |    "deRegistrationDate": "1980-02-29"
       |  }
       |}""".stripMargin
   private val userAnswersRequestJson = Json.parse(json)

@@ -28,8 +28,10 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
   private val userAnswersRequestJson = Json.parse(
     """{
       |  "aftStatus": "Compiled",
-      |  "quarterStartDate": "2019-01-01",
-      |  "quarterEndDate": "2019-03-31",
+      |  "quarter": {
+      |       "startDate": "2019-01-01",
+      |       "endDate": "2019-03-31"
+      |  },
       |  "chargeADetails": {
       |      "numberOfMembers": 2,
       |      "totalAmtOfTaxDueAtLowerRate": 200.02,
@@ -37,8 +39,8 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
       |      "totalAmount": 200.02
       |    },
       |  "chargeFDetails": {
-      |    "totalAmount": 200.02,
-      |    "dateRegiWithdrawn": "1980-02-29"
+      |    "amountTaxDue": 200.02,
+      |    "deRegistrationDate": "1980-02-29"
       |  }
       |}""".stripMargin)
 

@@ -27,8 +27,8 @@ class ChargeFTransformerSpec extends FreeSpec with AFTGenerators {
         userAnswersJson =>
           val transformer = new ChargeFTransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
-          transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount" mustBe userAnswersJson \ "chargeFDetails" \ "totalAmount"
-          transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn" mustBe userAnswersJson \ "chargeFDetails" \ "dateRegiWithdrawn"
+          transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount" mustBe userAnswersJson \ "chargeFDetails" \ "amountTaxDue"
+          transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn" mustBe userAnswersJson \ "chargeFDetails" \ "deRegistrationDate"
       }
     }
   }
