@@ -40,10 +40,11 @@ class AFTController @Inject()(appConfig: AppConfig,
     val actionName = "Compile File Return"
 
     withRequestDetails(request, actionName) { (pstr, userAnswersJson) =>
+      Logger.debug(message = s"[$actionName: Incoming-Payload]$userAnswersJson")
       userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
         case JsSuccess(dataToBeSendToETMP, _) =>
+          Logger.debug(message = s"[$actionName: Outgoing-Payload]$dataToBeSendToETMP")
           desConnector.fileAFTReturn(pstr, dataToBeSendToETMP).map { response =>
-            Logger.debug(message = s"[$actionName: Incoming-Payload]${response.body}")
             Ok(response.body)
           }
         case JsError(errors) =>

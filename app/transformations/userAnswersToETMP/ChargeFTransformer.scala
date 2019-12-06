@@ -25,8 +25,8 @@ class ChargeFTransformer {
   def transformToETMPData: Reads[JsObject] =
     (__ \ 'chargeFDetails).readNullable {
       __.read(
-        ((__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick) and
-          (__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'dateRegiWithdrawn).json.copyFrom((__ \ 'dateRegiWithdrawn).json.pick)).reduce
+        ((__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'totalAmount).json.copyFrom((__ \ 'amountTaxDue).json.pick) and
+          (__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'dateRegiWithdrawn).json.copyFrom((__ \ 'deRegistrationDate).json.pick)).reduce
       )
     }.map {
       _.getOrElse(Json.obj())

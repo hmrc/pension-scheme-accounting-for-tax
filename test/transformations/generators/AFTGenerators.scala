@@ -41,8 +41,8 @@ trait AFTGenerators extends MustMatchers with GeneratorDrivenPropertyChecks with
     } yield Json.obj(
       fields = "chargeFDetails" ->
         Json.obj(
-          fields = "totalAmount" -> totalAmount,
-          "dateRegiWithdrawn" -> dateRegiWithdrawn
+          fields = "amountTaxDue" -> totalAmount,
+          "deRegistrationDate" -> dateRegiWithdrawn
         ))
 
   val chargeAUserAnswersGenerator: Gen[JsObject] =
