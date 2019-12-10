@@ -24,6 +24,7 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
 
   private val chargeFTransformer = new ChargeFTransformer
   private val chargeATransformer = new ChargeATransformer
+  private val chargeBTransformer = new ChargeBTransformer
 
   private val userAnswersRequestJson = Json.parse(
     """{
@@ -37,6 +38,10 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
       |      "totalAmtOfTaxDueAtLowerRate": 200.02,
       |      "totalAmtOfTaxDueAtHigherRate": 200.02,
       |      "totalAmount": 200.02
+      |    },
+      |    "chargeBDetails": {
+      |      "numberOfDeceased": 4,
+      |      "amountTaxDue": 55.55
       |    },
       |  "chargeFDetails": {
       |    "amountTaxDue": 200.02,
@@ -58,6 +63,10 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
       |         "totalAmtOfTaxDueAtHigherRate": 200.02,
       |         "totalAmount": 200.02
       |       },
+      |       "chargeTypeBDetails": {
+          |      "numberOfMembers": 4,
+          |      "totalAmount": 55.55
+          |    },
       |       "chargeTypeFDetails": {
       |         "totalAmount": 200.02,
       |         "dateRegiWithdrawn": "1980-02-29"
@@ -69,7 +78,7 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
 
   "An AFTReturn Transformer" - {
     "must transform from UserAnswers to ETMP AFT Return format" in {
-      val transformer = new AFTReturnTransformer(chargeATransformer, chargeFTransformer)
+      val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer, chargeFTransformer)
       val transformedEtmpJson = userAnswersRequestJson.transform(transformer.transformToETMPFormat).asOpt.value
       transformedEtmpJson mustBe etmpResponseJson
     }

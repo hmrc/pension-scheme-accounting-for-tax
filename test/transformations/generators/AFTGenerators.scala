@@ -18,11 +18,11 @@ package transformations.generators
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import  org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.{MustMatchers, OptionValues}
 import play.api.libs.json.{JsObject, Json}
 
-trait AFTGenerators extends MustMatchers with GeneratorDrivenPropertyChecks with OptionValues {
+trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks with OptionValues {
   val aftDetailsUserAnswersGenerator: Gen[JsObject] =
     for {
       aftStatus <- Gen.oneOf(Seq("Compiled", "Submitted"))
@@ -58,5 +58,16 @@ trait AFTGenerators extends MustMatchers with GeneratorDrivenPropertyChecks with
           "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
           "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate,
           "totalAmount" -> totalAmount
+        ))
+
+  val chargeBUserAnswersGenerator: Gen[JsObject] =
+    for {
+      totalAmount <- arbitrary[BigDecimal]
+      numberOfMembers <- arbitrary[Int]
+    } yield Json.obj(
+      fields = "chargeBDetails" ->
+        Json.obj(
+          fields = "amountTaxDue" -> totalAmount,
+          "numberOfDeceased" -> numberOfMembers
         ))
 }
