@@ -16,14 +16,14 @@
 
 package repository.model
 
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, JsValue, Json}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 case class DataCache(id: String, data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
 
 object DataCache {
-  def applyDataCache(id: String, data: JsValue, lastUpdated: DateTime = DateTime.now(), expireAt: DateTime): DataCache =
+  def applyDataCache(id: String, data: JsValue, lastUpdated: DateTime = DateTime.now(DateTimeZone.UTC), expireAt: DateTime): DataCache =
     DataCache(id, data, lastUpdated, expireAt)
 
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
