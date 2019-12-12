@@ -37,7 +37,7 @@ class DataCacheRepository @Inject()(
   mongoComponent.mongoConnector.db,
   implicitly
 ) {
-  private val expireInSeconds = DateTime.now(DateTimeZone.UTC).
+  private def expireInSeconds: DateTime = DateTime.now(DateTimeZone.UTC).
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"))
 
   val collectionIndexes = Seq(
