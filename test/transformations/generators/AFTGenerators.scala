@@ -102,15 +102,18 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
                     "dateNoticeReceived" -> date,
                     "isPaymentMandatory" -> isMandatory
               )
-          )
+
+    )
 
   val chargeEUserAnswersGenerator: Gen[JsObject] =
     for {
       members <- Gen.listOfN(5, chargeEMember)
+      totalChargeAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
       fields = "chargeEDetails" ->
         Json.obj(
-          fields = "members" -> members
+          fields = "members" -> members,
+          "totalChargeAmount" -> totalChargeAmount
         ))
 
   def nonEmptyString: Gen[String] = Gen.alphaStr.suchThat(!_.isEmpty)

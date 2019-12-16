@@ -17,12 +17,12 @@
 package transformations.userAnswersToETMP
 
 import org.scalatest.FreeSpec
-import play.api.libs.json.{JsDefined, JsNumber, JsString}
+import play.api.libs.json.{JsDefined, JsString}
 import transformations.generators.AFTGenerators
 
 class ChargeETransformerSpec extends FreeSpec with AFTGenerators {
 
-  "A Charge B Transformer" - {
+  "A Charge E Transformer" - {
     "must transform ChargeBDetails from UserAnswers to ETMP ChargeBDetails" in {
       forAll(chargeEUserAnswersGenerator) {
         userAnswersJson =>
@@ -46,9 +46,8 @@ class ChargeETransformerSpec extends FreeSpec with AFTGenerators {
             userAnswersJson \ "chargeEDetails" \ "members" \ 0 \ "annualAllowanceYear"
           transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "memberStatus" mustBe
             JsDefined(JsString("New"))
-          //TODO Fix total amount reads after PODS-3783
           transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount" mustBe
-            JsDefined(JsNumber(0))
+            userAnswersJson \ "chargeEDetails" \ "totalChargeAmount"
 
           transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 1 \ "individualsDetails" \ "firstName" mustBe
             userAnswersJson \ "chargeEDetails" \ "members" \ 1 \ "memberDetails" \ "firstName"

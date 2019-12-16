@@ -29,8 +29,7 @@ class ChargeETransformer {
     (__ \ 'chargeEDetails).readNullable {
       __.read(
         ((__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(getMembers)) and
-          //TODO Fix total amount reads after PODS-3783
-          (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.put(JsNumber(0))).reduce
+          (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
       )
     }.map {
       _.getOrElse(Json.obj())
@@ -53,9 +52,5 @@ class ChargeETransformer {
     (__ \ 'chargeDetails \ 'isPaymentMandatory).read[Boolean].flatMap { flag =>
       (__ \ 'paidUnder237b).json.put(if (flag) JsString("Yes") else JsString("No"))
     } orElse doNothing
-
-//  def getTotal =
-//    (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json
-//      .copyFrom((__ \\ 'chargeAmount).read[Seq[JsNumber]].map(_.sum))
 
 }
