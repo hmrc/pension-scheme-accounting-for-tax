@@ -16,13 +16,23 @@
 
 package transformations.generators
 
+import java.time.{LocalDate, Year}
+
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-import  org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.scalatest.{MustMatchers, OptionValues}
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import play.api.libs.json.{JsObject, Json}
 
 trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks with OptionValues {
+  val ninoGen: Gen[String] = Gen.oneOf(Seq("AB123456C", "CD123456E"))
+
+  val dateGenerator: Gen[LocalDate] = for {
+    day <- Gen.choose(1, 28)
+    month <- Gen.choose(1, 12)
+    year <- Gen.choose(1990, 2000)
+  } yield LocalDate.of(year, month, day)
+
   val aftDetailsUserAnswersGenerator: Gen[JsObject] =
     for {
       aftStatus <- Gen.oneOf(Seq("Compiled", "Submitted"))
@@ -70,4 +80,41 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
           fields = "amountTaxDue" -> totalAmount,
           "numberOfDeceased" -> numberOfMembers
         ))
+
+  val chargeEMember: Gen[JsObject] =
+    for {
+      firstName <- arbitrary[String]
+      lastName <- arbitrary[String]
+      nino <- ninoGen
+      chargeAmount <- arbitrary[BigDecimal]
+      date <- dateGenerator
+      isMandatory <- arbitrary[Boolean]
+      taxYear <- Gen.choose(1990, Year.now.getValue)
+    } yield Json.obj(
+      "memberDetails" -> Json.obj(
+          fields =  "firstName" -> firstName,
+                    "lastName" -> lastName,
+                    "nino" -> nino
+              ),
+              "annualAllowanceYear" -> taxYear,
+              "chargeDetails" -> Json.obj(
+              "chargeAmount" -> chargeAmount,
+                    "dateNoticeReceived" -> date,
+                    "isPaymentMandatory" -> isMandatory
+              )
+
+    )
+
+  val chargeEUserAnswersGenerator: Gen[JsObject] =
+    for {
+      members <- Gen.listOfN(5, chargeEMember)
+      totalChargeAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      fields = "chargeEDetails" ->
+        Json.obj(
+          fields = "members" -> members,
+          "totalChargeAmount" -> totalChargeAmount
+        ))
+
+  def nonEmptyString: Gen[String] = Gen.alphaStr.suchThat(!_.isEmpty)
 }

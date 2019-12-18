@@ -25,6 +25,7 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
   private val chargeFTransformer = new ChargeFTransformer
   private val chargeATransformer = new ChargeATransformer
   private val chargeBTransformer = new ChargeBTransformer
+  private val chargeETransformer = new ChargeETransformer
 
   private val userAnswersRequestJson = Json.parse(
     """{
@@ -78,7 +79,7 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
 
   "An AFTReturn Transformer" - {
     "must transform from UserAnswers to ETMP AFT Return format" in {
-      val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer, chargeFTransformer)
+      val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer, chargeETransformer, chargeFTransformer)
       val transformedEtmpJson = userAnswersRequestJson.transform(transformer.transformToETMPFormat).asOpt.value
       transformedEtmpJson mustBe etmpResponseJson
     }
