@@ -81,7 +81,7 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
           "numberOfDeceased" -> numberOfMembers
         ))
 
-  val chargeEMember: Gen[JsObject] =
+  def chargeEMember(isDeleted: Boolean = false): Gen[JsObject] =
     for {
       firstName <- arbitrary[String]
       lastName <- arbitrary[String]
@@ -94,7 +94,8 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
       "memberDetails" -> Json.obj(
           fields =  "firstName" -> firstName,
                     "lastName" -> lastName,
-                    "nino" -> nino
+                    "nino" -> nino,
+                    "isDeleted" -> isDeleted
               ),
               "annualAllowanceYear" -> taxYear,
               "chargeDetails" -> Json.obj(
@@ -107,13 +108,25 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
 
   val chargeEUserAnswersGenerator: Gen[JsObject] =
     for {
-      members <- Gen.listOfN(5, chargeEMember)
+      members <- Gen.listOfN(5, chargeEMember())
+      deletedMembers <- Gen.listOfN(2, chargeEMember(isDeleted = true))
       totalChargeAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
       fields = "chargeEDetails" ->
         Json.obj(
-          fields = "members" -> members,
+          fields = "members" -> (members ++ deletedMembers),
           "totalChargeAmount" -> totalChargeAmount
+        ))
+
+  val chargeEAllDeletedUserAnswersGenerator: Gen[JsObject] =
+    for {
+      members <- Gen.listOfN(5, chargeEMember())
+      deletedMembers <- Gen.listOfN(2, chargeEMember(isDeleted = true))
+    } yield Json.obj(
+      fields = "chargeEDetails" ->
+        Json.obj(
+          fields = "members" -> (members ++ deletedMembers),
+          "totalChargeAmount" -> BigDecimal(0.00)
         ))
 
   def nonEmptyString: Gen[String] = Gen.alphaStr.suchThat(!_.isEmpty)

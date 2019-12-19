@@ -26,20 +26,20 @@ class ChargeETransformer {
 
   val doNothing: Reads[JsObject] = __.json.put(Json.obj())
 
-  def transformToETMPData: Reads[JsObject] = {
 
-    (__ \ 'chargeEDetails).readNullable {
-      __.read(
+  def transformToETMPData: Reads[JsObject] =
+    (__ \ 'chargeEDetails).readNullable(__.read(readsChargeE)).map(_.getOrElse(Json.obj()))
+
+  def readsChargeE: Reads[JsObject] =
+    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap {totalCharge =>
+      if(!totalCharge.equals(0.00))
         ((__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-          (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
-      )
-    }.map {
-      _.getOrElse(Json.obj())
+          (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)) reduce
+       else
+        doNothing
     }
-  }
 
- // def readsMembers: Reads[JsArray] = __.read(Reads.seq(getMemberDetails)).map(JsArray(_))
-  def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember, "memberDetails").map(JsArray(_))
+  def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_))
 
   def readsMember: Reads[JsObject] =
     (__ \ 'individualsDetails \ 'firstName).json.copyFrom((__ \ 'memberDetails \ 'firstName).json.pick) and
@@ -58,19 +58,19 @@ class ChargeETransformer {
 
 
 
-  private def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T], detailsType: String): Reads[Seq[T]] = new Reads[Seq[T]] {
+  private def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T]): Reads[Seq[T]] = new Reads[Seq[T]] {
     override def reads(json: JsValue): JsResult[Seq[T]] = {
       json match {
         case JsArray(members) =>
-          readFilteredSeq(JsSuccess(Nil), filterDeleted(members, detailsType), isA, readsA)
+          readFilteredSeq(JsSuccess(Nil), filterDeleted(members), isA, readsA)
         case _ => JsSuccess(Nil)
       }
     }
   }
 
-  private def filterDeleted(jsValueSeq: Seq[JsValue], detailsType: String): Seq[JsValue] = {
+  private def filterDeleted(jsValueSeq: Seq[JsValue]): Seq[JsValue] = {
     jsValueSeq.filterNot { json =>
-      (json \ detailsType \ "isDeleted").validate[Boolean] match {
+      (json \ "memberDetails" \ "isDeleted").validate[Boolean] match {
         case JsSuccess(e, _) => e
         case _ => false
       }

@@ -17,7 +17,7 @@
 package transformations.userAnswersToETMP
 
 import org.scalatest.FreeSpec
-import play.api.libs.json.{JsDefined, JsString}
+import play.api.libs.json.{JsDefined, JsObject, JsString, Json}
 import transformations.generators.AFTGenerators
 
 class ChargeETransformerSpec extends FreeSpec with AFTGenerators {
@@ -51,6 +51,19 @@ class ChargeETransformerSpec extends FreeSpec with AFTGenerators {
 
           transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 1 \ "individualsDetails" \ "firstName" mustBe
             userAnswersJson \ "chargeEDetails" \ "members" \ 1 \ "memberDetails" \ "firstName"
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
+
+      }
+    }
+
+    "must not pass ChargeE to ETMP if total amount is 0" in {
+      forAll(chargeEAllDeletedUserAnswersGenerator) {
+        userAnswersJson =>
+          val transformer = new ChargeETransformer
+          val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
+
+          transformedJson.as[JsObject] mustBe Json.obj()
 
       }
     }
