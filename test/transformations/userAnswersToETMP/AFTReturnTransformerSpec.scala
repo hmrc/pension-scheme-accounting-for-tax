@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
   private val chargeATransformer = new ChargeATransformer
   private val chargeBTransformer = new ChargeBTransformer
   private val chargeETransformer = new ChargeETransformer
+  private val chargeDTransformer = new ChargeDTransformer
 
   private val userAnswersRequestJson = Json.parse(
     """{
@@ -79,7 +80,7 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
 
   "An AFTReturn Transformer" - {
     "must transform from UserAnswers to ETMP AFT Return format" in {
-      val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer, chargeETransformer, chargeFTransformer)
+      val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer, chargeETransformer, chargeDTransformer, chargeFTransformer)
       val transformedEtmpJson = userAnswersRequestJson.transform(transformer.transformToETMPFormat).asOpt.value
       transformedEtmpJson mustBe etmpResponseJson
     }
