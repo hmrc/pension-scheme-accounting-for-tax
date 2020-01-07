@@ -20,19 +20,19 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{__, _}
 
-class ChargeETransformer extends JsonTransformer {
+class ChargeDTransformer extends JsonTransformer {
 
   val doNothing: Reads[JsObject] = __.json.put(Json.obj())
 
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeEDetails).readNullable(__.read(readsChargeE)).map(_.getOrElse(Json.obj()))
+    (__ \ 'chargeDDetails).readNullable(__.read(readsChargeD)).map(_.getOrElse(Json.obj()))
 
-  def readsChargeE: Reads[JsObject] =
+  def readsChargeD: Reads[JsObject] =
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap {totalCharge =>
       if(!totalCharge.equals(0.00))
-        ((__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-          (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)) reduce
+        ((__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
+          (__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)) reduce
        else
         doNothing
     }
@@ -41,15 +41,9 @@ class ChargeETransformer extends JsonTransformer {
 
   def readsMember: Reads[JsObject] =
     readsMemberDetails and
-      (__ \ 'amountOfCharge).json.copyFrom((__ \ 'chargeDetails \ 'chargeAmount).json.pick) and
-      (__ \ 'dateOfNotice).json.copyFrom((__ \ 'chargeDetails \ 'dateNoticeReceived).json.pick) and
-      getPaidUnder237b and
-      (__ \ 'taxYearEnding).json.copyFrom((__ \ 'annualAllowanceYear).json.pick) and
+      (__ \ 'dateOfBeneCrysEvent).json.copyFrom((__ \ 'chargeDetails \ 'dateOfEvent).json.pick) and
+        (__ \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt25Percent).json.pick) and
+        (__ \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt55Percent).json.pick) and
       (__ \ 'memberStatus).json.put(JsString("New")) reduce
-
-  def getPaidUnder237b: Reads[JsObject] =
-    (__ \ 'chargeDetails \ 'isPaymentMandatory).read[Boolean].flatMap { flag =>
-      (__ \ 'paidUnder237b).json.put(if (flag) JsString("Yes") else JsString("No"))
-    } orElse doNothing
 
 }

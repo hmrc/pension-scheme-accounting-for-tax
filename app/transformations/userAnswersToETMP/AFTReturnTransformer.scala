@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import play.api.libs.json.{JsObject, Reads, __}
 class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
                                      chargeBTransformer: ChargeBTransformer,
                                      chargeETransformer: ChargeETransformer,
+                                     chargeDTransformer: ChargeDTransformer,
                                      chargeFTransformer: ChargeFTransformer
                                     ) {
 
@@ -32,6 +33,7 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
       chargeATransformer.transformToETMPData and
       chargeBTransformer.transformToETMPData and
       chargeETransformer.transformToETMPData and
+      chargeDTransformer.transformToETMPData and
       chargeFTransformer.transformToETMPData).reduce
 
   private def transformToAFTDetails: Reads[JsObject] = {

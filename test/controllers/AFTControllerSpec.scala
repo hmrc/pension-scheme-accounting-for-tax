@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{stubControllerComponents, _}
-import transformations.userAnswersToETMP.{AFTReturnTransformer, ChargeATransformer, ChargeBTransformer, ChargeETransformer, ChargeFTransformer}
+import transformations.userAnswersToETMP.{AFTReturnTransformer, ChargeATransformer, ChargeBTransformer, ChargeDTransformer, ChargeETransformer, ChargeFTransformer}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, Upstream5xxResponse}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -70,7 +70,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private def appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
   private val mockDesConnector = mock[DesConnector]
-  val transformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer, new ChargeFTransformer)
+  val transformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer, new ChargeDTransformer, new ChargeFTransformer)
 
   private val controller = new AFTController(appConfig, stubControllerComponents(), mockDesConnector, transformer)
   private val json =
