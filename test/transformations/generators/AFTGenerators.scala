@@ -128,6 +128,34 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
       )
     )
 
+  def chargeGMember(isDeleted: Boolean = false): Gen[JsObject] =
+    for {
+      firstName <- arbitrary[String]
+      lastName <- arbitrary[String]
+      nino <- ninoGen
+      dob <- dateGenerator
+      qropsReferenceNumber <- arbitrary[Int]
+      qropsTransferDate <- dateGenerator
+      amountTransferred <- arbitrary[BigDecimal]
+      amountTaxDue <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      "memberDetails" -> Json.obj(
+        fields =  "firstName" -> firstName,
+        "lastName" -> lastName,
+        "dob" -> dob,
+        "nino" -> nino,
+        "isDeleted" -> isDeleted
+      ),
+      "chargeDetails" -> Json.obj(
+        "qropsReferenceNumber" -> qropsReferenceNumber,
+        "qropsTransferDate" -> qropsTransferDate
+      ),
+      "chargeAmounts" -> Json.obj(
+        "amountTransferred" -> amountTransferred,
+        "amountTaxDue" -> amountTaxDue
+      )
+    )
+
   val chargeEUserAnswersGenerator: Gen[JsObject] =
     for {
       members <- Gen.listOfN(5, chargeEMember())
@@ -169,6 +197,29 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
       deletedMembers <- Gen.listOfN(2, chargeDMember(isDeleted = true))
     } yield Json.obj(
       fields = "chargeDDetails" ->
+        Json.obj(
+          fields = "members" -> (members ++ deletedMembers),
+          "totalChargeAmount" -> BigDecimal(0.00)
+        ))
+
+  val chargeGUserAnswersGenerator: Gen[JsObject] =
+    for {
+      members <- Gen.listOfN(5, chargeGMember())
+      deletedMembers <- Gen.listOfN(2, chargeGMember(isDeleted = true))
+      totalChargeAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      fields = "chargeGDetails" ->
+        Json.obj(
+          fields = "members" -> (members ++ deletedMembers),
+          "totalChargeAmount" -> totalChargeAmount
+        ))
+
+  val chargeGAllDeletedUserAnswersGenerator: Gen[JsObject] =
+    for {
+      members <- Gen.listOfN(5, chargeGMember())
+      deletedMembers <- Gen.listOfN(2, chargeGMember(isDeleted = true))
+    } yield Json.obj(
+      fields = "chargeGDetails" ->
         Json.obj(
           fields = "members" -> (members ++ deletedMembers),
           "totalChargeAmount" -> BigDecimal(0.00)
