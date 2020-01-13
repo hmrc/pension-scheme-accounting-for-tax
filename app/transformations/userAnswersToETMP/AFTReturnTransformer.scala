@@ -25,7 +25,8 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
                                      chargeBTransformer: ChargeBTransformer,
                                      chargeETransformer: ChargeETransformer,
                                      chargeDTransformer: ChargeDTransformer,
-                                     chargeFTransformer: ChargeFTransformer
+                                     chargeFTransformer: ChargeFTransformer,
+                                     chargeGTransformer: ChargeGTransformer
                                     ) {
 
   lazy val transformToETMPFormat: Reads[JsObject] =
@@ -34,7 +35,9 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
       chargeBTransformer.transformToETMPData and
       chargeETransformer.transformToETMPData and
       chargeDTransformer.transformToETMPData and
-      chargeFTransformer.transformToETMPData).reduce
+      chargeFTransformer.transformToETMPData and
+      chargeGTransformer.transformToETMPData
+    ).reduce
 
   private def transformToAFTDetails: Reads[JsObject] = {
     ((__ \ 'aftDetails \ 'aftStatus).json.copyFrom((__ \ "aftStatus").json.pick) and
