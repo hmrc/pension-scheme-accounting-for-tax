@@ -25,6 +25,7 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
   private val chargeFTransformer = new ChargeFTransformer
   private val chargeATransformer = new ChargeATransformer
   private val chargeBTransformer = new ChargeBTransformer
+  private val chargeCTransformer = new ChargeCTransformer
   private val chargeETransformer = new ChargeETransformer
   private val chargeDTransformer = new ChargeDTransformer
 
@@ -48,6 +49,26 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
       |  "chargeFDetails": {
       |    "amountTaxDue": 200.02,
       |    "deRegistrationDate": "1980-02-29"
+      |  },
+      |  "chargeCDetails": {
+      |    "isSponsoringEmployerIndividual": true,
+      |    "chargeDetails": {
+      |      "paymentDate": "2020-01-01",
+      |      "amountTaxDue": "500.02"
+      |    },
+      |    "sponsoringIndividualDetails": {
+      |      "firstName": "testFirst",
+      |      "lastName": "testLast",
+      |      "nino": "AB100100A"
+      |    },
+      |    "sponsoringEmployerAddress": {
+      |     "line1": "line1",
+      |     "line2": "line2",
+      |     "line3": "line3",
+      |     "line4": "line4",
+      |     "postcode": "NE20 0GG",
+      |     "country": "GB"
+      |    }
       |  }
       |}""".stripMargin)
 
@@ -66,21 +87,47 @@ class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
       |         "totalAmount": 200.02
       |       },
       |       "chargeTypeBDetails": {
-          |      "numberOfMembers": 4,
-          |      "totalAmount": 55.55
-          |    },
+      |      "numberOfMembers": 4,
+      |      "totalAmount": 55.55
+      |    },
       |       "chargeTypeFDetails": {
       |         "totalAmount": 200.02,
       |         "dateRegiWithdrawn": "1980-02-29"
       |       }
-      |     }
+      |     },
+      |     "chargeTypeCDetails": {
+      |			"totalAmount": 500.02,
+      |			"memberDetails": [{
+      |				"memberStatus": "New",
+      |				"memberTypeDetails": {
+      |					"memberType": "Individual",
+      |					"individualDetails": {
+      |						"firstName": "testFirst",
+      |						"lastName": "testLast",
+      |						"nino": "AB100100A"
+      |					}
+      |				},
+      |				"correspondenceAddressDetails": {
+      |					"nonUKAddress": "False",
+      |					"addressLine1": "line1",
+      |					"addressLine2": "line2",
+      |					"addressLine3": "line3",
+      |					"addressLine4": "line4",
+      |					"countryCode": "GB",
+      |					"postCode": "NE20 0GG"
+      |				},
+      |				"dateOfPayment": "2020-01-01",
+      |				"totalAmountOfTaxDue": 500.02
+      |			}]
+      |		}
       |}
       |
       |""".stripMargin)
 
   "An AFTReturn Transformer" - {
     "must transform from UserAnswers to ETMP AFT Return format" in {
-      val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer, chargeETransformer, chargeDTransformer, chargeFTransformer)
+      val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
+        chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer)
       val transformedEtmpJson = userAnswersRequestJson.transform(transformer.transformToETMPFormat).asOpt.value
       transformedEtmpJson mustBe etmpResponseJson
     }

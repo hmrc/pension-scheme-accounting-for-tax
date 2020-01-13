@@ -23,8 +23,9 @@ import play.api.libs.json.{JsObject, Reads, __}
 
 class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
                                      chargeBTransformer: ChargeBTransformer,
-                                     chargeETransformer: ChargeETransformer,
+                                     chargeCTransformer: ChargeCTransformer,
                                      chargeDTransformer: ChargeDTransformer,
+                                     chargeETransformer: ChargeETransformer,
                                      chargeFTransformer: ChargeFTransformer
                                     ) {
 
@@ -32,8 +33,9 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
     (transformToAFTDetails and
       chargeATransformer.transformToETMPData and
       chargeBTransformer.transformToETMPData and
-      chargeETransformer.transformToETMPData and
+      chargeCTransformer.transformToETMPData and
       chargeDTransformer.transformToETMPData and
+      chargeETransformer.transformToETMPData and
       chargeFTransformer.transformToETMPData).reduce
 
   private def transformToAFTDetails: Reads[JsObject] = {
