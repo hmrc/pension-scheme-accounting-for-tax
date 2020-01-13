@@ -92,17 +92,17 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
       taxYear <- Gen.choose(1990, Year.now.getValue)
     } yield Json.obj(
       "memberDetails" -> Json.obj(
-          fields =  "firstName" -> firstName,
-                    "lastName" -> lastName,
-                    "nino" -> nino,
-                    "isDeleted" -> isDeleted
-              ),
-              "annualAllowanceYear" -> taxYear,
-              "chargeDetails" -> Json.obj(
-              "chargeAmount" -> chargeAmount,
-                    "dateNoticeReceived" -> date,
-                    "isPaymentMandatory" -> isMandatory
-              )
+        fields = "firstName" -> firstName,
+        "lastName" -> lastName,
+        "nino" -> nino,
+        "isDeleted" -> isDeleted
+      ),
+      "annualAllowanceYear" -> taxYear,
+      "chargeDetails" -> Json.obj(
+        "chargeAmount" -> chargeAmount,
+        "dateNoticeReceived" -> date,
+        "isPaymentMandatory" -> isMandatory
+      )
 
     )
 
@@ -116,7 +116,7 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
       taxAt55Percent <- arbitrary[BigDecimal]
     } yield Json.obj(
       "memberDetails" -> Json.obj(
-        fields =  "firstName" -> firstName,
+        fields = "firstName" -> firstName,
         "lastName" -> lastName,
         "nino" -> nino,
         "isDeleted" -> isDeleted
@@ -128,11 +128,47 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
       )
     )
 
+
+  val ukAddressGenerator : Gen[JsObject] = for {
+    line1 <- Gen.alphaStr
+    line2 <- Gen.alphaStr
+    line3 <- Gen.option(Gen.alphaStr)
+    line4 <- Gen.option(Gen.alphaStr)
+    postalCode <- Gen.alphaStr
+  } yield {
+    Json.obj(
+      "line1" -> line1,
+      "line2" -> line2,
+      "line3" -> line3,
+      "line4" -> line4,
+      "postcode" -> postalCode,
+      "country" -> "GB"
+    )
+  }
+
+  val nonUkAddressGenerator : Gen[JsObject] = for {
+    line1 <- Gen.alphaStr
+    line2 <- Gen.alphaStr
+    line3 <- Gen.option(Gen.alphaStr)
+    line4 <- Gen.option(Gen.alphaStr)
+    postalCode <- Gen.option(Gen.alphaStr)
+    country <- Gen.listOfN(2, Gen.alphaChar).map(_.mkString)
+  } yield {
+    Json.obj(
+      "line1" -> line1,
+      "line2" -> line2,
+      "line3" -> line3,
+      "line4" -> line4,
+      "postcode" -> postalCode,
+      "country" -> country
+    )
+  }
+
   val chargeEUserAnswersGenerator: Gen[JsObject] =
     for {
       members <- Gen.listOfN(5, chargeEMember())
       deletedMembers <- Gen.listOfN(2, chargeEMember(isDeleted = true))
-      totalChargeAmount <- arbitrary[BigDecimal]
+      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
     } yield Json.obj(
       fields = "chargeEDetails" ->
         Json.obj(
@@ -155,12 +191,58 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
     for {
       members <- Gen.listOfN(5, chargeDMember())
       deletedMembers <- Gen.listOfN(2, chargeDMember(isDeleted = true))
-      totalChargeAmount <- arbitrary[BigDecimal]
+      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
     } yield Json.obj(
       fields = "chargeDDetails" ->
         Json.obj(
           fields = "members" -> (members ++ deletedMembers),
           "totalChargeAmount" -> totalChargeAmount
+        ))
+
+  val chargeCIndividualUserAnswersGenerator: Gen[JsObject] =
+    for {
+      firstName <- arbitrary[String]
+      lastName <- arbitrary[String]
+      nino <- ninoGen
+      taxDue <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      addressDetails <- ukAddressGenerator
+      date <- dateGenerator
+    } yield Json.obj(
+      fields = "chargeCDetails" ->
+        Json.obj(
+          fields = "isSponsoringEmployerIndividual" -> true,
+          "chargeDetails" -> Json.obj(
+            fields = "paymentDate" -> date,
+            "amountTaxDue" -> taxDue
+          ),
+          "sponsoringIndividualDetails" -> Json.obj(
+            fields = "firstName" -> firstName,
+            "lastName" -> lastName,
+            "nino" -> nino
+          ),
+          "sponsoringEmployerAddress" -> addressDetails
+        ))
+
+  val chargeCCompanyUserAnswersGenerator: Gen[JsObject] =
+    for {
+      name <- arbitrary[String]
+      crn <- arbitrary[String]
+      taxDue <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      addressDetails <- nonUkAddressGenerator
+      date <- dateGenerator
+    } yield Json.obj(
+      fields = "chargeCDetails" ->
+        Json.obj(
+          fields = "isSponsoringEmployerIndividual" -> false,
+          "chargeDetails" -> Json.obj(
+            fields = "paymentDate" -> date,
+            "amountTaxDue" -> taxDue
+          ),
+          "sponsoringOrganisationDetails" -> Json.obj(
+            fields = "name" -> name,
+            "crn" -> crn
+          ),
+          "sponsoringEmployerAddress" -> addressDetails
         ))
 
   val chargeDAllDeletedUserAnswersGenerator: Gen[JsObject] =
