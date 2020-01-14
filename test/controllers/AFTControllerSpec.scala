@@ -165,7 +165,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       ScalaFutures.whenReady(result.failed) { e =>
         e mustBe a[BadRequestException]
         e.getMessage mustBe "Bad Request with missing PSTR"
-        //    verify(mockDesConnector, never()).getAftDetails(Matchers.any())(any(), any())
       }
     }
 

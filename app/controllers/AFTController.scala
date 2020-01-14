@@ -25,7 +25,6 @@ import play.api.mvc._
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.http.{Request => _, _}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import utils.ErrorHandler
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,7 +34,7 @@ class AFTController @Inject()(appConfig: AppConfig,
                               desConnector: DesConnector,
                               aftReturnTransformer: AFTReturnTransformer
                                  )(implicit ec: ExecutionContext)
-  extends BackendController(cc) with HttpErrorFunctions with Results with ErrorHandler {
+  extends BackendController(cc) with HttpErrorFunctions with Results {
 
   def fileReturn(): Action[AnyContent] = Action.async { implicit request =>
     val actionName = "Compile File Return"
@@ -75,7 +74,7 @@ class AFTController @Inject()(appConfig: AppConfig,
           case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
         }
 
-      } recoverWith recoverFromError
+      }
 
   }
 
