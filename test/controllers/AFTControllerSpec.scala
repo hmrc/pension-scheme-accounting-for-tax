@@ -31,30 +31,26 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{stubControllerComponents, _}
-import transformations.userAnswersToETMP._
+import transformations.userAnswersToETMP.{AFTReturnTransformer, ChargeATransformer, ChargeBTransformer, ChargeDTransformer, ChargeETransformer, ChargeFTransformer}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, Upstream4xxResponse, Upstream5xxResponse}
 import utils.JsonFileReader
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSugar with BeforeAndAfter with JsonFileReader{
+class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSugar with BeforeAndAfter with JsonFileReader {
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
   protected lazy val app: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false).build()
   implicit lazy val mat: Materializer = app.materializer
+  private val fakeRequest = FakeRequest("GET", "/")
+
   private def appConfig: AppConfig = app.injector.instanceOf[AppConfig]
-  private val pstr = "12345678RD"
-  private val startDt = "2020-01-01"
-  private val aftVer = "99"
-  private val fbNumber = "20"
-  def fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("GET", "/")
-  def fakeRequestForGetDetails: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("GET", "/").withHeaders(("pstr", pstr))
-  val queryParams = pstr
+
   private val mockDesConnector = mock[DesConnector]
-  val transformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer,
-    new ChargeDTransformer, new ChargeFTransformer)
-  private val userAnswersResponse: JsValue = readJsonFromFile("/validGetAftDetailsResponse.json")
+  val transformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer, new ChargeDTransformer, new ChargeFTransformer)
+
   private val controller = new AFTController(appConfig, stubControllerComponents(), mockDesConnector, transformer)
   private val json =
     """{
@@ -69,7 +65,12 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       |  }
       |}""".stripMargin
   private val userAnswersRequestJson = Json.parse(json)
-
+  private val pstr = "12345678RD"
+  private val startDt = "2020-01-01"
+  private val aftVer = "99"
+  private val fbNumber = "20"
+  private val userAnswersResponse: JsValue = readJsonFromFile("/validGetAftDetailsResponse.json")
+  private val fakeRequestForGetDetails = FakeRequest("GET", "/").withHeaders(("pstr", pstr))
 
   before {
     reset(mockDesConnector)
@@ -158,79 +159,79 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "throw BadRequestException when PSTR is not present in the header" in {
-        val result = controller.getDetails()(FakeRequest("GET", "/")
-          .withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
-        ScalaFutures.whenReady(result.failed) { e =>
-          e mustBe a[BadRequestException]
-          e.getMessage mustBe "Bad Request with missing PSTR"
-      //    verify(mockDesConnector, never()).getAftDetails(Matchers.any())(any(), any())
-        }
+      val result = controller.getDetails()(FakeRequest("GET", "/")
+        .withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
+      ScalaFutures.whenReady(result.failed) { e =>
+        e mustBe a[BadRequestException]
+        e.getMessage mustBe "Bad Request with missing PSTR"
+        //    verify(mockDesConnector, never()).getAftDetails(Matchers.any())(any(), any())
       }
+    }
 
 
-      "throw BadRequestException when bad request with INVALID_PSTR returned from Des" in {
-        when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
-          Future.failed(new BadRequestException(errorResponse("INVALID_PSTR"))))
+    "throw BadRequestException when bad request with INVALID_PSTR returned from Des" in {
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr))(any(), any())).thenReturn(
+        Future.failed(new BadRequestException(errorResponse("INVALID_PSTR"))))
 
-        val result = controller.getDetails()(fakeRequestForGetDetails)
-        ScalaFutures.whenReady(result.failed) { e =>
-          e mustBe a[BadRequestException]
-          e.getMessage mustBe errorResponse("INVALID_PSTR")
-        }
+      val result = controller.getDetails()(fakeRequestForGetDetails)
+      ScalaFutures.whenReady(result.failed) { e =>
+        e mustBe a[BadRequestException]
+        e.getMessage mustBe errorResponse("INVALID_PSTR")
       }
+    }
 
-      "throw BadRequestException when bad request with INVALID_FORMBUNDLE_NUMBER returned from Des" in {
+    "throw BadRequestException when bad request with INVALID_FORMBUNDLE_NUMBER returned from Des" in {
 
-        when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
-          Future.failed(new BadRequestException(errorResponse("INVALID_FORMBUNDLE_NUMBER"))))
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr))(any(), any())).thenReturn(
+        Future.failed(new BadRequestException(errorResponse("INVALID_FORMBUNDLE_NUMBER"))))
 
-        val result = controller.getDetails()(fakeRequestForGetDetails)
-        ScalaFutures.whenReady(result.failed) { e =>
-          e mustBe a[BadRequestException]
-          e.getMessage mustBe errorResponse("INVALID_FORMBUNDLE_NUMBER")
-        }
+      val result = controller.getDetails()(fakeRequestForGetDetails)
+      ScalaFutures.whenReady(result.failed) { e =>
+        e mustBe a[BadRequestException]
+        e.getMessage mustBe errorResponse("INVALID_FORMBUNDLE_NUMBER")
       }
+    }
 
-      "throw BadRequestException when bad request with INVALID_START_DATE returned from Des" in {
+    "throw BadRequestException when bad request with INVALID_START_DATE returned from Des" in {
 
-        when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
-          Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr))(any(), any())).thenReturn(
+        Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
 
-        val result = controller.getDetails()(fakeRequestForGetDetails)
-        ScalaFutures.whenReady(result.failed) { e =>
-          e mustBe a[BadRequestException]
-          e.getMessage mustBe errorResponse("INVALID_START_DATE")
-        }
+      val result = controller.getDetails()(fakeRequestForGetDetails)
+      ScalaFutures.whenReady(result.failed) { e =>
+        e mustBe a[BadRequestException]
+        e.getMessage mustBe errorResponse("INVALID_START_DATE")
       }
+    }
 
-      "throw BadRequestException when bad request with INVALID_AFT_VERSION returned from Des" in {
+    "throw BadRequestException when bad request with INVALID_AFT_VERSION returned from Des" in {
 
-        when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
-          Future.failed(new BadRequestException(errorResponse("INVALID_AFT_VERSION"))))
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr))(any(), any())).thenReturn(
+        Future.failed(new BadRequestException(errorResponse("INVALID_AFT_VERSION"))))
 
-        val result = controller.getDetails()(fakeRequestForGetDetails)
-        ScalaFutures.whenReady(result.failed) { e =>
-          e mustBe a[BadRequestException]
-          e.getMessage mustBe errorResponse("INVALID_AFT_VERSION")
-        }
+      val result = controller.getDetails()(fakeRequestForGetDetails)
+      ScalaFutures.whenReady(result.failed) { e =>
+        e mustBe a[BadRequestException]
+        e.getMessage mustBe errorResponse("INVALID_AFT_VERSION")
       }
+    }
 
-      "throw BadRequestException when bad request with INVALID_CORRELATIONID returned from Des" in {
+    "throw BadRequestException when bad request with INVALID_CORRELATIONID returned from Des" in {
 
-        when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
-          Future.failed(new BadRequestException(errorResponse("INVALID_CORRELATIONID"))))
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr))(any(), any())).thenReturn(
+        Future.failed(new BadRequestException(errorResponse("INVALID_CORRELATIONID"))))
 
-        val result = controller.getDetails()(fakeRequestForGetDetails)
-        ScalaFutures.whenReady(result.failed) { e =>
-          e mustBe a[BadRequestException]
-          e.getMessage mustBe errorResponse("INVALID_CORRELATIONID")
-        }
+      val result = controller.getDetails()(fakeRequestForGetDetails)
+      ScalaFutures.whenReady(result.failed) { e =>
+        e mustBe a[BadRequestException]
+        e.getMessage mustBe errorResponse("INVALID_CORRELATIONID")
+      }
 
     }
 
     "throw Upstream4xxResponse when UpStream4XXResponse returned from Des" in {
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr))(any(), any())).thenReturn(
         Future.failed(Upstream4xxResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -242,7 +243,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
     "throw Upstream5xxResponse when UpStream5XXResponse with SERVICE_UNAVAILABLE returned from Des" in {
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr))(any(), any())).thenReturn(
         Future.failed(Upstream5xxResponse(errorResponse("NOT_FOUND"), SERVICE_UNAVAILABLE, SERVICE_UNAVAILABLE)))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -254,7 +255,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
     "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr))(any(), any())).thenReturn(
         Future.failed(Upstream5xxResponse(errorResponse("NOT_FOUND"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -266,7 +267,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
     "throw generic exception when any other exception returned from Des" in {
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr))(any(), any())).thenReturn(
         Future.failed(new Exception("Generic Exception")))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)

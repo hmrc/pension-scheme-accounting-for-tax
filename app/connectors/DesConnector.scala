@@ -73,7 +73,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig) extends HttpEr
     }
 
   val badResponseSeqGetAft = Seq("INVALID_PSTR", "INVALID_FORMBUNDLE_NUMBER", "INVALID_START_DATE", "INVALID_AFT_VERSION", "INVALID_CORRELATIONID")
-  val forbiddenResponseSeqGetAft = Seq("INVALID_PSTR", "INVALID_FORMBUNDLE_NUMBER", "INVALID_START_DATE", "INVALID_AFT_VERSION", "INVALID_CORRELATIONID")
+  val forbiddenResponseSeqGetAft = Seq("INCORRECT_PERIOD_START_DATE", "INVALID_REQUEST", "INVALID_PSTR")
 
   private def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
     val requestId = getCorrelationId(hc.requestId.map(_.value))
@@ -82,7 +82,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig) extends HttpEr
       "Content-Type" -> "application/json", "CorrelationId" -> requestId)
   }
 
-  private def getCorrelationId(requestId: Option[String]): String = {
+  def getCorrelationId(requestId: Option[String]): String = {
     requestId.getOrElse {
       Logger.error("No Request Id found")
       randomUUID.toString
