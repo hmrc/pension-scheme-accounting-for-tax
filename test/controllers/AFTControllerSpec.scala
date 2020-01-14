@@ -31,8 +31,8 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{stubControllerComponents, _}
-import transformations.userAnswersToETMP.{AFTReturnTransformer, ChargeATransformer, ChargeBTransformer, ChargeDTransformer, ChargeETransformer, ChargeFTransformer}
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse, Upstream4xxResponse, Upstream5xxResponse}
+import transformations.userAnswersToETMP._
+import uk.gov.hmrc.http._
 import utils.JsonFileReader
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,7 +49,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private def appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
   private val mockDesConnector = mock[DesConnector]
-  val transformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer, new ChargeDTransformer, new ChargeFTransformer)
+  val transformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer,
+    new ChargeDTransformer, new ChargeFTransformer, new ChargeGTransformer)
 
   private val controller = new AFTController(appConfig, stubControllerComponents(), mockDesConnector, transformer)
   private val json =
