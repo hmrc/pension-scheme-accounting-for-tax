@@ -71,10 +71,7 @@ class AFTController @Inject()(appConfig: AppConfig,
 
         pstrOpt match {
           case Some(pstr) =>
-          desConnector.getAftDetails(queryParams(pstr)).map {
-            case Right(aftDetails) =>  Ok(aftDetails)
-            case Left(e) => result(e)
-          }
+          desConnector.getAftDetails(queryParams(pstr)).map(Ok(_))
           case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
         }
 

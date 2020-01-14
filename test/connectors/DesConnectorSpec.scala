@@ -112,7 +112,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
         )
     )
     connector.getAftDetails(pstr).map { response =>
-      response.right.value mustBe desResponse
+      response mustBe desResponse
     }
   }
 

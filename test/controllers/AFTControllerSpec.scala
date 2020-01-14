@@ -109,7 +109,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       def fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("GET", "/").withHeaders(("pstr", pstr))
       val queryParams = pstr
       when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
-        Future.successful(Right(userAnswersResponse)))
+        Future.successful(userAnswersResponse))
 
       val result = controller.getDetails()(fakeRequest)
 
@@ -123,7 +123,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .withHeaders(("pstr", pstr), ("startDate", startDt), ("aftVersion", aftVer))
       val queryParams = s"$pstr?startDate=$startDt&aftVersion=$aftVer"
       when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
-        Future.successful(Right(userAnswersResponse)))
+        Future.successful(userAnswersResponse))
 
       val result = controller.getDetails()(fakeRequest)
 
@@ -137,7 +137,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .withHeaders(("pstr", pstr), ("startDate", startDt))
       val queryParams = s"$pstr?startDate=$startDt"
       when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
-        Future.successful(Right(userAnswersResponse)))
+        Future.successful(userAnswersResponse))
 
       val result = controller.getDetails()(fakeRequest)
 
@@ -151,7 +151,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .withHeaders(("pstr", pstr), ("fbNumber", fbNumber))
       val queryParams = s"$pstr?fbNumber=$fbNumber"
       when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
-        Future.successful(Right(userAnswersResponse)))
+        Future.successful(userAnswersResponse))
 
       val result = controller.getDetails()(fakeRequest)
 
