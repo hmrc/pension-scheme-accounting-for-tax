@@ -30,7 +30,8 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{stubControllerComponents, _}
-import transformations.ETMPToUserAnswers.{AFTDetailsTransformer, ChargeFTransformer => GetChargeFTransformer, ChargeATransformer => GetChargeATransformer}
+import transformations.ETMPToUserAnswers
+import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP._
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
@@ -55,7 +56,10 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   private val aftReturnTransformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer,
     new ChargeDTransformer, new ChargeFTransformer, new ChargeGTransformer)
-  private val getDetailsTransformer = new AFTDetailsTransformer(new GetChargeATransformer, new GetChargeFTransformer)
+  private val getDetailsTransformer = new AFTDetailsTransformer(
+    new ETMPToUserAnswers.ChargeATransformer,
+    new ETMPToUserAnswers.ChargeETransformer,
+    new ETMPToUserAnswers.ChargeFTransformer)
 
   private val controller = new AFTController(appConfig, stubControllerComponents(),
     mockDesConnector, aftReturnTransformer, getDetailsTransformer)

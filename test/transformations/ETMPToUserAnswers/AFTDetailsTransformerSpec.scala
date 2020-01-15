@@ -23,6 +23,7 @@ import transformations.generators.AFTUserAnswersGenerators
 class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   private val chargeATransformer = new ChargeATransformer
+  private val chargeETransformer = new ChargeETransformer
   private val chargeFTransformer = new ChargeFTransformer
 
   private val userAnswersJson = Json.parse(
@@ -75,7 +76,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   "An AFT Details Transformer" - {
     "must transform from ETMP Get Details API Format to UserAnswers format" in {
-      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeFTransformer)
+      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeETransformer, chargeFTransformer)
       val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
       transformedUserAnswersJson mustBe userAnswersJson
     }
