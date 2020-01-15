@@ -53,6 +53,31 @@ class AFTController @Inject()(appConfig: AppConfig,
     }
   }
 
+  def getDetails: Action[AnyContent] = Action.async {
+      implicit request => {
+
+        val startDate = request.headers.get("startDate")
+        val aftVersion = request.headers.get("aftVersion")
+        val fbNumber = request.headers.get("fbNumber")
+        val pstrOpt = request.headers.get("pstr")
+
+        def queryParams(pstr: String): String = (startDate, aftVersion, fbNumber) match {
+          case (Some(startDt), Some(aftVer), _) => s"$pstr?startDate=$startDt&aftVersion=$aftVer"
+          case (Some(startDt), None, _) => s"$pstr?startDate=$startDt"
+          case (_, _, Some(formBundleNumber)) => s"$pstr?fbNumber=$formBundleNumber"
+          case _ => pstr
+        }
+
+        pstrOpt match {
+          case Some(pstr) =>
+          desConnector.getAftDetails(queryParams(pstr)).map(Ok(_))
+          case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
+        }
+
+      }
+
+  }
+
   private def withRequestDetails(request: Request[AnyContent], actionName: String)
                                 (block: (String, JsValue) => Future[Result]): Future[Result] = {
     val json = request.body.asJson

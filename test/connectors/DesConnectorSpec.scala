@@ -17,13 +17,14 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import org.scalatest.{AsyncWordSpec, MustMatchers}
-import play.api.http.Status
-import play.api.libs.json.Json
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, NotFoundException, Upstream5xxResponse}
-import utils.WireMockHelper
+import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
+import play.api.http.Status._
+import play.api.libs.json.{JsValue, Json}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, NotFoundException, Upstream4xxResponse, Upstream5xxResponse}
+import utils.{JsonFileReader, WireMockHelper}
 
-class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper {
+class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with JsonFileReader
+  with EitherValues{
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
 
   override protected def portConfigKey: String = "microservice.services.des-hod.port"
@@ -31,6 +32,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
   private val pstr = "test-pstr"
   private val aftSubmitUrl = s"/pension-online/pstr/$pstr/aft/return"
+  private val getAftUrl = s"/pension-online/aft-return/$pstr"
 
   "fileAFTReturn" must {
 
@@ -44,7 +46,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
       connector.fileAFTReturn(pstr, data) map {
-        _.status mustBe Status.OK
+        _.status mustBe OK
       }
     }
 
@@ -61,7 +63,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       recoverToExceptionIf[BadRequestException] {
         connector.fileAFTReturn(pstr, data)
       } map {
-        _.responseCode mustEqual Status.BAD_REQUEST
+        _.responseCode mustEqual BAD_REQUEST
       }
     }
 
@@ -78,7 +80,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       recoverToExceptionIf[NotFoundException] {
         connector.fileAFTReturn(pstr, data)
       } map {
-        _.responseCode mustEqual Status.NOT_FOUND
+        _.responseCode mustEqual NOT_FOUND
       }
     }
 
@@ -92,8 +94,185 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
       recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {
-        _.upstreamResponseCode mustBe Status.INTERNAL_SERVER_ERROR
+        _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
       }
     }
+  }
+
+
+  "getAftDetails" must {
+    "return user answer json" in {
+    val desResponse: JsValue = readJsonFromFile("/validGetAftDetailsResponse.json")
+    server.stubFor(
+      get(urlEqualTo(getAftUrl))
+        .willReturn(
+          ok
+            .withHeader("Content-Type", "application/json")
+            .withBody(desResponse.toString())
+        )
+    )
+    connector.getAftDetails(pstr).map { response =>
+      response mustBe desResponse
+    }
+  }
+
+  "return a BadRequestException for a 400 INVALID_PSTR response" in {
+    server.stubFor(
+      get(urlEqualTo(getAftUrl))
+        .willReturn(
+          badRequest
+            .withHeader("Content-Type", "application/json")
+            .withBody(errorResponse("INVALID_PSTR"))
+        )
+    )
+
+    recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
+      errorResponse.responseCode mustEqual BAD_REQUEST
+      errorResponse.message must include("INVALID_PSTR")
+    }
+  }
+
+  "return bad request - 400 if body contains INVALID_FORMBUNDLE_NUMBER" in {
+    server.stubFor(
+      get(urlEqualTo(getAftUrl))
+        .willReturn(
+          badRequest
+            .withHeader("Content-Type", "application/json")
+            .withBody(errorResponse("INVALID_FORMBUNDLE_NUMBER"))
+        )
+    )
+
+    recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
+      errorResponse.responseCode mustEqual BAD_REQUEST
+      errorResponse.message must include("INVALID_FORMBUNDLE_NUMBER")
+    }
+  }
+
+    "return bad request - 400 if body contains INVALID_START_DATE" in {
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            badRequest
+              .withHeader("Content-Type", "application/json")
+              .withBody(errorResponse("INVALID_START_DATE"))
+          )
+      )
+
+      recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
+        errorResponse.responseCode mustEqual BAD_REQUEST
+        errorResponse.message must include("INVALID_START_DATE")
+      }
+    }
+
+  "return bad request - 400 if body contains INVALID_AFT_VERSION" in {
+    server.stubFor(
+      get(urlEqualTo(getAftUrl))
+        .willReturn(
+          badRequest
+            .withHeader("Content-Type", "application/json")
+            .withBody(errorResponse("INVALID_AFT_VERSION"))
+        )
+    )
+
+    recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
+      errorResponse.responseCode mustEqual BAD_REQUEST
+      errorResponse.message must include("INVALID_AFT_VERSION")
+    }
+  }
+
+  "return bad request - 400 if body contains INVALID_CORRELATIONID and log the event as warn" in {
+    server.stubFor(
+      get(urlEqualTo(getAftUrl))
+        .willReturn(
+          badRequest
+            .withHeader("Content-Type", "application/json")
+            .withBody(errorResponse("INVALID_CORRELATIONID"))
+        )
+    )
+
+    recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
+      errorResponse.responseCode mustEqual BAD_REQUEST
+      errorResponse.message must include("INVALID_CORRELATIONID")
+    }
+  }
+
+  "return Not Found - 404" in {
+    server.stubFor(
+      get(urlEqualTo(getAftUrl))
+        .willReturn(
+          notFound
+            .withBody(errorResponse("NOT_FOUND"))
+        )
+    )
+
+    recoverToExceptionIf[NotFoundException] {connector.getAftDetails(pstr)} map {errorResponse =>
+      errorResponse.responseCode mustEqual NOT_FOUND
+      errorResponse.message must include("NOT_FOUND")
+    }
+  }
+
+  "throw Upstream4XX for server unavailable - 403" in {
+
+    server.stubFor(
+      get(urlEqualTo(getAftUrl))
+        .willReturn(
+          forbidden
+            .withBody(errorResponse("FORBIDDEN"))
+        )
+    )
+    recoverToExceptionIf[Upstream4xxResponse](connector.getAftDetails(pstr)) map {
+      ex =>
+        ex.upstreamResponseCode mustBe FORBIDDEN
+        ex.message must include("FORBIDDEN")
+    }
+  }
+
+  "throw Upstream5XX for internal server error - 500 and log the event as error" in {
+
+    server.stubFor(
+      get(urlEqualTo(getAftUrl))
+        .willReturn(
+          serverError
+            .withBody(errorResponse("SERVER_ERROR"))
+        )
+    )
+
+    recoverToExceptionIf[Upstream5xxResponse](connector.getAftDetails(pstr)) map {
+      ex =>
+        ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+        ex.message must include("SERVER_ERROR")
+        ex.reportAs mustBe BAD_GATEWAY
+    }
+  }
+  }
+
+  "getCorrelationId" must {
+    "return the correct CorrelationId when the request Id is more than 32 characters" in {
+      val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2dfe")
+      val result = connector.getCorrelationId(requestId)
+      result mustBe "4725c81192514c069b8ff1d84659b2df"
+    }
+
+
+    "return the correct CorrelationId when the request Id is less than 32 characters" in {
+      val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1")
+      val result = connector.getCorrelationId(requestId)
+      result mustBe "4725c81192514c069b8ff1"
+    }
+
+    "return the correct CorrelationId when the request Id does not have gov-uk-tax or -" in {
+      val requestId = Some("4725c81192514c069b8ff1")
+      val result = connector.getCorrelationId(requestId)
+      result mustBe "4725c81192514c069b8ff1"
+    }
+  }
+
+  def errorResponse(code: String): String = {
+    Json.stringify(
+      Json.obj(
+        "code" -> code,
+        "reason" -> s"Reason for $code"
+      )
+    )
   }
 }

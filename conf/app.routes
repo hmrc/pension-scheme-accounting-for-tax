@@ -2,6 +2,8 @@
 
 POST         /aft-file-return                       controllers.AFTController.fileReturn
 
+GET         /get-aft-details                       controllers.AFTController.getDetails
+
 GET         /journey-cache/aft                      controllers.cache.DataCacheController.get
 POST        /journey-cache/aft                      controllers.cache.DataCacheController.save
 DELETE      /journey-cache/aft                      controllers.cache.DataCacheController.remove

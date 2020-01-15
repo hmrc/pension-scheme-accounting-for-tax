@@ -160,7 +160,7 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
     for {
       members <- Gen.listOfN(5, chargeEMember())
       deletedMembers <- Gen.listOfN(2, chargeEMember(isDeleted = true))
-      totalChargeAmount <- arbitrary[BigDecimal]
+      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
     } yield Json.obj(
       fields = "chargeEDetails" ->
         Json.obj(
@@ -183,7 +183,7 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
     for {
       members <- Gen.listOfN(5, chargeDMember())
       deletedMembers <- Gen.listOfN(2, chargeDMember(isDeleted = true))
-      totalChargeAmount <- arbitrary[BigDecimal]
+      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
     } yield Json.obj(
       fields = "chargeDDetails" ->
         Json.obj(
@@ -206,7 +206,7 @@ trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks wit
     for {
       members <- Gen.listOfN(5, chargeGMember())
       deletedMembers <- Gen.listOfN(2, chargeGMember(isDeleted = true))
-      totalChargeAmount <- arbitrary[BigDecimal]
+      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
     } yield Json.obj(
       fields = "chargeGDetails" ->
         Json.obj(
