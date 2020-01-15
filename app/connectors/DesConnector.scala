@@ -58,7 +58,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig) extends HttpEr
       }
     }
   }.recoverWith {
-    case e: NotFoundException => Future.successful(Nil)
+    case _: NotFoundException => Future.successful(Nil)
   }
 
 

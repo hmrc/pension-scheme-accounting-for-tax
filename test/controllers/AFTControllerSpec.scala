@@ -27,7 +27,7 @@ import org.scalatest.{AsyncWordSpec, BeforeAndAfter, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsNull, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{stubControllerComponents, _}
 import transformations.ETMPToUserAnswers.{AFTDetailsTransformer, ChargeFTransformer => GetChargeFTransformer}
@@ -223,7 +223,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   "getAftVersions" must {
 
-    "return OK when the details are returned based on pstr, start date and AFT version" in {
+    "return OK with the Seq of version numbers when the details are returned based on pstr and start date" in {
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any())).thenReturn(
         Future.successful(Seq(1)))
 
