@@ -233,16 +233,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       contentAsJson(result) mustBe Json.arr(1)
     }
 
-    "return OK with empty sequence when NOT FOUND Exeception is thrown" in {
-      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any())).thenReturn(
-        Future.failed(new NotFoundException("No Versions Found")))
-
-      val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe JsNull
-    }
-
     "throw BadRequestException when PSTR is not present in the header" in {
       recoverToExceptionIf[BadRequestException] {
         controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt))
