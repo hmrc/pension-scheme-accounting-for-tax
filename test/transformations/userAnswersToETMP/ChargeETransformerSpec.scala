@@ -23,7 +23,7 @@ import transformations.generators.AFTUserAnswersGenerators
 class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   "A Charge E Transformer" - {
-    "must transform ChargeBDetails from UserAnswers to ETMP ChargeBDetails" in {
+    "must transform ChargeEDetails from UserAnswers to ETMP ChargeEDetails" in {
       forAll(chargeEUserAnswersGenerator) {
         userAnswersJson =>
           val transformer = new ChargeETransformer
