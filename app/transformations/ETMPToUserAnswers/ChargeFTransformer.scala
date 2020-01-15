@@ -16,8 +16,21 @@
 
 package transformations.ETMPToUserAnswers
 
+import play.api.libs.json.{JsObject, Json, Reads, __}
+import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json.{__, _}
+
 class ChargeFTransformer {
 
-
+  def transformToUserAnswers: Reads[JsObject] =
+    (__ \ 'chargeTypeFDetails).readNullable {
+    __.read(
+      (( __ \ 'chargeFDetails \ 'amountTaxDue).json.copyFrom((__ \ 'totalAmount).json.pick) and
+        ( __ \ 'chargeFDetails \ 'deRegistrationDate).json.copyFrom((__ \ 'dateRegiWithdrawn).json.pick)).reduce
+    )
+  }.map {
+    _.getOrElse(Json.obj())
+  }
 
 }

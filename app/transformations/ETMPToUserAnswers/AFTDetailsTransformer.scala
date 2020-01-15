@@ -19,7 +19,7 @@ package transformations.ETMPToUserAnswers
 import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{JsObject, Reads, __}
+import play.api.libs.json.{JsObject, Json, Reads, __}
 
 class AFTDetailsTransformer @Inject()(
                                        chargeFTransformer: ChargeFTransformer
@@ -27,19 +27,19 @@ class AFTDetailsTransformer @Inject()(
 
   def transformToUserAnswers: Reads[JsObject] = (
     transformAFTDetails and
-      transformSchemeDetails
+      transformSchemeDetails and
+      transformChargeDetails
     ).reduce
 
-  private def transformAFTDetails: Reads[JsObject] = {
+  private def transformAFTDetails: Reads[JsObject] =
     ((__ \ 'aftStatus).json.copyFrom((__ \ 'aftDetails \ 'aftStatus).json.pick) and
       (__ \ 'quarter \ 'startDate).json.copyFrom((__ \ 'aftDetails \ 'quarterStartDate).json.pick) and
       (__ \ 'quarter \ 'endDate).json.copyFrom((__ \ 'aftDetails \ 'quarterEndDate).json.pick)).reduce
-  }
 
-  private def transformSchemeDetails: Reads[JsObject] = {
-    (
-      (__ \ 'pstr).json.copyFrom((__ \ 'schemeDetails \ 'pstr).json.pick) and
-        (__ \ 'schemeName).json.copyFrom((__ \ 'schemeDetails \ 'schemeName).json.pick)
-      ).reduce
-  }
+  private def transformSchemeDetails: Reads[JsObject] =
+    ((__ \ 'pstr).json.copyFrom((__ \ 'schemeDetails \ 'pstr).json.pick) and
+        (__ \ 'schemeName).json.copyFrom((__ \ 'schemeDetails \ 'schemeName).json.pick)).reduce
+
+  private def transformChargeDetails: Reads[JsObject] =
+    (__ \ 'chargeDetails).read(chargeFTransformer.transformToUserAnswers)
 }

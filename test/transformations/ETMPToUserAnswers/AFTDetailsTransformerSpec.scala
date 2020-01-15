@@ -32,6 +32,10 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       |  "quarter": {
       |       "startDate": "2019-01-01",
       |       "endDate": "2019-03-31"
+      |  },
+      |  "chargeFDetails": {
+      |    "amountTaxDue": 200.02,
+      |    "deRegistrationDate": "1980-02-29"
       |  }
       |}""".stripMargin)
 
@@ -45,7 +49,13 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       |    "schemeDetails": {
       |    "schemeName": "Test Scheme",
       |    "pstr": "1234"
-      |  }
+      |  },
+      |  "chargeDetails": {
+      |       "chargeTypeFDetails": {
+      |         "totalAmount": 200.02,
+      |         "dateRegiWithdrawn": "1980-02-29"
+      |       }
+      |   }
       |}
       |
       |""".stripMargin)
