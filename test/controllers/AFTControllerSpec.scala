@@ -30,7 +30,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{stubControllerComponents, _}
-import transformations.ETMPToUserAnswers.{AFTDetailsTransformer, ChargeFTransformer => GetChargeFTransformer}
+import transformations.ETMPToUserAnswers.{AFTDetailsTransformer, ChargeFTransformer => GetChargeFTransformer, ChargeATransformer => GetChargeATransformer}
 import transformations.userAnswersToETMP._
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
@@ -55,7 +55,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   private val aftReturnTransformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer,
     new ChargeDTransformer, new ChargeFTransformer, new ChargeGTransformer)
-  private val getDetailsTransformer = new AFTDetailsTransformer(new GetChargeFTransformer)
+  private val getDetailsTransformer = new AFTDetailsTransformer(new GetChargeATransformer, new GetChargeFTransformer)
 
   private val controller = new AFTController(appConfig, stubControllerComponents(),
     mockDesConnector, aftReturnTransformer, getDetailsTransformer)
@@ -235,7 +235,6 @@ object AFTControllerSpec {
   private val pstr = "12345678RD"
   private val startDt = "2020-01-01"
   private val aftVer = "99"
-  private val fbNumber = "20"
   private val etmpResponse: JsValue = Json.obj(
     "schemeDetails" -> Json.obj(
       "pstr" -> "12345678AB",
