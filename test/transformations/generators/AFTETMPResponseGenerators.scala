@@ -24,7 +24,7 @@ import org.scalatest.{MustMatchers, OptionValues}
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import play.api.libs.json.{JsObject, Json}
 
-trait AFTGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks with OptionValues {
+trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks with OptionValues {
   val ninoGen: Gen[String] = Gen.oneOf(Seq("AB123456C", "CD123456E"))
 
   val dateGenerator: Gen[LocalDate] = for {

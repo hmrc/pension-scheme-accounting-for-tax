@@ -18,9 +18,9 @@ package transformations.userAnswersToETMP
 
 import org.scalatest.FreeSpec
 import play.api.libs.json.Json
-import transformations.generators.AFTGenerators
+import transformations.generators.AFTUserAnswersGenerators
 
-class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
+class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   private val chargeFTransformer = new ChargeFTransformer
   private val chargeATransformer = new ChargeATransformer

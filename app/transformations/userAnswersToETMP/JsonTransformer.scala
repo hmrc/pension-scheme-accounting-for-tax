@@ -24,6 +24,8 @@ import scala.annotation.tailrec
 
 trait JsonTransformer {
 
+  val doNothing: Reads[JsObject] = __.json.put(Json.obj())
+
   def readsMemberDetails: Reads[JsObject] =
     (__ \ 'individualsDetails \ 'firstName).json.copyFrom((__ \ 'memberDetails \ 'firstName).json.pick) and
       (__ \ 'individualsDetails \ 'lastName).json.copyFrom((__ \ 'memberDetails \ 'lastName).json.pick) and

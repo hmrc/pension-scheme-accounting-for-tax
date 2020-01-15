@@ -22,6 +22,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue}
 import play.api.mvc._
+import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.http.{Request => _, _}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
@@ -32,8 +33,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class AFTController @Inject()(appConfig: AppConfig,
                               cc: ControllerComponents,
                               desConnector: DesConnector,
-                              aftReturnTransformer: AFTReturnTransformer
-                                 )(implicit ec: ExecutionContext)
+                              aftReturnTransformer: AFTReturnTransformer,
+                              aftDetailsTransformer: AFTDetailsTransformer
+                             )(implicit ec: ExecutionContext)
   extends BackendController(cc) with HttpErrorFunctions with Results {
 
   def fileReturn(): Action[AnyContent] = Action.async { implicit request =>
@@ -54,28 +56,24 @@ class AFTController @Inject()(appConfig: AppConfig,
   }
 
   def getDetails: Action[AnyContent] = Action.async {
-      implicit request => {
+    implicit request => {
 
-        val startDate = request.headers.get("startDate")
-        val aftVersion = request.headers.get("aftVersion")
-        val fbNumber = request.headers.get("fbNumber")
-        val pstrOpt = request.headers.get("pstr")
+      val startDate = request.headers.get("startDate")
+      val aftVersion = request.headers.get("aftVersion")
+      val pstrOpt = request.headers.get("pstr")
 
-        def queryParams(pstr: String): String = (startDate, aftVersion, fbNumber) match {
-          case (Some(startDt), Some(aftVer), _) => s"$pstr?startDate=$startDt&aftVersion=$aftVer"
-          case (Some(startDt), None, _) => s"$pstr?startDate=$startDt"
-          case (_, _, Some(formBundleNumber)) => s"$pstr?fbNumber=$formBundleNumber"
-          case _ => pstr
-        }
-
-        pstrOpt match {
-          case Some(pstr) =>
-          desConnector.getAftDetails(queryParams(pstr)).map(Ok(_))
-          case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
-        }
-
+      (pstrOpt, startDate, aftVersion) match {
+        case (Some(pstr), Some(startDt), Some(aftVer)) =>
+          val queryParams = s"$pstr?startDate=$startDt&aftVersion=$aftVer"
+          desConnector.getAftDetails(queryParams).map { etmpJson =>
+            etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
+              case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
+              case JsError(errors) => throw JsResultException(errors)
+            }
+          }
+        case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
       }
-
+    }
   }
 
   private def withRequestDetails(request: Request[AnyContent], actionName: String)

@@ -17,9 +17,9 @@
 package transformations.userAnswersToETMP
 
 import org.scalatest.FreeSpec
-import transformations.generators.AFTGenerators
+import transformations.generators.AFTUserAnswersGenerators
 
-class ChargeBTransformerSpec extends FreeSpec with AFTGenerators {
+class ChargeBTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   "A Charge B Transformer" - {
     "must transform ChargeBDetails from UserAnswers to ETMP ChargeBDetails" in {

@@ -18,9 +18,9 @@ package transformations.userAnswersToETMP
 
 import org.scalatest.FreeSpec
 import play.api.libs.json.{JsDefined, JsObject, JsString, Json}
-import transformations.generators.AFTGenerators
+import transformations.generators.AFTUserAnswersGenerators
 
-class ChargeGTransformerSpec extends FreeSpec with AFTGenerators {
+class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   "A ChargeG Transformer" - {
     "must transform ChargeGDetails from UserAnswers to ETMP ChargeGDetails" in {
