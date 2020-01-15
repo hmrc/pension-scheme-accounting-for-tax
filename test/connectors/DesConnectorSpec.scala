@@ -33,6 +33,8 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val pstr = "test-pstr"
   private val aftSubmitUrl = s"/pension-online/pstr/$pstr/aft/return"
   private val getAftUrl = s"/pension-online/aft-return/$pstr"
+  private val startDt = "2020-01-01"
+  private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions/startDate=$startDt"
 
   "fileAFTReturn" must {
 
@@ -98,7 +100,6 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       }
     }
   }
-
 
   "getAftDetails" must {
     "return user answer json" in {
@@ -244,6 +245,90 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
         ex.reportAs mustBe BAD_GATEWAY
     }
   }
+  }
+
+  "getAftVersions" must {
+    "return the seq of version nos returned from the ETMP" in {
+      val aftVersionsResponseJson = Json.arr(
+        Json.obj(
+          fields = "reportVersion" -> 1
+        )
+      )
+      server.stubFor(
+        get(urlEqualTo(getAftVersionsUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(aftVersionsResponseJson.toString())
+          )
+      )
+      connector.getAftVersions(pstr, startDt).map { response =>
+        response mustBe Seq(1)
+      }
+    }
+
+    "return a BadRequestException for BAD REQUEST - 400" in {
+      server.stubFor(
+        get(urlEqualTo(getAftVersionsUrl))
+          .willReturn(
+            badRequest
+              .withHeader("Content-Type", "application/json")
+              .withBody(errorResponse("INVALID_PSTR"))
+          )
+      )
+
+      recoverToExceptionIf[BadRequestException] {connector.getAftVersions(pstr, startDt)} map {errorResponse =>
+        errorResponse.responseCode mustEqual BAD_REQUEST
+        errorResponse.message must include("INVALID_PSTR")
+      }
+    }
+
+    "return a NotFoundException for NOT FOUND - 404" in {
+      server.stubFor(
+        get(urlEqualTo(getAftVersionsUrl))
+          .willReturn(
+            notFound
+              .withBody(errorResponse("NOT_FOUND"))
+          )
+      )
+
+      connector.getAftVersions(pstr, startDt).map { response =>
+        response mustBe Nil
+      }
+    }
+
+    "throw Upstream4XX for FORBIDDEN - 403" in {
+
+      server.stubFor(
+        get(urlEqualTo(getAftVersionsUrl))
+          .willReturn(
+            forbidden
+              .withBody(errorResponse("FORBIDDEN"))
+          )
+      )
+      recoverToExceptionIf[Upstream4xxResponse](connector.getAftVersions(pstr, startDt)) map {
+        ex =>
+          ex.upstreamResponseCode mustBe FORBIDDEN
+          ex.message must include("FORBIDDEN")
+      }
+    }
+
+    "throw Upstream5XX for INTERNAL SERVER ERROR - 500" in {
+
+      server.stubFor(
+        get(urlEqualTo(getAftVersionsUrl))
+          .willReturn(
+            serverError
+              .withBody(errorResponse("SERVER_ERROR"))
+          )
+      )
+
+      recoverToExceptionIf[Upstream5xxResponse](connector.getAftVersions(pstr, startDt)) map {
+        ex =>
+          ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+          ex.message must include("SERVER_ERROR")
+      }
+    }
   }
 
   "getCorrelationId" must {
