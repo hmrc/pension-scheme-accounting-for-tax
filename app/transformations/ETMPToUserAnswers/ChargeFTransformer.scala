@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package transformations.helpers
+package transformations.ETMPToUserAnswers
 
-import play.api.libs.json.{JsObject, Json, Reads, __}
+class ChargeFTransformer {
 
-object JsonTransformer{
-  val doNothing: Reads[JsObject] = __.json.put(Json.obj())
+
+
 }

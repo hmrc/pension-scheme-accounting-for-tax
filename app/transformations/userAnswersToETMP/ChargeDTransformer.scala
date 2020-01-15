@@ -22,19 +22,17 @@ import play.api.libs.json.{__, _}
 
 class ChargeDTransformer extends JsonTransformer {
 
-  val doNothing: Reads[JsObject] = __.json.put(Json.obj())
-
-
   def transformToETMPData: Reads[JsObject] =
     (__ \ 'chargeDDetails).readNullable(__.read(readsChargeD)).map(_.getOrElse(Json.obj()))
 
   def readsChargeD: Reads[JsObject] =
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap {totalCharge =>
-      if(!totalCharge.equals(0.00))
+      if(!totalCharge.equals(0.00)) {
         ((__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
           (__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)) reduce
-       else
+      } else {
         doNothing
+      }
     }
 
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_))
