@@ -19,9 +19,10 @@ package transformations.ETMPToUserAnswers
 import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{JsObject, Json, Reads, __}
+import play.api.libs.json.{JsObject, Reads, __}
 
 class AFTDetailsTransformer @Inject()(
+                                       chargeATransformer: ChargeATransformer,
                                        chargeFTransformer: ChargeFTransformer
                                      ) {
 
@@ -41,5 +42,7 @@ class AFTDetailsTransformer @Inject()(
         (__ \ 'schemeName).json.copyFrom((__ \ 'schemeDetails \ 'schemeName).json.pick)).reduce
 
   private def transformChargeDetails: Reads[JsObject] =
-    (__ \ 'chargeDetails).read(chargeFTransformer.transformToUserAnswers)
+    (__ \ 'chargeDetails).read(
+      chargeATransformer.transformToUserAnswers and
+      chargeFTransformer.transformToUserAnswers reduce)
 }

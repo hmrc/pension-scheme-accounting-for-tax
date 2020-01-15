@@ -22,6 +22,7 @@ import transformations.generators.AFTUserAnswersGenerators
 
 class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
+  private val chargeATransformer = new ChargeATransformer
   private val chargeFTransformer = new ChargeFTransformer
 
   private val userAnswersJson = Json.parse(
@@ -33,6 +34,12 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       |       "startDate": "2019-01-01",
       |       "endDate": "2019-03-31"
       |  },
+      |  "chargeADetails": {
+      |      "numberOfMembers": 2,
+      |      "totalAmtOfTaxDueAtLowerRate": 200.02,
+      |      "totalAmtOfTaxDueAtHigherRate": 200.02,
+      |      "totalAmount": 200.02
+      |    },
       |  "chargeFDetails": {
       |    "amountTaxDue": 200.02,
       |    "deRegistrationDate": "1980-02-29"
@@ -51,6 +58,12 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       |    "pstr": "1234"
       |  },
       |  "chargeDetails": {
+      |       "chargeTypeADetails": {
+      |         "numberOfMembers": 2,
+      |         "totalAmtOfTaxDueAtLowerRate": 200.02,
+      |         "totalAmtOfTaxDueAtHigherRate": 200.02,
+      |         "totalAmount": 200.02
+      |       },
       |       "chargeTypeFDetails": {
       |         "totalAmount": 200.02,
       |         "dateRegiWithdrawn": "1980-02-29"
@@ -62,7 +75,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   "An AFT Details Transformer" - {
     "must transform from ETMP Get Details API Format to UserAnswers format" in {
-      val transformer = new AFTDetailsTransformer(chargeFTransformer)
+      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeFTransformer)
       val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
       transformedUserAnswersJson mustBe userAnswersJson
     }

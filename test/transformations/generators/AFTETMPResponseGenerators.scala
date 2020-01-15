@@ -33,6 +33,21 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
     year <- Gen.choose(1990, 2000)
   } yield LocalDate.of(year, month, day)
 
+  val chargeAUserAnswersGenerator: Gen[JsObject] =
+    for {
+      numberOfMembers <- arbitrary[Int]
+      totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
+      totalAmtOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
+      totalAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      fields = "chargeTypeADetails" ->
+        Json.obj(
+          fields = "numberOfMembers" -> numberOfMembers,
+          "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
+          "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate,
+          "totalAmount" -> totalAmount
+        ))
+
   val chargeFUserAnswersGenerator: Gen[JsObject] =
     for {
       amountTaxDue <- arbitrary[BigDecimal]
