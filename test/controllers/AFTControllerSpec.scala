@@ -245,6 +245,12 @@ object AFTControllerSpec {
       "aftStatus" -> "Compiled",
       "quarterStartDate" -> "2020-02-29",
       "quarterEndDate" -> "2020-05-29"
+    ),
+    "chargeDetails"-> Json.obj(
+    "chargeTypeFDetails"-> Json.obj(
+      "totalAmount"-> 200.02,
+      "dateRegiWithdrawn"-> "1980-02-29"
+    )
     )
   )
 
@@ -255,7 +261,11 @@ object AFTControllerSpec {
       "endDate" -> "2020-05-29"
     ),
     "pstr" -> "12345678AB",
-    "schemeName" -> "PSTR Scheme"
+    "schemeName" -> "PSTR Scheme",
+    "chargeFDetails"-> Json.obj(
+      "amountTaxDue"-> 200.02,
+      "deRegistrationDate"-> "1980-02-29"
+    )
   )
 
   private val fakeRequestForGetDetails = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("startDate", startDt), ("aftVersion", aftVer))
