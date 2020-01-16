@@ -33,6 +33,54 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
     year <- Gen.choose(1990, 2000)
   } yield LocalDate.of(year, month, day)
 
+  val ukAddressGenerator : Gen[JsObject] = for {
+    line1 <- Gen.alphaStr
+    line2 <- Gen.alphaStr
+    line3 <- Gen.option(Gen.alphaStr)
+    line4 <- Gen.option(Gen.alphaStr)
+    postalCode <- Gen.alphaStr
+  } yield {
+    Json.obj(
+      "line1" -> line1,
+      "line2" -> line2,
+      "line3" -> line3,
+      "line4" -> line4,
+      "postcode" -> postalCode,
+      "country" -> "GB"
+    )
+  }
+
+  val nonUkAddressGenerator : Gen[JsObject] = for {
+    line1 <- Gen.alphaStr
+    line2 <- Gen.alphaStr
+    line3 <- Gen.option(Gen.alphaStr)
+    line4 <- Gen.option(Gen.alphaStr)
+    postalCode <- Gen.option(Gen.alphaStr)
+    country <- Gen.listOfN(2, Gen.alphaChar).map(_.mkString)
+  } yield {
+    Json.obj(
+      "line1" -> line1,
+      "line2" -> line2,
+      "line3" -> line3,
+      "line4" -> line4,
+      "postcode" -> postalCode,
+      "country" -> country
+    )
+  }
+
+  private def memberDetailsGen(isDeleted: Boolean): Gen[JsObject] = for {
+    firstName <- arbitrary[String]
+    lastName <- arbitrary[String]
+    nino <- ninoGen
+  } yield {
+    Json.obj(
+      fields = "firstName" -> firstName,
+      "lastName" -> lastName,
+      "nino" -> nino,
+      "isDeleted" -> isDeleted
+    )
+  }
+
   val aftDetailsUserAnswersGenerator: Gen[JsObject] =
     for {
       aftStatus <- Gen.oneOf(Seq("Compiled", "Submitted"))
@@ -43,17 +91,6 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
       "quarterStartDate" -> quarterStartDate,
       "quarterEndDate" -> quarterEndDate
     )
-
-  val chargeFUserAnswersGenerator: Gen[JsObject] =
-    for {
-      totalAmount <- arbitrary[BigDecimal]
-      dateRegiWithdrawn <- arbitrary[Option[String]]
-    } yield Json.obj(
-      fields = "chargeFDetails" ->
-        Json.obj(
-          fields = "amountTaxDue" -> totalAmount,
-          "deRegistrationDate" -> dateRegiWithdrawn
-        ))
 
   val chargeAUserAnswersGenerator: Gen[JsObject] =
     for {
@@ -81,52 +118,140 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
           "numberOfDeceased" -> numberOfMembers
         ))
 
-  def chargeEMember(isDeleted: Boolean = false): Gen[JsObject] =
+  val chargeCIndividualUserAnswersGenerator: Gen[JsObject] =
     for {
       firstName <- arbitrary[String]
       lastName <- arbitrary[String]
       nino <- ninoGen
-      chargeAmount <- arbitrary[BigDecimal]
+      taxDue <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      addressDetails <- ukAddressGenerator
       date <- dateGenerator
-      isMandatory <- arbitrary[Boolean]
-      taxYear <- Gen.choose(1990, Year.now.getValue)
     } yield Json.obj(
-      "memberDetails" -> Json.obj(
-          fields =  "firstName" -> firstName,
-                    "lastName" -> lastName,
-                    "nino" -> nino,
-                    "isDeleted" -> isDeleted
-              ),
-              "annualAllowanceYear" -> taxYear,
-              "chargeDetails" -> Json.obj(
-              "chargeAmount" -> chargeAmount,
-                    "dateNoticeReceived" -> date,
-                    "isPaymentMandatory" -> isMandatory
-              )
+      fields = "chargeCDetails" ->
+        Json.obj(
+          fields = "isSponsoringEmployerIndividual" -> true,
+          "chargeDetails" -> Json.obj(
+            fields = "paymentDate" -> date,
+            "amountTaxDue" -> taxDue
+          ),
+          "sponsoringIndividualDetails" -> Json.obj(
+            fields = "firstName" -> firstName,
+            "lastName" -> lastName,
+            "nino" -> nino
+          ),
+          "sponsoringEmployerAddress" -> addressDetails
+        ))
 
-    )
+  val chargeCCompanyUserAnswersGenerator: Gen[JsObject] =
+    for {
+      name <- arbitrary[String]
+      crn <- arbitrary[String]
+      taxDue <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      addressDetails <- nonUkAddressGenerator
+      date <- dateGenerator
+    } yield Json.obj(
+      fields = "chargeCDetails" ->
+        Json.obj(
+          fields = "isSponsoringEmployerIndividual" -> false,
+          "chargeDetails" -> Json.obj(
+            fields = "paymentDate" -> date,
+            "amountTaxDue" -> taxDue
+          ),
+          "sponsoringOrganisationDetails" -> Json.obj(
+            fields = "name" -> name,
+            "crn" -> crn
+          ),
+          "sponsoringEmployerAddress" -> addressDetails
+        ))
 
   def chargeDMember(isDeleted: Boolean = false): Gen[JsObject] =
     for {
-      firstName <- arbitrary[String]
-      lastName <- arbitrary[String]
-      nino <- ninoGen
+      memberDetails <- memberDetailsGen(isDeleted)
       date <- dateGenerator
       taxAt25Percent <- arbitrary[BigDecimal]
       taxAt55Percent <- arbitrary[BigDecimal]
     } yield Json.obj(
-      "memberDetails" -> Json.obj(
-        fields =  "firstName" -> firstName,
-        "lastName" -> lastName,
-        "nino" -> nino,
-        "isDeleted" -> isDeleted
-      ),
+      "memberDetails" -> memberDetails,
       "chargeDetails" -> Json.obj(
         "dateOfEvent" -> date,
         "taxAt25Percent" -> taxAt25Percent,
         "taxAt55Percent" -> taxAt55Percent
       )
     )
+
+  val chargeDUserAnswersGenerator: Gen[JsObject] =
+    for {
+      members <- Gen.listOfN(5, chargeDMember())
+      deletedMembers <- Gen.listOfN(2, chargeDMember(isDeleted = true))
+      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
+    } yield Json.obj(
+      fields = "chargeDDetails" ->
+        Json.obj(
+          fields = "members" -> (members ++ deletedMembers),
+          "totalChargeAmount" -> totalChargeAmount
+        ))
+
+  val chargeDAllDeletedUserAnswersGenerator: Gen[JsObject] =
+    for {
+      members <- Gen.listOfN(5, chargeDMember())
+      deletedMembers <- Gen.listOfN(2, chargeDMember(isDeleted = true))
+    } yield Json.obj(
+      fields = "chargeDDetails" ->
+        Json.obj(
+          fields = "members" -> (members ++ deletedMembers),
+          "totalChargeAmount" -> BigDecimal(0.00)
+        ))
+
+  def chargeEMember(isDeleted: Boolean = false): Gen[JsObject] =
+    for {
+      memberDetails <- memberDetailsGen(isDeleted)
+      chargeAmount <- arbitrary[BigDecimal]
+      date <- dateGenerator
+      isMandatory <- arbitrary[Boolean]
+      taxYear <- Gen.choose(1990, Year.now.getValue)
+    } yield Json.obj(
+      "memberDetails" -> memberDetails,
+      "annualAllowanceYear" -> taxYear,
+      "chargeDetails" -> Json.obj(
+        "chargeAmount" -> chargeAmount,
+        "dateNoticeReceived" -> date,
+        "isPaymentMandatory" -> isMandatory
+      )
+    )
+
+  val chargeEUserAnswersGenerator: Gen[JsObject] =
+    for {
+      members <- Gen.listOfN(5, chargeEMember())
+      deletedMembers <- Gen.listOfN(2, chargeEMember(isDeleted = true))
+      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
+    } yield Json.obj(
+      fields = "chargeEDetails" ->
+        Json.obj(
+          fields = "members" -> (members ++ deletedMembers),
+          "totalChargeAmount" -> totalChargeAmount
+        ))
+
+  val chargeEAllDeletedUserAnswersGenerator: Gen[JsObject] =
+    for {
+      members <- Gen.listOfN(5, chargeEMember())
+      deletedMembers <- Gen.listOfN(2, chargeEMember(isDeleted = true))
+    } yield Json.obj(
+      fields = "chargeEDetails" ->
+        Json.obj(
+          fields = "members" -> (members ++ deletedMembers),
+          "totalChargeAmount" -> BigDecimal(0.00)
+        ))
+
+  val chargeFUserAnswersGenerator: Gen[JsObject] =
+    for {
+      totalAmount <- arbitrary[BigDecimal]
+      dateRegiWithdrawn <- arbitrary[Option[String]]
+    } yield Json.obj(
+      fields = "chargeFDetails" ->
+        Json.obj(
+          fields = "amountTaxDue" -> totalAmount,
+          "deRegistrationDate" -> dateRegiWithdrawn
+        ))
 
   def chargeGMember(isDeleted: Boolean = false): Gen[JsObject] =
     for {
@@ -155,52 +280,6 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
         "amountTaxDue" -> amountTaxDue
       )
     )
-
-  val chargeEUserAnswersGenerator: Gen[JsObject] =
-    for {
-      members <- Gen.listOfN(5, chargeEMember())
-      deletedMembers <- Gen.listOfN(2, chargeEMember(isDeleted = true))
-      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
-    } yield Json.obj(
-      fields = "chargeEDetails" ->
-        Json.obj(
-          fields = "members" -> (members ++ deletedMembers),
-          "totalChargeAmount" -> totalChargeAmount
-        ))
-
-  val chargeEAllDeletedUserAnswersGenerator: Gen[JsObject] =
-    for {
-      members <- Gen.listOfN(5, chargeEMember())
-      deletedMembers <- Gen.listOfN(2, chargeEMember(isDeleted = true))
-    } yield Json.obj(
-      fields = "chargeEDetails" ->
-        Json.obj(
-          fields = "members" -> (members ++ deletedMembers),
-          "totalChargeAmount" -> BigDecimal(0.00)
-        ))
-
-  val chargeDUserAnswersGenerator: Gen[JsObject] =
-    for {
-      members <- Gen.listOfN(5, chargeDMember())
-      deletedMembers <- Gen.listOfN(2, chargeDMember(isDeleted = true))
-      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
-    } yield Json.obj(
-      fields = "chargeDDetails" ->
-        Json.obj(
-          fields = "members" -> (members ++ deletedMembers),
-          "totalChargeAmount" -> totalChargeAmount
-        ))
-
-  val chargeDAllDeletedUserAnswersGenerator: Gen[JsObject] =
-    for {
-      members <- Gen.listOfN(5, chargeDMember())
-      deletedMembers <- Gen.listOfN(2, chargeDMember(isDeleted = true))
-    } yield Json.obj(
-      fields = "chargeDDetails" ->
-        Json.obj(
-          fields = "members" -> (members ++ deletedMembers),
-          "totalChargeAmount" -> BigDecimal(0.00)
-        ))
 
   val chargeGUserAnswersGenerator: Gen[JsObject] =
     for {

@@ -54,13 +54,14 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   private val mockDesConnector = mock[DesConnector]
 
-  private val aftReturnTransformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer,
-    new ChargeDTransformer, new ChargeFTransformer, new ChargeGTransformer)
+  private val aftReturnTransformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeCTransformer,
+    new ChargeDTransformer, new ChargeETransformer, new ChargeFTransformer, new ChargeGTransformer)
   private val getDetailsTransformer = new AFTDetailsTransformer(
     new ETMPToUserAnswers.ChargeATransformer,
     new ETMPToUserAnswers.ChargeBTransformer,
     new ETMPToUserAnswers.ChargeETransformer,
-    new ETMPToUserAnswers.ChargeFTransformer)
+    new ETMPToUserAnswers.ChargeFTransformer,
+    new ETMPToUserAnswers.ChargeGTransformer)
 
   private val controller = new AFTController(appConfig, stubControllerComponents(),
     mockDesConnector, aftReturnTransformer, getDetailsTransformer)
@@ -115,7 +116,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         e.getMessage mustBe "Bad Request with missing PSTR"
       }
     }
-
 
     "throw BadRequestException when bad request with INVALID_PSTR returned from Des" in {
       when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(
@@ -222,6 +222,41 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       ScalaFutures.whenReady(result.failed) { e =>
         e mustBe a[Exception]
         e.getMessage mustBe "Generic Exception"
+      }
+    }
+  }
+
+  "getAftVersions" must {
+
+    "return OK with the Seq of version numbers when the details are returned based on pstr and start date" in {
+      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any())).thenReturn(
+        Future.successful(Seq(1)))
+
+      val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.arr(1)
+    }
+
+    "throw BadRequestException when PSTR is not present in the header" in {
+      recoverToExceptionIf[BadRequestException] {
+        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt))
+      } map { response =>
+        response.responseCode mustBe BAD_REQUEST
+        response.message must include("Bad Request with missing PSTR/Quarter Start Date")
+      }
+    }
+
+    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
+      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any())).thenReturn(
+        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+
+      recoverToExceptionIf[Upstream5xxResponse] {
+        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt, "pstr" -> pstr))
+      } map { response =>
+        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+        response.getMessage must include("INTERNAL SERVER ERROR")
+        response.reportAs mustBe INTERNAL_SERVER_ERROR
       }
     }
   }

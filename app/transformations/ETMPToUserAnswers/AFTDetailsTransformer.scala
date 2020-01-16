@@ -25,7 +25,8 @@ class AFTDetailsTransformer @Inject()(
                                        chargeATransformer: ChargeATransformer,
                                        chargeBTransformer: ChargeBTransformer,
                                        chargeETransformer: ChargeETransformer,
-                                       chargeFTransformer: ChargeFTransformer
+                                       chargeFTransformer: ChargeFTransformer,
+                                       chargeGTransformer: ChargeGTransformer
                                      ) {
 
   def transformToUserAnswers: Reads[JsObject] = (
@@ -48,6 +49,7 @@ class AFTDetailsTransformer @Inject()(
       (chargeATransformer.transformToUserAnswers and
         chargeBTransformer.transformToUserAnswers and
         chargeETransformer.transformToUserAnswers and
-        chargeFTransformer.transformToUserAnswers).reduce
+        chargeFTransformer.transformToUserAnswers and
+        chargeGTransformer.transformToUserAnswers).reduce
     )
 }
