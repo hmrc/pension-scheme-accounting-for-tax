@@ -18,13 +18,14 @@ package transformations.ETMPToUserAnswers
 
 import org.scalatest.FreeSpec
 import play.api.libs.json.Json
-import transformations.generators.AFTUserAnswersGenerators
+import transformations.generators.AFTETMPResponseGenerators
 
-class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
 
   private val chargeATransformer = new ChargeATransformer
   private val chargeETransformer = new ChargeETransformer
   private val chargeFTransformer = new ChargeFTransformer
+  private val chargeGTransformer = new ChargeGTransformer
 
   private val userAnswersJson = Json.parse(
     """{
@@ -76,9 +77,25 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   "An AFT Details Transformer" - {
     "must transform from ETMP Get Details API Format to UserAnswers format" in {
-      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeETransformer, chargeFTransformer)
+      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
       val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
       transformedUserAnswersJson mustBe userAnswersJson
+    }
+  }
+
+  "An AFT Details Transformer generated" - {
+    "must transform from ETMP Get Details API Format to UserAnswers format" in {
+      forAll(etmpResponseGenerator) {
+        generatedValues =>
+          val (etmpResponseJson, userAnswersJson) = generatedValues
+          println("\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>1 "+etmpResponseJson)
+          println("\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>2 "+userAnswersJson)
+          val transformer = new AFTDetailsTransformer(chargeATransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+          val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
+
+          println("\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>3 "+transformedUserAnswersJson)
+          transformedUserAnswersJson mustBe userAnswersJson
+      }
     }
   }
 }
