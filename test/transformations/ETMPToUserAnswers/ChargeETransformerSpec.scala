@@ -29,30 +29,6 @@ class ChargeETransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           val (etmpResponseJson, userAnswersJson) = generatedValues
           val transformer = new ChargeETransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-          transformedJson \ "chargeEDetails" \ "members" \ 0 \ "memberDetails" \ "firstName" mustBe
-            etmpResponseJson \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "firstName"
-          transformedJson \ "chargeEDetails" \ "members" \ 0 \ "memberDetails" \ "lastName" mustBe
-            etmpResponseJson \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "lastName"
-          transformedJson \ "chargeEDetails" \ "members" \ 0 \ "chargeDetails" \ "chargeAmount" mustBe
-            etmpResponseJson \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "amountOfCharge"
-          transformedJson \ "chargeEDetails" \ "members" \ 0 \ "chargeDetails" \ "dateNoticeReceived" mustBe
-            etmpResponseJson \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "dateOfNotice"
-          transformedJson \ "chargeEDetails" \ "members" \ 0 \ "chargeDetails" \ "isPaymentMandatory" mustBe
-            JsDefined(JsBoolean(
-              (etmpResponseJson \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "paidUnder237b").get.as[String].equals("Yes")
-            ))
-
-
-          transformedJson \ "chargeEDetails" \ "members" \ 0 \ "annualAllowanceYear" mustBe
-            etmpResponseJson \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "taxYearEnding"
-
-          transformedJson \ "chargeEDetails" \ "totalChargeAmount" mustBe
-            etmpResponseJson \ "chargeTypeEDetails" \ "totalAmount"
-
-          transformedJson \ "chargeEDetails" \ "members" \ 1 \ "memberDetails" \ "firstName" mustBe
-            etmpResponseJson \ "chargeTypeEDetails" \ "memberDetails" \ 1 \ "individualsDetails" \ "firstName"
-
-          (transformedJson \ "chargeEDetails" \ "members").as[Seq[JsObject]].size mustBe 2
           transformedJson mustBe userAnswersJson
 
       }

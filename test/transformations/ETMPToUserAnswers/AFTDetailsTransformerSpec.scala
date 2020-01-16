@@ -88,12 +88,9 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       forAll(etmpResponseGenerator) {
         generatedValues =>
           val (etmpResponseJson, userAnswersJson) = generatedValues
-          println("\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>1 "+etmpResponseJson)
-          println("\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>2 "+userAnswersJson)
           val transformer = new AFTDetailsTransformer(chargeATransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
           val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
 
-          println("\n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>3 "+transformedUserAnswersJson)
           transformedUserAnswersJson mustBe userAnswersJson
       }
     }

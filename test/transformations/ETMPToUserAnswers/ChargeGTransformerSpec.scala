@@ -30,33 +30,7 @@ class ChargeGTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           val transformer = new ChargeGTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
 
-          transformedJson \ "chargeGDetails" \ "members" \ 0 \ "memberDetails" \ "firstName" mustBe
-            etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "firstName"
-          transformedJson \ "chargeGDetails" \ "members" \ 0 \ "memberDetails" \ "lastName" mustBe
-            etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "lastName"
-          transformedJson \ "chargeGDetails" \ "members" \ 0 \ "memberDetails" \ "dob" mustBe
-            etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "dateOfBirth"
-
-          transformedJson \ "chargeGDetails" \ "members" \ 0 \ "chargeDetails" \ "qropsReferenceNumber" mustBe
-            etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "qropsReference"
-
-          transformedJson \ "chargeGDetails" \ "members" \ 0 \ "chargeDetails" \ "qropsTransferDate" mustBe
-            etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "dateOfTransfer"
-
-          transformedJson \ "chargeGDetails" \ "members" \ 0 \ "chargeAmounts" \ "amountTransferred" mustBe
-            etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "amountTransferred"
-
-          transformedJson \ "chargeGDetails" \ "members" \ 0 \ "chargeAmounts" \ "amountTaxDue" mustBe
-            etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "amountOfTaxDeducted"
-
-          transformedJson \ "chargeGDetails" \ "totalChargeAmount" mustBe
-            etmpResponseJson \ "chargeTypeGDetails" \ "totalOTCAmount"
-
-          transformedJson \ "chargeGDetails" \ "members" \ 1 \ "memberDetails" \ "firstName" mustBe
-            etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ 1 \ "individualsDetails" \ "firstName"
-
-          (transformedJson \ "chargeGDetails" \ "members").as[Seq[JsObject]].size mustBe 2
-
+          transformedJson mustBe userAnswersJson
       }
     }
   }
