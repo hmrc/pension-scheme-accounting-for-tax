@@ -24,6 +24,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
 
   private val chargeATransformer = new ChargeATransformer
   private val chargeBTransformer = new ChargeBTransformer
+  private val chargeDTransformer = new ChargeDTransformer
   private val chargeETransformer = new ChargeETransformer
   private val chargeFTransformer = new ChargeFTransformer
   private val chargeGTransformer = new ChargeGTransformer
@@ -46,6 +47,24 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |  "chargeBDetails": {
       |    "numberOfDeceased": 2,
       |    "amountTaxDue": 100.02
+      |  },
+      |  "chargeDDetails": {
+      |    "members": [
+      |      {
+      |        "memberDetails": {
+      |          "firstName": "Joy",
+      |          "lastName": "Kenneth",
+      |          "nino": "AA089000A",
+      |          "isDeleted": false
+      |        },
+      |        "chargeDetails": {
+      |          "dateOfEvent": "2016-02-29",
+      |          "taxAt25Percent": 1.02,
+      |          "taxAt55Percent": 9.02
+      |        }
+      |      }
+      |    ],
+      |    "totalChargeAmount": 2345.02
       |  },
       |  "chargeFDetails": {
       |    "amountTaxDue": 200.02,
@@ -76,18 +95,37 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |      "numberOfMembers": 2,
       |      "totalAmount": 100.02
       |    },
+      |    "chargeTypeDDetails": {
+      |      "amendedVersion": 1,
+      |      "totalAmount": 2345.02,
+      |      "memberDetails": [
+      |        {
+      |          "memberStatus": "New",
+      |          "memberAFTVersion": 1,
+      |          "individualsDetails": {
+      |            "title": "Mr",
+      |            "firstName": "Joy",
+      |            "middleName": "H",
+      |            "lastName": "Kenneth",
+      |            "nino": "AA089000A"
+      |          },
+      |          "dateOfBenefitCrystalizationEvent": "2016-02-29",
+      |          "totalAmtOfTaxDueAtLowerRate": 1.02,
+      |          "totalAmtOfTaxDueAtHigherRate": 9.02
+      |        }
+      |      ]
+      |    },
       |    "chargeTypeFDetails": {
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
       |    }
       |  }
       |}
-      |
       |""".stripMargin)
 
   "An AFT Details Transformer" - {
     "must transform from ETMP Get Details API Format to UserAnswers format" in {
-      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
       val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
       transformedUserAnswersJson mustBe userAnswersJson
     }
@@ -98,7 +136,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       forAll(etmpResponseGenerator) {
         generatedValues =>
           val (etmpResponseJson, userAnswersJson) = generatedValues
-          val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+          val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
           val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
 
           transformedUserAnswersJson mustBe userAnswersJson
