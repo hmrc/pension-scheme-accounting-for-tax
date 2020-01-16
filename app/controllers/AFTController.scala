@@ -20,7 +20,7 @@ import config.AppConfig
 import connectors.DesConnector
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue}
+import play.api.libs.json._
 import play.api.mvc._
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
@@ -74,6 +74,19 @@ class AFTController @Inject()(appConfig: AppConfig,
         case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
       }
     }
+  }
+
+  def getVersions: Action[AnyContent] = Action.async {
+    implicit request =>
+      val pstrOpt = request.headers.get("pstr")
+      val startDateOpt = request.headers.get("startDate")
+
+      (pstrOpt, startDateOpt) match {
+        case (Some(pstr), Some(startDate)) =>
+          desConnector.getAftVersions(pstr, startDate).map(data => Ok(Json.toJson(data)))
+        case _ =>
+          Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
+      }
   }
 
   private def withRequestDetails(request: Request[AnyContent], actionName: String)

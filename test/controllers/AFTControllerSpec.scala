@@ -225,6 +225,41 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
   }
 
+  "getAftVersions" must {
+
+    "return OK with the Seq of version numbers when the details are returned based on pstr and start date" in {
+      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any())).thenReturn(
+        Future.successful(Seq(1)))
+
+      val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.arr(1)
+    }
+
+    "throw BadRequestException when PSTR is not present in the header" in {
+      recoverToExceptionIf[BadRequestException] {
+        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt))
+      } map { response =>
+        response.responseCode mustBe BAD_REQUEST
+        response.message must include("Bad Request with missing PSTR/Quarter Start Date")
+      }
+    }
+
+    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
+      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any())).thenReturn(
+        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+
+      recoverToExceptionIf[Upstream5xxResponse] {
+        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt, "pstr" -> pstr))
+      } map { response =>
+        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+        response.getMessage must include("INTERNAL SERVER ERROR")
+        response.reportAs mustBe INTERNAL_SERVER_ERROR
+      }
+    }
+  }
+
   def errorResponse(code: String): String = {
     Json.stringify(
       Json.obj(

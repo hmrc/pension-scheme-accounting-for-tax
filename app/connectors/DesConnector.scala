@@ -21,8 +21,7 @@ import java.util.UUID.randomUUID
 import com.google.inject.Inject
 import config.AppConfig
 import play.Logger
-import play.api.http.Status._
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -30,22 +29,36 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class DesConnector @Inject()(http: HttpClient, config: AppConfig) extends HttpErrorFunctions {
 
-  private def fileAFTReturnURL(pstr:String):String = config.fileAFTReturnURL.format(pstr)
+  def fileAFTReturn(pstr: String, data: JsValue)(implicit headerCarrier: HeaderCarrier,
+                                                 ec: ExecutionContext): Future[HttpResponse] = {
 
-
-  def fileAFTReturn(pstr:String, data: JsValue)(implicit headerCarrier: HeaderCarrier,
-                                                ec: ExecutionContext):Future[HttpResponse] = {
-    http.POST(fileAFTReturnURL(pstr), data)
+    val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
+    http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly)
   }
 
 
   def getAftDetails(queryParams: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[JsValue] = {
 
-
     val getAftUrl: String = config.getAftDetailsUrl.format(queryParams)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
     http.GET[JsValue](getAftUrl)(implicitly, hc, implicitly)
+  }
+
+  def getAftVersions(pstr: String, startDate: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[Int]] = {
+
+    val getAftVersionUrl: String = config.getAftVersionUrl.format(pstr, startDate)
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
+
+    http.GET[JsValue](getAftVersionUrl)(implicitly, hc, implicitly).map { responseJson =>
+      (responseJson \ 0 \ "reportVersion").validate[Int] match {
+        case JsSuccess(version, _) => Seq(version)
+        case JsError(errors) => throw JsResultException(errors)
+      }
+    }
+  }.recoverWith {
+    case _: NotFoundException => Future.successful(Nil)
   }
 
 
