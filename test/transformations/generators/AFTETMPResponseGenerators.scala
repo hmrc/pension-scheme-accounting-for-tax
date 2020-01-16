@@ -120,7 +120,8 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
         "memberDetails" -> Json.obj(
           fields =  "firstName" -> firstName,
           "lastName" -> lastName,
-          "nino" -> nino
+          "nino" -> nino,
+          "isDeleted" -> false
         ),
         "annualAllowanceYear" -> taxYear,
         "chargeDetails" -> Json.obj(
@@ -194,7 +195,8 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
           fields =  "firstName" -> firstName,
           "lastName" -> lastName,
           "dob" -> dob,
-          "nino" -> nino
+          "nino" -> nino,
+          "isDeleted" -> false
         ),
         "chargeDetails" -> Json.obj(
           "qropsReferenceNumber" -> qropsReferenceNumber,
