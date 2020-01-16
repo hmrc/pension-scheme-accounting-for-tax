@@ -20,26 +20,22 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{__, _}
 
-class ChargeETransformer extends JsonTransformer {
+class ChargeGTransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ 'chargeTypeEDetails).readNullable(__.read(
-      ((__ \ 'chargeEDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
-        (__ \ 'chargeEDetails \ 'totalChargeAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
+    (__ \ 'chargeTypeGDetails).readNullable(__.read(
+      ((__ \ 'chargeGDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
+        (__ \ 'chargeGDetails \ 'totalChargeAmount).json.copyFrom((__ \ 'totalOTCAmount).json.pick)) reduce
     )).map(_.getOrElse(Json.obj()))
 
   def readsMembers: Reads[JsArray] = __.read(Reads.seq(readsMember)).map(JsArray(_))
 
   def readsMember: Reads[JsObject] =
-    (readsMemberDetails and
-      (__ \ 'chargeDetails \ 'chargeAmount).json.copyFrom((__ \ 'amountOfCharge).json.pick) and
-      (__ \ 'chargeDetails \ 'dateNoticeReceived).json.copyFrom((__ \ 'dateOfNotice).json.pick) and
-      getPaidUnder237b and
-      (__ \ 'annualAllowanceYear).json.copyFrom((__ \ 'taxYearEnding).json.pick)).reduce
-
-  def getPaidUnder237b: Reads[JsObject] =
-    (__ \ 'paidUnder237b).read[String].flatMap { paidUnder237b =>
-      (__ \ 'chargeDetails \ 'isPaymentMandatory).json.put(JsBoolean(paidUnder237b.equalsIgnoreCase("Yes")))
-    } orElse doNothing
+    readsMemberDetails and
+      (__ \ 'memberDetails \ 'dob).json.copyFrom((__ \ 'individualsDetails \ 'dateOfBirth).json.pick) and
+      (__ \ 'chargeDetails \ 'qropsReferenceNumber).json.copyFrom((__ \ 'qropsReference).json.pick) and
+        (__ \ 'chargeDetails \ 'qropsTransferDate).json.copyFrom((__ \ 'dateOfTransfer).json.pick) and
+        (__ \ 'chargeAmounts \ 'amountTransferred).json.copyFrom((__ \ 'amountTransferred).json.pick) and
+        (__ \ 'chargeAmounts \ 'amountTaxDue).json.copyFrom((__ \ 'amountOfTaxDeducted).json.pick) reduce
 
 }

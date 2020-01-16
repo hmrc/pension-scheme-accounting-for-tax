@@ -54,13 +54,15 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   private val mockDesConnector = mock[DesConnector]
 
-  private val aftReturnTransformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeETransformer,
-    new ChargeDTransformer, new ChargeFTransformer, new ChargeGTransformer)
+  private val aftReturnTransformer = new AFTReturnTransformer(new ChargeATransformer, new ChargeBTransformer, new ChargeCTransformer,
+    new ChargeDTransformer, new ChargeETransformer, new ChargeFTransformer, new ChargeGTransformer)
   private val getDetailsTransformer = new AFTDetailsTransformer(
     new ETMPToUserAnswers.ChargeATransformer,
+    new ETMPToUserAnswers.ChargeBTransformer,
     new ETMPToUserAnswers.ChargeDTransformer,
     new ETMPToUserAnswers.ChargeETransformer,
-    new ETMPToUserAnswers.ChargeFTransformer)
+    new ETMPToUserAnswers.ChargeFTransformer,
+    new ETMPToUserAnswers.ChargeGTransformer)
 
   private val controller = new AFTController(appConfig, stubControllerComponents(),
     mockDesConnector, aftReturnTransformer, getDetailsTransformer)
@@ -115,7 +117,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         e.getMessage mustBe "Bad Request with missing PSTR"
       }
     }
-
 
     "throw BadRequestException when bad request with INVALID_PSTR returned from Des" in {
       when(mockDesConnector.getAftDetails(Matchers.eq(queryParams))(any(), any())).thenReturn(

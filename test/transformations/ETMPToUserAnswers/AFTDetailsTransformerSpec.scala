@@ -18,14 +18,16 @@ package transformations.ETMPToUserAnswers
 
 import org.scalatest.FreeSpec
 import play.api.libs.json.Json
-import transformations.generators.AFTUserAnswersGenerators
+import transformations.generators.AFTETMPResponseGenerators
 
-class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
 
   private val chargeATransformer = new ChargeATransformer
+  private val chargeBTransformer = new ChargeBTransformer
   private val chargeDTransformer = new ChargeDTransformer
   private val chargeETransformer = new ChargeETransformer
   private val chargeFTransformer = new ChargeFTransformer
+  private val chargeGTransformer = new ChargeGTransformer
 
   private val userAnswersJson = Json.parse(
     """{
@@ -42,13 +44,18 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       |    "totalAmtOfTaxDueAtHigherRate": 200.02,
       |    "totalAmount": 200.02
       |  },
+      |  "chargeBDetails": {
+      |    "numberOfDeceased": 2,
+      |    "amountTaxDue": 100.02
+      |  },
       |  "chargeDDetails": {
       |    "members": [
       |      {
       |        "memberDetails": {
       |          "firstName": "Joy",
       |          "lastName": "Kenneth",
-      |          "nino": "AA089000A"
+      |          "nino": "AA089000A",
+      |          "isDeleted": false
       |        },
       |        "chargeDetails": {
       |          "dateOfEvent": "2016-02-29",
@@ -83,6 +90,11 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       |      "totalAmtOfTaxDueAtHigherRate": 200.02,
       |      "totalAmount": 200.02
       |    },
+      |    "chargeTypeBDetails": {
+      |      "amendedVersion": 1,
+      |      "numberOfMembers": 2,
+      |      "totalAmount": 100.02
+      |    },
       |    "chargeTypeDDetails": {
       |      "amendedVersion": 1,
       |      "totalAmount": 2345.02,
@@ -113,9 +125,22 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   "An AFT Details Transformer" - {
     "must transform from ETMP Get Details API Format to UserAnswers format" in {
-      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeDTransformer, chargeETransformer, chargeFTransformer)
+      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
       val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
       transformedUserAnswersJson mustBe userAnswersJson
+    }
+  }
+
+  "An AFT Details Transformer generated" - {
+    "must transform from ETMP Get Details API Format to UserAnswers format" in {
+      forAll(etmpResponseGenerator) {
+        generatedValues =>
+          val (etmpResponseJson, userAnswersJson) = generatedValues
+          val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+          val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
+
+          transformedUserAnswersJson mustBe userAnswersJson
+      }
     }
   }
 }

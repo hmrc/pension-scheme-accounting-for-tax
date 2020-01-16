@@ -18,18 +18,17 @@ package transformations.ETMPToUserAnswers
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json._
+import play.api.libs.json.{__, _}
 
-import scala.annotation.tailrec
+class ChargeBTransformer {
 
-trait JsonTransformer {
-
-  val doNothing: Reads[JsObject] = __.json.put(Json.obj())
-
-  def readsMemberDetails: Reads[JsObject] =
-    ((__ \ 'memberDetails \ 'firstName).json.copyFrom((__ \ 'individualsDetails \ 'firstName).json.pick) and
-      (__ \ 'memberDetails \ 'lastName).json.copyFrom((__ \ 'individualsDetails \ 'lastName).json.pick) and
-      (__ \ 'memberDetails \ 'nino).json.copyFrom((__ \ 'individualsDetails \ 'nino).json.pick) and
-      (__ \ 'memberDetails \ 'isDeleted).json.put(JsBoolean(false))).reduce
-
+  def transformToUserAnswers: Reads[JsObject] =
+    (__ \ 'chargeTypeBDetails).readNullable {
+      __.read(
+        ((__ \ 'chargeBDetails \ 'numberOfDeceased).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
+          (__ \ 'chargeBDetails \ 'amountTaxDue).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
+      )
+    }.map {
+      _.getOrElse(Json.obj())
+    }
 }
