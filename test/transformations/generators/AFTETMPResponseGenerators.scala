@@ -48,6 +48,17 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
           "totalAmount" -> totalAmount
         ))
 
+  val chargeBETMPGenerator: Gen[JsObject] =
+    for {
+      numberOfMembers <- arbitrary[Int]
+      totalAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      fields = "chargeTypeBDetails" ->
+        Json.obj(
+          fields = "numberOfMembers" -> numberOfMembers,
+          "totalAmount" -> totalAmount
+        ))
+
   val chargeEMember: Gen[JsObject] =
     for {
       firstName <- arbitrary[String]
