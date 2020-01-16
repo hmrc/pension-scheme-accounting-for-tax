@@ -23,10 +23,9 @@ import org.mockito.Matchers.{eq => eqTo, _}
 import org.mockito.Mockito.when
 import org.scalatest.{MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.Configuration
-import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.inject.bind
+import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
-import play.api.mvc.ControllerComponents
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository.DataCacheRepository
@@ -39,18 +38,21 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
   import DataCacheController._
 
   implicit lazy val mat: Materializer = app.materializer
-  private val app = new GuiceApplicationBuilder().configure(conf = "run.mode" -> "Test").build()
-  private val cc = app.injector.instanceOf[ControllerComponents]
-  private val config = app.injector.instanceOf[Configuration]
+  private val app = new GuiceApplicationBuilder()
+    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test").build()
   private val repo = mock[DataCacheRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
 
-  private val controller = new DataCacheController(config, repo, authConnector, cc)
+  private val modules: Seq[GuiceableModule] = Seq(
+    bind[AuthConnector].toInstance(authConnector),
+    bind[DataCacheRepository].toInstance(repo)
+  )
 
   "DataCacheController" when {
     "calling get" must {
       "return OK with the data" in {
-        running(app) {
+        running(_.overrides(modules: _*)) { app =>
+          val controller = app.injector.instanceOf[DataCacheController]
           when(repo.get(eqTo("internalId"))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
@@ -61,7 +63,8 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       }
 
       "return NOT FOUND when the data doesn't exist" in {
-        running(app) {
+        running(_.overrides(modules: _*)) { app =>
+          val controller = app.injector.instanceOf[DataCacheController]
           when(repo.get(eqTo("internalId"))(any())) thenReturn Future.successful(None)
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
@@ -71,7 +74,8 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       }
 
       "throw an exception when the repository call fails" in {
-        running(app) {
+        running(_.overrides(modules: _*)) { app =>
+          val controller = app.injector.instanceOf[DataCacheController]
           when(repo.get(eqTo("internalId"))(any())) thenReturn Future.failed(new Exception())
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
@@ -81,7 +85,8 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       }
 
       "throw an exception when the call is not authorised" in {
-        running(app) {
+        running(_.overrides(modules: _*)) { app =>
+          val controller = app.injector.instanceOf[DataCacheController]
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
           val result = controller.get(FakeRequest())
@@ -93,7 +98,8 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
     "calling save" must {
 
       "return OK when the data is saved successfully" in {
-        running(app) {
+        running(_.overrides(modules: _*)) { app =>
+          val controller = app.injector.instanceOf[DataCacheController]
           when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
@@ -103,7 +109,8 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        running(app) {
+        running(_.overrides(modules: _*)) { app =>
+          val controller = app.injector.instanceOf[DataCacheController]
           when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
@@ -113,7 +120,8 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       }
 
       "throw an exception when the call is not authorised" in {
-        running(app) {
+        running(_.overrides(modules: _*)) { app =>
+          val controller = app.injector.instanceOf[DataCacheController]
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
           val result = controller.save(FakeRequest("POST", "/").withJsonBody(Json.obj(fields = "value" -> "data")))
@@ -124,7 +132,8 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
 
     "calling remove" must {
       "return OK when the data is removed successfully" in {
-        running(app) {
+        running(_.overrides(modules: _*)) { app =>
+          val controller = app.injector.instanceOf[DataCacheController]
           when(repo.remove(eqTo("internalId"))(any())) thenReturn Future.successful(true)
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
@@ -134,7 +143,8 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       }
 
       "throw an exception when the call is not authorised" in {
-        running(app) {
+        running(_.overrides(modules: _*)) { app =>
+          val controller = app.injector.instanceOf[DataCacheController]
           when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
           val result = controller.remove(FakeRequest())

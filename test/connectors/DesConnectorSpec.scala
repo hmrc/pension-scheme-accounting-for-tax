@@ -24,7 +24,7 @@ import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, NotFoundException, 
 import utils.{JsonFileReader, WireMockHelper}
 
 class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with JsonFileReader
-  with EitherValues{
+  with EitherValues {
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
 
   override protected def portConfigKey: String = "microservice.services.des-hod.port"
@@ -103,51 +103,37 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
 
   "getAftDetails" must {
     "return user answer json" in {
-    val desResponse: JsValue = readJsonFromFile("/validGetAftDetailsResponse.json")
-    server.stubFor(
-      get(urlEqualTo(getAftUrl))
-        .willReturn(
-          ok
-            .withHeader("Content-Type", "application/json")
-            .withBody(desResponse.toString())
-        )
-    )
-    connector.getAftDetails(pstr).map { response =>
-      response mustBe desResponse
+      val desResponse: JsValue = readJsonFromFile("/validGetAftDetailsResponse.json")
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(desResponse.toString())
+          )
+      )
+      connector.getAftDetails(pstr).map { response =>
+        response mustBe desResponse
+      }
     }
-  }
 
-  "return a BadRequestException for a 400 INVALID_PSTR response" in {
-    server.stubFor(
-      get(urlEqualTo(getAftUrl))
-        .willReturn(
-          badRequest
-            .withHeader("Content-Type", "application/json")
-            .withBody(errorResponse("INVALID_PSTR"))
-        )
-    )
+    "return a BadRequestException for a 400 INVALID_PSTR response" in {
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            badRequest
+              .withHeader("Content-Type", "application/json")
+              .withBody(errorResponse("INVALID_PSTR"))
+          )
+      )
 
-    recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
-      errorResponse.responseCode mustEqual BAD_REQUEST
-      errorResponse.message must include("INVALID_PSTR")
+      recoverToExceptionIf[BadRequestException] {
+        connector.getAftDetails(pstr)
+      } map { errorResponse =>
+        errorResponse.responseCode mustEqual BAD_REQUEST
+        errorResponse.message must include("INVALID_PSTR")
+      }
     }
-  }
-
-  "return bad request - 400 if body contains INVALID_FORMBUNDLE_NUMBER" in {
-    server.stubFor(
-      get(urlEqualTo(getAftUrl))
-        .willReturn(
-          badRequest
-            .withHeader("Content-Type", "application/json")
-            .withBody(errorResponse("INVALID_FORMBUNDLE_NUMBER"))
-        )
-    )
-
-    recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
-      errorResponse.responseCode mustEqual BAD_REQUEST
-      errorResponse.message must include("INVALID_FORMBUNDLE_NUMBER")
-    }
-  }
 
     "return bad request - 400 if body contains INVALID_START_DATE" in {
       server.stubFor(
@@ -159,92 +145,82 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
 
-      recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
+      recoverToExceptionIf[BadRequestException] {
+        connector.getAftDetails(pstr)
+      } map { errorResponse =>
         errorResponse.responseCode mustEqual BAD_REQUEST
         errorResponse.message must include("INVALID_START_DATE")
       }
     }
 
-  "return bad request - 400 if body contains INVALID_AFT_VERSION" in {
-    server.stubFor(
-      get(urlEqualTo(getAftUrl))
-        .willReturn(
-          badRequest
-            .withHeader("Content-Type", "application/json")
-            .withBody(errorResponse("INVALID_AFT_VERSION"))
-        )
-    )
+    "return bad request - 400 if body contains INVALID_AFT_VERSION" in {
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            badRequest
+              .withHeader("Content-Type", "application/json")
+              .withBody(errorResponse("INVALID_AFT_VERSION"))
+          )
+      )
 
-    recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
-      errorResponse.responseCode mustEqual BAD_REQUEST
-      errorResponse.message must include("INVALID_AFT_VERSION")
+      recoverToExceptionIf[BadRequestException] {
+        connector.getAftDetails(pstr)
+      } map { errorResponse =>
+        errorResponse.responseCode mustEqual BAD_REQUEST
+        errorResponse.message must include("INVALID_AFT_VERSION")
+      }
     }
-  }
 
-  "return bad request - 400 if body contains INVALID_CORRELATIONID and log the event as warn" in {
-    server.stubFor(
-      get(urlEqualTo(getAftUrl))
-        .willReturn(
-          badRequest
-            .withHeader("Content-Type", "application/json")
-            .withBody(errorResponse("INVALID_CORRELATIONID"))
-        )
-    )
+    "return Not Found - 404" in {
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            notFound
+              .withBody(errorResponse("NOT_FOUND"))
+          )
+      )
 
-    recoverToExceptionIf[BadRequestException] {connector.getAftDetails(pstr)} map {errorResponse =>
-      errorResponse.responseCode mustEqual BAD_REQUEST
-      errorResponse.message must include("INVALID_CORRELATIONID")
+      recoverToExceptionIf[NotFoundException] {
+        connector.getAftDetails(pstr)
+      } map { errorResponse =>
+        errorResponse.responseCode mustEqual NOT_FOUND
+        errorResponse.message must include("NOT_FOUND")
+      }
     }
-  }
 
-  "return Not Found - 404" in {
-    server.stubFor(
-      get(urlEqualTo(getAftUrl))
-        .willReturn(
-          notFound
-            .withBody(errorResponse("NOT_FOUND"))
-        )
-    )
+    "throw Upstream4XX for server unavailable - 403" in {
 
-    recoverToExceptionIf[NotFoundException] {connector.getAftDetails(pstr)} map {errorResponse =>
-      errorResponse.responseCode mustEqual NOT_FOUND
-      errorResponse.message must include("NOT_FOUND")
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            forbidden
+              .withBody(errorResponse("FORBIDDEN"))
+          )
+      )
+      recoverToExceptionIf[Upstream4xxResponse](connector.getAftDetails(pstr)) map {
+        ex =>
+          ex.upstreamResponseCode mustBe FORBIDDEN
+          ex.message must include("FORBIDDEN")
+      }
     }
-  }
 
-  "throw Upstream4XX for server unavailable - 403" in {
+    "throw Upstream5XX for internal server error - 500 and log the event as error" in {
 
-    server.stubFor(
-      get(urlEqualTo(getAftUrl))
-        .willReturn(
-          forbidden
-            .withBody(errorResponse("FORBIDDEN"))
-        )
-    )
-    recoverToExceptionIf[Upstream4xxResponse](connector.getAftDetails(pstr)) map {
-      ex =>
-        ex.upstreamResponseCode mustBe FORBIDDEN
-        ex.message must include("FORBIDDEN")
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            serverError
+              .withBody(errorResponse("SERVER_ERROR"))
+          )
+      )
+
+      recoverToExceptionIf[Upstream5xxResponse](connector.getAftDetails(pstr)) map {
+        ex =>
+          ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+          ex.message must include("SERVER_ERROR")
+          ex.reportAs mustBe BAD_GATEWAY
+      }
     }
-  }
-
-  "throw Upstream5XX for internal server error - 500 and log the event as error" in {
-
-    server.stubFor(
-      get(urlEqualTo(getAftUrl))
-        .willReturn(
-          serverError
-            .withBody(errorResponse("SERVER_ERROR"))
-        )
-    )
-
-    recoverToExceptionIf[Upstream5xxResponse](connector.getAftDetails(pstr)) map {
-      ex =>
-        ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
-        ex.message must include("SERVER_ERROR")
-        ex.reportAs mustBe BAD_GATEWAY
-    }
-  }
   }
 
   "getAftVersions" must {
@@ -277,7 +253,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
 
-      recoverToExceptionIf[BadRequestException] {connector.getAftVersions(pstr, startDt)} map {errorResponse =>
+      recoverToExceptionIf[BadRequestException] {
+        connector.getAftVersions(pstr, startDt)
+      } map { errorResponse =>
         errorResponse.responseCode mustEqual BAD_REQUEST
         errorResponse.message must include("INVALID_PSTR")
       }
