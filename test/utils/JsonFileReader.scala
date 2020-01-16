@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-package transformations.helpers
+package utils
 
-import play.api.libs.json.{JsObject, Json, Reads, __}
+import play.api.libs.json.{JsValue, Json}
 
-object JsonTransformer{
-  val doNothing: Reads[JsObject] = __.json.put(Json.obj())
+import scala.io.Source
+
+trait JsonFileReader {
+
+  def readJsonFromFile(filePath: String): JsValue = {
+    val path = Source.fromURL(getClass.getResource(filePath)).mkString
+    Json.parse(path)
+  }
+
 }

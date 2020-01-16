@@ -20,8 +20,9 @@ import config.AppConfig
 import connectors.DesConnector
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue}
+import play.api.libs.json._
 import play.api.mvc._
+import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.http.{Request => _, _}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
@@ -32,8 +33,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class AFTController @Inject()(appConfig: AppConfig,
                               cc: ControllerComponents,
                               desConnector: DesConnector,
-                              aftReturnTransformer: AFTReturnTransformer
-                                 )(implicit ec: ExecutionContext)
+                              aftReturnTransformer: AFTReturnTransformer,
+                              aftDetailsTransformer: AFTDetailsTransformer
+                             )(implicit ec: ExecutionContext)
   extends BackendController(cc) with HttpErrorFunctions with Results {
 
   def fileReturn(): Action[AnyContent] = Action.async { implicit request =>
@@ -51,6 +53,40 @@ class AFTController @Inject()(appConfig: AppConfig,
           throw JsResultException(errors)
       }
     }
+  }
+
+  def getDetails: Action[AnyContent] = Action.async {
+    implicit request => {
+
+      val startDate = request.headers.get("startDate")
+      val aftVersion = request.headers.get("aftVersion")
+      val pstrOpt = request.headers.get("pstr")
+
+      (pstrOpt, startDate, aftVersion) match {
+        case (Some(pstr), Some(startDt), Some(aftVer)) =>
+          val queryParams = s"$pstr?startDate=$startDt&aftVersion=$aftVer"
+          desConnector.getAftDetails(queryParams).map { etmpJson =>
+            etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
+              case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
+              case JsError(errors) => throw JsResultException(errors)
+            }
+          }
+        case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
+      }
+    }
+  }
+
+  def getVersions: Action[AnyContent] = Action.async {
+    implicit request =>
+      val pstrOpt = request.headers.get("pstr")
+      val startDateOpt = request.headers.get("startDate")
+
+      (pstrOpt, startDateOpt) match {
+        case (Some(pstr), Some(startDate)) =>
+          desConnector.getAftVersions(pstr, startDate).map(data => Ok(Json.toJson(data)))
+        case _ =>
+          Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
+      }
   }
 
   private def withRequestDetails(request: Request[AnyContent], actionName: String)

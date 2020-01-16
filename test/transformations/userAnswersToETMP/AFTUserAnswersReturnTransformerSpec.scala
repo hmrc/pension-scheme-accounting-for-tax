@@ -18,20 +18,22 @@ package transformations.userAnswersToETMP
 
 import org.scalatest.FreeSpec
 import play.api.libs.json.Json
-import transformations.generators.AFTGenerators
+import transformations.generators.AFTUserAnswersGenerators
 
-class AFTReturnTransformerSpec extends FreeSpec with AFTGenerators {
-  private val chargeFTransformer = new ChargeFTransformer
+class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+
   private val chargeATransformer = new ChargeATransformer
   private val chargeBTransformer = new ChargeBTransformer
   private val chargeCTransformer = new ChargeCTransformer
-  private val chargeETransformer = new ChargeETransformer
   private val chargeDTransformer = new ChargeDTransformer
+  private val chargeETransformer = new ChargeETransformer
+  private val chargeFTransformer = new ChargeFTransformer
+  private val chargeGTransformer = new ChargeGTransformer
 
   "An AFTReturn Transformer" - {
     "must transform from UserAnswers to ETMP AFT Return format" in {
       val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
-        chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer)
+        chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
       val transformedEtmpJson = userAnswersRequestJson.transform(transformer.transformToETMPFormat).asOpt.value
       transformedEtmpJson mustBe etmpResponseJson
     }

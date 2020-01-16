@@ -29,4 +29,9 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
 
   private val baseURL: String = servicesConfig.baseUrl(serviceName = "des-hod")
   val fileAFTReturnURL: String = s"$baseURL${config.get[String](path = "serviceUrls.file-aft-return")}"
+  lazy val desEnvironment: String = runModeConfiguration.getOptional[String]("microservice.services.des-hod.env").getOrElse("local")
+  lazy val authorization: String = "Bearer " + runModeConfiguration.getOptional[String]("microservice.services.des-hod.authorizationToken").getOrElse("local")
+
+  def getAftDetailsUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-details")}"
+  def getAftVersionUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-version")}"
 }

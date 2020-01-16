@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package transformations.userAnswersToETMP
+package transformations.ETMPToUserAnswers
 
 import org.scalatest.FreeSpec
-import transformations.generators.AFTUserAnswersGenerators
+import transformations.generators.AFTETMPResponseGenerators
 
-class ChargeFTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+class ChargeFTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
 
   "A Charge F Transformer" - {
-    "must transform ChargeFDetails from UserAnswers to ETMP ChargeFDetails" in {
+    "must transform ChargeFDetails from ETMP ChargeTypeFDetails to UserAnswers" in {
       forAll(chargeFUserAnswersGenerator) {
-        userAnswersJson =>
+        etmpResponseJson =>
           val transformer = new ChargeFTransformer
-          val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
-          transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount" mustBe userAnswersJson \ "chargeFDetails" \ "amountTaxDue"
-          transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn" mustBe userAnswersJson \ "chargeFDetails" \ "deRegistrationDate"
+          val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
+          transformedJson \ "chargeFDetails" \ "amountTaxDue" mustBe etmpResponseJson  \ "chargeTypeFDetails" \ "totalAmount"
+          transformedJson \ "chargeFDetails" \ "deRegistrationDate" mustBe etmpResponseJson \ "chargeTypeFDetails" \ "dateRegiWithdrawn"
+
       }
     }
   }

@@ -1,0 +1,204 @@
+{
+  "processingDate": "2020-12-17T09:32:47Z",
+  "schemeDetails": {
+    "pstr": "12345678AB",
+    "schemeName": "PSTR Scheme "
+  },
+  "aftDetails": {
+    "aftVersion": 1,
+    "aftStatus": "Compiled",
+    "quarterStartDate": "2020-02-29",
+    "quarterEndDate": "2020-05-29",
+    "receiptDate": "2020-12-17T09:30:47Z",
+    "aftReturnType": "AFT Charge"
+  },
+  "chargeDetails": {
+    "chargeTypeADetails": {
+      "amendedVersion": 1,
+      "numberOfMembers": 2,
+      "totalAmtOfTaxDueAtLowerRate": 2000.02,
+      "totalAmtOfTaxDueAtHigherRate": 2500.02,
+      "totalAmount": 4500.04
+    },
+    "chargeTypeBDetails": {
+      "amendedVersion": 1,
+      "numberOfMembers": 2,
+      "totalAmount": 100.02
+    },
+    "chargeTypeCDetails": {
+      "amendedVersion": 1,
+      "totalAmount": 90.02,
+      "memberDetails": [{
+        "memberStatus": "New",
+        "memberAFTVersion": 1,
+        "memberTypeDetails": {
+          "memberType": "Individual",
+          "individualDetails": {
+            "title": "Mr",
+            "firstName": "Ray",
+            "middleName": "S",
+            "lastName": "Golding",
+            "nino": "AA000020A"
+          }
+        },
+        "correspondenceAddressDetails": {
+          "nonUKAddress": "False",
+          "addressLine1": "Plaza 2 ",
+          "addressLine2": "Ironmasters Way",
+          "addressLine3": "Telford",
+          "addressLine4": "Shropshire",
+          "countryCode": "GB",
+          "postalCode": "TF3 4NT"
+        },
+        "dateOfPayment": "2016-06-29",
+        "totalAmountOfTaxDue": 2300.02
+      },
+        {
+          "memberStatus": "New",
+          "memberAFTVersion": 1,
+          "memberTypeDetails": {
+            "memberType": "Individual",
+            "individualDetails": {
+              "title": "Mr",
+              "firstName": "Craig",
+              "middleName": "A",
+              "lastName": "McMillan",
+              "nino": "AA000620A"
+            }
+          },
+          "correspondenceAddressDetails": {
+            "nonUKAddress": "False",
+            "addressLine1": "45 UpperMarshall Street",
+            "addressLine2": "Post Box APTS",
+            "addressLine3": "Birmingham",
+            "addressLine4": "Warwickshire",
+            "countryCode": "GB",
+            "postalCode": "B1 1LA"
+          },
+          "dateOfPayment": "2016-02-29",
+          "totalAmountOfTaxDue": 12340.02
+        }
+      ]
+    },
+    "chargeTypeDDetails": {
+      "amendedVersion": 1,
+      "totalAmount": 2345.02,
+      "memberDetails": [{
+        "memberStatus": "New",
+        "memberAFTVersion": 1,
+        "individualsDetails": {
+          "title": "Mr",
+          "firstName": "Joy",
+          "middleName": "H",
+          "lastName": "Kenneth",
+          "nino": "AA089000A"
+        },
+        "dateOfBenefitCrystalizationEvent": "2016-02-29",
+        "totalAmtOfTaxDueAtLowerRate": 1.02,
+        "totalAmtOfTaxDueAtHigherRate": 9.02
+      },
+        {
+          "memberStatus": "New",
+          "memberAFTVersion": 1,
+          "individualsDetails": {
+            "title": "Mr",
+            "firstName": "Brian",
+            "middleName": "C",
+            "lastName": "Lara",
+            "nino": "AA100000A"
+          },
+          "dateOfBenefitCrystalizationEvent": "2016-02-29",
+          "totalAmtOfTaxDueAtLowerRate": 3.02,
+          "totalAmtOfTaxDueAtHigherRate": 10.02
+        }
+      ]
+    },
+    "chargeTypeEDetails": {
+      "amendedVersion": 1,
+      "totalAmount": 1000.02,
+      "memberDetails": [{
+        "memberStatus": "New",
+        "memberAFTVersion": 1,
+        "individualsDetails": {
+          "title": "Mr",
+          "firstName": "Ant",
+          "middleName": "M",
+          "lastName": "Woakes",
+          "nino": "AA001230A"
+        },
+        "amountOfCharge": 110.02,
+        "taxYearEnding": "2016",
+        "dateOfNotice": "2016-02-29",
+        "paidUnder237b": "Yes"
+      },
+        {
+          "memberStatus": "New",
+          "memberAFTVersion": 1,
+          "individualsDetails": {
+            "title": "Mr",
+            "firstName": "Victor",
+            "middleName": "D",
+            "lastName": "Brown",
+            "nino": "AA034000A"
+          },
+          "amountOfCharge": 1230.02,
+          "taxYearEnding": "2016",
+          "dateOfNotice": "2016-02-29",
+          "paidUnder237b": "Yes"
+        }
+      ]
+    },
+    "chargeTypeFDetails": {
+      "amendedVersion": 1,
+      "totalAmount": 1000.02,
+      "dateRegiWithdrawn": "2016-02-29"
+    },
+    "chargeTypeGDetails": {
+      "amendedVersion": 1,
+      "totalOTCAmount": 1230.02,
+      "memberDetails": [{
+        "memberStatus": "New",
+        "memberAFTVersion": 1,
+        "individualsDetails": {
+          "title": "Mr",
+          "firstName": "Craig",
+          "middleName": "H",
+          "lastName": "White",
+          "dateOfBirth": "1980-02-29",
+          "nino": "AA012000A"
+        },
+        "qropsReference": "Q300000",
+        "amountTransferred": 45670.02,
+        "dateOfTransfer": "2016-02-29",
+        "amountOfTaxDeducted": 4560.02
+      },
+        {
+          "memberStatus": "New",
+          "memberAFTVersion": 1,
+          "individualsDetails": {
+            "title": "Mr",
+            "firstName": "James",
+            "middleName": "C",
+            "lastName": "Reynolds",
+            "dateOfBirth": "1960-02-29",
+            "nino": "AA200000A"
+          },
+          "qropsReference": "Q000020",
+          "amountTransferred": 24560.02,
+          "dateOfTransfer": "2015-02-19",
+          "amountOfTaxDeducted": 2450.02
+        }
+      ]
+    }
+  },
+  "aftDeclarationDetails": {
+    "submittedBy": "PSP",
+    "submitterId": "10000240",
+    "psaId": "A0003450",
+    "submitterName": "Martin Brookes",
+    "pspDeclarationDetails": {
+      "pspDeclaration1": true,
+      "pspDeclaration2": true
+    }
+  }
+}
