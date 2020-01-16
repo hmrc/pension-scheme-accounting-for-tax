@@ -16,21 +16,19 @@
 
 package transformations.ETMPToUserAnswers
 
-import org.scalatest.FreeSpec
-import transformations.generators.AFTETMPResponseGenerators
+import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json.{__, _}
 
-class ChargeATransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
+class ChargeBTransformer {
 
-  "A Charge A Transformer" - {
-    "must transform ChargeADetails from ETMP ChargeTypeADetails to UserAnswers" in {
-      forAll(chargeAETMPGenerator) {
-        generatedValues =>
-          val (etmpResponseJson, userAnswersJson) = generatedValues
-          val transformer = new ChargeATransformer
-          val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-          transformedJson mustBe userAnswersJson
-      }
+  def transformToUserAnswers: Reads[JsObject] =
+    (__ \ 'chargeTypeBDetails).readNullable {
+      __.read(
+        ((__ \ 'chargeBDetails \ 'numberOfDeceased).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
+          (__ \ 'chargeBDetails \ 'amountTaxDue).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
+      )
+    }.map {
+      _.getOrElse(Json.obj())
     }
-  }
-
 }
