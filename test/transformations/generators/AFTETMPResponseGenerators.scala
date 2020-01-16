@@ -72,7 +72,7 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
       )
     )
 
-  val chargeAUserAnswersGenerator: Gen[(JsObject, JsObject)] =
+  val chargeAETMPGenerator: Gen[(JsObject, JsObject)] =
     for {
       numberOfMembers <- arbitrary[Int]
       totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
@@ -143,7 +143,7 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
 
       ))
 
-  val chargeEUserAnswersGenerator: Gen[(JsObject, JsObject)] =
+  val chargeEETMPGenerator: Gen[(JsObject, JsObject)] =
     for {
       member1 <- chargeEMember
       member2 <- chargeEMember
@@ -161,7 +161,7 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
             "totalChargeAmount" -> totalAmount
           )))
 
-  val chargeFUserAnswersGenerator: Gen[(JsObject, JsObject)] =
+  val chargeFETMPGenerator: Gen[(JsObject, JsObject)] =
     for {
       amountTaxDue <- arbitrary[BigDecimal]
       deRegistrationDate <- dateGenerator
@@ -219,7 +219,7 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
         )
       ))
 
-  val chargeGUserAnswersGenerator: Gen[(JsObject, JsObject)] =
+  val chargeGETMPGenerator: Gen[(JsObject, JsObject)] =
     for {
       member1 <- chargeGMember
       member2 <- chargeGMember
@@ -244,10 +244,11 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
       processingDate <- arbitrary[String]
       schemeDetails <- schemeDetailsGenerator
       aftDetails <- aftDetailsGenerator
-      chargeADetails <- chargeAUserAnswersGenerator
-      chargeEDetails <- chargeEUserAnswersGenerator
-      chargeFDetails <- chargeFUserAnswersGenerator
-      chargeGDetails <- chargeGUserAnswersGenerator
+      chargeADetails <- chargeAETMPGenerator
+      chargeBDetails <- chargeBETMPGenerator
+      chargeEDetails <- chargeEETMPGenerator
+      chargeFDetails <- chargeFETMPGenerator
+      chargeGDetails <- chargeGETMPGenerator
     } yield (
       Json.obj(
         "processingDate" -> processingDate,

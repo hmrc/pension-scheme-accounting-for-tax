@@ -24,7 +24,7 @@ class ChargeGTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
 
   "A Charge G Transformer" - {
     "must transform ChargeGDetails from ETMP ChargeGDetails to UserAnswers" in {
-      forAll(chargeGUserAnswersGenerator) {
+      forAll(chargeGETMPGenerator) {
         generatedValues =>
           val (etmpResponseJson, userAnswersJson) = generatedValues
           val transformer = new ChargeGTransformer
