@@ -23,6 +23,7 @@ import play.api.libs.json.{JsObject, Reads, __}
 
 class AFTDetailsTransformer @Inject()(
                                        chargeATransformer: ChargeATransformer,
+                                       chargeDTransformer: ChargeDTransformer,
                                        chargeETransformer: ChargeETransformer,
                                        chargeFTransformer: ChargeFTransformer
                                      ) {
@@ -44,7 +45,9 @@ class AFTDetailsTransformer @Inject()(
 
   private def transformChargeDetails: Reads[JsObject] =
     (__ \ 'chargeDetails).read(
-      chargeATransformer.transformToUserAnswers and
-      chargeETransformer.transformToUserAnswers and
-      chargeFTransformer.transformToUserAnswers reduce)
+      (chargeATransformer.transformToUserAnswers and
+        chargeDTransformer.transformToUserAnswers and
+        chargeETransformer.transformToUserAnswers and
+        chargeFTransformer.transformToUserAnswers).reduce
+    )
 }

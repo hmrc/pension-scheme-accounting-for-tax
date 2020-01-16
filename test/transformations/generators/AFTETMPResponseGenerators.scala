@@ -33,7 +33,19 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
     year <- Gen.choose(1990, 2000)
   } yield LocalDate.of(year, month, day)
 
-  val chargeAUserAnswersGenerator: Gen[JsObject] =
+  val individualGen: Gen[JsObject] = for {
+    firstName <- arbitrary[String]
+    lastName <- arbitrary[String]
+    nino <- ninoGen
+  } yield {
+    Json.obj(
+      fields = "firstName" -> firstName,
+      "lastName" -> lastName,
+      "nino" -> nino
+    )
+  }
+
+  val chargeAETMPGenerator: Gen[JsObject] =
     for {
       numberOfMembers <- arbitrary[Int]
       totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
@@ -48,32 +60,63 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
           "totalAmount" -> totalAmount
         ))
 
+  val chargeBETMPGenerator: Gen[JsObject] =
+    for {
+      numberOfMembers <- arbitrary[Int]
+      totalAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      fields = "chargeTypeBDetails" ->
+        Json.obj(
+          fields = "numberOfMembers" -> numberOfMembers,
+          "totalAmount" -> totalAmount
+        ))
+
+  val chargeDMember: Gen[JsObject] =
+    for {
+      individual <- individualGen
+      dateOfBenefitCrystalizationEvent <- dateGenerator
+      totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
+      totalAmtOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
+    } yield {
+      Json.obj(
+        "individualsDetails" -> individual,
+        "dateOfBenefitCrystalizationEvent" -> dateOfBenefitCrystalizationEvent,
+        "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
+        "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate
+      )
+    }
+
+  val chargeDETMPGenerator: Gen[JsObject] =
+    for {
+      members <- Gen.listOfN(2, chargeDMember)
+      totalAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      fields = "chargeTypeDDetails" ->
+        Json.obj(
+          fields = "memberDetails" -> members,
+          "totalAmount" -> totalAmount
+        ))
+
   val chargeEMember: Gen[JsObject] =
     for {
-      firstName <- arbitrary[String]
-      lastName <- arbitrary[String]
-      nino <- ninoGen
+      individual <- individualGen
       chargeAmount <- arbitrary[BigDecimal]
       date <- dateGenerator
       isMandatory <- Gen.oneOf("Yes", "No")
       taxYear <- Gen.choose(1990, Year.now.getValue)
     } yield Json.obj(
-      "individualsDetails" -> Json.obj(
-        fields =  "firstName" -> firstName,
-        "lastName" -> lastName,
-        "nino" -> nino
-      ),
+      "individualsDetails" -> individual,
       "taxYearEnding" -> taxYear,
       "amountOfCharge" -> chargeAmount,
-        "dateOfNotice" -> date,
-        "paidUnder237b" -> isMandatory
+      "dateOfNotice" -> date,
+      "paidUnder237b" -> isMandatory
 
     )
 
-  val chargeEUserAnswersGenerator: Gen[JsObject] =
+  val chargeEETMPGenerator: Gen[JsObject] =
     for {
       members <- Gen.listOfN(2, chargeEMember)
-      totalAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      totalAmount <- arbitrary[BigDecimal] retryUntil (_ > 0)
     } yield Json.obj(
       fields = "chargeTypeEDetails" ->
         Json.obj(
@@ -81,7 +124,7 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
           "totalAmount" -> totalAmount
         ))
 
-  val chargeFUserAnswersGenerator: Gen[JsObject] =
+  val chargeFETMPGenerator: Gen[JsObject] =
     for {
       amountTaxDue <- arbitrary[BigDecimal]
       deRegistrationDate <- dateGenerator

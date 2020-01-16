@@ -23,6 +23,7 @@ import transformations.generators.AFTUserAnswersGenerators
 class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   private val chargeATransformer = new ChargeATransformer
+  private val chargeDTransformer = new ChargeDTransformer
   private val chargeETransformer = new ChargeETransformer
   private val chargeFTransformer = new ChargeFTransformer
 
@@ -32,15 +33,32 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       |  "pstr": "1234",
       |  "schemeName": "Test Scheme",
       |  "quarter": {
-      |       "startDate": "2019-01-01",
-      |       "endDate": "2019-03-31"
+      |    "startDate": "2019-01-01",
+      |    "endDate": "2019-03-31"
       |  },
       |  "chargeADetails": {
-      |      "numberOfMembers": 2,
-      |      "totalAmtOfTaxDueAtLowerRate": 200.02,
-      |      "totalAmtOfTaxDueAtHigherRate": 200.02,
-      |      "totalAmount": 200.02
-      |    },
+      |    "numberOfMembers": 2,
+      |    "totalAmtOfTaxDueAtLowerRate": 200.02,
+      |    "totalAmtOfTaxDueAtHigherRate": 200.02,
+      |    "totalAmount": 200.02
+      |  },
+      |  "chargeDDetails": {
+      |    "members": [
+      |      {
+      |        "memberDetails": {
+      |          "firstName": "Joy",
+      |          "lastName": "Kenneth",
+      |          "nino": "AA089000A"
+      |        },
+      |        "chargeDetails": {
+      |          "dateOfEvent": "2016-02-29",
+      |          "taxAt25Percent": 1.02,
+      |          "taxAt55Percent": 9.02
+      |        }
+      |      }
+      |    ],
+      |    "totalChargeAmount": 2345.02
+      |  },
       |  "chargeFDetails": {
       |    "amountTaxDue": 200.02,
       |    "deRegistrationDate": "1980-02-29"
@@ -54,29 +72,48 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       |    "quarterStartDate": "2019-01-01",
       |    "quarterEndDate": "2019-03-31"
       |  },
-      |    "schemeDetails": {
+      |  "schemeDetails": {
       |    "schemeName": "Test Scheme",
       |    "pstr": "1234"
       |  },
       |  "chargeDetails": {
-      |       "chargeTypeADetails": {
-      |         "numberOfMembers": 2,
-      |         "totalAmtOfTaxDueAtLowerRate": 200.02,
-      |         "totalAmtOfTaxDueAtHigherRate": 200.02,
-      |         "totalAmount": 200.02
-      |       },
-      |       "chargeTypeFDetails": {
-      |         "totalAmount": 200.02,
-      |         "dateRegiWithdrawn": "1980-02-29"
-      |       }
-      |   }
+      |    "chargeTypeADetails": {
+      |      "numberOfMembers": 2,
+      |      "totalAmtOfTaxDueAtLowerRate": 200.02,
+      |      "totalAmtOfTaxDueAtHigherRate": 200.02,
+      |      "totalAmount": 200.02
+      |    },
+      |    "chargeTypeDDetails": {
+      |      "amendedVersion": 1,
+      |      "totalAmount": 2345.02,
+      |      "memberDetails": [
+      |        {
+      |          "memberStatus": "New",
+      |          "memberAFTVersion": 1,
+      |          "individualsDetails": {
+      |            "title": "Mr",
+      |            "firstName": "Joy",
+      |            "middleName": "H",
+      |            "lastName": "Kenneth",
+      |            "nino": "AA089000A"
+      |          },
+      |          "dateOfBenefitCrystalizationEvent": "2016-02-29",
+      |          "totalAmtOfTaxDueAtLowerRate": 1.02,
+      |          "totalAmtOfTaxDueAtHigherRate": 9.02
+      |        }
+      |      ]
+      |    },
+      |    "chargeTypeFDetails": {
+      |      "totalAmount": 200.02,
+      |      "dateRegiWithdrawn": "1980-02-29"
+      |    }
+      |  }
       |}
-      |
       |""".stripMargin)
 
   "An AFT Details Transformer" - {
     "must transform from ETMP Get Details API Format to UserAnswers format" in {
-      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeETransformer, chargeFTransformer)
+      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeDTransformer, chargeETransformer, chargeFTransformer)
       val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
       transformedUserAnswersJson mustBe userAnswersJson
     }
