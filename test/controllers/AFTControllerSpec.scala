@@ -59,7 +59,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val getDetailsTransformer = new AFTDetailsTransformer(
     new ETMPToUserAnswers.ChargeATransformer,
     new ETMPToUserAnswers.ChargeETransformer,
-    new ETMPToUserAnswers.ChargeFTransformer)
+    new ETMPToUserAnswers.ChargeFTransformer,
+    new ETMPToUserAnswers.ChargeGTransformer)
 
   private val controller = new AFTController(appConfig, stubControllerComponents(),
     mockDesConnector, aftReturnTransformer, getDetailsTransformer)
