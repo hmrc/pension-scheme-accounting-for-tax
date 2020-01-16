@@ -29,7 +29,7 @@ class ChargeDTransformer extends JsonTransformer {
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap {totalCharge =>
       if(!totalCharge.equals(0.00)) {
         ((__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-          (__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)) reduce
+          (__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
       } else {
         doNothing
       }
@@ -38,10 +38,10 @@ class ChargeDTransformer extends JsonTransformer {
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_))
 
   def readsMember: Reads[JsObject] =
-    readsMemberDetails and
+    (readsMemberDetails and
       (__ \ 'dateOfBeneCrysEvent).json.copyFrom((__ \ 'chargeDetails \ 'dateOfEvent).json.pick) and
-        (__ \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt25Percent).json.pick) and
-        (__ \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt55Percent).json.pick) and
-      (__ \ 'memberStatus).json.put(JsString("New")) reduce
+      (__ \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt25Percent).json.pick) and
+      (__ \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt55Percent).json.pick) and
+      (__ \ 'memberStatus).json.put(JsString("New"))).reduce
 
 }
