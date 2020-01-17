@@ -24,79 +24,95 @@ class ChargeCTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   "A Charge C Transformer" - {
 
-    "must transform ChargeCDetails for an Individual with UK Address from UserAnswers to ETMP ChargeCDetails" in {
+    "must transform member details and total amount for an Individual from UserAnswers format to ETMP format" in {
       forAll(chargeCIndividualUserAnswersGenerator) {
         userAnswersJson =>
 
           val transformer = new ChargeCTransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "memberStatus" mustBe
-            JsDefined(JsString("New"))
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "dateOfPayment" mustBe
-            userAnswersJson \ "chargeCDetails" \ "chargeDetails" \ "paymentDate"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "totalAmountOfTaxDue" mustBe
-            userAnswersJson \ "chargeCDetails" \ "chargeDetails" \ "amountTaxDue"
+          val etmpMemberDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0
+          val uaChargeDetailsPath = userAnswersJson \ "chargeCDetails"
 
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "memberTypeDetails" \ "individualDetails" \ "firstName" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringIndividualDetails" \ "firstName"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "memberTypeDetails" \ "individualDetails" \ "lastName" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringIndividualDetails" \ "lastName"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "memberTypeDetails" \ "individualDetails" \ "nino" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringIndividualDetails" \ "nino"
+          (etmpMemberDetailsPath \ "memberStatus").as[String] mustBe "New"
+          (etmpMemberDetailsPath \ "dateOfPayment").as[String] mustBe (uaChargeDetailsPath \ "chargeDetails" \ "paymentDate").as[String]
+          (etmpMemberDetailsPath \ "totalAmountOfTaxDue").as[BigDecimal] mustBe (uaChargeDetailsPath \ "chargeDetails" \ "amountTaxDue").as[BigDecimal]
 
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "addressLine1" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "line1"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "addressLine2" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "line2"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "addressLine3" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "line3"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "addressLine4" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "line4"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "countryCode" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "country"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "postCode" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "postcode"
-
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "totalAmount" mustBe
-            userAnswersJson \ "chargeCDetails" \ "chargeDetails" \ "amountTaxDue"
+          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "totalAmount").as[BigDecimal] mustBe
+            (uaChargeDetailsPath \ "chargeDetails" \ "amountTaxDue").as[BigDecimal]
       }
     }
 
-    "must transform ChargeCDetails for an Organisation with NON UK Address from UserAnswers to ETMP ChargeCDetails" in {
+    "must transform individual details for an Individual from UserAnswers format to ETMP format" in {
+      forAll(chargeCIndividualUserAnswersGenerator) {
+        userAnswersJson =>
+
+          val transformer = new ChargeCTransformer
+          val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
+
+          val etmpIndividualDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \
+            "memberDetails" \ 0 \ "memberTypeDetails" \ "individualDetails"
+          val uaIndividualDetailsPath = userAnswersJson \ "chargeCDetails" \ "sponsoringIndividualDetails"
+
+          (etmpIndividualDetailsPath \ "firstName").as[String] mustBe (uaIndividualDetailsPath \ "firstName").as[String]
+          (etmpIndividualDetailsPath \ "lastName").as[String] mustBe (uaIndividualDetailsPath \ "lastName").as[String]
+          (etmpIndividualDetailsPath \ "nino").as[String] mustBe (uaIndividualDetailsPath \ "nino").as[String]
+      }
+    }
+
+    "must transform Organisation details for an Organisation from UserAnswers format to ETMP format" in {
       forAll(chargeCCompanyUserAnswersGenerator) {
         userAnswersJson =>
 
           val transformer = new ChargeCTransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "memberStatus" mustBe
-            JsDefined(JsString("New"))
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "dateOfPayment" mustBe
-            userAnswersJson \ "chargeCDetails" \ "chargeDetails" \ "paymentDate"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "totalAmountOfTaxDue" mustBe
-            userAnswersJson \ "chargeCDetails" \ "chargeDetails" \ "amountTaxDue"
+          val etmpOrgPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \
+            "memberDetails" \ 0 \ "memberTypeDetails"
+          val uaOrgPath = userAnswersJson \ "chargeCDetails" \ "sponsoringOrganisationDetails"
 
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "memberTypeDetails" \ "comOrOrganisationName" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringOrganisationDetails" \ "name"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "memberTypeDetails" \ "crnNumber" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringOrganisationDetails" \ "crn"
+          (etmpOrgPath \ "comOrOrganisationName").as[String] mustBe (uaOrgPath \ "name").as[String]
+          (etmpOrgPath \ "crnNumber").as[String] mustBe (uaOrgPath \ "crn").as[String]
+      }
+    }
 
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "addressLine1" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "line1"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "addressLine2" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "line2"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "addressLine3" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "line3"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "addressLine4" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "line4"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "countryCode" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "country"
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails" \ "postCode" mustBe
-            userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress" \ "postcode"
+    "must transform UK correspondence address from UserAnswers to ETMP format" in {
+      forAll(chargeCIndividualUserAnswersGenerator) {
+        userAnswersJson =>
 
-          transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "totalAmount" mustBe
-            userAnswersJson \ "chargeCDetails" \ "chargeDetails" \ "amountTaxDue"
+          val transformer = new ChargeCTransformer
+          val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
+
+          val etmpAddressPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails"
+          val uaAddressPath = userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress"
+
+          (etmpAddressPath \ "nonUKAddress").as[String] mustBe "False"
+          (etmpAddressPath \ "addressLine1").as[String] mustBe (uaAddressPath \ "line1").as[String]
+          (etmpAddressPath \ "addressLine2").as[String] mustBe (uaAddressPath \ "line2").as[String]
+          (etmpAddressPath \ "addressLine3").asOpt[String] mustBe (uaAddressPath \ "line3").asOpt[String]
+          (etmpAddressPath \ "addressLine4").asOpt[String] mustBe (uaAddressPath \ "line4").asOpt[String]
+          (etmpAddressPath \ "countryCode").as[String] mustBe (uaAddressPath \ "country").as[String]
+          (etmpAddressPath \ "postCode").as[String] mustBe (uaAddressPath \ "postcode").as[String]
+      }
+    }
+
+    "must transform NON UK correspondence address from UserAnswers to ETMP format" in {
+      forAll(chargeCCompanyUserAnswersGenerator) {
+        userAnswersJson =>
+
+          val transformer = new ChargeCTransformer
+          val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
+
+          val etmpAddressPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails"
+          val uaAddressPath = userAnswersJson \ "chargeCDetails" \ "sponsoringEmployerAddress"
+
+          (etmpAddressPath \ "nonUKAddress").as[String] mustBe "True"
+          (etmpAddressPath \ "addressLine1").as[String] mustBe (uaAddressPath \ "line1").as[String]
+          (etmpAddressPath \ "addressLine2").as[String] mustBe (uaAddressPath \ "line2").as[String]
+          (etmpAddressPath \ "addressLine3").asOpt[String] mustBe (uaAddressPath \ "line3").asOpt[String]
+          (etmpAddressPath \ "addressLine4").asOpt[String] mustBe (uaAddressPath \ "line4").asOpt[String]
+          (etmpAddressPath \ "countryCode").as[String] mustBe (uaAddressPath \ "country").as[String]
+          (etmpAddressPath \ "postCode").asOpt[String] mustBe (uaAddressPath \ "postcode").asOpt[String]
       }
     }
 

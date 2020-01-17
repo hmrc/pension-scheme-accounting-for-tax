@@ -26,10 +26,10 @@ class ChargeETransformer extends JsonTransformer {
     (__ \ 'chargeEDetails).readNullable(__.read(readsChargeE)).map(_.getOrElse(Json.obj()))
 
   def readsChargeE: Reads[JsObject] =
-    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap {totalCharge =>
-      if(!totalCharge.equals(0.00)) {
+    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { totalCharge =>
+      if (!totalCharge.equals(0.00)) {
         ((__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-          (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)) reduce
+          (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
       } else {
         doNothing
       }
@@ -38,12 +38,12 @@ class ChargeETransformer extends JsonTransformer {
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_))
 
   def readsMember: Reads[JsObject] =
-    readsMemberDetails and
+    (readsMemberDetails and
       (__ \ 'amountOfCharge).json.copyFrom((__ \ 'chargeDetails \ 'chargeAmount).json.pick) and
       (__ \ 'dateOfNotice).json.copyFrom((__ \ 'chargeDetails \ 'dateNoticeReceived).json.pick) and
       getPaidUnder237b and
       (__ \ 'taxYearEnding).json.copyFrom((__ \ 'annualAllowanceYear).json.pick) and
-      (__ \ 'memberStatus).json.put(JsString("New")) reduce
+      (__ \ 'memberStatus).json.put(JsString("New"))).reduce
 
   def getPaidUnder237b: Reads[JsObject] =
     (__ \ 'chargeDetails \ 'isPaymentMandatory).read[Boolean].flatMap { flag =>

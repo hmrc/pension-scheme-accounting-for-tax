@@ -64,8 +64,7 @@ class AFTController @Inject()(appConfig: AppConfig,
 
       (pstrOpt, startDate, aftVersion) match {
         case (Some(pstr), Some(startDt), Some(aftVer)) =>
-          val queryParams = s"$pstr?startDate=$startDt&aftVersion=$aftVer"
-          desConnector.getAftDetails(queryParams).map { etmpJson =>
+          desConnector.getAftDetails(pstr, startDt, aftVer).map { etmpJson =>
             etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
               case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
               case JsError(errors) => throw JsResultException(errors)

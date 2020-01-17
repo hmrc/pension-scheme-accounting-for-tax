@@ -17,7 +17,7 @@
 package transformations.userAnswersToETMP
 
 import org.scalatest.FreeSpec
-import play.api.libs.json.{JsDefined, JsObject, JsString, Json}
+import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
@@ -30,32 +30,27 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           val transformer = new ChargeGTransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "firstName" mustBe
-            userAnswersJson \ "chargeGDetails" \ "members" \ 0 \ "memberDetails" \ "firstName"
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "lastName" mustBe
-            userAnswersJson \ "chargeGDetails" \ "members" \ 0 \ "memberDetails" \ "lastName"
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "dateOfBirth" mustBe
-            userAnswersJson \ "chargeGDetails" \ "members" \ 0 \ "memberDetails" \ "dob"
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "nino" mustBe
-            userAnswersJson \ "chargeGDetails" \ "members" \ 0 \ "memberDetails" \ "nino"
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "qropsReference" mustBe
-            userAnswersJson \ "chargeGDetails" \ "members" \ 0 \ "chargeDetails" \ "qropsReferenceNumber"
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "dateOfTransfer" mustBe
-            userAnswersJson \ "chargeGDetails" \ "members" \ 0 \ "chargeDetails" \ "qropsTransferDate"
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "amountTransferred" mustBe
-            userAnswersJson \ "chargeGDetails" \ "members" \ 0 \ "chargeAmounts" \ "amountTransferred"
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "amountOfTaxDeducted" mustBe
-            userAnswersJson \ "chargeGDetails" \ "members" \ 0 \ "chargeAmounts" \ "amountTaxDue"
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 0 \ "memberStatus" mustBe
-            JsDefined(JsString("New"))
+          def etmpMemberPath(i: Int): JsLookupResult = transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ i
+
+          def uaMemberPath(i: Int): JsLookupResult = userAnswersJson \ "chargeGDetails" \ "members" \ i
+
+          (etmpMemberPath(0) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "firstName").as[String]
+          (etmpMemberPath(0) \ "individualsDetails" \ "lastName").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "lastName").as[String]
+          (etmpMemberPath(0) \ "individualsDetails" \ "dateOfBirth").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "dob").as[String]
+          (etmpMemberPath(0) \ "individualsDetails" \ "nino").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "nino").as[String]
+          (etmpMemberPath(0) \ "qropsReference").as[String] mustBe (uaMemberPath(0) \ "chargeDetails" \ "qropsReferenceNumber").as[String]
+
+          (etmpMemberPath(1) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(1) \ "memberDetails" \ "firstName").as[String]
+
+          (etmpMemberPath(0) \ "dateOfTransfer").as[String] mustBe (uaMemberPath(0) \ "chargeDetails" \ "qropsTransferDate").as[String]
+          (etmpMemberPath(0) \ "amountTransferred").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeAmounts" \ "amountTransferred").as[BigDecimal]
+          (etmpMemberPath(0) \ "amountOfTaxDeducted").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeAmounts" \ "amountTaxDue").as[BigDecimal]
+          (etmpMemberPath(0) \ "memberStatus").as[String] mustBe "New"
+
           transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "totalAmount" mustBe
             userAnswersJson \ "chargeGDetails" \ "totalChargeAmount"
 
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ 1 \ "individualsDetails" \ "firstName" mustBe
-            userAnswersJson \ "chargeGDetails" \ "members" \ 1 \ "memberDetails" \ "firstName"
-
           (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
-
       }
     }
 
