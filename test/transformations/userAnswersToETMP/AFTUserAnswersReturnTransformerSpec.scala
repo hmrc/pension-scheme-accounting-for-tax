@@ -34,6 +34,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
     "must transform from UserAnswers to ETMP AFT Return format" in {
       val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
         chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+
       val transformedEtmpJson = userAnswersRequestJson.transform(transformer.transformToETMPFormat).asOpt.value
       transformedEtmpJson mustBe etmpResponseJson
     }

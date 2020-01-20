@@ -27,14 +27,14 @@ class ChargeATransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
         userAnswersJson =>
           val transformer = new ChargeATransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
-          transformedJson \ "chargeDetails" \ "chargeTypeADetails" \ "numberOfMembers" mustBe
-            userAnswersJson \ "chargeADetails" \ "numberOfMembers"
-          transformedJson \ "chargeDetails" \ "chargeTypeADetails" \ "totalAmtOfTaxDueAtLowerRate" mustBe
-            userAnswersJson \ "chargeADetails" \ "totalAmtOfTaxDueAtLowerRate"
-          transformedJson \ "chargeDetails" \ "chargeTypeADetails" \ "totalAmtOfTaxDueAtHigherRate" mustBe
-            userAnswersJson \ "chargeADetails" \ "totalAmtOfTaxDueAtHigherRate"
-          transformedJson \ "chargeDetails" \ "chargeTypeADetails" \ "totalAmount" mustBe
-            userAnswersJson \ "chargeADetails" \ "totalAmount"
+
+          val etmpChargeDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeADetails"
+          val uaChargeDetailsPath = userAnswersJson \ "chargeADetails"
+
+          etmpChargeDetailsPath \ "numberOfMembers" mustBe uaChargeDetailsPath \ "numberOfMembers"
+          etmpChargeDetailsPath \ "totalAmtOfTaxDueAtLowerRate" mustBe uaChargeDetailsPath \ "totalAmtOfTaxDueAtLowerRate"
+          etmpChargeDetailsPath \ "totalAmtOfTaxDueAtHigherRate" mustBe uaChargeDetailsPath \ "totalAmtOfTaxDueAtHigherRate"
+          etmpChargeDetailsPath \ "totalAmount" mustBe uaChargeDetailsPath \ "totalAmount"
       }
     }
   }

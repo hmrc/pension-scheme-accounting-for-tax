@@ -38,9 +38,9 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig) extends HttpEr
   }
 
 
-  def getAftDetails(queryParams: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[JsValue] = {
+  def getAftDetails(pstr: String, startDate: String, aftVersion: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[JsValue] = {
 
-    val getAftUrl: String = config.getAftDetailsUrl.format(queryParams)
+    val getAftUrl: String = config.getAftDetailsUrl.format(pstr, startDate, aftVersion)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
     http.GET[JsValue](getAftUrl)(implicitly, hc, implicitly)

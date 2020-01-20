@@ -27,6 +27,7 @@ class ChargeBTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
         userAnswersJson =>
           val transformer = new ChargeBTransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
+
           transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "totalAmount" mustBe userAnswersJson \ "chargeBDetails" \ "amountTaxDue"
           transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "numberOfMembers" mustBe userAnswersJson \ "chargeBDetails" \ "numberOfDeceased"
       }

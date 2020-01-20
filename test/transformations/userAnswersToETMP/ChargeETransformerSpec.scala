@@ -17,7 +17,7 @@
 package transformations.userAnswersToETMP
 
 import org.scalatest.FreeSpec
-import play.api.libs.json.{JsDefined, JsObject, JsString, Json}
+import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
@@ -28,32 +28,25 @@ class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
         userAnswersJson =>
           val transformer = new ChargeETransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
-          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "firstName" mustBe
-            userAnswersJson \ "chargeEDetails" \ "members" \ 0 \ "memberDetails" \ "firstName"
-          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "lastName" mustBe
-            userAnswersJson \ "chargeEDetails" \ "members" \ 0 \ "memberDetails" \ "lastName"
-          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "amountOfCharge" mustBe
-            userAnswersJson \ "chargeEDetails" \ "members" \ 0 \ "chargeDetails" \ "chargeAmount"
-          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "dateOfNotice" mustBe
-            userAnswersJson \ "chargeEDetails" \ "members" \ 0 \ "chargeDetails" \ "dateNoticeReceived"
-          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "paidUnder237b" mustBe
-            (if((userAnswersJson \ "chargeEDetails" \ "members" \ 0 \ "chargeDetails" \ "isPaymentMandatory").get.as[Boolean]) {
-              JsDefined(JsString("Yes"))
-            } else {
-              JsDefined(JsString("No"))
-            })
-          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "taxYearEnding" mustBe
-            userAnswersJson \ "chargeEDetails" \ "members" \ 0 \ "annualAllowanceYear"
-          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 0 \ "memberStatus" mustBe
-            JsDefined(JsString("New"))
-          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount" mustBe
-            userAnswersJson \ "chargeEDetails" \ "totalChargeAmount"
 
-          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ 1 \ "individualsDetails" \ "firstName" mustBe
-            userAnswersJson \ "chargeEDetails" \ "members" \ 1 \ "memberDetails" \ "firstName"
+          def etmpMemberPath(i: Int): JsLookupResult = transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ i
 
+          def uaMemberPath(i: Int): JsLookupResult = userAnswersJson \ "chargeEDetails" \ "members" \ i
+
+          (etmpMemberPath(0) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "firstName").as[String]
+          (etmpMemberPath(0) \ "individualsDetails" \ "lastName").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "lastName").as[String]
+          (etmpMemberPath(0) \ "individualsDetails" \ "nino").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "nino").as[String]
+          (etmpMemberPath(1) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(1) \ "memberDetails" \ "firstName").as[String]
+
+          (etmpMemberPath(0) \ "amountOfCharge").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeDetails" \ "chargeAmount").as[BigDecimal]
+          (etmpMemberPath(0) \ "dateOfNotice").as[String] mustBe (uaMemberPath(0) \ "chargeDetails" \ "dateNoticeReceived").as[String]
+          (etmpMemberPath(0) \ "paidUnder237b").as[String] mustBe
+            (if ((uaMemberPath(0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean]) "Yes" else "No")
+          (etmpMemberPath(0) \ "taxYearEnding").as[String] mustBe (uaMemberPath(0) \ "annualAllowanceYear").as[String]
+          (etmpMemberPath(0) \ "memberStatus").as[String] mustBe "New"
+
+          transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount" mustBe userAnswersJson \ "chargeEDetails" \ "totalChargeAmount"
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
-
       }
     }
 
@@ -64,9 +57,7 @@ class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
           transformedJson.as[JsObject] mustBe Json.obj()
-
       }
     }
   }
-
 }

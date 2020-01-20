@@ -17,7 +17,7 @@
 package transformations.userAnswersToETMP
 
 import org.scalatest.FreeSpec
-import play.api.libs.json.{JsDefined, JsObject, JsString, Json}
+import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
@@ -30,26 +30,25 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           val transformer = new ChargeDTransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "firstName" mustBe
-            userAnswersJson \ "chargeDDetails" \ "members" \ 0 \ "memberDetails" \ "firstName"
-          transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "individualsDetails" \ "lastName" mustBe
-            userAnswersJson \ "chargeDDetails" \ "members" \ 0 \ "memberDetails" \ "lastName"
-          transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "dateOfBeneCrysEvent" mustBe
-            userAnswersJson \ "chargeDDetails" \ "members" \ 0 \ "chargeDetails" \ "dateOfEvent"
-          transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "totalAmtOfTaxDueAtLowerRate" mustBe
-            userAnswersJson \ "chargeDDetails" \ "members" \ 0 \ "chargeDetails" \ "taxAt25Percent"
-          transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "totalAmtOfTaxDueAtHigherRate" mustBe
-            userAnswersJson \ "chargeDDetails" \ "members" \ 0 \ "chargeDetails" \ "taxAt55Percent"
-          transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "memberStatus" mustBe
-            JsDefined(JsString("New"))
-          transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "totalAmount" mustBe
-            userAnswersJson \ "chargeDDetails" \ "totalChargeAmount"
+          def etmpMemberPath(i: Int): JsLookupResult = transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ i
 
-          transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 1 \ "individualsDetails" \ "firstName" mustBe
-            userAnswersJson \ "chargeDDetails" \ "members" \ 1 \ "memberDetails" \ "firstName"
+          def uaMemberPath(i: Int): JsLookupResult = userAnswersJson \ "chargeDDetails" \ "members" \ i
+
+          (etmpMemberPath(0) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "firstName").as[String]
+          (etmpMemberPath(0) \ "individualsDetails" \ "lastName").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "lastName").as[String]
+          (etmpMemberPath(0) \ "individualsDetails" \ "nino").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "nino").as[String]
+
+          (etmpMemberPath(0) \ "dateOfBeneCrysEvent").as[String] mustBe (uaMemberPath(0) \ "chargeDetails" \ "dateOfEvent").as[String]
+          (etmpMemberPath(0) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeDetails" \ "taxAt25Percent").as[BigDecimal]
+          (etmpMemberPath(0) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeDetails" \ "taxAt55Percent").as[BigDecimal]
+          (etmpMemberPath(0) \ "memberStatus").as[String] mustBe "New"
+
+          (etmpMemberPath(1) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(1) \ "memberDetails" \ "firstName").as[String]
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "totalAmount").as[BigDecimal] mustBe
+            (userAnswersJson \ "chargeDDetails" \ "totalChargeAmount").as[BigDecimal]
 
           (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
-
       }
     }
 
@@ -64,5 +63,4 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       }
     }
   }
-
 }

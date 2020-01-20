@@ -28,17 +28,17 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
   val ninoGen: Gen[String] = Gen.oneOf(Seq("AB123456C", "CD123456E"))
 
   val dateGenerator: Gen[LocalDate] = for {
-    day <- Gen.choose(1, 28)
-    month <- Gen.choose(1, 12)
-    year <- Gen.choose(1990, 2000)
+    day <- Gen.choose(min = 1, max = 28)
+    month <- Gen.choose(min = 1, max = 12)
+    year <- Gen.choose(min = 1990, max = 2000)
   } yield LocalDate.of(year, month, day)
 
   val ukAddressGenerator : Gen[JsObject] = for {
-    line1 <- Gen.alphaStr
-    line2 <- Gen.alphaStr
-    line3 <- Gen.option(Gen.alphaStr)
-    line4 <- Gen.option(Gen.alphaStr)
-    postalCode <- Gen.alphaStr
+    line1 <- arbitrary[String]
+    line2 <- arbitrary[String]
+    line3 <- Gen.option(arbitrary[String])
+    line4 <- Gen.option(arbitrary[String])
+    postalCode <- arbitrary[String]
   } yield {
     Json.obj(
       "line1" -> line1,
@@ -51,12 +51,12 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
   }
 
   val nonUkAddressGenerator : Gen[JsObject] = for {
-    line1 <- Gen.alphaStr
-    line2 <- Gen.alphaStr
-    line3 <- Gen.option(Gen.alphaStr)
-    line4 <- Gen.option(Gen.alphaStr)
-    postalCode <- Gen.option(Gen.alphaStr)
-    country <- Gen.listOfN(2, Gen.alphaChar).map(_.mkString)
+    line1 <- arbitrary[String]
+    line2 <- arbitrary[String]
+    line3 <- Gen.option(arbitrary[String])
+    line4 <- Gen.option(arbitrary[String])
+    postalCode <- Gen.option(arbitrary[String])
+    country <- Gen.listOfN(2, arbitrary[String]).map(_.mkString)
   } yield {
     Json.obj(
       "line1" -> line1,
@@ -123,7 +123,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
       firstName <- arbitrary[String]
       lastName <- arbitrary[String]
       nino <- ninoGen
-      taxDue <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      taxDue <- arbitrary[BigDecimal] suchThat (_ > 0)
       addressDetails <- ukAddressGenerator
       date <- dateGenerator
     } yield Json.obj(
@@ -146,7 +146,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
     for {
       name <- arbitrary[String]
       crn <- arbitrary[String]
-      taxDue <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      taxDue <- arbitrary[BigDecimal] suchThat (_ > 0)
       addressDetails <- nonUkAddressGenerator
       date <- dateGenerator
     } yield Json.obj(
@@ -183,7 +183,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
     for {
       members <- Gen.listOfN(5, chargeDMember())
       deletedMembers <- Gen.listOfN(2, chargeDMember(isDeleted = true))
-      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      totalChargeAmount <- arbitrary[BigDecimal] suchThat (_ > 0)
     } yield Json.obj(
       fields = "chargeDDetails" ->
         Json.obj(
@@ -211,7 +211,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
       taxYear <- Gen.choose(1990, Year.now.getValue)
     } yield Json.obj(
       "memberDetails" -> memberDetails,
-      "annualAllowanceYear" -> taxYear,
+      "annualAllowanceYear" -> taxYear.toString,
       "chargeDetails" -> Json.obj(
         "chargeAmount" -> chargeAmount,
         "dateNoticeReceived" -> date,
@@ -259,7 +259,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
       lastName <- arbitrary[String]
       nino <- ninoGen
       dob <- dateGenerator
-      qropsReferenceNumber <- arbitrary[Int]
+      qropsReferenceNumber <- arbitrary[String]
       qropsTransferDate <- dateGenerator
       amountTransferred <- arbitrary[BigDecimal]
       amountTaxDue <- arbitrary[BigDecimal]
@@ -285,7 +285,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
     for {
       members <- Gen.listOfN(5, chargeGMember())
       deletedMembers <- Gen.listOfN(2, chargeGMember(isDeleted = true))
-      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      totalChargeAmount <- arbitrary[BigDecimal] suchThat (_ > 0)
     } yield Json.obj(
       fields = "chargeGDetails" ->
         Json.obj(
