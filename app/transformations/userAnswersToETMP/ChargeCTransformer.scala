@@ -26,27 +26,35 @@ class ChargeCTransformer extends JsonTransformer {
     (__ \ 'chargeCDetails).readNullable(__.read(readsChargeC)).map(_.getOrElse(Json.obj()))
 
   def readsChargeC: Reads[JsObject] =
-    (__ \ 'chargeDetails \ 'amountTaxDue).read[BigDecimal].flatMap { totalCharge =>
+    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { totalCharge =>
       if (!totalCharge.equals(0)) {
-        ((__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'totalAmount).json.copyFrom((__ \ 'chargeDetails \ 'amountTaxDue).json.pick) and
-          (__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'memberDetails).json.copyFrom(__.read(readsMembers))).reduce
+        ((__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'memberDetails).json.copyFrom((__ \ 'employers).read(readsEmployers)) and
+          (__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
       }
       else {
         doNothing
       }
     }
 
-  def readsMembers: Reads[JsArray] = __.read[JsObject].flatMap(_ => readsMember.map(Json.arr(_)))
+  def readsEmployers: Reads[JsArray] = {
+    readsFiltered(_ \ "sponsoringIndividualDetails", readsEmployer, isDeletedPath = "sponsoringIndividualDetails").map(JsArray(_)).flatMap {
+      filteredIndividuals =>
+        readsFiltered(_ \ "sponsoringOrganisationDetails", readsEmployer, isDeletedPath = "sponsoringOrganisationDetails").map(JsArray(_)).map {
+          filteredOrganisations =>
+            filteredIndividuals ++ filteredOrganisations
+        }
+    }
+  }
 
-  def readsMember: Reads[JsObject] = (
+  def readsEmployer: Reads[JsObject] = (
     (__ \ 'memberStatus).json.put(JsString("New")) and
-      readsMemberTypeDetails and
+      readsEmployerTypeDetails and
       ((__ \ 'correspondenceAddressDetails).json.copyFrom(__.read(readsCorrespondenceAddress)) and
-      (__ \ 'dateOfPayment).json.copyFrom((__ \ 'chargeDetails \ 'paymentDate).json.pick) and
-      (__ \ 'totalAmountOfTaxDue).json.copyFrom((__ \ 'chargeDetails \ 'amountTaxDue).json.pick)).reduce
+        (__ \ 'dateOfPayment).json.copyFrom((__ \ 'chargeDetails \ 'paymentDate).json.pick) and
+        (__ \ 'totalAmountOfTaxDue).json.copyFrom((__ \ 'chargeDetails \ 'amountTaxDue).json.pick)).reduce
     ).reduce
 
-  def readsMemberTypeDetails: Reads[JsObject] =
+  def readsEmployerTypeDetails: Reads[JsObject] =
     (__ \ 'isSponsoringEmployerIndividual).read[Boolean].flatMap {
       case true =>
         ((__ \ 'memberTypeDetails \ 'memberType).json.put(JsString("Individual")) and
