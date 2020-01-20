@@ -17,7 +17,7 @@
 package transformations.ETMPToUserAnswers
 
 import org.scalatest.FreeSpec
-import play.api.libs.json.JsObject
+import play.api.libs.json.{JsLookupResult, JsObject}
 import transformations.generators.AFTETMPResponseGenerators
 
 class ChargeGTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
@@ -25,12 +25,31 @@ class ChargeGTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
   "A Charge G Transformer" - {
     "must transform ChargeGDetails from ETMP ChargeGDetails to UserAnswers" in {
       forAll(chargeGETMPGenerator) {
-        generatedValues =>
-          val (etmpResponseJson, userAnswersJson) = generatedValues
+        etmpResponseJson =>
           val transformer = new ChargeGTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
 
-          transformedJson mustBe userAnswersJson
+          def membersUAPath(i: Int): JsLookupResult = transformedJson \ "chargeGDetails" \ "members" \ i
+
+          def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ i
+
+
+          membersUAPath(0) \ "memberDetails" \ "firstName" mustBe membersETMPPath(0) \ "individualsDetails" \ "firstName"
+          membersUAPath(0) \ "memberDetails" \ "lastName" mustBe membersETMPPath(0) \ "individualsDetails" \ "lastName"
+          membersUAPath(0) \ "memberDetails" \ "dob" mustBe membersETMPPath(0) \ "individualsDetails" \ "dateOfBirth"
+
+          membersUAPath(0) \ "chargeDetails" \ "qropsReferenceNumber" mustBe membersETMPPath(0) \ "qropsReference"
+          membersUAPath(0) \ "chargeDetails" \ "qropsTransferDate" mustBe membersETMPPath(0) \ "dateOfTransfer"
+
+          membersUAPath(0) \ "chargeAmounts" \ "amountTransferred" mustBe membersETMPPath(0) \ "amountTransferred"
+          membersUAPath(0) \ "chargeAmounts" \ "amountTaxDue" mustBe membersETMPPath(0) \ "amountOfTaxDeducted"
+
+          transformedJson \ "chargeGDetails" \ "totalChargeAmount" mustBe etmpResponseJson \ "chargeTypeGDetails" \ "totalOTCAmount"
+
+          membersUAPath(1) \ "memberDetails" \ "firstName" mustBe membersETMPPath(1) \ "individualsDetails" \ "firstName"
+
+          (transformedJson \ "chargeGDetails" \ "members").as[Seq[JsObject]].size mustBe 2
+
       }
     }
   }
