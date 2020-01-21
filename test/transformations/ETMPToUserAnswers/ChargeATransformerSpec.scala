@@ -24,11 +24,14 @@ class ChargeATransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
   "A Charge A Transformer" - {
     "must transform ChargeADetails from ETMP ChargeTypeADetails to UserAnswers" in {
       forAll(chargeAETMPGenerator) {
-        generatedValues =>
-          val (etmpResponseJson, userAnswersJson) = generatedValues
+        etmpResponseJson =>
           val transformer = new ChargeATransformer
-          val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-          transformedJson mustBe userAnswersJson
+          val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value \ "chargeADetails"
+          val chargeAResponse = etmpResponseJson \ "chargeTypeADetails"
+          transformedJson \ "numberOfMembers" mustBe chargeAResponse \ "numberOfMembers"
+          transformedJson \ "totalAmtOfTaxDueAtLowerRate" mustBe chargeAResponse \ "totalAmtOfTaxDueAtLowerRate"
+          transformedJson \ "totalAmtOfTaxDueAtHigherRate" mustBe chargeAResponse \ "totalAmtOfTaxDueAtHigherRate"
+          transformedJson \ "totalAmount" mustBe chargeAResponse \ "totalAmount"
       }
     }
   }

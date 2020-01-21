@@ -130,17 +130,4 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       transformedUserAnswersJson mustBe userAnswersJson
     }
   }
-
-  "An AFT Details Transformer generated" - {
-    "must transform from ETMP Get Details API Format to UserAnswers format" in {
-      forAll(etmpResponseGenerator) {
-        generatedValues =>
-          val (etmpResponseJson, userAnswersJson) = generatedValues
-          val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
-          val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-
-          transformedUserAnswersJson mustBe userAnswersJson
-      }
-    }
-  }
 }
