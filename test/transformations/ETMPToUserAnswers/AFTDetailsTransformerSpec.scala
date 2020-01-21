@@ -24,10 +24,20 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
 
   private val chargeATransformer = new ChargeATransformer
   private val chargeBTransformer = new ChargeBTransformer
+  private val chargeCTransformer = new ChargeCTransformer
   private val chargeDTransformer = new ChargeDTransformer
   private val chargeETransformer = new ChargeETransformer
   private val chargeFTransformer = new ChargeFTransformer
   private val chargeGTransformer = new ChargeGTransformer
+
+  "An AFT Details Transformer" - {
+    "must transform from ETMP Get Details API Format to UserAnswers format" in {
+      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeCTransformer,
+        chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+      val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
+      transformedUserAnswersJson mustBe userAnswersJson
+    }
+  }
 
   private val userAnswersJson = Json.parse(
     """{
@@ -48,6 +58,32 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |    "numberOfDeceased": 2,
       |    "amountTaxDue": 100.02
       |  },
+      |  "chargeCDetails": {
+      |    "employers": [
+      |      {
+      |        "isSponsoringEmployerIndividual": true,
+      |        "chargeDetails": {
+      |          "paymentDate": "2020-01-01",
+      |          "amountTaxDue": 500.02
+      |        },
+      |        "sponsoringIndividualDetails": {
+      |          "firstName": "testFirst",
+      |          "lastName": "testLast",
+      |          "nino": "AB100100A",
+      |          "isDeleted": false
+      |        },
+      |        "sponsoringEmployerAddress": {
+      |          "line1": "line1",
+      |          "line2": "line2",
+      |          "line3": "line3",
+      |          "line4": "line4",
+      |          "postcode": "NE20 0GG",
+      |          "country": "GB"
+      |        }
+      |      }
+      |    ],
+      |    "totalChargeAmount": 500.02
+      |  },
       |  "chargeDDetails": {
       |    "members": [
       |      {
@@ -66,9 +102,50 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |    ],
       |    "totalChargeAmount": 2345.02
       |  },
+      |  "chargeEDetails": {
+      |    "members": [
+      |      {
+      |        "memberDetails": {
+      |          "firstName": "eFirstName",
+      |          "lastName": "eLastName",
+      |          "nino": "AE100100A",
+      |          "isDeleted": false
+      |        },
+      |        "annualAllowanceYear": "2020",
+      |        "chargeDetails": {
+      |          "dateNoticeReceived": "2020-01-11",
+      |          "chargeAmount": 200.02,
+      |          "isPaymentMandatory": true
+      |        }
+      |      }
+      |    ],
+      |    "totalChargeAmount": 200.02
+      |  },
       |  "chargeFDetails": {
       |    "amountTaxDue": 200.02,
       |    "deRegistrationDate": "1980-02-29"
+      |  },
+      |  "chargeGDetails": {
+      |    "members": [
+      |      {
+      |        "memberDetails": {
+      |          "firstName": "Craig",
+      |          "lastName": "White",
+      |          "dob": "1980-02-29",
+      |          "nino": "AA012000A",
+      |          "isDeleted": false
+      |        },
+      |        "chargeDetails": {
+      |          "qropsReferenceNumber": "Q300000",
+      |          "qropsTransferDate": "2016-02-29"
+      |        },
+      |        "chargeAmounts": {
+      |          "amountTransferred": 45670.02,
+      |          "amountTaxDue": 4560.02
+      |        }
+      |      }
+      |    ],
+      |    "totalChargeAmount": 1230.02
       |  }
       |}""".stripMargin)
 
@@ -95,6 +172,33 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |      "numberOfMembers": 2,
       |      "totalAmount": 100.02
       |    },
+      |    "chargeTypeCDetails": {
+      |      "totalAmount": 500.02,
+      |      "memberDetails": [
+      |        {
+      |          "memberStatus": "New",
+      |          "memberTypeDetails": {
+      |            "memberType": "Individual",
+      |            "individualDetails": {
+      |              "firstName": "testFirst",
+      |              "lastName": "testLast",
+      |              "nino": "AB100100A"
+      |            }
+      |          },
+      |          "correspondenceAddressDetails": {
+      |            "nonUKAddress": "False",
+      |            "postCode": "NE20 0GG",
+      |            "addressLine1": "line1",
+      |            "addressLine2": "line2",
+      |            "addressLine3": "line3",
+      |            "addressLine4": "line4",
+      |            "countryCode": "GB"
+      |          },
+      |          "dateOfPayment": "2020-01-01",
+      |          "totalAmountOfTaxDue": 500.02
+      |        }
+      |      ]
+      |    },
       |    "chargeTypeDDetails": {
       |      "amendedVersion": 1,
       |      "totalAmount": 2345.02,
@@ -115,19 +219,50 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |        }
       |      ]
       |    },
+      |    "chargeTypeEDetails": {
+      |      "totalAmount": 200.02,
+      |      "memberDetails": [
+      |        {
+      |          "memberStatus": "New",
+      |          "individualsDetails": {
+      |            "firstName": "eFirstName",
+      |            "lastName": "eLastName",
+      |            "nino": "AE100100A"
+      |          },
+      |          "amountOfCharge": 200.02,
+      |          "taxYearEnding": "2020",
+      |          "dateOfNotice": "2020-01-11",
+      |          "paidUnder237b": "Yes"
+      |        }
+      |      ]
+      |    },
       |    "chargeTypeFDetails": {
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
+      |    },
+      |    "chargeTypeGDetails": {
+      |      "amendedVersion": 1,
+      |      "totalOTCAmount": 1230.02,
+      |      "memberDetails": [
+      |        {
+      |          "memberStatus": "New",
+      |          "memberAFTVersion": 1,
+      |          "individualsDetails": {
+      |            "title": "Mr",
+      |            "firstName": "Craig",
+      |            "middleName": "H",
+      |            "lastName": "White",
+      |            "dateOfBirth": "1980-02-29",
+      |            "nino": "AA012000A"
+      |          },
+      |          "qropsReference": "Q300000",
+      |          "amountTransferred": 45670.02,
+      |          "dateOfTransfer": "2016-02-29",
+      |          "amountOfTaxDeducted": 4560.02
+      |        }
+      |      ]
       |    }
       |  }
       |}
       |""".stripMargin)
-
-  "An AFT Details Transformer" - {
-    "must transform from ETMP Get Details API Format to UserAnswers format" in {
-      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
-      val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-      transformedUserAnswersJson mustBe userAnswersJson
-    }
-  }
 }

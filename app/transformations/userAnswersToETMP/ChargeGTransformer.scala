@@ -29,7 +29,7 @@ class ChargeGTransformer extends JsonTransformer {
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { totalCharge =>
       if (!totalCharge.equals(0.00)) {
         ((__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-          (__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
+          (__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'totalOTCAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
       } else {
         doNothing
       }

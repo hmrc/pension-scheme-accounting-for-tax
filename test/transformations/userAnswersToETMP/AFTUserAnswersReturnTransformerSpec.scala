@@ -118,6 +118,28 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |  "chargeFDetails": {
       |    "amountTaxDue": 200.02,
       |    "deRegistrationDate": "1980-02-29"
+      |  },
+      |  "chargeGDetails": {
+      |    "members": [
+      |      {
+      |        "memberDetails": {
+      |          "firstName": "Craig",
+      |          "lastName": "White",
+      |          "dob": "1980-02-29",
+      |          "nino": "AA012000A",
+      |          "isDeleted": false
+      |        },
+      |        "chargeDetails": {
+      |          "qropsReferenceNumber": "Q300000",
+      |          "qropsTransferDate": "2016-02-29"
+      |        },
+      |        "chargeAmounts": {
+      |          "amountTransferred": 45670.02,
+      |          "amountTaxDue": 4560.02
+      |        }
+      |      }
+      |    ],
+      |    "totalChargeAmount": 1230.02
       |  }
       |}""".stripMargin)
 
@@ -202,6 +224,24 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    "chargeTypeFDetails": {
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
+      |    },
+      |     "chargeTypeGDetails": {
+      |      "totalOTCAmount": 1230.02,
+      |      "memberDetails": [
+      |        {
+      |          "memberStatus": "New",
+      |          "individualsDetails": {
+      |            "firstName": "Craig",
+      |            "lastName": "White",
+      |            "dateOfBirth": "1980-02-29",
+      |            "nino": "AA012000A"
+      |          },
+      |          "qropsReference": "Q300000",
+      |          "amountTransferred": 45670.02,
+      |          "dateOfTransfer": "2016-02-29",
+      |          "amountOfTaxDeducted": 4560.02
+      |        }
+      |      ]
       |    }
       |  }
       |}
