@@ -62,7 +62,7 @@ class ChargeCTransformer extends JsonTransformer {
       (__ \ 'sponsoringEmployerAddress \ 'line2).json.copyFrom((__ \ 'addressLine2).json.pick) and
       ((__ \ 'sponsoringEmployerAddress \ 'line3).json.copyFrom((__ \ 'addressLine3).json.pick) orElse doNothing) and
       ((__ \ 'sponsoringEmployerAddress \ 'line4).json.copyFrom((__ \ 'addressLine4).json.pick) orElse doNothing) and
-      ((__ \ 'sponsoringEmployerAddress \ 'postcode).json.copyFrom((__ \ 'postCode).json.pick) orElse doNothing) and
+      ((__ \ 'sponsoringEmployerAddress \ 'postcode).json.copyFrom((__ \ 'postalCode).json.pick) orElse doNothing) and
       (__ \ 'sponsoringEmployerAddress \ 'country).json.copyFrom((__ \ 'countryCode).json.pick)).reduce
 }
 

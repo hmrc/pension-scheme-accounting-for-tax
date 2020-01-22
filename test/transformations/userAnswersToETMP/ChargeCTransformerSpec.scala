@@ -111,7 +111,7 @@ class ChargeCTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (etmpAddressPath \ "addressLine3").asOpt[String] mustBe (uaAddressPath \ "line3").asOpt[String]
           (etmpAddressPath \ "addressLine4").asOpt[String] mustBe (uaAddressPath \ "line4").asOpt[String]
           (etmpAddressPath \ "countryCode").as[String] mustBe (uaAddressPath \ "country").as[String]
-          (etmpAddressPath \ "postCode").asOpt[String] mustBe (uaAddressPath \ "postcode").asOpt[String]
+          (etmpAddressPath \ "postalCode").asOpt[String] mustBe (uaAddressPath \ "postcode").asOpt[String]
       }
     }
 

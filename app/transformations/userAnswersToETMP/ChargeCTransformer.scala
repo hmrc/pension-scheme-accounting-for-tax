@@ -84,7 +84,7 @@ class ChargeCTransformer extends JsonTransformer {
           (__ \ 'postCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'postcode).json.pick)).reduce
       case _ =>
         ((__ \ 'nonUKAddress).json.put(JsString("True")) and
-          ((__ \ 'postCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'postcode).json.pick) orElse doNothing)).reduce
+          ((__ \ 'postalCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'postcode).json.pick) orElse doNothing)).reduce
     }
 }
 

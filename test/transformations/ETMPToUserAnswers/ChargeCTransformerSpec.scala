@@ -89,7 +89,7 @@ class ChargeCTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           (uaPath \ "line3").asOpt[String] mustBe (etmpPath \ "addressLine3").asOpt[String]
           (uaPath \ "line4").asOpt[String] mustBe (etmpPath \ "addressLine4").asOpt[String]
           (uaPath \ "country").as[String] mustBe (etmpPath \ "countryCode").as[String]
-          (uaPath \ "postcode").asOpt[String] mustBe (etmpPath \ "postCode").asOpt[String]
+          (uaPath \ "postcode").asOpt[String] mustBe (etmpPath \ "postalCode").asOpt[String]
       }
     }
   }
