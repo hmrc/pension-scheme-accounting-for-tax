@@ -69,6 +69,28 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |  "chargeFDetails": {
       |    "amountTaxDue": 200.02,
       |    "deRegistrationDate": "1980-02-29"
+      |  },
+      |  "chargeGDetails": {
+      |    "members": [
+      |      {
+      |        "memberDetails": {
+      |          "firstName": "Craig",
+      |          "lastName": "White",
+      |          "dob": "1980-02-29",
+      |          "nino": "AA012000A",
+      |          "isDeleted": false
+      |        },
+      |        "chargeDetails": {
+      |          "qropsReferenceNumber": "300000",
+      |          "qropsTransferDate": "2016-02-29"
+      |        },
+      |        "chargeAmounts": {
+      |          "amountTransferred": 45670.02,
+      |          "amountTaxDue": 4560.02
+      |        }
+      |      }
+      |    ],
+      |    "totalChargeAmount": 1230.02
       |  }
       |}""".stripMargin)
 
@@ -118,6 +140,28 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |    "chargeTypeFDetails": {
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
+      |    },
+      |    "chargeTypeGDetails": {
+      |      "amendedVersion": 1,
+      |      "totalOTCAmount": 1230.02,
+      |      "memberDetails": [
+      |        {
+      |          "memberStatus": "New",
+      |          "memberAFTVersion": 1,
+      |          "individualsDetails": {
+      |            "title": "Mr",
+      |            "firstName": "Craig",
+      |            "middleName": "H",
+      |            "lastName": "White",
+      |            "dateOfBirth": "1980-02-29",
+      |            "nino": "AA012000A"
+      |          },
+      |          "qropsReference": "Q300000",
+      |          "amountTransferred": 45670.02,
+      |          "dateOfTransfer": "2016-02-29",
+      |          "amountOfTaxDeducted": 4560.02
+      |        }
+      |      ]
       |    }
       |  }
       |}

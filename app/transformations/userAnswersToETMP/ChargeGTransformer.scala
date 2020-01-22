@@ -29,7 +29,7 @@ class ChargeGTransformer extends JsonTransformer {
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { totalCharge =>
       if (!totalCharge.equals(0.00)) {
         ((__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-          (__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
+          (__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'totalOTCAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
       } else {
         doNothing
       }
@@ -40,10 +40,16 @@ class ChargeGTransformer extends JsonTransformer {
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
       (__ \ 'individualsDetails \ 'dateOfBirth).json.copyFrom((__ \ 'memberDetails \ 'dob).json.pick) and
-      (__ \ 'qropsReference).json.copyFrom((__ \ 'chargeDetails \ 'qropsReferenceNumber).json.pick) and
+      readsQrops and
       (__ \ 'dateOfTransfer).json.copyFrom((__ \ 'chargeDetails \ 'qropsTransferDate).json.pick) and
       (__ \ 'amountTransferred).json.copyFrom((__ \ 'chargeAmounts \ 'amountTransferred).json.pick) and
       (__ \ 'amountOfTaxDeducted).json.copyFrom((__ \ 'chargeAmounts \ 'amountTaxDue).json.pick) and
       (__ \ 'memberStatus).json.put(JsString("New"))).reduce
+
+  def readsQrops: Reads[JsObject] = {
+    (__ \ 'chargeDetails \ 'qropsReferenceNumber).read[String].flatMap { qropsReference =>
+      (__ \ 'qropsReference).json.put(JsString(s"Q$qropsReference"))
+    }
+  }
 
 }

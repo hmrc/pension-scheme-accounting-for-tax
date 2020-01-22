@@ -38,7 +38,7 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (etmpMemberPath(0) \ "individualsDetails" \ "lastName").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "lastName").as[String]
           (etmpMemberPath(0) \ "individualsDetails" \ "dateOfBirth").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "dob").as[String]
           (etmpMemberPath(0) \ "individualsDetails" \ "nino").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "nino").as[String]
-          (etmpMemberPath(0) \ "qropsReference").as[String] mustBe (uaMemberPath(0) \ "chargeDetails" \ "qropsReferenceNumber").as[String]
+          (etmpMemberPath(0) \ "qropsReference").as[String] mustBe s"Q${(uaMemberPath(0) \ "chargeDetails" \ "qropsReferenceNumber").as[String]}"
 
           (etmpMemberPath(1) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(1) \ "memberDetails" \ "firstName").as[String]
 
@@ -47,7 +47,7 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (etmpMemberPath(0) \ "amountOfTaxDeducted").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeAmounts" \ "amountTaxDue").as[BigDecimal]
           (etmpMemberPath(0) \ "memberStatus").as[String] mustBe "New"
 
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "totalAmount" mustBe
+          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "totalOTCAmount" mustBe
             userAnswersJson \ "chargeGDetails" \ "totalChargeAmount"
 
           (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
