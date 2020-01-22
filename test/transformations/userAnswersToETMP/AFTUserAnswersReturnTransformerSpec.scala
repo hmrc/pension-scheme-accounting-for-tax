@@ -226,7 +226,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |      "dateRegiWithdrawn": "1980-02-29"
       |    },
       |    "chargeTypeGDetails": {
-      |      "totalOTCAmount": 1230.02,
+      |      "totalAmount": 1230.02,
       |      "memberDetails": [
       |        {
       |          "memberStatus": "New",
