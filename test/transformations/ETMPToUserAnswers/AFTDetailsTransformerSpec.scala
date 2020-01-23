@@ -136,7 +136,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |          "isDeleted": false
       |        },
       |        "chargeDetails": {
-      |          "qropsReferenceNumber": "Q300000",
+      |          "qropsReferenceNumber": "300000",
       |          "qropsTransferDate": "2016-02-29"
       |        },
       |        "chargeAmounts": {

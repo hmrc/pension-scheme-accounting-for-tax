@@ -135,7 +135,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |          "isDeleted": false
       |        },
       |        "chargeDetails": {
-      |          "qropsReferenceNumber": "Q300000",
+      |          "qropsReferenceNumber": "300000",
       |          "qropsTransferDate": "2016-02-29"
       |        },
       |        "chargeAmounts": {

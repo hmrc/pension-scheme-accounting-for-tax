@@ -33,8 +33,15 @@ class ChargeGTransformer extends JsonTransformer {
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
       (__ \ 'memberDetails \ 'dob).json.copyFrom((__ \ 'individualsDetails \ 'dateOfBirth).json.pick) and
-      (__ \ 'chargeDetails \ 'qropsReferenceNumber).json.copyFrom((__ \ 'qropsReference).json.pick) and
-        (__ \ 'chargeDetails \ 'qropsTransferDate).json.copyFrom((__ \ 'dateOfTransfer).json.pick) and
-        (__ \ 'chargeAmounts \ 'amountTransferred).json.copyFrom((__ \ 'amountTransferred).json.pick) and
-        (__ \ 'chargeAmounts \ 'amountTaxDue).json.copyFrom((__ \ 'amountOfTaxDeducted).json.pick)).reduce
+      readsQrops and
+      (__ \ 'chargeDetails \ 'qropsTransferDate).json.copyFrom((__ \ 'dateOfTransfer).json.pick) and
+      (__ \ 'chargeAmounts \ 'amountTransferred).json.copyFrom((__ \ 'amountTransferred).json.pick) and
+      (__ \ 'chargeAmounts \ 'amountTaxDue).json.copyFrom((__ \ 'amountOfTaxDeducted).json.pick)).reduce
+
+  def readsQrops: Reads[JsObject] = {
+    (__ \ 'qropsReference).read[String].flatMap { qropsReference =>
+      (__ \ 'chargeDetails \ 'qropsReferenceNumber).json.put(JsString(qropsReference.substring(1)))
+    }
+  }
+
 }

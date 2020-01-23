@@ -240,13 +240,21 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
           "dateRegiWithdrawn" -> deRegistrationDate
         ))
 
+  val qropsGenerator: Gen[String] =
+    for {
+      first <- Gen.listOf((1, arbitrary[Char]))
+      last <- arbitrary[Int]
+    } yield {
+      s"$first$last"
+    }
+
   val chargeGMember: Gen[JsObject] =
     for {
       firstName <- arbitrary[String]
       lastName <- arbitrary[String]
       nino <- ninoGen
       dob <- dateGenerator
-      qropsReferenceNumber <- arbitrary[Int]
+      qropsReferenceNumber <- qropsGenerator
       qropsTransferDate <- dateGenerator
       amountTransferred <- arbitrary[BigDecimal]
       amountTaxDue <- arbitrary[BigDecimal]

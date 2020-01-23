@@ -33,20 +33,20 @@ class ChargeGTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
 
           def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ i
 
+          (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "firstName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "lastName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "dob").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "dateOfBirth").as[String]
 
-          membersUAPath(0) \ "memberDetails" \ "firstName" mustBe membersETMPPath(0) \ "individualsDetails" \ "firstName"
-          membersUAPath(0) \ "memberDetails" \ "lastName" mustBe membersETMPPath(0) \ "individualsDetails" \ "lastName"
-          membersUAPath(0) \ "memberDetails" \ "dob" mustBe membersETMPPath(0) \ "individualsDetails" \ "dateOfBirth"
+          (membersUAPath(0) \ "chargeDetails" \ "qropsReferenceNumber").as[String] mustBe (membersETMPPath(0) \ "qropsReference").as[String].substring(1)
+          (membersUAPath(0) \ "chargeDetails" \ "qropsTransferDate").as[String] mustBe (membersETMPPath(0) \ "dateOfTransfer").as[String]
 
-          membersUAPath(0) \ "chargeDetails" \ "qropsReferenceNumber" mustBe membersETMPPath(0) \ "qropsReference"
-          membersUAPath(0) \ "chargeDetails" \ "qropsTransferDate" mustBe membersETMPPath(0) \ "dateOfTransfer"
+          (membersUAPath(0) \ "chargeAmounts" \ "amountTransferred").as[BigDecimal] mustBe (membersETMPPath(0) \ "amountTransferred").as[BigDecimal]
+          (membersUAPath(0) \ "chargeAmounts" \ "amountTaxDue").as[BigDecimal] mustBe (membersETMPPath(0) \ "amountOfTaxDeducted").as[BigDecimal]
 
-          membersUAPath(0) \ "chargeAmounts" \ "amountTransferred" mustBe membersETMPPath(0) \ "amountTransferred"
-          membersUAPath(0) \ "chargeAmounts" \ "amountTaxDue" mustBe membersETMPPath(0) \ "amountOfTaxDeducted"
+          (transformedJson \ "chargeGDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
+            (etmpResponseJson \ "chargeTypeGDetails" \ "totalOTCAmount").as[BigDecimal]
 
-          transformedJson \ "chargeGDetails" \ "totalChargeAmount" mustBe etmpResponseJson \ "chargeTypeGDetails" \ "totalOTCAmount"
-
-          membersUAPath(1) \ "memberDetails" \ "firstName" mustBe membersETMPPath(1) \ "individualsDetails" \ "firstName"
+          (membersUAPath(1) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(1) \ "individualsDetails" \ "firstName").as[String]
 
           (transformedJson \ "chargeGDetails" \ "members").as[Seq[JsObject]].size mustBe 2
 
