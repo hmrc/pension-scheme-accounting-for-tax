@@ -20,6 +20,8 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
 import play.api.http.Status._
 import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.RequestHeader
+import play.api.test.FakeRequest
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, NotFoundException, Upstream4xxResponse, Upstream5xxResponse}
 import utils.{JsonFileReader, WireMockHelper}
 
@@ -28,6 +30,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   import DesConnectorSpec._
 
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
+  private implicit lazy val rh: RequestHeader = FakeRequest("", "")
 
   override protected def portConfigKey: String = "microservice.services.des-hod.port"
 
