@@ -19,9 +19,7 @@ package audit
 import play.api.libs.json.{Format, JsValue, Json}
 
 case class FileAftReturn(
-                        psaId: String,
                         pstr: String,
-                        quarterStartDate: String,
                         status: Int,
                         request: JsValue,
                         response: Option[JsValue]
@@ -29,9 +27,8 @@ case class FileAftReturn(
   override def auditType: String = "AftPost"
 
   override def details: Map[String, String] = Map(
-    "psaId" -> psaId,
     "pstr" -> pstr,
-    "quarterStartDate" -> quarterStartDate,
+    "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String].getOrElse(""),
     "aftStatus" -> (request \ "aftDetails" \ "aftStatus").asOpt[String].getOrElse(""),
     "status" -> status.toString,
     "request" -> Json.stringify(request),

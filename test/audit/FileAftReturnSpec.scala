@@ -23,7 +23,6 @@ class FileAftReturnSpec extends FlatSpec with Matchers {
 
   "FileAftReturn.details" should "output the correct map of data" in {
 
-    val psaId = "test-psa-id"
     val pstr = "test-pstr"
     val quarterStartDate = "2020-01-01"
     val aftStatus = "Compiled"
@@ -31,21 +30,19 @@ class FileAftReturnSpec extends FlatSpec with Matchers {
     val request = Json.obj(
       "name" -> "request",
       "aftDetails" -> Json.obj(
-        "aftStatus" -> aftStatus
+        "aftStatus" -> aftStatus,
+        "quarterStartDate" -> quarterStartDate
       ))
     val response = Json.obj("name" -> "response")
 
     val event = FileAftReturn(
-      psaId = psaId,
       pstr = pstr,
-      quarterStartDate = quarterStartDate,
       status = status,
       request = request,
       response = Some(response)
     )
 
     val expected: Map[String, String] = Map(
-      "psaId" -> psaId,
       "pstr" -> pstr,
       "quarterStartDate" -> quarterStartDate,
       "aftStatus" -> aftStatus,

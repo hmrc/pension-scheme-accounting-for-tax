@@ -69,7 +69,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     "return OK when valid response from DES" in {
       running(_.overrides(modules: _*)) { app =>
         val controller = app.injector.instanceOf[AFTController]
-        when(mockDesConnector.fileAFTReturn(any(), any(), any(), any())(any(), any(), any()))
+        when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
           .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
 
         val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
@@ -80,7 +80,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     "throw Upstream5XXResponse on Internal Server Error from DES" in {
       running(_.overrides(modules: _*)) { app =>
         val controller = app.injector.instanceOf[AFTController]
-        when(mockDesConnector.fileAFTReturn(any(), any(), any(), any())(any(), any(), any()))
+        when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
           .thenReturn(Future.failed(Upstream5xxResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
         recoverToExceptionIf[Upstream5xxResponse] {
