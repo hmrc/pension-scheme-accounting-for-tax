@@ -22,6 +22,8 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton
 class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig, runModeConfiguration: Configuration) {
+
+  lazy val appName: String = config.get[String](path = "appName")
   val authBaseUrl: String = servicesConfig.baseUrl(serviceName = "auth")
 
   val auditingEnabled: Boolean = config.get[Boolean](path = "auditing.enabled")

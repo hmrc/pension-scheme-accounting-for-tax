@@ -18,25 +18,39 @@ package connectors
 
 import java.util.UUID.randomUUID
 
+import audit.{AuditService, FileAftReturn}
 import com.google.inject.Inject
 import config.AppConfig
 import play.Logger
+import play.api.http.Status
 import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue}
+import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
-class DesConnector @Inject()(http: HttpClient, config: AppConfig) extends HttpErrorFunctions {
+class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: AuditService) extends HttpErrorFunctions {
 
-  def fileAFTReturn(pstr: String, data: JsValue)(implicit headerCarrier: HeaderCarrier,
-                                                 ec: ExecutionContext): Future[HttpResponse] = {
+  def fileAFTReturn(pstr: String, data: JsValue, psaId: String = "", quarterStartDate: String = "")(implicit headerCarrier: HeaderCarrier,
+                                                 ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
 
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
-    http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly)
+    http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen {
+      case Success(httpResponse) =>
+        sendFileAftEvent(data, pstr, psaId, quarterStartDate, Status.OK, Some(httpResponse.json))
+      case Failure(error: HttpException) =>
+        sendFileAftEvent(data, pstr, psaId, quarterStartDate, error.responseCode, None)
+    }
   }
 
+  private def sendFileAftEvent(aftReturn: JsValue, pstr: String,
+                               psaId: String, quarterStartDate: String,
+                               status: Int, response: Option[JsValue]
+                              )(implicit request: RequestHeader, ec: ExecutionContext): Unit =
+    auditService.sendEvent(FileAftReturn(psaId, pstr, quarterStartDate, status, aftReturn, response))
 
   def getAftDetails(pstr: String, startDate: String, aftVersion: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[JsValue] = {
 
