@@ -16,49 +16,58 @@
 
 package audit
 
-import org.scalatest.{AsyncFlatSpec, Inside, Matchers}
+import org.mockito.Matchers.any
+import org.mockito.Mockito._
+import org.mockito.{ArgumentCaptor, Matchers}
+import org.scalatest.{AsyncFlatSpec, Inside, Matchers, MustMatchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.config.AuditingConfig
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.audit.model.DataEvent
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
-class AuditServiceSpec extends AsyncFlatSpec with Matchers with Inside {
+class AuditServiceSpec extends WordSpec with MustMatchers with Inside {
 
   import AuditServiceSpec._
 
-  "AuditServiceImpl" should "construct and send the correct event" in {
+  "AuditServiceImpl" must {
+    "construct and send the correct event" in {
 
-    implicit val request: FakeRequest[AnyContentAsEmpty.type] = fakeRequest()
+      implicit val request: FakeRequest[AnyContentAsEmpty.type] = fakeRequest()
 
-    val event = TestAuditEvent("test-audit-payload")
+      val event = TestAuditEvent("test-audit-payload")
+      val templateCaptor = ArgumentCaptor.forClass(classOf[DataEvent])
 
-    auditService().sendEvent(event)
+      when(mockAuditConnector.sendEvent(any())(any(), any()))
+        .thenReturn(Future.successful(Success))
+      auditService().sendEvent(event)
 
-    val sentEvent = FakeAuditConnector.lastSentEvent
-
-    inside(sentEvent) {
-      case DataEvent(auditSource, auditType, _, _, detail, _) =>
-        auditSource shouldBe appName
-        auditType shouldBe "TestAuditEvent"
-        detail should contain("payload" -> "test-audit-payload")
+      verify(mockAuditConnector, times(1)).sendEvent(templateCaptor.capture())
+      inside(templateCaptor.getValue) {
+        case DataEvent(auditSource, auditType, _, _, detail, _) =>
+          auditSource mustBe appName
+          auditType mustBe "TestAuditEvent"
+          detail must contain("payload" -> "test-audit-payload")
+      }
     }
 
   }
 
 }
 
-object AuditServiceSpec {
+object AuditServiceSpec extends MockitoSugar {
+
+  val mockAuditConnector: AuditConnector = mock[AuditConnector]
 
   private val app = new GuiceApplicationBuilder()
     .overrides(
-      bind[AuditConnector].toInstance(FakeAuditConnector)
+      bind[AuditConnector].toInstance(mockAuditConnector)
     )
     .build()
 
@@ -71,20 +80,6 @@ object AuditServiceSpec {
 }
 
 //noinspection ScalaDeprecation
-object FakeAuditConnector extends AuditConnector {
-
-  private var sentEvent: DataEvent = _
-
-  override def auditingConfig: AuditingConfig = AuditingConfig(None, enabled = false, "test audit source")
-
-  override def sendEvent(event: DataEvent)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AuditResult] = {
-    sentEvent = event
-    super.sendEvent(event)
-  }
-
-  def lastSentEvent: DataEvent = sentEvent
-
-}
 
 case class TestAuditEvent(payload: String) extends AuditEvent {
 
