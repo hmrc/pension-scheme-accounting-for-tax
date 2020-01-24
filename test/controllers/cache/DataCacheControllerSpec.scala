@@ -18,10 +18,11 @@ package controllers.cache
 
 import akka.stream.Materializer
 import akka.util.ByteString
+import com.codahale.metrics.SharedMetricRegistries
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.Matchers.{eq => eqTo, _}
-import org.mockito.Mockito.when
-import org.scalatest.{MustMatchers, WordSpec}
+import org.mockito.Mockito.{reset, when}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach, MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
@@ -33,13 +34,13 @@ import uk.gov.hmrc.auth.core.AuthConnector
 
 import scala.concurrent.Future
 
-class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSugar {
+class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfter {
 
   import DataCacheController._
 
   implicit lazy val mat: Materializer = app.materializer
   private val app = new GuiceApplicationBuilder()
-    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test").build()
+    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test").build()
   private val repo = mock[DataCacheRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
 
@@ -47,6 +48,11 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
     bind[AuthConnector].toInstance(authConnector),
     bind[DataCacheRepository].toInstance(repo)
   )
+
+  before {
+    reset(repo)
+    reset(authConnector)
+  }
 
   "DataCacheController" when {
     "calling get" must {
