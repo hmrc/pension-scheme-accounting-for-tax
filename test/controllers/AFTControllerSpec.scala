@@ -47,7 +47,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   implicit val hc: HeaderCarrier = HeaderCarrier()
   implicit lazy val mat: Materializer = app.materializer
   protected lazy val app: Application = new GuiceApplicationBuilder()
-    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false).build()
+    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).build()
 
   private val fakeRequest = FakeRequest("GET", "/")
   private val mockDesConnector = mock[DesConnector]
