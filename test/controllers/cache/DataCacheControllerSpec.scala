@@ -16,13 +16,11 @@
 
 package controllers.cache
 
-import akka.stream.Materializer
 import akka.util.ByteString
-import com.codahale.metrics.SharedMetricRegistries
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.Matchers.{eq => eqTo, _}
 import org.mockito.Mockito.{reset, when}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach, MustMatchers, WordSpec}
+import org.scalatest.{BeforeAndAfter, MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
@@ -38,9 +36,6 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
 
   import DataCacheController._
 
-  implicit lazy val mat: Materializer = app.materializer
-  private val app = new GuiceApplicationBuilder()
-    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test").build()
   private val repo = mock[DataCacheRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
 
@@ -57,105 +52,115 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
   "DataCacheController" when {
     "calling get" must {
       "return OK with the data" in {
-        running(_.overrides(modules: _*)) { app =>
-          val controller = app.injector.instanceOf[DataCacheController]
-          when(repo.get(eqTo("internalId"))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
-          when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[DataCacheController]
+        when(repo.get(eqTo("internalId"))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
-          val result = controller.get(FakeRequest())
-          status(result) mustEqual OK
-          contentAsJson(result) mustEqual Json.obj(fields = "testId" -> "data")
-        }
+        val result = controller.get(FakeRequest())
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual Json.obj(fields = "testId" -> "data")
       }
 
       "return NOT FOUND when the data doesn't exist" in {
-        running(_.overrides(modules: _*)) { app =>
-          val controller = app.injector.instanceOf[DataCacheController]
-          when(repo.get(eqTo("internalId"))(any())) thenReturn Future.successful(None)
-          when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[DataCacheController]
+        when(repo.get(eqTo("internalId"))(any())) thenReturn Future.successful(None)
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
-          val result = controller.get(FakeRequest())
-          status(result) mustEqual NOT_FOUND
-        }
+        val result = controller.get(FakeRequest())
+        status(result) mustEqual NOT_FOUND
       }
 
       "throw an exception when the repository call fails" in {
-        running(_.overrides(modules: _*)) { app =>
-          val controller = app.injector.instanceOf[DataCacheController]
-          when(repo.get(eqTo("internalId"))(any())) thenReturn Future.failed(new Exception())
-          when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[DataCacheController]
+        when(repo.get(eqTo("internalId"))(any())) thenReturn Future.failed(new Exception())
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
-          val result = controller.get(FakeRequest())
-          an[Exception] must be thrownBy status(result)
-        }
+        val result = controller.get(FakeRequest())
+        an[Exception] must be thrownBy status(result)
       }
 
       "throw an exception when the call is not authorised" in {
-        running(_.overrides(modules: _*)) { app =>
-          val controller = app.injector.instanceOf[DataCacheController]
-          when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[DataCacheController]
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
-          val result = controller.get(FakeRequest())
-          an[InternalIdNotFoundFromAuth] must be thrownBy status(result)
-        }
+        val result = controller.get(FakeRequest())
+        an[InternalIdNotFoundFromAuth] must be thrownBy status(result)
       }
+
     }
 
     "calling save" must {
 
       "return OK when the data is saved successfully" in {
-        running(_.overrides(modules: _*)) { app =>
-          val controller = app.injector.instanceOf[DataCacheController]
-          when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
-          when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[DataCacheController]
+        when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
-          val result = controller.save(FakeRequest("POST", "/").withJsonBody(Json.obj("value" -> "data")))
-          status(result) mustEqual CREATED
-        }
+        val result = controller.save(FakeRequest("POST", "/").withJsonBody(Json.obj("value" -> "data")))
+        status(result) mustEqual CREATED
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        running(_.overrides(modules: _*)) { app =>
-          val controller = app.injector.instanceOf[DataCacheController]
-          when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
-          when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[DataCacheController]
+        when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
-          val result = controller.save(FakeRequest().withRawBody(ByteString(RandomUtils.nextBytes(512001))))
-          status(result) mustEqual BAD_REQUEST
-        }
+        val result = controller.save(FakeRequest().withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+        status(result) mustEqual BAD_REQUEST
       }
 
       "throw an exception when the call is not authorised" in {
-        running(_.overrides(modules: _*)) { app =>
-          val controller = app.injector.instanceOf[DataCacheController]
-          when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[DataCacheController]
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
-          val result = controller.save(FakeRequest("POST", "/").withJsonBody(Json.obj(fields = "value" -> "data")))
-          an[InternalIdNotFoundFromAuth] must be thrownBy status(result)
-        }
+        val result = controller.save(FakeRequest("POST", "/").withJsonBody(Json.obj(fields = "value" -> "data")))
+        an[InternalIdNotFoundFromAuth] must be thrownBy status(result)
       }
     }
 
     "calling remove" must {
       "return OK when the data is removed successfully" in {
-        running(_.overrides(modules: _*)) { app =>
-          val controller = app.injector.instanceOf[DataCacheController]
-          when(repo.remove(eqTo("internalId"))(any())) thenReturn Future.successful(true)
-          when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[DataCacheController]
+        when(repo.remove(eqTo("internalId"))(any())) thenReturn Future.successful(true)
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("internalId"))
 
-          val result = controller.remove(FakeRequest())
-          status(result) mustEqual OK
-        }
+        val result = controller.remove(FakeRequest())
+        status(result) mustEqual OK
       }
 
       "throw an exception when the call is not authorised" in {
-        running(_.overrides(modules: _*)) { app =>
-          val controller = app.injector.instanceOf[DataCacheController]
-          when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[DataCacheController]
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
-          val result = controller.remove(FakeRequest())
-          an[InternalIdNotFoundFromAuth] must be thrownBy status(result)
-        }
+        val result = controller.remove(FakeRequest())
+        an[InternalIdNotFoundFromAuth] must be thrownBy status(result)
       }
     }
   }
