@@ -47,7 +47,7 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (etmpMemberPath(0) \ "amountOfTaxDeducted").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeAmounts" \ "amountTaxDue").as[BigDecimal]
           (etmpMemberPath(0) \ "memberStatus").as[String] mustBe "New"
 
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "totalOTCAmount" mustBe
+          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "totalAmount" mustBe
             userAnswersJson \ "chargeGDetails" \ "totalChargeAmount"
 
           (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
