@@ -45,6 +45,26 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
     )
   }
 
+  val addressGenerator : Gen[JsObject] = for {
+    nonUkAddress <- arbitrary[Boolean]
+    line1 <- nonEmptyString
+    line2 <- nonEmptyString
+    line3 <- Gen.option(nonEmptyString)
+    line4 <- Gen.option(nonEmptyString)
+    postalCode <- Gen.option(nonEmptyString)
+    country <- Gen.listOfN(2, nonEmptyString).map(_.mkString)
+  } yield {
+    Json.obj(
+      fields = "nonUKAddress" -> nonUkAddress.toString.capitalize,
+      "addressLine1" -> line1,
+      "addressLine2" -> line2,
+      "addressLine3" -> line3,
+      "addressLine4" -> line4,
+      "postCode" -> postalCode,
+      "countryCode" -> country
+    )
+  }
+
   val aftDetailsGenerator: Gen[JsObject] =
     for {
       aftVersion <- Gen.choose(1, 999)
@@ -95,6 +115,58 @@ trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenProper
       fields = "chargeTypeBDetails" ->
         Json.obj(
           fields = "numberOfMembers" -> numberOfMembers,
+          "totalAmount" -> totalAmount
+        ))
+
+  val chargeCIndividualMember: Gen[JsObject] =
+    for {
+      address <- addressGenerator
+      individual <- individualGen
+      dateOfPayment <- dateGenerator
+      totalAmountTaxDue <- arbitrary[BigDecimal]
+    } yield {
+      Json.obj(
+        "memberStatus" -> "New",
+        "memberTypeDetails" -> Json.obj(
+          "memberType" -> "Individual",
+          "individualDetails" -> individual
+        ),
+        "correspondenceAddressDetails" -> address,
+        "dateOfPayment" -> dateOfPayment,
+        "totalAmountOfTaxDue" -> totalAmountTaxDue
+      )
+    }
+
+  val chargeCOrgMember: Gen[JsObject] =
+    for {
+      address <- addressGenerator
+      comOrOrganisationName <- arbitrary[String]
+      crnNumber <- arbitrary[String]
+      dateOfPayment <- dateGenerator
+      totalAmountTaxDue <- arbitrary[BigDecimal]
+    } yield {
+      Json.obj(
+        "memberStatus" -> "New",
+        "memberTypeDetails" -> Json.obj(
+          "memberType" -> "Organisation",
+          "comOrOrganisationName" -> comOrOrganisationName,
+          "crnNumber" -> crnNumber
+        ),
+        "correspondenceAddressDetails" -> address,
+        "dateOfPayment" -> dateOfPayment,
+        "totalAmountOfTaxDue" -> totalAmountTaxDue
+      )
+    }
+
+  val chargeCETMPGenerator: Gen[JsObject] =
+    for {
+      indvMembers <- Gen.listOfN(2, chargeCIndividualMember)
+      orgMembers <- Gen.listOfN(1, chargeCOrgMember)
+      totalAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      fields = "chargeTypeCDetails" ->
+        Json.obj(
+          fields = "memberDetails" -> (indvMembers ++ orgMembers),
           "totalAmount" -> totalAmount
         ))
 

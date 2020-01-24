@@ -58,24 +58,29 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    "amountTaxDue": 55.55
       |  },
       |  "chargeCDetails": {
-      |    "isSponsoringEmployerIndividual": true,
-      |    "chargeDetails": {
-      |      "paymentDate": "2020-01-01",
-      |      "amountTaxDue": 500.02
-      |    },
-      |    "sponsoringIndividualDetails": {
-      |      "firstName": "testFirst",
-      |      "lastName": "testLast",
-      |      "nino": "AB100100A"
-      |    },
-      |    "sponsoringEmployerAddress": {
-      |      "line1": "line1",
-      |      "line2": "line2",
-      |      "line3": "line3",
-      |      "line4": "line4",
-      |      "postcode": "NE20 0GG",
-      |      "country": "GB"
-      |    }
+      |    "employers": [
+      |      {
+      |        "isSponsoringEmployerIndividual": true,
+      |        "chargeDetails": {
+      |          "paymentDate": "2020-01-01",
+      |          "amountTaxDue": 500.02
+      |        },
+      |        "sponsoringIndividualDetails": {
+      |          "firstName": "testFirst",
+      |          "lastName": "testLast",
+      |          "nino": "AB100100A"
+      |        },
+      |        "sponsoringEmployerAddress": {
+      |          "line1": "line1",
+      |          "line2": "line2",
+      |          "line3": "line3",
+      |          "line4": "line4",
+      |          "postcode": "NE20 0GG",
+      |          "country": "GB"
+      |        }
+      |      }
+      |    ],
+      |    "totalChargeAmount": 500.02
       |  },
       |  "chargeDDetails": {
       |    "numberOfMembers": 2,
@@ -225,8 +230,8 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
       |    },
-      |    "chargeTypeGDetails": {
-      |      "totalAmount": 1230.02,
+      |     "chargeTypeGDetails": {
+      |      "totalOTCAmount": 1230.02,
       |      "memberDetails": [
       |        {
       |          "memberStatus": "New",

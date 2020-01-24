@@ -31,19 +31,19 @@ trait JsonTransformer {
       (__ \ 'individualsDetails \ 'lastName).json.copyFrom((__ \ 'memberDetails \ 'lastName).json.pick) and
       (__ \ 'individualsDetails \ 'nino).json.copyFrom((__ \ 'memberDetails \ 'nino).json.pick) reduce
 
-  def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T]): Reads[Seq[T]] = new Reads[Seq[T]] {
+  def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T], isDeletedPath: String = "memberDetails"): Reads[Seq[T]] = new Reads[Seq[T]] {
     override def reads(json: JsValue): JsResult[Seq[T]] = {
       json match {
         case JsArray(members) =>
-          readFilteredSeq(JsSuccess(Nil), filterDeleted(members), isA, readsA)
+          readFilteredSeq(JsSuccess(Nil), filterDeleted(members, isDeletedPath), isA, readsA)
         case _ => JsSuccess(Nil)
       }
     }
   }
 
-  private def filterDeleted(jsValueSeq: Seq[JsValue]): Seq[JsValue] = {
+  private def filterDeleted(jsValueSeq: Seq[JsValue], isDeletedPath: String): Seq[JsValue] = {
     jsValueSeq.filterNot { json =>
-      (json \ "memberDetails" \ "isDeleted").validate[Boolean] match {
+      (json \ isDeletedPath \ "isDeleted").validate[Boolean] match {
         case JsSuccess(e, _) => e
         case _ => false
       }
