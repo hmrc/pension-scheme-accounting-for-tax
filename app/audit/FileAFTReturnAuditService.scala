@@ -18,12 +18,25 @@ package audit
 
 import com.google.inject.Inject
 import play.api.http.Status
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{Format, JsValue, Json}
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http.{HttpException, HttpResponse, UpstreamErrorResponse}
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
+
+class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
+
+  def sendFileAFTReturnAuditEvent(pstr: String, data: JsValue)
+                                 (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[HttpResponse], Unit] = {
+    case Success(httpResponse) =>
+      auditService.sendEvent(FileAftReturn(pstr, Status.OK, data, Some(httpResponse.json)))
+    case Failure(error: UpstreamErrorResponse) =>
+      auditService.sendEvent(FileAftReturn(pstr, error.upstreamResponseCode, data, None))
+    case Failure(error: HttpException) =>
+      auditService.sendEvent(FileAftReturn(pstr, error.responseCode, data, None))
+  }
+}
 
 case class FileAftReturn(
                           pstr: String,
@@ -48,15 +61,6 @@ case class FileAftReturn(
   )
 }
 
-class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
-
-  def sendFileAFTReturnAuditEvent(pstr: String, data: JsValue)
-                                 (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[HttpResponse], Unit] = {
-    case Success(httpResponse) =>
-      auditService.sendEvent(FileAftReturn(pstr, Status.OK, data, Some(httpResponse.json)))
-    case Failure(error: UpstreamErrorResponse) =>
-      auditService.sendEvent(FileAftReturn(pstr, error.upstreamResponseCode, data, None))
-    case Failure(error: HttpException) =>
-      auditService.sendEvent(FileAftReturn(pstr, error.responseCode, data, None))
-  }
+object FileAftReturn {
+  implicit val formats: Format[FileAftReturn] = Json.format[FileAftReturn]
 }

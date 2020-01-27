@@ -32,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: AuditService,
                              fileAFTReturnAuditService: FileAFTReturnAuditService,
-                             getAFTVersionsAuditEventService: GetAFTVersionsAuditService) extends HttpErrorFunctions {
+                             aftVersionsAuditEventService: GetAFTVersionsAuditService) extends HttpErrorFunctions {
 
   def fileAFTReturn(pstr: String, data: JsValue)(implicit headerCarrier: HeaderCarrier,
                                                  ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
@@ -41,8 +41,8 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly)
-    andThen fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data)
+    http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
+      fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data)
   }
 
   def getAftDetails(pstr: String, startDate: String, aftVersion: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[JsValue] = {
@@ -67,7 +67,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
         case JsError(errors) => throw JsResultException(errors)
       }
     }
-  } andThen getAFTVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate) recoverWith {
+  } andThen aftVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate) recoverWith {
     case _: NotFoundException => Future.successful(Nil)
   }
 
