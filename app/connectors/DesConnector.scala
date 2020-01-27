@@ -18,7 +18,7 @@ package connectors
 
 import java.util.UUID.randomUUID
 
-import audit.{AuditService, FileAftReturn}
+import audit._
 import com.google.inject.Inject
 import config.AppConfig
 import play.Logger
@@ -29,27 +29,21 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
-class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: AuditService) extends HttpErrorFunctions {
+class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: AuditService,
+                             fileAFTReturnAuditService: FileAFTReturnAuditService,
+                             getAFTVersionsAuditEventService: GetAFTVersionsAuditService) extends HttpErrorFunctions {
 
   def fileAFTReturn(pstr: String, data: JsValue)(implicit headerCarrier: HeaderCarrier,
                                                  ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
 
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
-    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
-    http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen {
-      case Success(httpResponse) =>
-        sendFileAftEvent(data, pstr, Status.OK, Some(httpResponse.json))
-      case Failure(error: HttpException) =>
-        sendFileAftEvent(data, pstr, error.responseCode, None)
-    }
-  }
 
-  private def sendFileAftEvent(aftReturn: JsValue, pstr: String,
-                               status: Int, response: Option[JsValue]
-                              )(implicit request: RequestHeader, ec: ExecutionContext): Unit =
-    auditService.sendEvent(FileAftReturn(pstr, status, aftReturn, response))
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
+
+    http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly)
+    andThen fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data)
+  }
 
   def getAftDetails(pstr: String, startDate: String, aftVersion: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[JsValue] = {
 
@@ -59,18 +53,21 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
     http.GET[JsValue](getAftUrl)(implicitly, hc, implicitly)
   }
 
-  def getAftVersions(pstr: String, startDate: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[Int]] = {
+  def getAftVersions(pstr: String, startDate: String)(
+    implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[Int]] = {
 
     val getAftVersionUrl: String = config.getAftVersionUrl.format(pstr, startDate)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
     http.GET[JsValue](getAftVersionUrl)(implicitly, hc, implicitly).map { responseJson =>
+      auditService.sendEvent(GetAFTVersions(pstr, startDate, Status.OK, Some(responseJson)))
+
       (responseJson \ 0 \ "reportVersion").validate[Int] match {
         case JsSuccess(version, _) => Seq(version)
         case JsError(errors) => throw JsResultException(errors)
       }
     }
-  }.recoverWith {
+  } andThen getAFTVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate) recoverWith {
     case _: NotFoundException => Future.successful(Nil)
   }
 

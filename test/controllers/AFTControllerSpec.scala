@@ -88,7 +88,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.successful(Seq(1)))
 
       val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
@@ -115,7 +115,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[Upstream5xxResponse] {
