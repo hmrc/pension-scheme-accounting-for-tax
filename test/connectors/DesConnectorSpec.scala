@@ -16,17 +16,26 @@
 
 package connectors
 
+import audit.{AuditService, FileAftReturn, GetAFTDetails, GetAFTVersions}
 import com.github.tomakehurst.wiremock.client.WireMock._
+import org.mockito.Matchers.any
+import org.mockito.Mockito.{times, verify}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
+import org.scalatestplus.mockito.MockitoSugar
+import play.api.http.Status
 import play.api.http.Status._
+import play.api.inject.bind
+import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, NotFoundException, Upstream4xxResponse, Upstream5xxResponse}
+import uk.gov.hmrc.http._
 import utils.{JsonFileReader, WireMockHelper}
 
 class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with JsonFileReader
-  with EitherValues {
+  with EitherValues with MockitoSugar {
+
   import DesConnectorSpec._
 
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
@@ -34,7 +43,15 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
 
   override protected def portConfigKey: String = "microservice.services.des-hod.port"
 
+  private val mockAuditService = mock[AuditService]
+
   private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
+
+  override protected def bindings: Seq[GuiceableModule] =
+    Seq(
+      bind[AuditService].toInstance(mockAuditService)
+    )
+
   private val pstr = "test-pstr"
   private val startDt = "2020-01-01"
   private val aftVersion = "1"
@@ -55,6 +72,24 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       connector.fileAFTReturn(pstr, data) map {
         _.status mustBe OK
+      }
+    }
+
+    "send the FileAftReturn audit event when ETMP has returned OK" in {
+      Mockito.reset(mockAuditService)
+      val data = Json.obj(fields = "Id" -> "value")
+      val successResponse = Json.obj("response" -> "success")
+      server.stubFor(
+        post(urlEqualTo(aftSubmitUrl))
+          .withRequestBody(equalTo(Json.stringify(data)))
+          .willReturn(
+            ok.withBody(Json.stringify(successResponse))
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
+      connector.fileAFTReturn(pstr, data).map { response =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.OK, data, Some(successResponse))
       }
     }
 
@@ -92,6 +127,26 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       }
     }
 
+    "send the FileAftReturn audit event when ETMP has returned NotFoundException" in {
+      Mockito.reset(mockAuditService)
+      val data = Json.obj(fields = "Id" -> "value")
+      server.stubFor(
+        post(urlEqualTo(aftSubmitUrl))
+          .withRequestBody(equalTo(Json.stringify(data)))
+          .willReturn(
+            notFound()
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
+
+      recoverToExceptionIf[NotFoundException] {
+        connector.fileAFTReturn(pstr, data)
+      } map {_ =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.NOT_FOUND, data, None)
+      }
+    }
+
     "return Upstream5xxResponse when ETMP has returned Internal Server Error" in {
       val data = Json.obj(fields = "Id" -> "value")
       server.stubFor(
@@ -105,10 +160,27 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
         _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
       }
     }
+
+    "send the FileAftReturn audit event when ETMP has returned Internal Server Error" in {
+      Mockito.reset(mockAuditService)
+      val data = Json.obj(fields = "Id" -> "value")
+      server.stubFor(
+        post(urlEqualTo(aftSubmitUrl))
+          .withRequestBody(equalTo(Json.stringify(data)))
+          .willReturn(
+            serverError()
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
+      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {_ =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.INTERNAL_SERVER_ERROR, data, None)
+      }
+    }
   }
 
   "getAftDetails" must {
-    "return user answer json" in {
+    "return user answer json when successful response returned from ETMP" in {
       server.stubFor(
         get(urlEqualTo(getAftUrl))
           .willReturn(
@@ -119,6 +191,23 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       connector.getAftDetails(pstr, startDt, aftVersion).map { response =>
         response mustBe etmpAFTDetailsResponse
+      }
+    }
+
+    "send AftGet audit event when successful response returned from ETMP" in {
+      Mockito.reset(mockAuditService)
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(etmpAFTDetailsResponse.toString())
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTDetails])
+      connector.getAftDetails(pstr, startDt, aftVersion).map { _ =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual audit.GetAFTDetails(pstr, startDt, Status.OK, Some(etmpAFTDetailsResponse))
       }
     }
 
@@ -140,39 +229,22 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       }
     }
 
-    "return bad request - 400 if body contains INVALID_START_DATE" in {
+    "send AftGet audit event when a 400 INVALID_PSTR response returned from ETMP" in {
+      Mockito.reset(mockAuditService)
       server.stubFor(
         get(urlEqualTo(getAftUrl))
           .willReturn(
             badRequest
               .withHeader("Content-Type", "application/json")
-              .withBody(errorResponse("INVALID_START_DATE"))
+              .withBody(errorResponse("INVALID_PSTR"))
           )
       )
-
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTDetails])
       recoverToExceptionIf[BadRequestException] {
         connector.getAftDetails(pstr, startDt, aftVersion)
-      } map { errorResponse =>
-        errorResponse.responseCode mustEqual BAD_REQUEST
-        errorResponse.message must include("INVALID_START_DATE")
-      }
-    }
-
-    "return bad request - 400 if body contains INVALID_AFT_VERSION" in {
-      server.stubFor(
-        get(urlEqualTo(getAftUrl))
-          .willReturn(
-            badRequest
-              .withHeader("Content-Type", "application/json")
-              .withBody(errorResponse("INVALID_AFT_VERSION"))
-          )
-      )
-
-      recoverToExceptionIf[BadRequestException] {
-        connector.getAftDetails(pstr, startDt, aftVersion)
-      } map { errorResponse =>
-        errorResponse.responseCode mustEqual BAD_REQUEST
-        errorResponse.message must include("INVALID_AFT_VERSION")
+      } map { _ =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual audit.GetAFTDetails(pstr, startDt, Status.BAD_REQUEST, None)
       }
     }
 
@@ -209,6 +281,23 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       }
     }
 
+    "send AftGet audit event when a Upstream4XX for server unavailable - 403 is thrown from ETMP" in {
+      Mockito.reset(mockAuditService)
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            forbidden
+              .withBody(errorResponse("FORBIDDEN"))
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTDetails])
+      recoverToExceptionIf[Upstream4xxResponse](connector.getAftDetails(pstr, startDt, aftVersion)) map {
+        ex =>
+          verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+          eventCaptor.getValue mustEqual audit.GetAFTDetails(pstr, startDt, Status.FORBIDDEN, None)
+      }
+    }
+
     "throw Upstream5XX for internal server error - 500 and log the event as error" in {
 
       server.stubFor(
@@ -230,11 +319,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
 
   "getAftVersions" must {
     "return the seq of version nos returned from the ETMP" in {
-      val aftVersionsResponseJson = Json.arr(
-        Json.obj(
-          fields = "reportVersion" -> 1
-        )
-      )
+      val aftVersionsResponseJson = Json.arr(Json.obj(fields = "reportVersion" -> 1))
       server.stubFor(
         get(urlEqualTo(getAftVersionsUrl))
           .willReturn(
@@ -245,6 +330,25 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       connector.getAftVersions(pstr, startDt).map { response =>
         response mustBe Seq(1)
+      }
+    }
+
+    "send the GetReportVersions audit event when the success response returned from ETMP" in {
+      Mockito.reset(mockAuditService)
+      val aftVersionsResponseJson = Json.arr(Json.obj(fields = "reportVersion" -> 1))
+
+      server.stubFor(
+        get(urlEqualTo(getAftVersionsUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(aftVersionsResponseJson.toString())
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTVersions])
+      connector.getAftVersions(pstr, startDt).map { response =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual audit.GetAFTVersions(pstr, startDt, Status.OK, Some(aftVersionsResponseJson))
       }
     }
 
@@ -280,6 +384,23 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       }
     }
 
+    "send the GetReportVersions audit event when the NOT FOUND - 404 response returned from ETMP" in {
+      Mockito.reset(mockAuditService)
+      server.stubFor(
+        get(urlEqualTo(getAftVersionsUrl))
+          .willReturn(
+            notFound
+              .withBody(errorResponse("NOT_FOUND"))
+          )
+      )
+
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTVersions])
+      connector.getAftVersions(pstr, startDt).map { response =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual audit.GetAFTVersions(pstr, startDt, Status.NOT_FOUND, None)
+      }
+    }
+
     "throw Upstream4XX for FORBIDDEN - 403" in {
 
       server.stubFor(
@@ -310,6 +431,23 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
         ex =>
           ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
           ex.message must include("SERVER_ERROR")
+      }
+    }
+
+    "send the GetReportVersions audit event when the INTERNAL SERVER ERROR - 500 response returned from ETMP" in {
+      Mockito.reset(mockAuditService)
+      server.stubFor(
+        get(urlEqualTo(getAftVersionsUrl))
+          .willReturn(
+            serverError
+              .withBody(errorResponse("SERVER_ERROR"))
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTVersions])
+      recoverToExceptionIf[Upstream5xxResponse](connector.getAftVersions(pstr, startDt)) map {
+        _ =>
+          verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+          eventCaptor.getValue mustEqual audit.GetAFTVersions(pstr, startDt, Status.INTERNAL_SERVER_ERROR, None)
       }
     }
   }
@@ -344,6 +482,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     )
   }
 }
+
 object DesConnectorSpec {
   private val etmpAFTDetailsResponse: JsValue = Json.obj(
     "schemeDetails" -> Json.obj(
