@@ -16,7 +16,7 @@
 
 package connectors
 
-import audit.{AuditService, FileAftReturn, GetAFTVersions}
+import audit.{AuditService, FileAftReturn, GetAFTDetails, GetAFTVersions}
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify}
@@ -86,7 +86,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok.withBody(Json.stringify(successResponse))
           )
       )
-      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTVersions])
+      val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       connector.fileAFTReturn(pstr, data).map { response =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.OK, data, Some(successResponse))
@@ -137,7 +137,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             notFound()
           )
       )
-      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTVersions])
+      val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
 
       recoverToExceptionIf[NotFoundException] {
         connector.fileAFTReturn(pstr, data)
@@ -171,7 +171,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             serverError()
           )
       )
-      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTVersions])
+      val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {_ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.INTERNAL_SERVER_ERROR, data, None)
@@ -180,7 +180,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   }
 
   "getAftDetails" must {
-    "return user answer json" in {
+    "return user answer json when successful response returned from ETMP" in {
       server.stubFor(
         get(urlEqualTo(getAftUrl))
           .willReturn(
@@ -191,6 +191,23 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       connector.getAftDetails(pstr, startDt, aftVersion).map { response =>
         response mustBe etmpAFTDetailsResponse
+      }
+    }
+
+    "send AftGet audit event when successful response returned from ETMP" in {
+      Mockito.reset(mockAuditService)
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(etmpAFTDetailsResponse.toString())
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTDetails])
+      connector.getAftDetails(pstr, startDt, aftVersion).map { _ =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual audit.GetAFTDetails(pstr, startDt, Status.OK, Some(etmpAFTDetailsResponse))
       }
     }
 
@@ -212,39 +229,22 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       }
     }
 
-    "return bad request - 400 if body contains INVALID_START_DATE" in {
+    "send AftGet audit event when a 400 INVALID_PSTR response returned from ETMP" in {
+      Mockito.reset(mockAuditService)
       server.stubFor(
         get(urlEqualTo(getAftUrl))
           .willReturn(
             badRequest
               .withHeader("Content-Type", "application/json")
-              .withBody(errorResponse("INVALID_START_DATE"))
+              .withBody(errorResponse("INVALID_PSTR"))
           )
       )
-
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTDetails])
       recoverToExceptionIf[BadRequestException] {
         connector.getAftDetails(pstr, startDt, aftVersion)
-      } map { errorResponse =>
-        errorResponse.responseCode mustEqual BAD_REQUEST
-        errorResponse.message must include("INVALID_START_DATE")
-      }
-    }
-
-    "return bad request - 400 if body contains INVALID_AFT_VERSION" in {
-      server.stubFor(
-        get(urlEqualTo(getAftUrl))
-          .willReturn(
-            badRequest
-              .withHeader("Content-Type", "application/json")
-              .withBody(errorResponse("INVALID_AFT_VERSION"))
-          )
-      )
-
-      recoverToExceptionIf[BadRequestException] {
-        connector.getAftDetails(pstr, startDt, aftVersion)
-      } map { errorResponse =>
-        errorResponse.responseCode mustEqual BAD_REQUEST
-        errorResponse.message must include("INVALID_AFT_VERSION")
+      } map { _ =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual audit.GetAFTDetails(pstr, startDt, Status.BAD_REQUEST, None)
       }
     }
 
@@ -278,6 +278,23 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
         ex =>
           ex.upstreamResponseCode mustBe FORBIDDEN
           ex.message must include("FORBIDDEN")
+      }
+    }
+
+    "send AftGet audit event when a Upstream4XX for server unavailable - 403 is thrown from ETMP" in {
+      Mockito.reset(mockAuditService)
+      server.stubFor(
+        get(urlEqualTo(getAftUrl))
+          .willReturn(
+            forbidden
+              .withBody(errorResponse("FORBIDDEN"))
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTDetails])
+      recoverToExceptionIf[Upstream4xxResponse](connector.getAftDetails(pstr, startDt, aftVersion)) map {
+        ex =>
+          verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+          eventCaptor.getValue mustEqual audit.GetAFTDetails(pstr, startDt, Status.FORBIDDEN, None)
       }
     }
 

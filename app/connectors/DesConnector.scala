@@ -32,10 +32,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: AuditService,
                              fileAFTReturnAuditService: FileAFTReturnAuditService,
-                             aftVersionsAuditEventService: GetAFTVersionsAuditService) extends HttpErrorFunctions {
+                             aftVersionsAuditEventService: GetAFTVersionsAuditService,
+                             aftDetailsAuditEventService: GetAFTDetailsAuditService) extends HttpErrorFunctions {
 
-  def fileAFTReturn(pstr: String, data: JsValue)(implicit headerCarrier: HeaderCarrier,
-                                                 ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
+  def fileAFTReturn(pstr: String, data: JsValue)
+                   (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
 
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
 
@@ -45,16 +46,18 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
       fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data)
   }
 
-  def getAftDetails(pstr: String, startDate: String, aftVersion: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[JsValue] = {
+  def getAftDetails(pstr: String, startDate: String, aftVersion: String)
+                   (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[JsValue] = {
 
     val getAftUrl: String = config.getAftDetailsUrl.format(pstr, startDate, aftVersion)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    http.GET[JsValue](getAftUrl)(implicitly, hc, implicitly)
+    http.GET[JsValue](getAftUrl)(implicitly, hc, implicitly) andThen
+      aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, startDate)
   }
 
-  def getAftVersions(pstr: String, startDate: String)(
-    implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[Int]] = {
+  def getAftVersions(pstr: String, startDate: String)
+                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[Int]] = {
 
     val getAftVersionUrl: String = config.getAftVersionUrl.format(pstr, startDate)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))

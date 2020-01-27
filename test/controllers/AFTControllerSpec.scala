@@ -135,7 +135,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.successful(etmpAFTDetailsResponse))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -162,7 +162,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(new BadRequestException(errorResponse("INVALID_PSTR"))))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -177,7 +177,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -192,7 +192,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(new BadRequestException(errorResponse("INVALID_AFT_VERSION"))))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -207,7 +207,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(Upstream4xxResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -222,13 +222,13 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any())).thenReturn(
-        Future.failed(Upstream5xxResponse(errorResponse("NOT_FOUND"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
       ScalaFutures.whenReady(result.failed) { e =>
         e mustBe a[Upstream5xxResponse]
-        e.getMessage mustBe errorResponse("NOT_FOUND")
+        e.getMessage mustBe errorResponse("INTERNAL_SERVER_ERROR")
       }
     }
 
@@ -237,7 +237,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(new Exception("Generic Exception")))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
