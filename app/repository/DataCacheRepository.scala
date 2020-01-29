@@ -24,7 +24,8 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import repository.model.DataCache
+import repository.model.{DataCache, LockedBy}
+import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.mongo.ReactiveRepository
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -62,8 +63,9 @@ class DataCacheRepository @Inject()(
     )
   }
 
-  def save(id: String, userData: JsValue)(implicit ec: ExecutionContext): Future[Boolean] = {
-    val document: JsValue = Json.toJson(DataCache.applyDataCache(id = id, data = userData, expireAt = expireInSeconds))
+  def save(id: String, name: String, userData: JsValue)(implicit ec: ExecutionContext): Future[Boolean] = {
+    val document: JsValue = Json.toJson(DataCache.applyDataCache(
+      id = id, name = name , data = userData, expireAt = expireInSeconds))
     val selector = BSONDocument("id" -> id)
     val modifier = BSONDocument("$set" -> document)
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
@@ -82,5 +84,15 @@ class DataCacheRepository @Inject()(
     Logger.warn(message = s"Removing row from collection ${collection.name} id:$id")
     val selector = BSONDocument("id" -> id)
     collection.delete.one(selector).map(_.ok)
+  }
+
+  def isLocked(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+    collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).one[DataCache].map {
+      _.flatMap {
+        dataEntry =>
+          val lock = dataEntry.lockedBy
+          if (lock.sessionId != sessionId) Some(lock.name) else None
+      }
+    }
   }
 }

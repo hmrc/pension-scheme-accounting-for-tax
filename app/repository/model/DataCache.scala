@@ -17,15 +17,27 @@
 package repository.model
 
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.json.{Format, JsValue, Json}
+import play.api.libs.json.{Format, JsError, JsResultException, JsSuccess, JsValue, Json}
+import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-case class DataCache(id: String, data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
+case class LockedBy(sessionId: String, name: String)
+object LockedBy {
+  implicit val format: Format[LockedBy] = Json.format[LockedBy]
+}
+
+case class DataCache(id: String, lockedBy: LockedBy, data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
 
 object DataCache {
-  def applyDataCache(id: String, data: JsValue, lastUpdated: DateTime = DateTime.now(DateTimeZone.UTC), expireAt: DateTime): DataCache =
-    DataCache(id, data, lastUpdated, expireAt)
-
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   implicit val format: Format[DataCache] = Json.format[DataCache]
+  def applyDataCache(id: String, name: String, data: JsValue, lastUpdated: DateTime = DateTime.now(DateTimeZone.UTC), expireAt: DateTime): DataCache = {
+    val lockedBy = (data \ "sessionId").validate[String]  match {
+      case JsSuccess(sessionId, _) =>
+        LockedBy(sessionId, name)
+      case JsError(errors) =>
+        throw JsResultException(errors)
+    }
+    DataCache(id, lockedBy, data, lastUpdated, expireAt)
+  }
 }
