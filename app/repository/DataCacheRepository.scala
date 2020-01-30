@@ -21,11 +21,11 @@ import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.{Cursor, ReadPreference}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import repository.model.{DataCache, LockedBy}
-import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.mongo.ReactiveRepository
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -42,7 +42,9 @@ class DataCacheRepository @Inject()(
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"))
 
   val collectionIndexes = Seq(
-    Index(key = Seq(("id", IndexType.Ascending)), name = Some("id"), background = true, unique = true),
+    Index(key = Seq(("id", IndexType.Ascending)), name = Some("srn_startDt_key"), background = true),
+    Index(key = Seq(("uniqueAftId", IndexType.Ascending)), name = Some("unique_Aft_Id"), background = true, unique = true),
+    Index(key = Seq(("isLocked", IndexType.Ascending)), name = Some("isLocked"), background = true),
     Index(key = Seq(("expireAt", IndexType.Ascending)), name = Some("dataExpiry"), background = true,
       unique = true, options = BSONDocument("expireAfterSeconds" -> 0))
   )
@@ -63,16 +65,25 @@ class DataCacheRepository @Inject()(
     )
   }
 
-  def save(id: String, name: String, userData: JsValue)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def save(id: String, name: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
-      id = id, name = name , data = userData, expireAt = expireInSeconds))
-    val selector = BSONDocument("id" -> id)
+      id = id, None , data = userData, expireAt = expireInSeconds))
+    val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     val modifier = BSONDocument("$set" -> document)
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
   }
 
-  def get(id: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
-    collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).one[DataCache].map {
+  def setLock(id: String, name: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+    val document: JsValue = Json.toJson(DataCache.applyDataCache(
+      id = id, Some(LockedBy(sessionId, name)) ,
+      data = userData, expireAt = expireInSeconds))
+    val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
+    val modifier = BSONDocument("$set" -> document)
+    collection.update.one(selector, modifier, upsert = true).map(_.ok)
+  }
+
+  def get(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
+    collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[DataCache].map {
       _.map {
         dataEntry =>
           dataEntry.data
@@ -80,19 +91,23 @@ class DataCacheRepository @Inject()(
     }
   }
 
-  def remove(id: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.warn(message = s"Removing row from collection ${collection.name} id:$id")
-    val selector = BSONDocument("id" -> id)
+    val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     collection.delete.one(selector).map(_.ok)
   }
 
   def isLocked(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
-    collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).one[DataCache].map {
-      _.flatMap {
-        dataEntry =>
-          val lock = dataEntry.lockedBy
-          if (lock.sessionId != sessionId) Some(lock.name) else None
-      }
+    collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
+      cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]()).map {
+      de =>
+        de.filter(_.lockedBy.nonEmpty).headOption.flatMap { dataCache =>
+          dataCache.lockedBy match
+          {
+            case Some(lockedBy) if (lockedBy.sessionId != sessionId) => Some(lockedBy.name)
+            case _ => None
+          }
+        }
     }
   }
 }
