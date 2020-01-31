@@ -39,11 +39,22 @@ class DataCacheController @Inject()(
 
   def save(id: String): Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { case (sessionId, name) =>
+      withIdFromAuth { case (sessionId, _) =>
         request.body.asJson.map {
           jsValue =>
 
-            repository.save(id, name, jsValue, sessionId)
+            repository.save(id, jsValue, sessionId)
+              .map(_ => Created)
+        } getOrElse Future.successful(BadRequest)
+      }
+  }
+
+  def setLock(id: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      withIdFromAuth { case (sessionId, name) =>
+        request.body.asJson.map {
+          jsValue =>
+            repository.setLock(id, name, jsValue, sessionId)
               .map(_ => Created)
         } getOrElse Future.successful(BadRequest)
       }
@@ -68,7 +79,7 @@ class DataCacheController @Inject()(
       }
   }
 
-  def isLocked(id: String): Action[AnyContent] = Action.async {
+  def getLock(id: String): Action[AnyContent] = Action.async {
     implicit request =>
       withIdFromAuth { case (sessionId, _) =>
 
@@ -80,15 +91,15 @@ class DataCacheController @Inject()(
         }
       }
   }
-
+git
   private def withIdFromAuth(block: (String, String) => Future[Result])(implicit hc: HeaderCarrier,
                                                               request: Request[AnyContent]): Future[Result] = {
 
     authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
-      case Some(name) =>
-        val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
-        block(sessionId, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim)
-        case _ => Future.failed(new BadRequestException("Missing id with pstr and startDate from headers"))
+        case Some(name) =>
+          val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
+          block(sessionId, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim)
+        case _ => Future.failed(CredNameNotFoundFromAuth())
       }
   }
 }
@@ -97,7 +108,7 @@ object DataCacheController {
 
   case object MissingHeadersException extends BadRequestException("Missing id with pstr and startDate from headers")
 
-  case class InternalIdNotFoundFromAuth(msg: String = "Not Authorised - Unable to retrieve Internal Id")
+  case class CredNameNotFoundFromAuth(msg: String = "Not Authorised - Unable to retrieve credentials - name")
     extends UnauthorizedException(msg)
 
 }

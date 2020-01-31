@@ -65,7 +65,7 @@ class DataCacheRepository @Inject()(
     )
   }
 
-  def save(id: String, name: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
       id = id, None , data = userData, expireAt = expireInSeconds))
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
@@ -100,9 +100,8 @@ class DataCacheRepository @Inject()(
   def isLocked(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
       cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]()).map {
-      de =>
-        de.filter(_.lockedBy.nonEmpty).headOption.flatMap { dataCache =>
-          dataCache.lockedBy match
+      _.find(_.lockedBy.nonEmpty).flatMap {
+        _.lockedBy match
           {
             case Some(lockedBy) if (lockedBy.sessionId != sessionId) => Some(lockedBy.name)
             case _ => None

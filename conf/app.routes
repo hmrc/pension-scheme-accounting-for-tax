@@ -6,7 +6,8 @@ GET         /get-aft-details                       controllers.AFTController.get
 
 GET         /get-aft-versions                       controllers.AFTController.getVersions
 
-GET         /journey-cache/aft/isLocked/:id                 controllers.cache.DataCacheController.isLocked(id: String)
+GET         /journey-cache/aft/lock/:id                 controllers.cache.DataCacheController.getLock(id: String)
+POST        /journey-cache/aft/lock/:id                 controllers.cache.DataCacheController.setLock(id: String)
 GET         /journey-cache/aft/:id                      controllers.cache.DataCacheController.get(id: String)
 POST        /journey-cache/aft/:id                      controllers.cache.DataCacheController.save(id: String)
 DELETE      /journey-cache/aft/:id                      controllers.cache.DataCacheController.remove(id: String)
