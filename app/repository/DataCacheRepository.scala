@@ -44,7 +44,6 @@ class DataCacheRepository @Inject()(
   val collectionIndexes = Seq(
     Index(key = Seq(("id", IndexType.Ascending)), name = Some("srn_startDt_key"), background = true),
     Index(key = Seq(("uniqueAftId", IndexType.Ascending)), name = Some("unique_Aft_Id"), background = true, unique = true),
-    Index(key = Seq(("isLocked", IndexType.Ascending)), name = Some("isLocked"), background = true),
     Index(key = Seq(("expireAt", IndexType.Ascending)), name = Some("dataExpiry"), background = true,
       unique = true, options = BSONDocument("expireAfterSeconds" -> 0))
   )
