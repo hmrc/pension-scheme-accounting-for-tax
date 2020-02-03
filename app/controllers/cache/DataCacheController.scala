@@ -37,9 +37,9 @@ class DataCacheController @Inject()(
 
   import DataCacheController._
 
-  def save(id: String): Action[AnyContent] = Action.async {
+  def save: Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { case (sessionId, _) =>
+      withIdFromAuth { case (sessionId, id, _) =>
         request.body.asJson.map {
           jsValue =>
 
@@ -49,21 +49,22 @@ class DataCacheController @Inject()(
       }
   }
 
-  def setLock(id: String): Action[AnyContent] = Action.async {
+  def setLock(): Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { case (sessionId, name) =>
+      withIdFromAuth { case (sessionId, id, name) =>
         request.body.asJson.map {
-          jsValue =>
+          jsValue => {
             repository.setLock(id, name, jsValue, sessionId)
               .map(_ => Created)
+          }
         } getOrElse Future.successful(BadRequest)
       }
   }
 
-  def get(id: String): Action[AnyContent] = Action.async {
+  def get: Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { (sessionId, _) =>
-        repository.get(id , sessionId).map { response =>
+      withIdFromAuth { (sessionId, id, _) =>
+        repository.get(id, sessionId).map { response =>
           Logger.debug(message = s"DataCacheController.get: Response for request Id $id is $response")
           response.map {
             Ok(_)
@@ -72,17 +73,16 @@ class DataCacheController @Inject()(
       }
   }
 
-  def remove(id: String): Action[AnyContent] = Action.async {
+  def remove: Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { (sessionId, _) =>
+      withIdFromAuth { (sessionId, id, _) =>
         repository.remove(id, sessionId).map(_ => Ok)
       }
   }
 
-  def getLock(id: String): Action[AnyContent] = Action.async {
+  def getLock: Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { case (sessionId, _) =>
-
+      withIdFromAuth { case (sessionId, id, _) =>
         repository.isLocked(sessionId, id).map { response =>
           Logger.debug(message = s"DataCacheController.isLocked: Response for request Id $id is $response")
           response.map {
@@ -92,21 +92,21 @@ class DataCacheController @Inject()(
       }
   }
 
-  private def withIdFromAuth(block: (String, String) => Future[Result])(implicit hc: HeaderCarrier,
-                                                              request: Request[AnyContent]): Future[Result] = {
-
+  private def withIdFromAuth(block: (String, String, String) => Future[Result])(implicit hc: HeaderCarrier,
+                                                                                request: Request[AnyContent]): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
-        case Some(name) =>
-          val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
-          block(sessionId, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim)
-        case _ => Future.failed(CredNameNotFoundFromAuth())
-      }
+      case Some(name) =>
+        val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
+        val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
+        block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim)
+      case _ => Future.failed(CredNameNotFoundFromAuth())
+    }
   }
 }
 
 object DataCacheController {
 
-  case object MissingHeadersException extends BadRequestException("Missing id with pstr and startDate from headers")
+  case object MissingHeadersException extends BadRequestException("Missing id(pstr and startDate) or Session Id from headers")
 
   case class CredNameNotFoundFromAuth(msg: String = "Not Authorised - Unable to retrieve credentials - name")
     extends UnauthorizedException(msg)

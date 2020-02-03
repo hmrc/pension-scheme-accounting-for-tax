@@ -67,7 +67,7 @@ class DataCacheRepository @Inject()(
 
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
-      id = id, None , data = userData, expireAt = expireInSeconds))
+      id = id, None, data = userData, expireAt = expireInSeconds))
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     val modifier = BSONDocument("$set" -> document)
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
@@ -75,7 +75,7 @@ class DataCacheRepository @Inject()(
 
   def setLock(id: String, name: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
-      id = id, Some(LockedBy(sessionId, name)) ,
+      id = id, Some(LockedBy(sessionId, name)),
       data = userData, expireAt = expireInSeconds))
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     val modifier = BSONDocument("$set" -> document)
@@ -103,7 +103,7 @@ class DataCacheRepository @Inject()(
       _.find(_.lockedBy.nonEmpty).flatMap {
         _.lockedBy match
           {
-            case Some(lockedBy) if (lockedBy.sessionId != sessionId) => Some(lockedBy.name)
+            case Some(lockedBy) if lockedBy.sessionId != sessionId => Some(lockedBy.name)
             case _ => None
           }
         }

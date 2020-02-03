@@ -42,8 +42,8 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val id = "id"
   private val sessionId = "sessionId"
-  private val fakeRequest = FakeRequest().withHeaders("X-Session-ID" -> sessionId)
-  private val fakePostRequest = FakeRequest("POST", "/").withHeaders("X-Session-ID" -> sessionId)
+  private val fakeRequest = FakeRequest().withHeaders("X-Session-ID" -> sessionId, "id" -> id)
+  private val fakePostRequest = FakeRequest("POST", "/").withHeaders("X-Session-ID" -> sessionId, "id" -> id)
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
@@ -65,7 +65,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.get(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.get(id)(fakeRequest)
+        val result = controller.get(fakeRequest)
         status(result) mustEqual OK
         contentAsJson(result) mustEqual Json.obj(fields = "testId" -> "data")
       }
@@ -78,7 +78,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.get(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful(None)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.get(id)(fakeRequest)
+        val result = controller.get(fakeRequest)
         status(result) mustEqual NOT_FOUND
       }
 
@@ -90,7 +90,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.get(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.failed(new Exception())
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.get(id)(fakeRequest)
+        val result = controller.get(fakeRequest)
         an[Exception] must be thrownBy status(result)
       }
 
@@ -101,7 +101,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         val controller = app.injector.instanceOf[DataCacheController]
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
-        val result = controller.get(id)(fakeRequest)
+        val result = controller.get(fakeRequest)
         an[CredNameNotFoundFromAuth] must be thrownBy status(result)
       }
 
@@ -117,7 +117,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.save(any(), any(), any())(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.save(id)(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
+        val result = controller.save(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
         status(result) mustEqual CREATED
       }
 
@@ -129,7 +129,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.save(any(), any(), any())(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.save(id)(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+        val result = controller.save(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
         status(result) mustEqual BAD_REQUEST
       }
 
@@ -140,7 +140,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         val controller = app.injector.instanceOf[DataCacheController]
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
-        val result = controller.save(id)(fakePostRequest.withJsonBody(Json.obj(fields = "value" -> "data")))
+        val result = controller.save(fakePostRequest.withJsonBody(Json.obj(fields = "value" -> "data")))
         an[CredNameNotFoundFromAuth] must be thrownBy status(result)
       }
     }
@@ -154,7 +154,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.remove(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.remove(id)(fakeRequest)
+        val result = controller.remove(fakeRequest)
         status(result) mustEqual OK
       }
 
@@ -165,7 +165,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         val controller = app.injector.instanceOf[DataCacheController]
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
-        val result = controller.remove(id)(fakeRequest)
+        val result = controller.remove(fakeRequest)
         an[CredNameNotFoundFromAuth] must be thrownBy status(result)
       }
     }
@@ -179,7 +179,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.isLocked(any(), any())(any())) thenReturn Future.successful(Some("test name"))
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.getLock("xyz")(FakeRequest().withHeaders("X-Session-ID" -> "1234"))
+        val result = controller.getLock(fakeRequest)
         status(result) mustEqual OK
         contentAsString(result) mustEqual "test name"
       }
@@ -192,7 +192,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.isLocked(any(), any())(any())) thenReturn Future.successful(None)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.getLock("xyz")(FakeRequest().withHeaders("X-Session-ID" -> "1234"))
+        val result = controller.getLock(fakeRequest)
         status(result) mustEqual NOT_FOUND
       }
     }
@@ -208,7 +208,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       when(repo.setLock(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-      val result = controller.setLock(id)(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
+      val result = controller.setLock()(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
       status(result) mustEqual CREATED
     }
 
@@ -220,7 +220,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       when(repo.setLock(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-      val result = controller.setLock(id)(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+      val result = controller.setLock()(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
       status(result) mustEqual BAD_REQUEST
     }
   }
