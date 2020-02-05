@@ -1,3 +1,4 @@
+import scoverage.ScoverageKeys
 import uk.gov.hmrc.DefaultBuildSettings.integrationTestSettings
 import uk.gov.hmrc.SbtArtifactory
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
@@ -14,4 +15,11 @@ lazy val microservice = Project(appName, file("."))
   .settings(PlayKeys.devSettings += "play.server.http.port" -> "8207")
   .configs(IntegrationTest)
   .settings(integrationTestSettings(): _*)
+  .settings(
+    ScoverageKeys.coverageExcludedFiles := "<empty>;Reverse.*;.*repository.*;" +
+      ".*BuildInfo.*;.*javascript.*;.*Routes.*;.*GuiceInjector;",
+    ScoverageKeys.coverageMinimum := 80,
+    ScoverageKeys.coverageFailOnMinimum := true,
+    ScoverageKeys.coverageHighlighting := true
+  )
   .settings(resolvers += Resolver.jcenterRepo)
