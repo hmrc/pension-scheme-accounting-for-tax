@@ -27,12 +27,8 @@ class ChargeETransformer extends JsonTransformer {
 
   def readsChargeE: Reads[JsObject] =
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { totalCharge =>
-      if (!totalCharge.equals(0.00)) {
-        ((__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-          (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
-      } else {
-        doNothing
-      }
+      ((__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
+        (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
     }
 
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_))
