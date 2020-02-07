@@ -83,8 +83,8 @@ class DataCacheController @Inject()(
   def getLock: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
-        repository.isLocked(sessionId, id).map { response =>
-          Logger.debug(message = s"DataCacheController.isLocked: Response for request Id $id is $response")
+        repository.lockedBy(sessionId, id).map { response =>
+          Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
           response.map {
             Ok(_)
           } getOrElse NotFound

@@ -96,7 +96,7 @@ class DataCacheRepository @Inject()(
     collection.delete.one(selector).map(_.ok)
   }
 
-  def isLocked(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+  def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
       cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]()).map {
       _.find(_.lockedBy.nonEmpty).flatMap {
