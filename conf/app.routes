@@ -6,6 +6,8 @@ GET         /get-aft-details                       controllers.AFTController.get
 
 GET         /get-aft-versions                       controllers.AFTController.getVersions
 
+GET         /journey-cache/aft/lock                 controllers.cache.DataCacheController.getLock
+POST        /journey-cache/aft/lock                 controllers.cache.DataCacheController.setLock
 GET         /journey-cache/aft                      controllers.cache.DataCacheController.get
 POST        /journey-cache/aft                      controllers.cache.DataCacheController.save
 DELETE      /journey-cache/aft                      controllers.cache.DataCacheController.remove
