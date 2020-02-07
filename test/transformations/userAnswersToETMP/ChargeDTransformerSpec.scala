@@ -51,16 +51,5 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
       }
     }
-
-    "must not pass ChargeD to ETMP if total amount is 0" in {
-      forAll(chargeDAllDeletedUserAnswersGenerator) {
-        userAnswersJson =>
-          val transformer = new ChargeDTransformer
-          val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
-
-          transformedJson.as[JsObject] mustBe Json.obj()
-
-      }
-    }
   }
 }
