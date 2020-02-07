@@ -39,7 +39,7 @@ class DataCacheController @Inject()(
 
   def save: Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { case (sessionId, id, _) =>
+      getIdWithName { case (sessionId, id, _) =>
         request.body.asJson.map {
           jsValue =>
 
@@ -51,7 +51,7 @@ class DataCacheController @Inject()(
 
   def setLock(): Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { case (sessionId, id, name) =>
+      getIdWithName { case (sessionId, id, name) =>
         request.body.asJson.map {
           jsValue => {
             repository.setLock(id, name, jsValue, sessionId)
@@ -63,7 +63,7 @@ class DataCacheController @Inject()(
 
   def get: Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { (sessionId, id, _) =>
+      getIdWithName { (sessionId, id, _) =>
         repository.get(id, sessionId).map { response =>
           Logger.debug(message = s"DataCacheController.get: Response for request Id $id is $response")
           response.map {
@@ -75,14 +75,14 @@ class DataCacheController @Inject()(
 
   def remove: Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { (sessionId, id, _) =>
+      getIdWithName { (sessionId, id, _) =>
         repository.remove(id, sessionId).map(_ => Ok)
       }
   }
 
   def getLock: Action[AnyContent] = Action.async {
     implicit request =>
-      withIdFromAuth { case (sessionId, id, _) =>
+      getIdWithName { case (sessionId, id, _) =>
         repository.isLocked(sessionId, id).map { response =>
           Logger.debug(message = s"DataCacheController.isLocked: Response for request Id $id is $response")
           response.map {
@@ -92,8 +92,8 @@ class DataCacheController @Inject()(
       }
   }
 
-  private def withIdFromAuth(block: (String, String, String) => Future[Result])(implicit hc: HeaderCarrier,
-                                                                                request: Request[AnyContent]): Future[Result] = {
+  private def getIdWithName(block: (String, String, String) => Future[Result])(implicit hc: HeaderCarrier,
+                                                                               request: Request[AnyContent]): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
       case Some(name) =>
         val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
