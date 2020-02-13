@@ -57,7 +57,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val aftVersion = "1"
   private val aftSubmitUrl = s"/pension-online/pstr/$pstr/aft/return"
   private val getAftUrl = s"/pension-online/aft-return/$pstr?startDate=$startDt&aftVersion=$aftVersion"
-  private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions/startDate=$startDt"
+  private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions?startDate=$startDt"
 
   "fileAFTReturn" must {
 
