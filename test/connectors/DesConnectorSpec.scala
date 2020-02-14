@@ -456,14 +456,14 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     "return the correct CorrelationId when the request Id is more than 32 characters" in {
       val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2dfe")
       val result = connector.getCorrelationId(requestId)
-      result mustBe "4725c81192514c069b8ff1d84659b2df"
+      result mustBe "4725c811-9251-4c06-9b8f-f1d84659b2df"
     }
 
 
     "return the correct CorrelationId when the request Id is less than 32 characters" in {
       val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1")
       val result = connector.getCorrelationId(requestId)
-      result mustBe "4725c81192514c069b8ff1"
+      result mustBe "4725c811-9251-4c06-9b8f-f1"
     }
 
     "return the correct CorrelationId when the request Id does not have gov-uk-tax or -" in {

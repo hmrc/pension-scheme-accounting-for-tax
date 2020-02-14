@@ -77,7 +77,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
 
   private def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
     val requestId = getCorrelationId(hc.requestId.map(_.value))
-
+    println(s"\nrequestId:\n$requestId\n\n")
     Seq("Environment" -> config.desEnvironment, "Authorization" -> config.authorization,
       "Content-Type" -> "application/json", "CorrelationId" -> requestId)
   }
@@ -86,6 +86,6 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
     requestId.getOrElse {
       Logger.error("No Request Id found")
       randomUUID.toString
-    }.replaceAll("(govuk-tax-|-)", "").slice(0, 32)
+    }.replaceAll("(govuk-tax-)", "").slice(0, 36)
   }
 }
