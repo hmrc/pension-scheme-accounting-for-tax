@@ -16,9 +16,9 @@
 
 package transformations.userAnswersToETMP
 
+import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{__, _}
-import play.api.libs.functional.syntax._
 
 class ChargeCTransformer extends JsonTransformer {
 
@@ -27,13 +27,8 @@ class ChargeCTransformer extends JsonTransformer {
 
   def readsChargeC: Reads[JsObject] =
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { totalCharge =>
-      if (!totalCharge.equals(0)) {
         ((__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'memberDetails).json.copyFrom((__ \ 'employers).read(readsEmployers)) and
           (__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
-      }
-      else {
-        doNothing
-      }
     }
 
   def readsEmployers: Reads[JsArray] = {
