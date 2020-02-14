@@ -86,6 +86,6 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
     requestId.getOrElse {
       Logger.error("No Request Id found")
       randomUUID.toString
-    }.replaceAll("(govuk-tax-|-)", "").slice(0, 32)
+    }.replaceAll("(govuk-tax-)", "").slice(0, 36)
   }
 }
