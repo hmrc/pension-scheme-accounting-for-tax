@@ -19,7 +19,7 @@ package transformations.userAnswersToETMP
 import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{JsObject, Reads, __}
+import play.api.libs.json.{JsObject, Json, Reads, __}
 
 class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
                                      chargeBTransformer: ChargeBTransformer,
@@ -38,11 +38,26 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
       chargeDTransformer.transformToETMPData and
       chargeETransformer.transformToETMPData and
       chargeFTransformer.transformToETMPData and
-      chargeGTransformer.transformToETMPData).reduce
+      chargeGTransformer.transformToETMPData and
+      transformDeclaration
+      ).reduce
 
   private def transformToAFTDetails: Reads[JsObject] = {
     ((__ \ 'aftDetails \ 'aftStatus).json.copyFrom((__ \ "aftStatus").json.pick) and
-      (__ \ 'aftDetails \ 'quarterStartDate).json.copyFrom((__ \ "quarter" \"startDate").json.pick) and
-      (__ \ 'aftDetails \ 'quarterEndDate).json.copyFrom((__ \ "quarter" \"endDate").json.pick)).reduce
+      (__ \ 'aftDetails \ 'quarterStartDate).json.copyFrom((__ \ "quarter" \ "startDate").json.pick) and
+      (__ \ 'aftDetails \ 'quarterEndDate).json.copyFrom((__ \ "quarter" \ "endDate").json.pick)).reduce
+  }
+
+  private def transformDeclaration: Reads[JsObject] = {
+    (__ \ 'declaration).readNullable {
+      __.read(
+        ((__ \ 'aftDeclarationDetails \ 'submittedBy).json.copyFrom((__ \ 'submittedBy).json.pick) and
+          (__ \ 'aftDeclarationDetails \ 'submittedID).json.copyFrom((__ \ 'submittedID).json.pick) and
+          (__ \ 'aftDeclarationDetails \ 'psaDeclarationDetails \ 'psaDeclaration1).json.copyFrom((__ \ 'hasAgreed).json.pick) and
+          (__ \ 'aftDeclarationDetails \ 'psaDeclarationDetails \ 'psaDeclaration2).json.copyFrom((__ \ 'hasAgreed).json.pick)).reduce
+      )
+    }.map {
+      _.getOrElse(Json.obj())
+    }
   }
 }
