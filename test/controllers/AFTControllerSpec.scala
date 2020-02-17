@@ -69,7 +69,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
+      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
 
       val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
@@ -81,7 +81,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
+      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.failed(Upstream5xxResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[Upstream5xxResponse] {
@@ -90,6 +90,19 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
       }
     }
+
+    "return OK when submit return with only one member-based charge with only one member with zero value and " in {
+      val application: Application = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+        overrides(modules: _*).build()
+      val controller = application.injector.instanceOf[AFTController]
+      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
+
+      val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
+      status(result) mustBe OK
+    }
+
   }
 
   "getVersions" must {

@@ -48,7 +48,11 @@ class AFTController @Inject()(appConfig: AppConfig,
       userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
         case JsSuccess(dataToBeSendToETMP, _) =>
           Logger.debug(message = s"[$actionName: Outgoing-Payload]$dataToBeSendToETMP")
-          desConnector.fileAFTReturn(pstr, dataToBeSendToETMP/*, isOnlyOneChargeWithOneMemberAndNoValue(userAnswersJson.as[JsObject])*/).map { response =>
+          desConnector.fileAFTReturn(
+            pstr,
+            dataToBeSendToETMP,
+            isOnlyOneChargeWithOneMemberAndNoValue(userAnswersJson.as[JsObject])
+          ).map { response =>
             Ok(response.body)
           }
         case JsError(errors) =>
@@ -107,7 +111,6 @@ class AFTController @Inject()(appConfig: AppConfig,
           Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
       }
   }
-
 
 
   private def isOnlyOneChargeWithOneMemberAndNoValue(jsObject: JsObject): Boolean = {
