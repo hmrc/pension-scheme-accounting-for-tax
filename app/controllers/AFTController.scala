@@ -57,20 +57,25 @@ class AFTController @Inject()(appConfig: AppConfig,
 
   def getDetails: Action[AnyContent] = Action.async {
     implicit request => {
-
       val startDate = request.headers.get("startDate")
       val aftVersion = request.headers.get("aftVersion")
       val pstrOpt = request.headers.get("pstr")
 
       (pstrOpt, startDate, aftVersion) match {
         case (Some(pstr), Some(startDt), Some(aftVer)) =>
-          desConnector.getAftDetails(pstr, startDt, aftVer).map { etmpJson =>
-            etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
-              case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
-              case JsError(errors) => throw JsResultException(errors)
-            }
+          getDetailsFromDES(startDt, aftVer, pstr).map { details =>
+            Ok(details)
           }
         case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
+      }
+    }
+  }
+
+  private def getDetailsFromDES(startDate: String, aftVersion: String, pstr: String)(implicit request: Request[AnyContent]): Future[JsObject] = {
+    desConnector.getAftDetails(pstr, startDate, aftVersion).map { etmpJson =>
+      etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
+        case JsSuccess(userAnswersJson, _) => userAnswersJson
+        case JsError(errors) => throw JsResultException(errors)
       }
     }
   }
@@ -82,10 +87,33 @@ class AFTController @Inject()(appConfig: AppConfig,
 
       (pstrOpt, startDateOpt) match {
         case (Some(pstr), Some(startDate)) =>
-          desConnector.getAftVersions(pstr, startDate).map(data => Ok(Json.toJson(data)))
+          desConnector.getAftVersions(pstr, startDate).flatMap {
+            case data if data.nonEmpty =>
+              val filteredVersions = data.map { version =>
+                getDetailsFromDES(startDate, aftVersion = version.toString, pstr).map { jsObject =>
+                  if (chargeCContainsOnlyZeroMember(jsObject)) {
+                    Seq[Int]()
+                  } else {
+                    Seq(version)
+                  }
+                }
+              }
+              Future.sequence(filteredVersions).map( seqVersions => Ok(Json.toJson(seqVersions.flatten)))
+            case data => Future.successful(Ok(Json.toJson(data)))
+          }
         case _ =>
           Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
       }
+  }
+
+  private def chargeCContainsOnlyZeroMember(jsObject: JsObject):Boolean = {
+    val totalAmountIsZero = (jsObject \ "chargeCDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == BigDecimal(0.00))
+    def isOnlyOneMember:Boolean = (jsObject \ "chargeCDetails" \ "employers").validate[JsArray] match {
+      case JsSuccess(array, _) if array.value.nonEmpty =>
+        array.value.length == 1
+      case JsError(_) => throw new RuntimeException("No members/ employers found")
+    }
+    totalAmountIsZero && isOnlyOneMember
   }
 
   private def withRequestDetails(request: Request[AnyContent], actionName: String)

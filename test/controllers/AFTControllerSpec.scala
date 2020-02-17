@@ -42,6 +42,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   private val fakeRequest = FakeRequest("GET", "/")
   private val mockDesConnector = mock[DesConnector]
+  private val zeroCurrencyValue = BigDecimal(0.00)
+  private val nonZeroCurrencyValue = BigDecimal(44.33)
 
   before {
     reset(mockDesConnector)
@@ -82,34 +84,38 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   "getVersions" must {
 
-    //    "return OK with the Seq of version numbers when the details are returned based on pstr and start date" in {
-    //      val application: Application = new GuiceApplicationBuilder()
-    //        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-    //        overrides(modules: _*).build()
-    //      val controller = application.injector.instanceOf[AFTController]
-    //      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-    //        Future.successful(Seq(1)))
-    //
-    //      val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-    //
-    //      status(result) mustBe OK
-    //      contentAsJson(result) mustBe Json.arr(1)
-    //    }
-
-    "return OK with an empty Seq of version numbers when there is only one charge with a value of zero" in {
+//        "return OK with the Seq of version numbers when the details are returned based on pstr and start date" in {
+//          val application: Application = new GuiceApplicationBuilder()
+//            .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//            overrides(modules: _*).build()
+//          val controller = application.injector.instanceOf[AFTController]
+//          when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
+//            Future.successful(Seq(1)))
+//
+//          val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+//
+//          status(result) mustBe OK
+//          contentAsJson(result) mustBe Json.arr(1)
+//        }
+//
+    "return OK excluding version numbers where there is a charge (of type C) with a value of zero" in {
+      val versions = Seq(1,2)
       val application: Application = new GuiceApplicationBuilder()
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-        Future.successful(Seq(1)))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeCSectionWithNoValue)))
+        Future.successful(versions))
+
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
+        Future.successful(createAFTDetailsResponse(chargeCSectionWithValue(zeroCurrencyValue))))
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
+        Future.successful(createAFTDetailsResponse(chargeCSectionWithValue(nonZeroCurrencyValue))))
 
       val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
       status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(0)
+      contentAsJson(result) mustBe Json.arr(2)
     }
 
     //    "throw BadRequestException when PSTR is not present in the header" in {
@@ -143,8 +149,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     //    }
   }
 
-  "getAftDetails" must {
-
+//  "getAftDetails" must {
+//
     "return OK when the details are returned based on pstr, start date and AFT version" in {
       val application: Application = new GuiceApplicationBuilder()
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
@@ -158,84 +164,84 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       status(result) mustBe OK
       contentAsJson(result) mustBe transformedAftDEtailsUAJson
     }
-
-    "throw BadRequestException when PSTR is not present in the header" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-
-      recoverToExceptionIf[BadRequestException] {
-        controller.getDetails()(fakeRequest.withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
-      } map { response =>
-        response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing PSTR"
-      }
-    }
-
-    "throw BadRequestException when bad request with INVALID_START_DATE returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
-
-      recoverToExceptionIf[BadRequestException] {
-        controller.getDetails()(fakeRequestForGetDetails)
-      } map { response =>
-        response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe errorResponse("INVALID_START_DATE")
-      }
-    }
-
-    "throw Upstream4xxResponse when UpStream4XXResponse returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(Upstream4xxResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
-
-      recoverToExceptionIf[Upstream4xxResponse] {
-        controller.getDetails()(fakeRequestForGetDetails)
-      } map { response =>
-        response.upstreamResponseCode mustBe NOT_FOUND
-        response.getMessage mustBe errorResponse("NOT_FOUND")
-      }
-    }
-
-    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
-
-      recoverToExceptionIf[Upstream5xxResponse] {
-        controller.getDetails()(fakeRequestForGetDetails)
-      } map { response =>
-        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
-        response.getMessage mustBe errorResponse("INTERNAL_SERVER_ERROR")
-      }
-    }
-
-    "throw generic exception when any other exception returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(new Exception("Generic Exception")))
-
-      recoverToExceptionIf[Exception] {
-        controller.getDetails()(fakeRequestForGetDetails)
-      } map { response =>
-        response.getMessage mustBe "Generic Exception"
-      }
-    }
-  }
+//
+//    "throw BadRequestException when PSTR is not present in the header" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//
+//      recoverToExceptionIf[BadRequestException] {
+//        controller.getDetails()(fakeRequest.withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
+//      } map { response =>
+//        response.responseCode mustBe BAD_REQUEST
+//        response.getMessage mustBe "Bad Request with missing PSTR"
+//      }
+//    }
+//
+//    "throw BadRequestException when bad request with INVALID_START_DATE returned from Des" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+//        Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
+//
+//      recoverToExceptionIf[BadRequestException] {
+//        controller.getDetails()(fakeRequestForGetDetails)
+//      } map { response =>
+//        response.responseCode mustBe BAD_REQUEST
+//        response.getMessage mustBe errorResponse("INVALID_START_DATE")
+//      }
+//    }
+//
+//    "throw Upstream4xxResponse when UpStream4XXResponse returned from Des" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+//        Future.failed(Upstream4xxResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
+//
+//      recoverToExceptionIf[Upstream4xxResponse] {
+//        controller.getDetails()(fakeRequestForGetDetails)
+//      } map { response =>
+//        response.upstreamResponseCode mustBe NOT_FOUND
+//        response.getMessage mustBe errorResponse("NOT_FOUND")
+//      }
+//    }
+//
+//    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+//        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+//
+//      recoverToExceptionIf[Upstream5xxResponse] {
+//        controller.getDetails()(fakeRequestForGetDetails)
+//      } map { response =>
+//        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+//        response.getMessage mustBe errorResponse("INTERNAL_SERVER_ERROR")
+//      }
+//    }
+//
+//    "throw generic exception when any other exception returned from Des" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+//        Future.failed(new Exception("Generic Exception")))
+//
+//      recoverToExceptionIf[Exception] {
+//        controller.getDetails()(fakeRequestForGetDetails)
+//      } map { response =>
+//        response.getMessage mustBe "Generic Exception"
+//      }
+//    }
+//  }
 
 
   def errorResponse(code: String): String = {
@@ -297,9 +303,9 @@ object AFTControllerSpec {
     "chargeDetails" -> chargeSection
   )
 
-  private val chargeCSectionWithNoValue: JsObject = Json.obj(
+  private def chargeCSectionWithValue(currencyValue:BigDecimal) : JsObject = Json.obj(
     "chargeTypeCDetails" -> Json.obj(
-      "totalAmount" -> BigDecimal(0.00),
+      "totalAmount" -> currencyValue,
       "memberDetails" -> Json.arr(
         Json.obj(
           "memberStatus" -> "New",
@@ -311,7 +317,8 @@ object AFTControllerSpec {
               "firstName" -> "Ray",
               "lastName" -> "Golding",
               "nino" -> "AA000020A"
-            ),
+            )
+          ),
             "correspondenceAddressDetails" -> Json.obj(
               "nonUKAddress" -> "False",
               "addressLine1" -> "Plaza 2 ",
@@ -322,8 +329,7 @@ object AFTControllerSpec {
               "postalCode" -> "TF3 4NT"
             ),
             "dateOfPayment" -> "2016-06-29",
-            "totalAmountOfTaxDue" -> BigDecimal(0.00)
-          )
+            "totalAmountOfTaxDue" -> currencyValue
         )
       )
     )
