@@ -91,7 +91,7 @@ class AFTController @Inject()(appConfig: AppConfig,
             case data if data.nonEmpty =>
               val filteredVersions = data.map { version =>
                 getDetailsFromDES(startDate, aftVersion = version.toString, pstr).map { jsObject =>
-                  if (hideWhereInvalidReturn(jsObject)) {
+                  if (isMemberBasedRemovedReturn(jsObject)) {
                     Seq[Int]()
                   } else {
                     Seq(version)
@@ -108,7 +108,7 @@ class AFTController @Inject()(appConfig: AppConfig,
 
   private val zeroCurrencyValue = BigDecimal(0.00)
 
-  private def hideWhereInvalidReturn(jsObject: JsObject): Boolean = {
+  private def isMemberBasedRemovedReturn(jsObject: JsObject): Boolean = {
     val areNoChargesWithValues: Boolean =
       (jsObject \ "chargeADetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
         (jsObject \ "chargeBDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
