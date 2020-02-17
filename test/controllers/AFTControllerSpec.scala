@@ -183,6 +183,30 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       contentAsJson(result) mustBe Json.arr(1, 2)
     }
 
+    "return OK EXCLUDING version number where there is a charge (of type G) with a value of zero AND no other charges" in {
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
+        Future.successful(createAFTDetailsResponse(chargeGSectionWithValue(zeroCurrencyValue))))
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
+        Future.successful(createAFTDetailsResponse(chargeGSectionWithValue(nonZeroCurrencyValue))))
+
+      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.arr(2)
+    }
+
+    "return OK INCLUDING version number where there is a charge (of typeG) with a value of zero BUT also a value in charge C" in {
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
+        Future.successful(createAFTDetailsResponse(chargeGSectionWithValue(zeroCurrencyValue) ++ chargeCSectionWithValue(nonZeroCurrencyValue))))
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
+        Future.successful(createAFTDetailsResponse(chargeGSectionWithValue(nonZeroCurrencyValue))))
+
+      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.arr(1, 2)
+    }
+
     "throw BadRequestException when PSTR is not present in the header" in {
       val application: Application = new GuiceApplicationBuilder()
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
@@ -460,6 +484,7 @@ object AFTControllerSpec {
             "title" -> "Mr",
             "firstName" -> "Ray",
             "lastName" -> "Golding",
+            "dateOfBirth" -> "1980-02-29",
             "nino" -> "AA000020A"
           ),
           "dateOfTransfer" -> "2016-06-29",

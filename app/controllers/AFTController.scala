@@ -38,6 +38,8 @@ class AFTController @Inject()(appConfig: AppConfig,
                              )(implicit ec: ExecutionContext)
   extends BackendController(cc) with HttpErrorFunctions with Results {
 
+  private val zeroCurrencyValue = BigDecimal(0.00)
+
   def fileReturn(): Action[AnyContent] = Action.async { implicit request =>
     val actionName = "Compile File Return"
 
@@ -105,8 +107,6 @@ class AFTController @Inject()(appConfig: AppConfig,
           Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
       }
   }
-
-  private val zeroCurrencyValue = BigDecimal(0.00)
 
   private def isMemberBasedRemovedReturn(jsObject: JsObject): Boolean = {
     val areNoChargesWithValues: Boolean =
