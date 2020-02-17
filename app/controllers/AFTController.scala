@@ -48,7 +48,7 @@ class AFTController @Inject()(appConfig: AppConfig,
       userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
         case JsSuccess(dataToBeSendToETMP, _) =>
           Logger.debug(message = s"[$actionName: Outgoing-Payload]$dataToBeSendToETMP")
-          desConnector.fileAFTReturn(pstr, dataToBeSendToETMP).map { response =>
+          desConnector.fileAFTReturn(pstr, dataToBeSendToETMP/*, isOnlyOneChargeWithOneMemberAndNoValue(userAnswersJson.as[JsObject])*/).map { response =>
             Ok(response.body)
           }
         case JsError(errors) =>
@@ -91,16 +91,16 @@ class AFTController @Inject()(appConfig: AppConfig,
         case (Some(pstr), Some(startDate)) =>
           desConnector.getAftVersions(pstr, startDate).flatMap {
             case data if data.nonEmpty =>
-              val filteredVersions = data.map { version =>
+              val versionsWithNoValueAndOnlyOneMemberRemoved = data.map { version =>
                 getDetailsFromDES(startDate, aftVersion = version.toString, pstr).map { jsObject =>
-                  if (isMemberBasedRemovedReturn(jsObject)) {
+                  if (isOnlyOneChargeWithOneMemberAndNoValue(jsObject)) {
                     Seq[Int]()
                   } else {
                     Seq(version)
                   }
                 }
               }
-              Future.sequence(filteredVersions).map(seqVersions => Ok(Json.toJson(seqVersions.flatten)))
+              Future.sequence(versionsWithNoValueAndOnlyOneMemberRemoved).map(seqVersions => Ok(Json.toJson(seqVersions.flatten)))
             case data => Future.successful(Ok(Json.toJson(data)))
           }
         case _ =>
@@ -108,7 +108,18 @@ class AFTController @Inject()(appConfig: AppConfig,
       }
   }
 
-  private def isMemberBasedRemovedReturn(jsObject: JsObject): Boolean = {
+
+
+  private def isOnlyOneChargeWithOneMemberAndNoValue(jsObject: JsObject): Boolean = {
+    val isChargeCEmployerNotDeleted: JsValue => Boolean = employer =>
+      !(if ((employer \ "isSponsoringEmployerIndividual").toOption.exists(_.as[Boolean])) {
+        (employer \ "sponsoringIndividualDetails" \ "isDeleted").toOption.exists(_.as[Boolean])
+      } else {
+        (employer \ "sponsoringOrganisationDetails" \ "isDeleted").toOption.exists(_.as[Boolean])
+      })
+
+    val isChargeMemberNotDeleted: JsValue => Boolean = member => !(member \ "memberDetails" \ "isDeleted").toOption.exists(_.as[Boolean])
+
     val areNoChargesWithValues: Boolean =
       (jsObject \ "chargeADetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
         (jsObject \ "chargeBDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
@@ -119,10 +130,10 @@ class AFTController @Inject()(appConfig: AppConfig,
         (jsObject \ "chargeGDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue)
 
     val isOnlyOneChargeWithOneMember: Boolean = Seq(
-      (jsObject \ "chargeCDetails" \ "employers").validate[JsArray].asOpt.exists(_.value.length == 1),
-      (jsObject \ "chargeDDetails" \ "members").validate[JsArray].asOpt.exists(_.value.length == 1),
-      (jsObject \ "chargeEDetails" \ "members").validate[JsArray].asOpt.exists(_.value.length == 1),
-      (jsObject \ "chargeGDetails" \ "members").validate[JsArray].asOpt.exists(_.value.length == 1)
+      (jsObject \ "chargeCDetails" \ "employers").validate[JsArray].asOpt.exists(_.value.count(isChargeCEmployerNotDeleted) == 1),
+      (jsObject \ "chargeDDetails" \ "members").validate[JsArray].asOpt.exists(_.value.count(isChargeMemberNotDeleted) == 1),
+      (jsObject \ "chargeEDetails" \ "members").validate[JsArray].asOpt.exists(_.value.count(isChargeMemberNotDeleted) == 1),
+      (jsObject \ "chargeGDetails" \ "members").validate[JsArray].asOpt.exists(_.value.count(isChargeMemberNotDeleted) == 1)
     ).count(_ == true) == 1
 
     areNoChargesWithValues && isOnlyOneChargeWithOneMember

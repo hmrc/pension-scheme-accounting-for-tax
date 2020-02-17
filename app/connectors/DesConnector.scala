@@ -35,8 +35,9 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
                              aftVersionsAuditEventService: GetAFTVersionsAuditService,
                              aftDetailsAuditEventService: GetAFTDetailsAuditService) extends HttpErrorFunctions {
 
-  def fileAFTReturn(pstr: String, data: JsValue)
+  def fileAFTReturn(pstr: String, data: JsValue/*, isOnlyOneChargeWithOneMemberAndNoValue:Boolean*/)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
+  //  println( "\n>>>>" + isOnlyOneChargeWithOneMemberAndNoValue)
 
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
 
