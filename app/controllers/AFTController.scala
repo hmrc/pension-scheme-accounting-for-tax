@@ -121,7 +121,7 @@ class AFTController @Inject()(appConfig: AppConfig,
         (employer \ "sponsoringOrganisationDetails" \ "isDeleted").toOption.exists(_.as[Boolean])
       })
 
-    val isChargeMemberNotDeleted: JsValue => Boolean = member => !(member \ "memberDetails" \ "isDeleted").toOption.exists(_.as[Boolean])
+    val isChargeMemberNotDeleted: JsValue => Boolean = member => ! (member \ "memberDetails" \ "isDeleted").toOption.exists(_.as[Boolean])
 
     val areNoChargesWithValues: Boolean =
       (jsObject \ "chargeADetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
@@ -138,7 +138,8 @@ class AFTController @Inject()(appConfig: AppConfig,
       (jsObject \ "chargeEDetails" \ "members").validate[JsArray].asOpt.exists(_.value.count(isChargeMemberNotDeleted) == 1),
       (jsObject \ "chargeGDetails" \ "members").validate[JsArray].asOpt.exists(_.value.count(isChargeMemberNotDeleted) == 1)
     ).count(_ == true) == 1
-
+println( "\n>>>areNoChargesWithValues = " + areNoChargesWithValues)
+println( "\n>>>isOnlyOneChargeWithOneMember = " + isOnlyOneChargeWithOneMember)
     areNoChargesWithValues && isOnlyOneChargeWithOneMember
   }
 

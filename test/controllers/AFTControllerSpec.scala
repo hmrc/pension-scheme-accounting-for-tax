@@ -45,6 +45,17 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val zeroCurrencyValue = BigDecimal(0.00)
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
+  private val nonMemberBasedCharges = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
+  private val memberBasedChargeCreationFunctions = Seq(
+    chargeCSectionWithValue _,
+    chargeDSectionWithValue _,
+    chargeESectionWithValue _,
+    chargeGSectionWithValue _
+  )
+
+  private val nonMemberBasedChargeNames = Seq("A", "B", "F")
+  private val memberBasedChargeNames = Seq("C", "D", "E", "G")
+
   private def controllerForGetAftVersions = {
     val application: Application = new GuiceApplicationBuilder()
       .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
@@ -63,287 +74,258 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       bind[DesConnector].toInstance(mockDesConnector)
     )
 
-  "fileReturn" must {
-    "return OK when valid response from DES" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
-
-      val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
-      status(result) mustBe OK
-    }
-
-    "throw Upstream5XXResponse on Internal Server Error from DES" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.failed(Upstream5xxResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
-
-      recoverToExceptionIf[Upstream5xxResponse] {
-        controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
-      } map {
-        _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
-      }
-    }
-
-    "return OK when submit return with only one member-based charge with only one member with zero value and " in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
-
-      val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
-      status(result) mustBe OK
-    }
-
-  }
+//  "fileReturn" must {
+//    "return OK when valid response from DES" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+//        .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
+//
+//      val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
+//      status(result) mustBe OK
+//    }
+//
+//    "throw Upstream5XXResponse on Internal Server Error from DES" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+//        .thenReturn(Future.failed(Upstream5xxResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+//
+//      recoverToExceptionIf[Upstream5xxResponse] {
+//        controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
+//      } map {
+//        _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+//      }
+//    }
+//
+//    "return OK when submit return with only one member-based charge with only one member with zero value and " in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+//        .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
+//
+//      val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
+//      status(result) mustBe OK
+//    }
+//
+//  }
 
   "getVersions" must {
 
-    "return OK with the Seq of version numbers when the details are returned based on pstr and start date" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-        Future.successful(Seq(1)))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
-      )
+    //    "return OK with the Seq of version numbers when the details are returned based on pstr and start date" in {
+    //      val application: Application = new GuiceApplicationBuilder()
+    //        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+    //        overrides(modules: _*).build()
+    //      val controller = application.injector.instanceOf[AFTController]
+    //      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
+    //        Future.successful(Seq(1)))
+    //      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
+    //        Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
+    //      )
+    //
+    //      val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+    //
+    //      status(result) mustBe OK
+    //      contentAsJson(result) mustBe Json.arr(1)
+    //    }
+    //
+    //
+    //    memberBasedChargeCreationFunctions
+    //      .zipWithIndex.foreach { case (createChargeSection, index) =>
+    //      s"return OK EXCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a value of zero AND NO OTHER CHARGES" in {
+    //        when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
+    //          Future.successful(createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))))
+    //        when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
+    //          Future.successful(createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))))
+    //
+    //        val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+    //
+    //        status(result) mustBe OK
+    //        contentAsJson(result) mustBe Json.arr(2)
+    //      }
+    //    }
+    //
+        nonMemberBasedCharges.zipWithIndex.foreach { case (nonMemberBasedCharge, nonMemberBasedChargeIndex) =>
+          memberBasedChargeCreationFunctions
+            .zipWithIndex.foreach { case (createChargeSection, index) =>
+            s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a value of zero BUT also a value " +
+              s"in another non-member-based charge (${nonMemberBasedChargeNames(nonMemberBasedChargeIndex)}})" in {
 
-      val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+              val ff = createChargeSection(zeroCurrencyValue) ++ chargeSectionWithValue2(nonMemberBasedCharge, nonZeroCurrencyValue)
+              println( "\n>>>" + ff)
 
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(1)
-    }
+              when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
+                Future.successful(createAFTDetailsResponse(
+                  createChargeSection(zeroCurrencyValue) ++ chargeSectionWithValue2(nonMemberBasedCharge, nonZeroCurrencyValue))))
+              when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
+                Future.successful(createAFTDetailsResponse(
+                  createChargeSection(nonZeroCurrencyValue))))
 
-    "return OK EXCLUDING version number where there is a charge (of type C) with a value of zero AND no other charges" in {
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeCSectionWithValue(zeroCurrencyValue))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeCSectionWithValue(nonZeroCurrencyValue))))
+              val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
-      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+              status(result) mustBe OK
+              contentAsJson(result) mustBe Json.arr(1, 2)
+            }
+          }
+        }
 
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(2)
-    }
 
-    "return OK INCLUDING version number where there is a charge (of type C) with a value of zero BUT also a value in charge D" in {
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeCSectionWithValue(zeroCurrencyValue) ++ chargeDSectionWithValue(nonZeroCurrencyValue))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeCSectionWithValue(nonZeroCurrencyValue))))
 
-      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+//    memberBasedChargeCreationFunctions.zipWithIndex.foreach { case (otherMemberBasedChargeCreateSection, memberBasedChargeIndex) =>
+//      memberBasedChargeCreationFunctions
+//        .zipWithIndex.foreach { case (createChargeSection, index) =>
+//        if (index != memberBasedChargeIndex) {
+//          s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a value of zero BUT also a value " +
+//            s"in another member-based charge (${memberBasedChargeNames(memberBasedChargeIndex)})" in {
+//            when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
+//              Future.successful(
+//                createAFTDetailsResponse(
+//                  createChargeSection(zeroCurrencyValue) ++ otherMemberBasedChargeCreateSection(nonZeroCurrencyValue)
+//                )
+//              )
+//            )
+//            when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any()))
+//              .thenReturn(Future.successful(createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))))
+//
+//            val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+//
+//            status(result) mustBe OK
+//            contentAsJson(result) mustBe Json.arr(1, 2)
+//          }
+//        }
+//      }
+//    }
 
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(1, 2)
-    }
-
-    "return OK EXCLUDING version number where there is a charge (of type D) with a value of zero AND no other charges" in {
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeDSectionWithValue(zeroCurrencyValue))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeDSectionWithValue(nonZeroCurrencyValue))))
-
-      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(2)
-    }
-
-    "return OK INCLUDING version number where there is a charge (of type D) with a value of zero BUT also a value in charge C" in {
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeDSectionWithValue(zeroCurrencyValue) ++ chargeCSectionWithValue(nonZeroCurrencyValue))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeDSectionWithValue(nonZeroCurrencyValue))))
-
-      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(1, 2)
-    }
-
-    "return OK EXCLUDING version number where there is a charge (of type E) with a value of zero AND no other charges" in {
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeESectionWithValue(zeroCurrencyValue))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeESectionWithValue(nonZeroCurrencyValue))))
-
-      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(2)
-    }
-
-    "return OK INCLUDING version number where there is a charge (of typeE) with a value of zero BUT also a value in charge C" in {
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeESectionWithValue(zeroCurrencyValue) ++ chargeCSectionWithValue(nonZeroCurrencyValue))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeESectionWithValue(nonZeroCurrencyValue))))
-
-      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(1, 2)
-    }
-
-    "return OK EXCLUDING version number where there is a charge (of type G) with a value of zero AND no other charges" in {
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeGSectionWithValue(zeroCurrencyValue))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeGSectionWithValue(nonZeroCurrencyValue))))
-
-      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(2)
-    }
-
-    "return OK INCLUDING version number where there is a charge (of typeG) with a value of zero BUT also a value in charge C" in {
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeGSectionWithValue(zeroCurrencyValue) ++ chargeCSectionWithValue(nonZeroCurrencyValue))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeGSectionWithValue(nonZeroCurrencyValue))))
-
-      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(1, 2)
-    }
-
-    "throw BadRequestException when PSTR is not present in the header" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      recoverToExceptionIf[BadRequestException] {
-        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt))
-      } map { response =>
-        response.responseCode mustBe BAD_REQUEST
-        response.message must include("Bad Request with missing PSTR/Quarter Start Date")
-      }
-    }
-
-    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
-
-      recoverToExceptionIf[Upstream5xxResponse] {
-        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt, "pstr" -> pstr))
-      } map { response =>
-        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
-        response.getMessage must include("INTERNAL SERVER ERROR")
-        response.reportAs mustBe INTERNAL_SERVER_ERROR
-      }
-    }
+//    "throw BadRequestException when PSTR is not present in the header" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      recoverToExceptionIf[BadRequestException] {
+//        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt))
+//      } map { response =>
+//        response.responseCode mustBe BAD_REQUEST
+//        response.message must include("Bad Request with missing PSTR/Quarter Start Date")
+//      }
+//    }
+//
+//    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
+//        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+//
+//      recoverToExceptionIf[Upstream5xxResponse] {
+//        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt, "pstr" -> pstr))
+//      } map { response =>
+//        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+//        response.getMessage must include("INTERNAL SERVER ERROR")
+//        response.reportAs mustBe INTERNAL_SERVER_ERROR
+//      }
+//    }
   }
 
-  "getAftDetails" must {
-
-    "return OK when the details are returned based on pstr, start date and AFT version" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.successful(etmpAFTDetailsResponse))
-
-      val result = controller.getDetails()(fakeRequestForGetDetails)
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe transformedAftDEtailsUAJson
-    }
-
-    "throw BadRequestException when PSTR is not present in the header" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-
-      recoverToExceptionIf[BadRequestException] {
-        controller.getDetails()(fakeRequest.withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
-      } map { response =>
-        response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing PSTR"
-      }
-    }
-
-    "throw BadRequestException when bad request with INVALID_START_DATE returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
-
-      recoverToExceptionIf[BadRequestException] {
-        controller.getDetails()(fakeRequestForGetDetails)
-      } map { response =>
-        response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe errorResponse("INVALID_START_DATE")
-      }
-    }
-
-    "throw Upstream4xxResponse when UpStream4XXResponse returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(Upstream4xxResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
-
-      recoverToExceptionIf[Upstream4xxResponse] {
-        controller.getDetails()(fakeRequestForGetDetails)
-      } map { response =>
-        response.upstreamResponseCode mustBe NOT_FOUND
-        response.getMessage mustBe errorResponse("NOT_FOUND")
-      }
-    }
-
-    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
-
-      recoverToExceptionIf[Upstream5xxResponse] {
-        controller.getDetails()(fakeRequestForGetDetails)
-      } map { response =>
-        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
-        response.getMessage mustBe errorResponse("INTERNAL_SERVER_ERROR")
-      }
-    }
-
-    "throw generic exception when any other exception returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
-      val controller = application.injector.instanceOf[AFTController]
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(new Exception("Generic Exception")))
-
-      recoverToExceptionIf[Exception] {
-        controller.getDetails()(fakeRequestForGetDetails)
-      } map { response =>
-        response.getMessage mustBe "Generic Exception"
-      }
-    }
-  }
+//  "getAftDetails" must {
+//
+//    "return OK when the details are returned based on pstr, start date and AFT version" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+//        Future.successful(etmpAFTDetailsResponse))
+//
+//      val result = controller.getDetails()(fakeRequestForGetDetails)
+//
+//      status(result) mustBe OK
+//      contentAsJson(result) mustBe transformedAftDEtailsUAJson
+//    }
+//
+//    "throw BadRequestException when PSTR is not present in the header" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//
+//      recoverToExceptionIf[BadRequestException] {
+//        controller.getDetails()(fakeRequest.withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
+//      } map { response =>
+//        response.responseCode mustBe BAD_REQUEST
+//        response.getMessage mustBe "Bad Request with missing PSTR"
+//      }
+//    }
+//
+//    "throw BadRequestException when bad request with INVALID_START_DATE returned from Des" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+//        Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
+//
+//      recoverToExceptionIf[BadRequestException] {
+//        controller.getDetails()(fakeRequestForGetDetails)
+//      } map { response =>
+//        response.responseCode mustBe BAD_REQUEST
+//        response.getMessage mustBe errorResponse("INVALID_START_DATE")
+//      }
+//    }
+//
+//    "throw Upstream4xxResponse when UpStream4XXResponse returned from Des" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+//        Future.failed(Upstream4xxResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
+//
+//      recoverToExceptionIf[Upstream4xxResponse] {
+//        controller.getDetails()(fakeRequestForGetDetails)
+//      } map { response =>
+//        response.upstreamResponseCode mustBe NOT_FOUND
+//        response.getMessage mustBe errorResponse("NOT_FOUND")
+//      }
+//    }
+//
+//    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+//        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+//
+//      recoverToExceptionIf[Upstream5xxResponse] {
+//        controller.getDetails()(fakeRequestForGetDetails)
+//      } map { response =>
+//        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+//        response.getMessage mustBe errorResponse("INTERNAL_SERVER_ERROR")
+//      }
+//    }
+//
+//    "throw generic exception when any other exception returned from Des" in {
+//      val application: Application = new GuiceApplicationBuilder()
+//        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+//        overrides(modules: _*).build()
+//      val controller = application.injector.instanceOf[AFTController]
+//      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+//        Future.failed(new Exception("Generic Exception")))
+//
+//      recoverToExceptionIf[Exception] {
+//        controller.getDetails()(fakeRequestForGetDetails)
+//      } map { response =>
+//        response.getMessage mustBe "Generic Exception"
+//      }
+//    }
+//  }
 
   def errorResponse(code: String): String = {
     Json.stringify(
@@ -403,6 +385,14 @@ object AFTControllerSpec {
     ),
     "chargeDetails" -> chargeSection
   )
+
+// TODO: This used in tests for all non member based charges. But whole payload is needed, not just totalAmount!!
+  private def chargeSectionWithValue2(section: String, currencyValue: BigDecimal): JsObject =
+    Json.obj(
+      section -> Json.obj(
+        "totalAmount" -> currencyValue
+      )
+    )
 
   private def chargeSectionWithValue(section: String, currencyValue: BigDecimal): JsObject =
     Json.obj(
