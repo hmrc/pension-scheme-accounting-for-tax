@@ -91,14 +91,14 @@ class AFTController @Inject()(appConfig: AppConfig,
             case data if data.nonEmpty =>
               val filteredVersions = data.map { version =>
                 getDetailsFromDES(startDate, aftVersion = version.toString, pstr).map { jsObject =>
-                  if (chargeCContainsOnlyZeroMember(jsObject)) {
+                  if (hideWhereInvalidReturn(jsObject)) {
                     Seq[Int]()
                   } else {
                     Seq(version)
                   }
                 }
               }
-              Future.sequence(filteredVersions).map( seqVersions => Ok(Json.toJson(seqVersions.flatten)))
+              Future.sequence(filteredVersions).map(seqVersions => Ok(Json.toJson(seqVersions.flatten)))
             case data => Future.successful(Ok(Json.toJson(data)))
           }
         case _ =>
@@ -106,14 +106,26 @@ class AFTController @Inject()(appConfig: AppConfig,
       }
   }
 
-  private def chargeCContainsOnlyZeroMember(jsObject: JsObject):Boolean = {
-    val totalAmountIsZero = (jsObject \ "chargeCDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == BigDecimal(0.00))
-    def isOnlyOneMember:Boolean = (jsObject \ "chargeCDetails" \ "employers").validate[JsArray] match {
-      case JsSuccess(array, _) if array.value.nonEmpty =>
-        array.value.length == 1
-      case JsError(_) => throw new RuntimeException("No members/ employers found")
-    }
-    totalAmountIsZero && isOnlyOneMember
+  private val zeroCurrencyValue = BigDecimal(0.00)
+
+  private def hideWhereInvalidReturn(jsObject: JsObject): Boolean = {
+    val areNoChargesWithValues: Boolean =
+      (jsObject \ "chargeADetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsObject \ "chargeBDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsObject \ "chargeCDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsObject \ "chargeDDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsObject \ "chargeEDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsObject \ "chargeFDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsObject \ "chargeGDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue)
+
+    val isOnlyOneChargeWithOneMember: Boolean = Seq(
+      (jsObject \ "chargeCDetails" \ "employers").validate[JsArray].asOpt.exists(_.value.length == 1),
+      (jsObject \ "chargeDDetails" \ "members").validate[JsArray].asOpt.exists(_.value.length == 1),
+      (jsObject \ "chargeEDetails" \ "members").validate[JsArray].asOpt.exists(_.value.length == 1),
+      (jsObject \ "chargeGDetails" \ "members").validate[JsArray].asOpt.exists(_.value.length == 1)
+    ).count(_ == true) == 1
+
+    areNoChargesWithValues && isOnlyOneChargeWithOneMember
   }
 
   private def withRequestDetails(request: Request[AnyContent], actionName: String)
