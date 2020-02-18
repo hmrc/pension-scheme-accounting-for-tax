@@ -141,7 +141,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
     memberBasedChargeCreationFunctions
       .zipWithIndex.foreach { case (createChargeSection, index) =>
-      s"return OK EXCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a value of zero AND NO OTHER CHARGES" in {
+      s"return OK EXCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a " +
+        s"value of zero AND NO OTHER CHARGES" in {
         when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
           Future.successful(createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))))
         when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
@@ -181,7 +182,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       memberBasedChargeCreationFunctions
         .zipWithIndex.foreach { case (createChargeSection, index) =>
         if (index != memberBasedChargeIndex) {
-          s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a value of zero BUT also a value " +
+          s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a " +
+            s"value of zero BUT also a value " +
             s"in another member-based charge (${memberBasedChargeNames(memberBasedChargeIndex)})" in {
             when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
               Future.successful(
