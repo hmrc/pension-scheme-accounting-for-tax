@@ -45,7 +45,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val zeroCurrencyValue = BigDecimal(0.00)
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
-  private val nonMemberBasedCharges = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
+  private val nonMemberBasedChargeSections = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
   private val nonMemberBasedChargeNames = Seq("A", "B", "F")
 
   private val memberBasedChargeCreationFunctions = Seq(
@@ -140,8 +140,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
 
     memberBasedChargeCreationFunctions
-      .zipWithIndex.foreach { case (createChargeSection, index) =>
-      s"return OK EXCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a " +
+      .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
+      s"return OK EXCLUDING version number where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of zero AND NO OTHER CHARGES" in {
         when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
           Future.successful(createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))))
@@ -155,19 +155,21 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       }
     }
 
-    nonMemberBasedCharges.zipWithIndex.foreach { case (nonMemberBasedCharge, nonMemberBasedChargeIndex) =>
+    nonMemberBasedChargeSections
+      .zipWithIndex.foreach { case (nonMemberBasedChargeSection, nonMemberBasedChargeSectionIndex) =>
       memberBasedChargeCreationFunctions
-        .zipWithIndex.foreach { case (createChargeSection, index) =>
-        s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a " +
-          s"value of zero BUT also a value " +
-          s"in another non-member-based charge (${nonMemberBasedChargeNames(nonMemberBasedChargeIndex)}})" in {
+        .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
+        s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
+          s"value of zero BUT also a value in another non-member-based charge (${nonMemberBasedChargeNames(nonMemberBasedChargeSectionIndex)}})" in {
 
-          when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-            Future.successful(createAFTDetailsResponse(
-              createChargeSection(zeroCurrencyValue) ++ chargeSectionWithValue2(nonMemberBasedCharge, nonZeroCurrencyValue))))
-          when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-            Future.successful(createAFTDetailsResponse(
-              createChargeSection(nonZeroCurrencyValue))))
+          when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any()))
+            .thenReturn(Future.successful(
+              createAFTDetailsResponse(createChargeSection(zeroCurrencyValue) ++ chargeSectionWithValue(nonMemberBasedChargeSection, nonZeroCurrencyValue))
+            ))
+          when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any()))
+            .thenReturn(Future.successful(
+              createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))
+            ))
 
           val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
@@ -178,22 +180,21 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
 
-    memberBasedChargeCreationFunctions.zipWithIndex.foreach { case (otherMemberBasedChargeCreateSection, memberBasedChargeIndex) =>
+    memberBasedChargeCreationFunctions.zipWithIndex.foreach { case (createOtherChargeSection, otherChargeSectionIndex) =>
       memberBasedChargeCreationFunctions
-        .zipWithIndex.foreach { case (createChargeSection, index) =>
-        if (index != memberBasedChargeIndex) {
-          s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(index)} with a " +
-            s"value of zero BUT also a value " +
-            s"in another member-based charge (${memberBasedChargeNames(memberBasedChargeIndex)})" in {
-            when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-              Future.successful(
-                createAFTDetailsResponse(
-                  createChargeSection(zeroCurrencyValue) ++ otherMemberBasedChargeCreateSection(nonZeroCurrencyValue)
-                )
+        .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
+        if (chargeSectionIndex != otherChargeSectionIndex) {
+          s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
+            s"value of zero BUT also a value in another member-based charge (${memberBasedChargeNames(otherChargeSectionIndex)})" in {
+            when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any()))
+              .thenReturn(Future.successful(
+                createAFTDetailsResponse(createChargeSection(zeroCurrencyValue) ++ createOtherChargeSection(nonZeroCurrencyValue))
               )
             )
             when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any()))
-              .thenReturn(Future.successful(createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))))
+              .thenReturn(Future.successful(
+                createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))
+              ))
 
             val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
@@ -388,18 +389,10 @@ object AFTControllerSpec {
     "chargeDetails" -> chargeSection
   )
 
-  // TODO: This used in tests for all non member based charges. But whole payload is needed, not just totalAmount!!
-  private def chargeSectionWithValue2(section: String, currencyValue: BigDecimal): JsObject =
-    Json.obj(
-      section -> Json.obj(
-        "totalAmount" -> currencyValue
-      )
-    )
-
   private def chargeSectionWithValue(section: String, currencyValue: BigDecimal): JsObject =
     Json.obj(
       section -> Json.obj(
-        "totalChargeAmount" -> currencyValue
+        "totalAmount" -> currencyValue
       )
     )
 
