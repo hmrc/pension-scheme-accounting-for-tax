@@ -181,7 +181,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |          },
       |          "correspondenceAddressDetails": {
       |            "nonUKAddress": "False",
-      |            "postCode": "NE20 0GG",
+      |            "postalCode": "NE20 0GG",
       |            "addressLine1": "line1",
       |            "addressLine2": "line2",
       |            "addressLine3": "line3",

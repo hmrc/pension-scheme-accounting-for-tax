@@ -69,17 +69,16 @@ class ChargeCTransformer extends JsonTransformer {
         (__ \ 'addressLine2).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'line2).json.pick) and
         ((__ \ 'addressLine3).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'line3).json.pick) orElse doNothing) and
         ((__ \ 'addressLine4).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'line4).json.pick) orElse doNothing) and
-        (__ \ 'countryCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'country).json.pick)
+        (__ \ 'countryCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'country).json.pick) and
+        ((__ \ 'postalCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'postcode).json.pick) orElse doNothing)
       ).reduce
 
   def readsPostalCode: Reads[JsObject] =
     (__ \ 'sponsoringEmployerAddress \ 'country).read[String].flatMap {
       case "GB" =>
-        ((__ \ 'nonUKAddress).json.put(JsString("False")) and
-          (__ \ 'postCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'postcode).json.pick)).reduce
+        (__ \ 'nonUKAddress).json.put(JsString("False"))
       case _ =>
-        ((__ \ 'nonUKAddress).json.put(JsString("True")) and
-          ((__ \ 'postalCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'postcode).json.pick) orElse doNothing)).reduce
+        (__ \ 'nonUKAddress).json.put(JsString("True"))
     }
 }
 
