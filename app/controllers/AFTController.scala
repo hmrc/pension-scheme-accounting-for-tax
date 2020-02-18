@@ -51,7 +51,7 @@ class AFTController @Inject()(appConfig: AppConfig,
           desConnector.fileAFTReturn(
             pstr,
             dataToBeSendToETMP,
-            isOnlyOneChargeWithOneMemberAndNoValue(userAnswersJson.as[JsObject])
+            isOnlyOneChargeWithOneMemberAndNoValue(dataToBeSendToETMP)
           ).map { response =>
             Ok(response.body)
           }
@@ -63,25 +63,20 @@ class AFTController @Inject()(appConfig: AppConfig,
 
   def getDetails: Action[AnyContent] = Action.async {
     implicit request => {
+
       val startDate = request.headers.get("startDate")
       val aftVersion = request.headers.get("aftVersion")
       val pstrOpt = request.headers.get("pstr")
 
       (pstrOpt, startDate, aftVersion) match {
         case (Some(pstr), Some(startDt), Some(aftVer)) =>
-          getDetailsFromDES(startDt, aftVer, pstr).map { details =>
-            Ok(details)
+          desConnector.getAftDetails(pstr, startDt, aftVer).map { etmpJson =>
+            etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
+              case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
+              case JsError(errors) => throw JsResultException(errors)
+            }
           }
         case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
-      }
-    }
-  }
-
-  private def getDetailsFromDES(startDate: String, aftVersion: String, pstr: String)(implicit request: Request[AnyContent]): Future[JsObject] = {
-    desConnector.getAftDetails(pstr, startDate, aftVersion).map { etmpJson =>
-      etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
-        case JsSuccess(userAnswersJson, _) => userAnswersJson
-        case JsError(errors) => throw JsResultException(errors)
       }
     }
   }
@@ -96,8 +91,8 @@ class AFTController @Inject()(appConfig: AppConfig,
           desConnector.getAftVersions(pstr, startDate).flatMap {
             case data if data.nonEmpty =>
               val versionsWithNoValueAndOnlyOneMemberRemoved = data.map { version =>
-                getDetailsFromDES(startDate, aftVersion = version.toString, pstr).map { jsObject =>
-                  if (isOnlyOneChargeWithOneMemberAndNoValue(jsObject)) {
+                desConnector.getAftDetails(pstr, startDate, version.toString).map { jsValue =>
+                  if (isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) {
                     Seq[Int]()
                   } else {
                     Seq(version)
@@ -113,33 +108,22 @@ class AFTController @Inject()(appConfig: AppConfig,
   }
 
 
-  private def isOnlyOneChargeWithOneMemberAndNoValue(jsObject: JsObject): Boolean = {
-    val isChargeCEmployerNotDeleted: JsValue => Boolean = employer =>
-      !(if ((employer \ "isSponsoringEmployerIndividual").toOption.exists(_.as[Boolean])) {
-        (employer \ "sponsoringIndividualDetails" \ "isDeleted").toOption.exists(_.as[Boolean])
-      } else {
-        (employer \ "sponsoringOrganisationDetails" \ "isDeleted").toOption.exists(_.as[Boolean])
-      })
-
-    val isChargeMemberNotDeleted: JsValue => Boolean = member => ! (member \ "memberDetails" \ "isDeleted").toOption.exists(_.as[Boolean])
-
+  private def isOnlyOneChargeWithOneMemberAndNoValue(jsValue: JsValue): Boolean = {
     val areNoChargesWithValues: Boolean =
-      (jsObject \ "chargeADetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsObject \ "chargeBDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsObject \ "chargeCDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsObject \ "chargeDDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsObject \ "chargeEDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsObject \ "chargeFDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsObject \ "chargeGDetails" \ "totalChargeAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue)
+      (jsValue \ "chargeDetails" \ "chargeTypeADetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsValue \ "chargeDetails" \ "chargeTypeBDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsValue \ "chargeDetails" \ "chargeTypeCDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsValue \ "chargeDetails" \ "chargeTypeDDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsValue \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsValue \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
+        (jsValue \ "chargeDetails" \ "chargeTypeGDetails" \ "totalOTCAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue)
 
     val isOnlyOneChargeWithOneMember: Boolean = Seq(
-      (jsObject \ "chargeCDetails" \ "employers").validate[JsArray].asOpt.exists(_.value.count(isChargeCEmployerNotDeleted) == 1),
-      (jsObject \ "chargeDDetails" \ "members").validate[JsArray].asOpt.exists(_.value.count(isChargeMemberNotDeleted) == 1),
-      (jsObject \ "chargeEDetails" \ "members").validate[JsArray].asOpt.exists(_.value.count(isChargeMemberNotDeleted) == 1),
-      (jsObject \ "chargeGDetails" \ "members").validate[JsArray].asOpt.exists(_.value.count(isChargeMemberNotDeleted) == 1)
+      (jsValue \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1),
+      (jsValue \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1),
+      (jsValue \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1),
+      (jsValue \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1)
     ).count(_ == true) == 1
-println( "\n>>>areNoChargesWithValues = " + areNoChargesWithValues)
-println( "\n>>>isOnlyOneChargeWithOneMember = " + isOnlyOneChargeWithOneMember)
     areNoChargesWithValues && isOnlyOneChargeWithOneMember
   }
 

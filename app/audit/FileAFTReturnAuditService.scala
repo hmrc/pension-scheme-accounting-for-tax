@@ -40,11 +40,11 @@ class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
   def sendFileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValueAuditEvent(pstr: String, data: JsValue)
                                  (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[HttpResponse], Unit] = {
     case Success(httpResponse) =>
-      auditService.sendEvent(FileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValue(pstr, Status.OK, data, Some(httpResponse.json)))
+      auditService.sendEvent(FileAFTReturnOneChargeAndMemberNoValue(pstr, Status.OK, data, Some(httpResponse.json)))
     case Failure(error: UpstreamErrorResponse) =>
-      auditService.sendEvent(FileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValue(pstr, error.upstreamResponseCode, data, None))
+      auditService.sendEvent(FileAFTReturnOneChargeAndMemberNoValue(pstr, error.upstreamResponseCode, data, None))
     case Failure(error: HttpException) =>
-      auditService.sendEvent(FileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValue(pstr, error.responseCode, data, None))
+      auditService.sendEvent(FileAFTReturnOneChargeAndMemberNoValue(pstr, error.responseCode, data, None))
   }
 }
 
@@ -71,13 +71,13 @@ case class FileAftReturn(
   )
 }
 
-case class FileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValue(
+case class FileAFTReturnOneChargeAndMemberNoValue(
                           pstr: String,
                           status: Int,
                           request: JsValue,
                           response: Option[JsValue]
                         ) extends AuditEvent {
-  override def auditType: String = "AftPostWhereOnlyOneChargeWithOneMemberAndNoValue"
+  override def auditType: String = "AftPostOneChargeAndMemberNoValue"
 
   override def details: Map[String, String] = Map(
     "pstr" -> pstr,

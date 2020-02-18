@@ -16,7 +16,7 @@
 
 package connectors
 
-import audit.{AuditService, FileAftReturn, GetAFTDetails, GetAFTVersions}
+import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify}
@@ -94,7 +94,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     }
 
 
-    "send the FileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValue audit event when ETMP has returned OK and true passed into method" in {
+    "send the FileAFTReturnOneChargeAndMemberNoValue audit event when ETMP has returned OK and true passed into method" in {
       Mockito.reset(mockAuditService)
       val data = Json.obj(fields = "Id" -> "value")
       val successResponse = Json.obj("response" -> "success")
@@ -108,7 +108,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = true).map { _ =>
         verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.OK, data, Some(successResponse))
+        eventCaptor.getValue mustEqual FileAFTReturnOneChargeAndMemberNoValue(pstr, Status.OK, data, Some(successResponse))
       }
     }
 
