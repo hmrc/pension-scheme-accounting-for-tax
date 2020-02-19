@@ -145,6 +145,11 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |      }
       |    ],
       |    "totalChargeAmount": 1230.02
+      |  },
+      |  "declaration" : {
+      |    "submittedBy" : "Nigel Smith",
+      |    "submittedID" : "A2000000",
+      |    "hasAgreed" : true
       |  }
       |}""".stripMargin)
 
@@ -230,7 +235,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
       |    },
-      |     "chargeTypeGDetails": {
+      |    "chargeTypeGDetails": {
       |      "totalAmount": 1230.02,
       |      "memberDetails": [
       |        {
@@ -247,6 +252,14 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |          "amountOfTaxDeducted": 4560.02
       |        }
       |      ]
+      |    }
+      |  },
+      |  "aftDeclarationDetails": {
+      |    "submittedBy": "Nigel Smith",
+      |    "submittedID": "A2000000",
+      |    "psaDeclarationDetails": {
+      |      "psaDeclaration1": true,
+      |      "psaDeclaration2": true
       |    }
       |  }
       |}
