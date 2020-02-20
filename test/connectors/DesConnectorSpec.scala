@@ -16,7 +16,7 @@
 
 package connectors
 
-import audit.{AuditService, FileAftReturn, GetAFTDetails, GetAFTVersions}
+import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify}
@@ -70,7 +70,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok
           )
       )
-      connector.fileAFTReturn(pstr, data) map {
+      connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false) map {
         _.status mustBe OK
       }
     }
@@ -87,9 +87,28 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      connector.fileAFTReturn(pstr, data).map { response =>
+      connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false).map { response =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.OK, data, Some(successResponse))
+      }
+    }
+
+
+    "send the FileAFTReturnOneChargeAndMemberNoValue audit event when ETMP has returned OK and true passed into method" in {
+      Mockito.reset(mockAuditService)
+      val data = Json.obj(fields = "Id" -> "value")
+      val successResponse = Json.obj("response" -> "success")
+      server.stubFor(
+        post(urlEqualTo(aftSubmitUrl))
+          .withRequestBody(equalTo(Json.stringify(data)))
+          .willReturn(
+            ok.withBody(Json.stringify(successResponse))
+          )
+      )
+      val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
+      connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = true).map { _ =>
+        verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual FileAFTReturnOneChargeAndMemberNoValue(pstr, Status.OK, data, Some(successResponse))
       }
     }
 
@@ -104,7 +123,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
 
       recoverToExceptionIf[BadRequestException] {
-        connector.fileAFTReturn(pstr, data)
+        connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)
       } map {
         _.responseCode mustEqual BAD_REQUEST
       }
@@ -121,7 +140,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
 
       recoverToExceptionIf[NotFoundException] {
-        connector.fileAFTReturn(pstr, data)
+        connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)
       } map {
         _.responseCode mustEqual NOT_FOUND
       }
@@ -140,7 +159,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
 
       recoverToExceptionIf[NotFoundException] {
-        connector.fileAFTReturn(pstr, data)
+        connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)
       } map {_ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.NOT_FOUND, data, None)
@@ -156,7 +175,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             serverError()
           )
       )
-      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {
+      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)) map {
         _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
       }
     }
@@ -172,7 +191,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {_ =>
+      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)) map {_ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.INTERNAL_SERVER_ERROR, data, None)
       }

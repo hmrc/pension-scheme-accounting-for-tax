@@ -35,15 +35,20 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
                              aftVersionsAuditEventService: GetAFTVersionsAuditService,
                              aftDetailsAuditEventService: GetAFTDetailsAuditService) extends HttpErrorFunctions {
 
-  def fileAFTReturn(pstr: String, data: JsValue)
+  def fileAFTReturn(pstr: String, data: JsValue, isOnlyOneChargeWithOneMemberAndNoValue: Boolean)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
-
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
-      fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data)
+    if (isOnlyOneChargeWithOneMemberAndNoValue) {
+      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
+        fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data) andThen
+        fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValueAuditEvent(pstr, data)
+    } else {
+      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
+        fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data)
+    }
   }
 
   def getAftDetails(pstr: String, startDate: String, aftVersion: String)
