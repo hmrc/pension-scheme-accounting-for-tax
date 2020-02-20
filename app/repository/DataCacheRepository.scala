@@ -44,14 +44,23 @@ class DataCacheRepository @Inject()(
   val collectionIndexes = Seq(
     Index(key = Seq(("id", IndexType.Ascending)), name = Some("srn_startDt_key"), background = true),
     Index(key = Seq(("uniqueAftId", IndexType.Ascending)), name = Some("unique_Aft_Id"), background = true, unique = true),
-    Index(key = Seq(("expireAt", IndexType.Ascending)), name = Some("dataExpiry"), background = true,
-      unique = true, options = BSONDocument("expireAfterSeconds" -> 0))
+    Index(key = Seq(("expireAt", IndexType.Ascending)), name = Some("dataExpiry"), background = true
+      , options = BSONDocument("expireAfterSeconds" -> 0))
   )
+
+  //TODO: Delete this after collection indexes is correctly created
+  collectionIndexes.foreach { index =>
+    val indexName = index.name.getOrElse("")
+    collection.indexesManager.drop(index.name.getOrElse("")) map {
+      case n if n > 0 => Logger.warn(s"Dropped index $indexName on collection ${collection.name} as TTL value incorrect")
+      case _ => Logger.warn(s"Index index $indexName on collection ${collection.name} had already been dropped (possible race condition)")
+    }
+  }
 
   createIndex(collectionIndexes)
 
   private def createIndex(indexes: Seq[Index]): Future[Seq[Boolean]] = {
-    Future.sequence(
+    val result = Future.sequence(
       indexes.map { index =>
         collection.indexesManager.ensure(index) map { result =>
           Logger.debug(message = s"Index $index was created successfully and result is: $result")
@@ -62,9 +71,12 @@ class DataCacheRepository @Inject()(
         }
       }
     )
+    CollectionDiagnostics.logCollectionInfo(collection)
+    result
   }
 
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+    Logger.debug("Calling Save in AFT Cache")
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
       id = id, None, data = userData, expireAt = expireInSeconds))
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
@@ -73,6 +85,7 @@ class DataCacheRepository @Inject()(
   }
 
   def setLock(id: String, name: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+    Logger.debug("Calling setLock in AFT Cache")
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
       id = id, Some(LockedBy(sessionId, name)),
       data = userData, expireAt = expireInSeconds))
@@ -82,6 +95,7 @@ class DataCacheRepository @Inject()(
   }
 
   def get(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
+    Logger.debug("Calling get in AFT Cache")
     collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[DataCache].map {
       _.map {
         dataEntry =>
@@ -97,10 +111,12 @@ class DataCacheRepository @Inject()(
   }
 
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+    Logger.debug("Calling lockedBy in AFT Cache")
     collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
       cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]()).map {
-      _.find(_.lockedBy.nonEmpty).flatMap {
-        _.lockedBy match
+      _.find(_.lockedBy.nonEmpty).flatMap { dataCache =>
+        Logger.debug(s"LockedBy : ${dataCache.lockedBy} for logged in session Id: ${sessionId}")
+        dataCache.lockedBy match
           {
             case Some(lockedBy) if lockedBy.sessionId != sessionId => Some(lockedBy.name)
             case _ => None
