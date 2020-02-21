@@ -38,8 +38,6 @@ class DataCacheRepository @Inject()(
   mongoComponent.mongoConnector.db,
   implicitly
 ) {
-  collection.drop()
-
   private def expireInSeconds: DateTime = DateTime.now(DateTimeZone.UTC).
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"))
 
@@ -50,10 +48,19 @@ class DataCacheRepository @Inject()(
       , options = BSONDocument("expireAfterSeconds" -> 0))
   )
 
-  createIndex(collectionIndexes)
+  (for {
+    _ <- createIndex(collectionIndexes)
+  } yield {
+    ()
+  }) recoverWith {
+    case t: Throwable => Future.successful(Logger.error(s"Error creating indexes on collection ${collection.name}", t))
+  } andThen {
+    case _ => CollectionDiagnostics.logCollectionInfo(collection)
+  }
+
 
   private def createIndex(indexes: Seq[Index]): Future[Seq[Boolean]] = {
-    val result = Future.sequence(
+    Future.sequence(
       indexes.map { index =>
         collection.indexesManager.ensure(index) map { result =>
           Logger.debug(message = s"Index $index was created successfully and result is: $result")
@@ -64,8 +71,6 @@ class DataCacheRepository @Inject()(
         }
       }
     )
-    CollectionDiagnostics.logCollectionInfo(collection)
-    result
   }
 
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
@@ -109,12 +114,11 @@ class DataCacheRepository @Inject()(
       cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]()).map {
       _.find(_.lockedBy.nonEmpty).flatMap { dataCache =>
         Logger.debug(s"LockedBy : ${dataCache.lockedBy} for logged in session Id: ${sessionId}")
-        dataCache.lockedBy match
-          {
-            case Some(lockedBy) if lockedBy.sessionId != sessionId => Some(lockedBy.name)
-            case _ => None
-          }
+        dataCache.lockedBy match {
+          case Some(lockedBy) if lockedBy.sessionId != sessionId => Some(lockedBy.name)
+          case _ => None
         }
+      }
     }
   }
 }
