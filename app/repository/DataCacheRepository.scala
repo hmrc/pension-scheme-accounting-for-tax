@@ -38,24 +38,17 @@ class DataCacheRepository @Inject()(
   mongoComponent.mongoConnector.db,
   implicitly
 ) {
+  collection.drop()
+
   private def expireInSeconds: DateTime = DateTime.now(DateTimeZone.UTC).
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"))
 
   val collectionIndexes = Seq(
-    Index(key = Seq(("id", IndexType.Ascending)), name = Some("srn_startDt_key"), background = true),
     Index(key = Seq(("uniqueAftId", IndexType.Ascending)), name = Some("unique_Aft_Id"), background = true, unique = true),
+    Index(key = Seq(("id", IndexType.Ascending)), name = Some("srn_startDt_key"), background = true),
     Index(key = Seq(("expireAt", IndexType.Ascending)), name = Some("dataExpiry"), background = true
       , options = BSONDocument("expireAfterSeconds" -> 0))
   )
-
-  //TODO: Delete this after collection indexes is correctly created
-  collectionIndexes.foreach { index =>
-    val indexName = index.name.getOrElse("")
-    collection.indexesManager.drop(index.name.getOrElse("")) map {
-      case n if n > 0 => Logger.warn(s"Dropped index $indexName on collection ${collection.name} as TTL value incorrect")
-      case _ => Logger.warn(s"Index index $indexName on collection ${collection.name} had already been dropped (possible race condition)")
-    }
-  }
 
   createIndex(collectionIndexes)
 
