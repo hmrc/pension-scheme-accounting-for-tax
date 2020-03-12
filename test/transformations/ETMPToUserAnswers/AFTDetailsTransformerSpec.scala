@@ -61,7 +61,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |  "chargeCDetails": {
       |    "employers": [
       |      {
-      |        "isSponsoringEmployerIndividual": true,
+      |        "whichTypeOfSponsoringEmployer": "individual",
       |        "chargeDetails": {
       |          "paymentDate": "2020-01-01",
       |          "amountTaxDue": 500.02
