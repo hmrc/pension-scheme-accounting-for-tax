@@ -16,7 +16,10 @@
 
 package controllers
 
+import java.time.LocalDate
+
 import connectors.DesConnector
+import models.AFTVersion
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.mockito.{ArgumentCaptor, Matchers}
@@ -55,6 +58,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     chargeGSectionWithValue _
   )
   private val memberBasedChargeNames = Seq("C", "D", "E", "G")
+  private val version1 = AFTVersion(1, LocalDate.now())
+  private val version2 = AFTVersion(2, LocalDate.now())
+  private val versions = Seq(version1, version2)
 
   private def controllerForGetAftVersions = {
     val application: Application = new GuiceApplicationBuilder()
@@ -62,7 +68,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       overrides(modules: _*).build()
     val controller = application.injector.instanceOf[AFTController]
     when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-      Future.successful(Seq(1, 2)))
+      Future.successful(versions))
     controller
   }
 
@@ -127,7 +133,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         overrides(modules: _*).build()
       val controller = application.injector.instanceOf[AFTController]
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-        Future.successful(Seq(1)))
+        Future.successful(Seq(AFTVersion(1, LocalDate.now()))))
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
       )
@@ -135,7 +141,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
       status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr(1)
+      contentAsJson(result) mustBe Json.arr(Json.toJson(version1))
     }
 
 
@@ -151,7 +157,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
         status(result) mustBe OK
-        contentAsJson(result) mustBe Json.arr(2)
+        contentAsJson(result) mustBe Json.arr(Json.toJson(version2))
       }
     }
 
@@ -174,7 +180,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
           val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
           status(result) mustBe OK
-          contentAsJson(result) mustBe Json.arr(1, 2)
+          contentAsJson(result) mustBe Json.toJson(versions)
         }
       }
     }
@@ -199,7 +205,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
             val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
             status(result) mustBe OK
-            contentAsJson(result) mustBe Json.arr(1, 2)
+            contentAsJson(result) mustBe Json.toJson(versions)
           }
         }
       }
