@@ -16,7 +16,10 @@
 
 package controllers
 
+import java.time.LocalDate
+
 import connectors.DesConnector
+import model.VersionOverview
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.mockito.{ArgumentCaptor, Matchers}
@@ -25,7 +28,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.http._
@@ -330,6 +333,54 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
   }
 
+  "getOverview" must {
+
+    "return OK with the Seq of overview details when the details are returned based on pstr start date and end date" in {
+      val application: Application = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+        overrides(modules: _*).build()
+      val controller = application.injector.instanceOf[AFTController]
+      when(mockDesConnector.getAftOverview(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(endDate))(any(), any(), any()))
+        .thenReturn(Future.successful(aftOverview))
+
+      val result = controller.getOverview()(fakeRequest
+        .withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt, "endDate" -> endDate))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe aftOverviewResponseJson
+    }
+
+    "throw BadRequestException when PSTR is not present in the header" in {
+      val application: Application = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+        overrides(modules: _*).build()
+      val controller = application.injector.instanceOf[AFTController]
+      recoverToExceptionIf[BadRequestException] {
+        controller.getOverview()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+      } map { response =>
+        response.responseCode mustBe BAD_REQUEST
+        response.message must include("Bad Request with missing PSTR/Quarter Start Date")
+      }
+    }
+
+    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
+      val application: Application = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+        overrides(modules: _*).build()
+      val controller = application.injector.instanceOf[AFTController]
+      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
+        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+
+      recoverToExceptionIf[Upstream5xxResponse] {
+        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt, "pstr" -> pstr))
+      } map { response =>
+        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+        response.getMessage must include("INTERNAL SERVER ERROR")
+        response.reportAs mustBe INTERNAL_SERVER_ERROR
+      }
+    }
+  }
+
   def errorResponse(code: String): String = {
     Json.stringify(
       Json.obj(
@@ -343,6 +394,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 object AFTControllerSpec {
   private val pstr = "12345678RD"
   private val startDt = "2020-01-01"
+  private val endDate = "2020-12-31"
   private val aftVer = "99"
   private val etmpAFTDetailsResponse: JsValue = Json.obj(
     "schemeDetails" -> Json.obj(
@@ -388,6 +440,39 @@ object AFTControllerSpec {
     ),
     "chargeDetails" -> chargeSection
   )
+
+  val aftOverviewResponseJson: JsArray = Json.arr(
+    Json.obj(
+      "periodStartDate"-> "2020-04-01",
+      "periodEndDate"-> "2020-06-30",
+      "numberOfVersions"-> 3,
+      "submittedVersionAvailable"-> false,
+      "compiledVersionAvailable"-> true
+    ),
+    Json.obj(
+      "periodStartDate"-> "2020-07-01",
+      "periodEndDate"-> "2020-10-31",
+      "numberOfVersions"-> 2,
+      "submittedVersionAvailable"-> true,
+      "compiledVersionAvailable"-> true
+    )
+  )
+
+  private val overview1 = VersionOverview(
+      LocalDate.of(2020, 4, 1),
+      LocalDate.of(2020, 6, 30),
+      3,
+      submittedVersionAvailable = false,
+      compiledVersionAvailable = true)
+
+  private val overview2 = VersionOverview(
+      LocalDate.of(2020, 7, 1),
+      LocalDate.of(2020, 10, 31),
+      2,
+      submittedVersionAvailable = true,
+      compiledVersionAvailable = true)
+
+  private val aftOverview = Seq(overview1, overview2)
 
   private def chargeSectionWithValue(section: String, currencyValue: BigDecimal): JsObject =
     Json.obj(
