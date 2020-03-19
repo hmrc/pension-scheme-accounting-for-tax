@@ -610,7 +610,7 @@ object AFTControllerSpec {
       |                        "nino" : "CS121212C",
       |                        "isDeleted" : false
       |                    },
-      |                    "isSponsoringEmployerIndividual" : true,
+      |                    "whichTypeOfSponsoringEmployer" : "individual",
       |                    "sponsoringEmployerAddress" : {
       |                        "line1" : "asas",
       |                        "line2" : "asas",

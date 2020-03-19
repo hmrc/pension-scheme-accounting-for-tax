@@ -127,7 +127,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
       addressDetails <- ukAddressGenerator
       date <- dateGenerator
     } yield Json.obj(
-          fields = "isSponsoringEmployerIndividual" -> true,
+          fields = "whichTypeOfSponsoringEmployer" -> "individual",
           "chargeDetails" -> Json.obj(
             fields = "paymentDate" -> date,
             "amountTaxDue" -> taxDue
@@ -149,7 +149,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
       addressDetails <- nonUkAddressGenerator
       date <- dateGenerator
     } yield Json.obj(
-          fields = "isSponsoringEmployerIndividual" -> false,
+          fields = "whichTypeOfSponsoringEmployer" -> "organisation",
           "chargeDetails" -> Json.obj(
             fields = "paymentDate" -> date,
             "amountTaxDue" -> taxDue
