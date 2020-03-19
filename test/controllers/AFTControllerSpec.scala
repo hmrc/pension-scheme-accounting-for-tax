@@ -19,7 +19,7 @@ package controllers
 import java.time.LocalDate
 
 import connectors.DesConnector
-import model.VersionOverview
+import models.AFTOverview
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.mockito.{ArgumentCaptor, Matchers}
@@ -458,14 +458,14 @@ object AFTControllerSpec {
     )
   )
 
-  private val overview1 = VersionOverview(
+  private val overview1 = AFTOverview(
       LocalDate.of(2020, 4, 1),
       LocalDate.of(2020, 6, 30),
       3,
       submittedVersionAvailable = false,
       compiledVersionAvailable = true)
 
-  private val overview2 = VersionOverview(
+  private val overview2 = AFTOverview(
       LocalDate.of(2020, 7, 1),
       LocalDate.of(2020, 10, 31),
       2,

@@ -20,7 +20,7 @@ import java.time.LocalDate
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
-import model.VersionOverview
+import models.AFTOverview
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify}
 import org.mockito.{ArgumentCaptor, Mockito}
@@ -64,8 +64,8 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions?startDate=$startDt"
   private val getAftOverviewUrl = s"/pension-online/reports/overview/$pstr/AFT?fromDate=$startDt&toDate=$endDate"
 
-  private val overview1 = VersionOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30), 3, false, true)
-  private val overview2 = VersionOverview(LocalDate.of(2020, 7, 1), LocalDate.of(2020, 10, 31), 2, true, true)
+  private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30), 3, false, true)
+  private val overview2 = AFTOverview(LocalDate.of(2020, 7, 1), LocalDate.of(2020, 10, 31), 2, true, true)
   private val aftOverview = Seq(overview1, overview2)
 
   "fileAFTReturn" must {

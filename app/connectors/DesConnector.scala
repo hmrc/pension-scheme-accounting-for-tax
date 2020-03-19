@@ -21,7 +21,7 @@ import java.util.UUID.randomUUID
 import audit._
 import com.google.inject.Inject
 import config.AppConfig
-import model.VersionOverview
+import models.AFTOverview
 import play.Logger
 import play.api.http.Status
 import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue, Reads}
@@ -81,14 +81,14 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
   }
 
   def getAftOverview(pstr: String, startDate: String, endDate: String)
-                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[VersionOverview]] = {
+                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[AFTOverview]] = {
 
     val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
     http.GET[JsValue](getAftVersionUrl)(implicitly, hc, implicitly).map { responseJson =>
 
-      responseJson.validate[Seq[VersionOverview]](Reads.seq(VersionOverview.rds)) match {
+      responseJson.validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
         case JsSuccess(versions, _) => versions
         case JsError(errors) => throw JsResultException(errors)
       }

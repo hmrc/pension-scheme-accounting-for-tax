@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package model
+package models
 
 import java.time.LocalDate
 import play.api.libs.functional.syntax._
 
 import play.api.libs.json.{Format, JsPath, Json, Reads}
 
-case class VersionOverview(
+case class AFTOverview(
                             periodStartDate: LocalDate,
                             periodEndDate: LocalDate,
                             numberOfVersions: Int,
@@ -29,9 +29,9 @@ case class VersionOverview(
                             compiledVersionAvailable: Boolean
                           )
 
-object VersionOverview {
+object AFTOverview {
 
-  implicit val rds: Reads[VersionOverview] = (
+  implicit val rds: Reads[AFTOverview] = (
     (JsPath \ "periodStartDate").read[String] and
     (JsPath \ "periodEndDate").read[String] and
     (JsPath \ "numberOfVersions").read[Int] and
@@ -39,7 +39,7 @@ object VersionOverview {
     (JsPath \ "compiledVersionAvailable").read[String]
     ) (
     (startDate, endDate, noOfVersions, isSubmitted, isCompiled) =>
-    VersionOverview(
+    AFTOverview(
       LocalDate.parse(startDate),
       LocalDate.parse(endDate),
       noOfVersions,
@@ -48,5 +48,5 @@ object VersionOverview {
     )
   )
 
-  implicit val formats: Format[VersionOverview] = Json.format[VersionOverview]
+  implicit val formats: Format[AFTOverview] = Json.format[AFTOverview]
 }
