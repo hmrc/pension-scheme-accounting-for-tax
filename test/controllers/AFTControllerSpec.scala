@@ -31,6 +31,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
 
@@ -45,6 +46,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   private val fakeRequest = FakeRequest("GET", "/")
   private val mockDesConnector = mock[DesConnector]
+  private val authConnector: AuthConnector = mock[AuthConnector]
+
   private val zeroCurrencyValue = BigDecimal(0.00)
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
@@ -59,10 +62,18 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   )
   private val memberBasedChargeNames = Seq("C", "D", "E", "G")
 
-  private def controllerForGetAftVersions = {
-    val application: Application = new GuiceApplicationBuilder()
-      .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-      overrides(modules: _*).build()
+  val modules: Seq[GuiceableModule] =
+    Seq(
+      bind[AuthConnector].toInstance(authConnector),
+      bind[DesConnector].toInstance(mockDesConnector)
+    )
+
+  val application: Application = new GuiceApplicationBuilder()
+    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
+    overrides(modules: _*).build()
+
+  private def controllerForGetAftVersions: AFTController = {
+    
     val controller = application.injector.instanceOf[AFTController]
     when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
       Future.successful(Seq(1, 2)))
@@ -71,19 +82,16 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   before {
     reset(mockDesConnector)
+    reset(authConnector)
+    when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
   }
-  val modules: Seq[GuiceableModule] =
-    Seq(
-      bind[DesConnector].toInstance(mockDesConnector)
-    )
 
   "fileReturn" must {
     "return OK when valid response from DES" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
       val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
+
       when(mockDesConnector.fileAFTReturn(any(), any(), eventCaptor.capture())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
 
@@ -93,10 +101,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "throw Upstream5XXResponse on Internal Server Error from DES" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.failed(Upstream5xxResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
@@ -108,12 +115,11 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "return OK when valid response from DES for payload with only one member based charge and zero value" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
       val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
       val jsonPayload = jsonOneMemberZeroValue
+
       when(mockDesConnector.fileAFTReturn(any(), any(), eventCaptor.capture())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(jsonPayload))))
       val result = controller.fileReturn()(fakeRequest.withJsonBody(jsonPayload).withHeaders(newHeaders = "pstr" -> pstr))
@@ -125,10 +131,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   "getVersions" must {
 
     "return OK with the Seq of version numbers when the details are returned based on pstr and start date" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.successful(Seq(1)))
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
@@ -146,6 +151,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
       s"return OK EXCLUDING version number where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of zero AND NO OTHER CHARGES" in {
+
         when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
           Future.successful(createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))))
         when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
@@ -209,10 +215,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "throw BadRequestException when PSTR is not present in the header" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
+
       recoverToExceptionIf[BadRequestException] {
         controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt))
       } map { response =>
@@ -222,10 +227,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
@@ -242,10 +246,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   "getAftDetails" must {
 
     "return OK when the details are returned based on pstr, start date and AFT version" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.successful(etmpAFTDetailsResponse))
 
@@ -256,24 +259,21 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "throw BadRequestException when PSTR is not present in the header" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+
       val controller = application.injector.instanceOf[AFTController]
 
       recoverToExceptionIf[BadRequestException] {
         controller.getDetails()(fakeRequest.withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing PSTR"
+        response.getMessage mustBe "Bad Request with missing PSTR/Quarter Start Date"
       }
     }
 
     "throw BadRequestException when bad request with INVALID_START_DATE returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
 
@@ -286,10 +286,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "throw Upstream4xxResponse when UpStream4XXResponse returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(Upstream4xxResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
 
@@ -302,10 +301,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(Upstream5xxResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
@@ -318,10 +316,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "throw generic exception when any other exception returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+      
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(new Exception("Generic Exception")))
 
