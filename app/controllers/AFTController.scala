@@ -46,13 +46,11 @@ class AFTController @Inject()(appConfig: AppConfig,
   def fileReturn(): Action[AnyContent] = Action.async {
     implicit request =>
 
-      val actionName = "Compile File Return"
-
-      withRequestDetails(request, actionName) { (pstr, userAnswersJson) =>
-        Logger.debug(message = s"[$actionName: Incoming-Payload]$userAnswersJson")
+      post { (pstr, userAnswersJson) =>
+        Logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
         userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
           case JsSuccess(dataToBeSendToETMP, _) =>
-            Logger.debug(message = s"[$actionName: Outgoing-Payload]$dataToBeSendToETMP")
+            Logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
             desConnector.fileAFTReturn(
               pstr,
               dataToBeSendToETMP,
@@ -68,17 +66,11 @@ class AFTController @Inject()(appConfig: AppConfig,
   }
 
   def getDetails: Action[AnyContent] = Action.async {
-    implicit request => {
-
-      val actionName: String = "Get AFT details"
-      val startDate: Option[String] = request.headers.get("startDate")
-      val aftVersion: Option[String] = request.headers.get("aftVersion")
-
-      withRequestDetails(request, actionName) { (pstr, _) =>
-
-        (pstr, startDate, aftVersion) match {
-          case (pstr, Some(startDt), Some(aftVer)) =>
-            desConnector.getAftDetails(pstr, startDt, aftVer).map {
+    implicit request =>
+      get { (pstr, startDate) =>
+        request.headers.get("aftVersion") match {
+          case Some(aftVer) =>
+            desConnector.getAftDetails(pstr, startDate, aftVer).map {
               etmpJson =>
                 etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
                   case JsSuccess(userAnswersJson, _) =>
@@ -88,39 +80,29 @@ class AFTController @Inject()(appConfig: AppConfig,
                 }
             }
           case _ =>
-            Future.failed(new BadRequestException("Bad Request with missing PSTR"))
+            Future.failed(new BadRequestException("Bad Request with no AFT version"))
         }
       }
-    }
   }
 
   def getVersions: Action[AnyContent] = Action.async {
     implicit request =>
-
-      val actionName: String = "Get AFT versions"
-      val startDateOpt: Option[String] = request.headers.get("startDate")
-
-      withRequestDetails(request, actionName) { (pstr, _) =>
-        (pstr, startDateOpt) match {
-          case (pstr, Some(startDate)) =>
-            desConnector.getAftVersions(pstr, startDate).flatMap {
-              case data if data.nonEmpty =>
-                val versionsWithNoValueAndOnlyOneMemberRemoved = data.map {
-                  version =>
-                    desConnector.getAftDetails(pstr, startDate, version.toString).map {
-                      jsValue =>
-                        if (isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) Seq[Int]() else Seq(version)
-                    }
+      get { (pstr, startDate) =>
+        desConnector.getAftVersions(pstr, startDate).flatMap {
+          case data if data.nonEmpty =>
+            val versionsWithNoValueAndOnlyOneMemberRemoved = data.map {
+              version =>
+                desConnector.getAftDetails(pstr, startDate, version.toString).map {
+                  jsValue =>
+                    if (isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) Seq[Int]() else Seq(version)
                 }
-                Future.sequence(versionsWithNoValueAndOnlyOneMemberRemoved).map {
-                  seqVersions =>
-                    Ok(Json.toJson(seqVersions.flatten))
-                }
-              case data =>
-                Future.successful(Ok(Json.toJson(data)))
             }
-          case _ =>
-            Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
+            Future.sequence(versionsWithNoValueAndOnlyOneMemberRemoved).map {
+              seqVersions =>
+                Ok(Json.toJson(seqVersions.flatten))
+            }
+          case data =>
+            Future.successful(Ok(Json.toJson(data)))
         }
       }
   }
@@ -145,25 +127,43 @@ class AFTController @Inject()(appConfig: AppConfig,
     areNoChargesWithValues && isOnlyOneChargeWithOneMember
   }
 
-  private def withRequestDetails(request: Request[AnyContent], actionName: String)
-                                (block: (String, JsValue) => Future[Result])
-                                (implicit hc: HeaderCarrier): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
+  private def post(block: (String, JsValue) => Future[Result])
+                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+
+    Logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
+
+    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.externalId) {
       case Some(_) =>
-        val json = request.body.asJson
-
-        Logger.debug(message = s"[$actionName: Incoming-Payload]$json")
-
-        (request.headers.get("pstr"), json) match {
+        (
+          request.headers.get("pstr"),
+          request.body.asJson
+        ) match {
           case (Some(pstr), Some(js)) =>
             block(pstr, js)
-          case (pstr, jsValue) => {
-            println(s"\n\n${request.headers.get("pstr")}\n\n")
+          case (pstr, jsValue) =>
             Future.failed(new BadRequestException(s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
-          }
         }
       case _ =>
-        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - name"))
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
+    }
+  }
+
+  private def get(block: (String, String) => Future[Result])
+                 (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+
+    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.externalId) {
+      case Some(_) =>
+        (
+          request.headers.get("pstr"),
+          request.headers.get("startDate")
+        ) match {
+          case (Some(pstr), Some(startDate)) =>
+            block(pstr, startDate)
+          case _ =>
+            Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
+        }
+      case _ =>
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
     }
   }
 }
