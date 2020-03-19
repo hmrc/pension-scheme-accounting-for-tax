@@ -92,8 +92,8 @@ class DataCacheController @Inject()(
       }
   }
 
-  private def getIdWithName(block: (String, String, String) => Future[Result])(implicit hc: HeaderCarrier,
-                                                                               request: Request[AnyContent]): Future[Result] = {
+  private def getIdWithName(block: (String, String, String) => Future[Result])
+                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
       case Some(name) =>
         val id = request.headers.get("id").getOrElse(throw MissingHeadersException)

@@ -24,7 +24,9 @@ import play.api.libs.json._
 import play.api.mvc._
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
-import uk.gov.hmrc.http.{Request => _, _}
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
+import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,77 +35,93 @@ import scala.concurrent.{ExecutionContext, Future}
 class AFTController @Inject()(appConfig: AppConfig,
                               cc: ControllerComponents,
                               desConnector: DesConnector,
+                              val authConnector: AuthConnector,
                               aftReturnTransformer: AFTReturnTransformer,
                               aftDetailsTransformer: AFTDetailsTransformer
                              )(implicit ec: ExecutionContext)
-  extends BackendController(cc) with HttpErrorFunctions with Results {
+  extends BackendController(cc) with HttpErrorFunctions with Results with AuthorisedFunctions {
 
   private val zeroCurrencyValue = BigDecimal(0.00)
 
-  def fileReturn(): Action[AnyContent] = Action.async { implicit request =>
-    val actionName = "Compile File Return"
+  def fileReturn(): Action[AnyContent] = Action.async {
+    implicit request =>
 
-    withRequestDetails(request, actionName) { (pstr, userAnswersJson) =>
-      Logger.debug(message = s"[$actionName: Incoming-Payload]$userAnswersJson")
-      userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
-        case JsSuccess(dataToBeSendToETMP, _) =>
-          Logger.debug(message = s"[$actionName: Outgoing-Payload]$dataToBeSendToETMP")
-          desConnector.fileAFTReturn(
-            pstr,
-            dataToBeSendToETMP,
-            isOnlyOneChargeWithOneMemberAndNoValue(dataToBeSendToETMP)
-          ).map { response =>
-            Ok(response.body)
-          }
-        case JsError(errors) =>
-          throw JsResultException(errors)
+      val actionName = "Compile File Return"
+
+      withRequestDetails(request, actionName) { (pstr, userAnswersJson) =>
+        Logger.debug(message = s"[$actionName: Incoming-Payload]$userAnswersJson")
+        userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
+          case JsSuccess(dataToBeSendToETMP, _) =>
+            Logger.debug(message = s"[$actionName: Outgoing-Payload]$dataToBeSendToETMP")
+            desConnector.fileAFTReturn(
+              pstr,
+              dataToBeSendToETMP,
+              isOnlyOneChargeWithOneMemberAndNoValue(dataToBeSendToETMP)
+            ).map {
+              response =>
+                Ok(response.body)
+            }
+          case JsError(errors) =>
+            throw JsResultException(errors)
+        }
       }
-    }
   }
 
   def getDetails: Action[AnyContent] = Action.async {
     implicit request => {
 
-      val startDate = request.headers.get("startDate")
-      val aftVersion = request.headers.get("aftVersion")
-      val pstrOpt = request.headers.get("pstr")
+      val actionName: String = "Get AFT details"
+      val startDate: Option[String] = request.headers.get("startDate")
+      val aftVersion: Option[String] = request.headers.get("aftVersion")
 
-      (pstrOpt, startDate, aftVersion) match {
-        case (Some(pstr), Some(startDt), Some(aftVer)) =>
-          desConnector.getAftDetails(pstr, startDt, aftVer).map { etmpJson =>
-            etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
-              case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
-              case JsError(errors) => throw JsResultException(errors)
+      withRequestDetails(request, actionName) { (pstr, _) =>
+
+        (pstr, startDate, aftVersion) match {
+          case (pstr, Some(startDt), Some(aftVer)) =>
+            desConnector.getAftDetails(pstr, startDt, aftVer).map {
+              etmpJson =>
+                etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
+                  case JsSuccess(userAnswersJson, _) =>
+                    Ok(userAnswersJson)
+                  case JsError(errors) =>
+                    throw JsResultException(errors)
+                }
             }
-          }
-        case _ => Future.failed(new BadRequestException("Bad Request with missing PSTR"))
+          case _ =>
+            Future.failed(new BadRequestException("Bad Request with missing PSTR"))
+        }
       }
     }
   }
 
   def getVersions: Action[AnyContent] = Action.async {
     implicit request =>
-      val pstrOpt = request.headers.get("pstr")
-      val startDateOpt = request.headers.get("startDate")
 
-      (pstrOpt, startDateOpt) match {
-        case (Some(pstr), Some(startDate)) =>
-          desConnector.getAftVersions(pstr, startDate).flatMap {
-            case data if data.nonEmpty =>
-              val versionsWithNoValueAndOnlyOneMemberRemoved = data.map { version =>
-                desConnector.getAftDetails(pstr, startDate, version.toString).map { jsValue =>
-                  if (isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) {
-                    Seq[Int]()
-                  } else {
-                    Seq(version)
-                  }
+      val actionName: String = "Get AFT versions"
+      val startDateOpt: Option[String] = request.headers.get("startDate")
+
+      withRequestDetails(request, actionName) { (pstr, _) =>
+        (pstr, startDateOpt) match {
+          case (pstr, Some(startDate)) =>
+            desConnector.getAftVersions(pstr, startDate).flatMap {
+              case data if data.nonEmpty =>
+                val versionsWithNoValueAndOnlyOneMemberRemoved = data.map {
+                  version =>
+                    desConnector.getAftDetails(pstr, startDate, version.toString).map {
+                      jsValue =>
+                        if (isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) Seq[Int]() else Seq(version)
+                    }
                 }
-              }
-              Future.sequence(versionsWithNoValueAndOnlyOneMemberRemoved).map(seqVersions => Ok(Json.toJson(seqVersions.flatten)))
-            case data => Future.successful(Ok(Json.toJson(data)))
-          }
-        case _ =>
-          Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
+                Future.sequence(versionsWithNoValueAndOnlyOneMemberRemoved).map {
+                  seqVersions =>
+                    Ok(Json.toJson(seqVersions.flatten))
+                }
+              case data =>
+                Future.successful(Ok(Json.toJson(data)))
+            }
+          case _ =>
+            Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
+        }
       }
   }
 
@@ -128,16 +146,24 @@ class AFTController @Inject()(appConfig: AppConfig,
   }
 
   private def withRequestDetails(request: Request[AnyContent], actionName: String)
-                                (block: (String, JsValue) => Future[Result]): Future[Result] = {
-    val json = request.body.asJson
+                                (block: (String, JsValue) => Future[Result])
+                                (implicit hc: HeaderCarrier): Future[Result] = {
+    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
+      case Some(_) =>
+        val json = request.body.asJson
 
-    Logger.debug(message = s"[$actionName: Incoming-Payload]$json")
+        Logger.debug(message = s"[$actionName: Incoming-Payload]$json")
 
-    (request.headers.get("pstr"), json) match {
-      case (Some(pstr), Some(js)) =>
-        block(pstr, js)
-      case (pstr, jsValue) =>
-        Future.failed(new BadRequestException(s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
+        (request.headers.get("pstr"), json) match {
+          case (Some(pstr), Some(js)) =>
+            block(pstr, js)
+          case (pstr, jsValue) => {
+            println(s"\n\n${request.headers.get("pstr")}\n\n")
+            Future.failed(new BadRequestException(s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
+          }
+        }
+      case _ =>
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - name"))
     }
   }
 }
