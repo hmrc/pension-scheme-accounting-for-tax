@@ -16,8 +16,11 @@
 
 package connectors
 
+import java.time.LocalDate
+
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
+import models.AFTOverview
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify}
 import org.mockito.{ArgumentCaptor, Mockito}
@@ -54,10 +57,16 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
 
   private val pstr = "test-pstr"
   private val startDt = "2020-01-01"
+  private val endDate = "2021-06-30"
   private val aftVersion = "1"
   private val aftSubmitUrl = s"/pension-online/pstr/$pstr/aft/return"
   private val getAftUrl = s"/pension-online/aft-return/$pstr?startDate=$startDt&aftVersion=$aftVersion"
   private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions?startDate=$startDt"
+  private val getAftOverviewUrl = s"/pension-online/reports/overview/$pstr/AFT?fromDate=$startDt&toDate=$endDate"
+
+  private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30), 3, false, true)
+  private val overview2 = AFTOverview(LocalDate.of(2020, 7, 1), LocalDate.of(2020, 10, 31), 2, true, true)
+  private val aftOverview = Seq(overview1, overview2)
 
   "fileAFTReturn" must {
 
@@ -467,6 +476,104 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
         _ =>
           verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
           eventCaptor.getValue mustEqual audit.GetAFTVersions(pstr, startDt, Status.INTERNAL_SERVER_ERROR, None)
+      }
+    }
+  }
+
+  "getAftOverview" must {
+    "return the seq of overviewDetails returned from the ETMP" in {
+      val aftOverviewResponseJson = Json.arr(
+        Json.obj(
+            "periodStartDate"-> "2020-04-01",
+            "periodEndDate"-> "2020-06-30",
+            "numberOfVersions"-> 3,
+            "submittedVersionAvailable"-> "No",
+            "compiledVersionAvailable"-> "Yes"
+        ),
+        Json.obj(
+            "periodStartDate"-> "2020-07-01",
+            "periodEndDate"-> "2020-10-31",
+            "numberOfVersions"-> 2,
+            "submittedVersionAvailable"-> "Yes",
+            "compiledVersionAvailable"-> "Yes"
+        )
+      )
+
+      server.stubFor(
+        get(urlEqualTo(getAftOverviewUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(aftOverviewResponseJson.toString())
+          )
+      )
+      connector.getAftOverview(pstr, startDt, endDate).map { response =>
+        response mustBe aftOverview
+      }
+    }
+
+    "return a BadRequestException for BAD REQUEST - 400" in {
+      server.stubFor(
+        get(urlEqualTo(getAftOverviewUrl))
+          .willReturn(
+            badRequest
+              .withHeader("Content-Type", "application/json")
+              .withBody(errorResponse("INVALID_PSTR"))
+          )
+      )
+
+      recoverToExceptionIf[BadRequestException] {
+        connector.getAftOverview(pstr, startDt, endDate)
+      } map { errorResponse =>
+        errorResponse.responseCode mustEqual BAD_REQUEST
+        errorResponse.message must include("INVALID_PSTR")
+      }
+    }
+
+    "return a NotFoundException for NOT FOUND - 404" in {
+      server.stubFor(
+        get(urlEqualTo(getAftOverviewUrl))
+          .willReturn(
+            notFound
+              .withBody(errorResponse("NOT_FOUND"))
+          )
+      )
+
+      connector.getAftOverview(pstr, startDt, endDate).map { response =>
+        response mustBe Nil
+      }
+    }
+
+    "throw Upstream4XX for FORBIDDEN - 403" in {
+
+      server.stubFor(
+        get(urlEqualTo(getAftOverviewUrl))
+          .willReturn(
+            forbidden
+              .withBody(errorResponse("FORBIDDEN"))
+          )
+      )
+      recoverToExceptionIf[Upstream4xxResponse](connector.getAftOverview(pstr, startDt, endDate)) map {
+        ex =>
+          ex.upstreamResponseCode mustBe FORBIDDEN
+          ex.message must include("FORBIDDEN")
+      }
+    }
+
+    "throw Upstream5XX for INTERNAL SERVER ERROR - 500" in {
+
+      server.stubFor(
+        get(urlEqualTo(getAftOverviewUrl))
+          .willReturn(
+            serverError
+              .withBody(errorResponse("SERVER_ERROR"))
+          )
+      )
+
+      recoverToExceptionIf[Upstream5xxResponse](connector.getAftOverview(pstr, startDt, endDate)) map {
+        ex =>
+          ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+          ex.message must include("SERVER_ERROR")
       }
     }
   }

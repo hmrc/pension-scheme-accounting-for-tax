@@ -21,9 +21,10 @@ import java.util.UUID.randomUUID
 import audit._
 import com.google.inject.Inject
 import config.AppConfig
+import models.AFTOverview
 import play.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue}
+import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue, Reads}
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
@@ -79,6 +80,22 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
     case _: NotFoundException => Future.successful(Nil)
   }
 
+  def getAftOverview(pstr: String, startDate: String, endDate: String)
+                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[AFTOverview]] = {
+
+    val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
+
+    http.GET[JsValue](getAftVersionUrl)(implicitly, hc, implicitly).map { responseJson =>
+
+      responseJson.validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
+        case JsSuccess(versions, _) => versions
+        case JsError(errors) => throw JsResultException(errors)
+      }
+    }
+  } recoverWith {
+    case _: NotFoundException => Future.successful(Nil)
+  }
 
   private def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
     val requestId = getCorrelationId(hc.requestId.map(_.value))
