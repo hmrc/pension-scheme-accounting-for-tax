@@ -50,13 +50,13 @@ class ChargeCTransformer extends JsonTransformer {
     ).reduce
 
   def readsEmployerTypeDetails: Reads[JsObject] =
-    (__ \ 'isSponsoringEmployerIndividual).read[Boolean].flatMap {
-      case true =>
+    (__ \ 'whichTypeOfSponsoringEmployer).read[String].flatMap {
+      case "individual" =>
         ((__ \ 'memberTypeDetails \ 'memberType).json.put(JsString("Individual")) and
           (__ \ 'memberTypeDetails \ 'individualDetails \ 'firstName).json.copyFrom((__ \ 'sponsoringIndividualDetails \ 'firstName).json.pick) and
           (__ \ 'memberTypeDetails \ 'individualDetails \ 'lastName).json.copyFrom((__ \ 'sponsoringIndividualDetails \ 'lastName).json.pick) and
           (__ \ 'memberTypeDetails \ 'individualDetails \ 'nino).json.copyFrom((__ \ 'sponsoringIndividualDetails \ 'nino).json.pick)).reduce
-      case false =>
+      case "organisation" =>
         ((__ \ 'memberTypeDetails \ 'memberType).json.put(JsString("Organisation")) and
           (__ \ 'memberTypeDetails \ 'comOrOrganisationName).json.copyFrom((__ \ 'sponsoringOrganisationDetails \ 'name).json.pick) and
           (__ \ 'memberTypeDetails \ 'crnNumber).json.copyFrom((__ \ 'sponsoringOrganisationDetails \ 'crn).json.pick)).reduce
