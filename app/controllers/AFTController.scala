@@ -19,6 +19,7 @@ package controllers
 import config.AppConfig
 import connectors.DesConnector
 import javax.inject.{Inject, Singleton}
+import models.AFTVersion
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
@@ -92,9 +93,9 @@ class AFTController @Inject()(appConfig: AppConfig,
           case data if data.nonEmpty =>
             val versionsWithNoValueAndOnlyOneMemberRemoved = data.map {
               version =>
-                desConnector.getAftDetails(pstr, startDate, version.toString).map {
+                desConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map {
                   jsValue =>
-                    if (isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) Seq[Int]() else Seq(version)
+                    if (isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) Seq[AFTVersion]() else Seq(version)
                 }
             }
             Future.sequence(versionsWithNoValueAndOnlyOneMemberRemoved).map {

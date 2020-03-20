@@ -20,6 +20,7 @@ import java.time.LocalDate
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
+import models.AFTVersion
 import models.AFTOverview
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify}
@@ -346,8 +347,12 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   }
 
   "getAftVersions" must {
-    "return the seq of version nos returned from the ETMP" in {
-      val aftVersionsResponseJson = Json.arr(Json.obj(fields = "reportVersion" -> 1))
+    "return the seq of versions returned from the ETMP" in {
+      val aftVersionsResponseJson = Json.arr(
+        Json.obj(fields = "reportVersion" -> 1,
+        "compilationOrSubmissionDate" -> "2019-10-17T09:31:47Z"),
+        Json.obj(fields = "reportVersion" -> 2,
+          "compilationOrSubmissionDate" -> "2019-10-17T09:31:47Z"))
       server.stubFor(
         get(urlEqualTo(getAftVersionsUrl))
           .willReturn(
@@ -357,13 +362,18 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
       connector.getAftVersions(pstr, startDt).map { response =>
-        response mustBe Seq(1)
+        response mustBe Seq(
+          AFTVersion(1, LocalDate.of(2019, 10, 17)),
+          AFTVersion(2, LocalDate.of(2019, 10, 17)))
       }
     }
 
     "send the GetReportVersions audit event when the success response returned from ETMP" in {
       Mockito.reset(mockAuditService)
-      val aftVersionsResponseJson = Json.arr(Json.obj(fields = "reportVersion" -> 1))
+      val aftVersionsResponseJson = Json.arr(Json.obj(fields = "reportVersion" -> 1,
+        "compilationOrSubmissionDate" -> "2019-10-17T09:31:47Z"),
+        Json.obj(fields = "reportVersion" -> 2,
+          "compilationOrSubmissionDate" -> "2019-10-17T09:31:47Z"))
 
       server.stubFor(
         get(urlEqualTo(getAftVersionsUrl))
