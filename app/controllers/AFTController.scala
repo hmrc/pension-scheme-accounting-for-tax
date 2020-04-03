@@ -110,22 +110,18 @@ class AFTController @Inject()(appConfig: AppConfig,
 
   def getOverview: Action[AnyContent] = Action.async {
     implicit request =>
-      val pstrOpt = request.headers.get("pstr")
-      val startDateOpt = request.headers.get("startDate")
-      val endDateOpt = request.headers.get("endDate")
-
-      (pstrOpt, startDateOpt, endDateOpt) match {
-        case (Some(pstr), Some(startDate), Some(endDate)) =>
-          desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
-            Future.successful(Ok(Json.toJson(data)))
-          }
-
-        case _ =>
-          Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date/End Date"))
+      get { (pstr, startDate) =>
+        request.headers.get("endDate") match {
+          case Some(endDate) =>
+            desConnector.getAftOverview(pstr, startDate, endDate).flatMap {
+              data =>
+                Future.successful(Ok(Json.toJson(data)))
+            }
+          case _ =>
+            Future.failed(new BadRequestException("Bad Request with no endDate"))
+        }
       }
   }
-
-
 
   private def isOnlyOneChargeWithOneMemberAndNoValue(jsValue: JsValue): Boolean = {
     val areNoChargesWithValues: Boolean =
