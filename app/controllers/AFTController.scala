@@ -23,6 +23,7 @@ import models.AFTVersion
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
+import services.AFTService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
@@ -38,11 +39,10 @@ class AFTController @Inject()(appConfig: AppConfig,
                               desConnector: DesConnector,
                               val authConnector: AuthConnector,
                               aftReturnTransformer: AFTReturnTransformer,
-                              aftDetailsTransformer: AFTDetailsTransformer
+                              aftDetailsTransformer: AFTDetailsTransformer,
+                              aftService: AFTService
                              )(implicit ec: ExecutionContext)
   extends BackendController(cc) with HttpErrorFunctions with Results with AuthorisedFunctions {
-
-  private val zeroCurrencyValue = BigDecimal(0.00)
 
   def fileReturn(): Action[AnyContent] = Action.async {
     implicit request =>
@@ -54,8 +54,7 @@ class AFTController @Inject()(appConfig: AppConfig,
             Logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
             desConnector.fileAFTReturn(
               pstr,
-              dataToBeSendToETMP,
-              isOnlyOneChargeWithOneMemberAndNoValue(dataToBeSendToETMP)
+              dataToBeSendToETMP
             ).map {
               response =>
                 Ok(response.body)
@@ -95,7 +94,7 @@ class AFTController @Inject()(appConfig: AppConfig,
               version =>
                 desConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map {
                   jsValue =>
-                    if (isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) Seq[AFTVersion]() else Seq(version)
+                    if (aftService.isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) Seq[AFTVersion]() else Seq(version)
                 }
             }
             Future.sequence(versionsWithNoValueAndOnlyOneMemberRemoved).map {
@@ -123,24 +122,7 @@ class AFTController @Inject()(appConfig: AppConfig,
       }
   }
 
-  private def isOnlyOneChargeWithOneMemberAndNoValue(jsValue: JsValue): Boolean = {
-    val areNoChargesWithValues: Boolean =
-      (jsValue \ "chargeDetails" \ "chargeTypeADetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeBDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeCDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeDDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeGDetails" \ "totalOTCAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue)
 
-    val isOnlyOneChargeWithOneMember: Boolean = Seq(
-      (jsValue \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1),
-      (jsValue \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1),
-      (jsValue \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1),
-      (jsValue \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1)
-    ).count(_ == true) == 1
-    areNoChargesWithValues && isOnlyOneChargeWithOneMember
-  }
 
   private def post(block: (String, JsValue) => Future[Result])
                   (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {

@@ -32,6 +32,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import services.AFTService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
@@ -47,6 +48,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   private val fakeRequest = FakeRequest("GET", "/")
   private val mockDesConnector = mock[DesConnector]
+  private val mockAftService = mock[AFTService]
   private val authConnector: AuthConnector = mock[AuthConnector]
 
   private val zeroCurrencyValue = BigDecimal(0.00)
@@ -55,12 +57,12 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val nonMemberBasedChargeSections = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
   private val nonMemberBasedChargeNames = Seq("A", "B", "F")
 
-  private val memberBasedChargeCreationFunctions = Seq(
-    chargeCSectionWithValue _,
-    chargeDSectionWithValue _,
-    chargeESectionWithValue _,
-    chargeGSectionWithValue _
-  )
+//  private val memberBasedChargeCreationFunctions = Seq(
+//    chargeCSectionWithValue _,
+//    chargeDSectionWithValue _,
+//    chargeESectionWithValue _,
+//    chargeGSectionWithValue _
+//  )
   private val memberBasedChargeNames = Seq("C", "D", "E", "G")
   private val version1 = AFTVersion(1, LocalDate.now())
   private val version2 = AFTVersion(2, LocalDate.now())
@@ -69,7 +71,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
-      bind[DesConnector].toInstance(mockDesConnector)
+      bind[DesConnector].toInstance(mockDesConnector),
+      bind[AFTService].toInstance(mockAftService)
     )
 
   val application: Application = new GuiceApplicationBuilder()
@@ -86,6 +89,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   before {
     reset(mockDesConnector)
+    reset(mockAftService)
     reset(authConnector)
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
   }
@@ -96,19 +100,18 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
       val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), eventCaptor.capture())(any(), any(), any()))
+      when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
 
       val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
-      eventCaptor.getValue mustBe false
     }
 
     "throw Upstream5XXResponse on Internal Server Error from DES" in {
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+      when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
         .thenReturn(Future.failed(Upstream5xxResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[Upstream5xxResponse] {
@@ -124,11 +127,10 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
       val jsonPayload = jsonOneMemberZeroValue
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), eventCaptor.capture())(any(), any(), any()))
+      when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(jsonPayload))))
       val result = controller.fileReturn()(fakeRequest.withJsonBody(jsonPayload).withHeaders(newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
-      eventCaptor.getValue mustBe true
     }
   }
 
@@ -143,6 +145,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
       )
+      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
 
       val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
@@ -150,72 +153,21 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       contentAsJson(result) mustBe Json.arr(Json.toJson(version1))
     }
 
+    "return OK with an empty sequence when there is only one charge with one member and it's value is zero" in {
 
-    memberBasedChargeCreationFunctions
-      .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
-      s"return OK EXCLUDING version number where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
-        s"value of zero AND NO OTHER CHARGES" in {
+      val controller = application.injector.instanceOf[AFTController]
 
-        when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-          Future.successful(createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))))
-        when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any())).thenReturn(
-          Future.successful(createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))))
+      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
+        Future.successful(Seq(AFTVersion(1, LocalDate.now()))))
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
+        Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
+      )
+      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(true)
 
-        val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+      val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
-        status(result) mustBe OK
-        contentAsJson(result) mustBe Json.arr(Json.toJson(version2))
-      }
-    }
-
-    nonMemberBasedChargeSections
-      .zipWithIndex.foreach { case (nonMemberBasedChargeSection, nonMemberBasedChargeSectionIndex) =>
-      memberBasedChargeCreationFunctions
-        .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
-        s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
-          s"value of zero BUT also a value in another non-member-based charge (${nonMemberBasedChargeNames(nonMemberBasedChargeSectionIndex)}})" in {
-
-          when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any()))
-            .thenReturn(Future.successful(
-              createAFTDetailsResponse(createChargeSection(zeroCurrencyValue) ++ chargeSectionWithValue(nonMemberBasedChargeSection, nonZeroCurrencyValue))
-            ))
-          when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any()))
-            .thenReturn(Future.successful(
-              createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))
-            ))
-
-          val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-          status(result) mustBe OK
-          contentAsJson(result) mustBe Json.toJson(versions)
-        }
-      }
-    }
-
-
-    memberBasedChargeCreationFunctions.zipWithIndex.foreach { case (createOtherChargeSection, otherChargeSectionIndex) =>
-      memberBasedChargeCreationFunctions
-        .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
-        if (chargeSectionIndex != otherChargeSectionIndex) {
-          s"return OK INCLUDING version number where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
-            s"value of zero BUT also a value in another member-based charge (${memberBasedChargeNames(otherChargeSectionIndex)})" in {
-            when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any()))
-              .thenReturn(Future.successful(
-                createAFTDetailsResponse(createChargeSection(zeroCurrencyValue) ++ createOtherChargeSection(nonZeroCurrencyValue))
-              )
-            )
-            when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("2"))(any(), any(), any()))
-              .thenReturn(Future.successful(
-                createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))
-              ))
-
-            val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-            status(result) mustBe OK
-            contentAsJson(result) mustBe Json.toJson(versions)
-          }
-        }
-      }
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.arr()
     }
 
     "throw BadRequestException when PSTR is not present in the header" in {
@@ -479,103 +431,6 @@ object AFTControllerSpec {
       )
     )
 
-  private def chargeCSectionWithValue(currencyValue: BigDecimal): JsObject = Json.obj(
-    "chargeTypeCDetails" -> Json.obj(
-      "totalAmount" -> currencyValue,
-      "memberDetails" -> Json.arr(
-        Json.obj(
-          "memberStatus" -> "New",
-          "memberAFTVersion" -> 1,
-          "memberTypeDetails" -> Json.obj(
-            "memberType" -> "Individual",
-            "individualDetails" -> Json.obj(
-              "title" -> "Mr",
-              "firstName" -> "Ray",
-              "lastName" -> "Golding",
-              "nino" -> "AA000020A"
-            )
-          ),
-          "correspondenceAddressDetails" -> Json.obj(
-            "nonUKAddress" -> "False",
-            "addressLine1" -> "Plaza 2 ",
-            "addressLine2" -> "Ironmasters Way",
-            "addressLine3" -> "Telford",
-            "addressLine4" -> "Shropshire",
-            "countryCode" -> "GB",
-            "postalCode" -> "TF3 4NT"
-          ),
-          "dateOfPayment" -> "2016-06-29",
-          "totalAmountOfTaxDue" -> currencyValue
-        )
-      )
-    )
-  )
-
-  private def chargeDSectionWithValue(currencyValue: BigDecimal): JsObject = Json.obj(
-    "chargeTypeDDetails" -> Json.obj(
-      "totalAmount" -> currencyValue,
-      "memberDetails" -> Json.arr(
-        Json.obj(
-          "memberStatus" -> "New",
-          "memberAFTVersion" -> 1,
-          "individualsDetails" -> Json.obj(
-            "title" -> "Mr",
-            "firstName" -> "Ray",
-            "lastName" -> "Golding",
-            "nino" -> "AA000020A"
-          ),
-          "dateOfBenefitCrystalizationEvent" -> "2016-06-29",
-          "totalAmtOfTaxDueAtLowerRate" -> currencyValue,
-          "totalAmtOfTaxDueAtHigherRate" -> currencyValue
-        )
-      )
-    )
-  )
-
-  private def chargeESectionWithValue(currencyValue: BigDecimal): JsObject = Json.obj(
-    "chargeTypeEDetails" -> Json.obj(
-      "totalAmount" -> currencyValue,
-      "memberDetails" -> Json.arr(
-        Json.obj(
-          "memberStatus" -> "New",
-          "memberAFTVersion" -> 1,
-          "individualsDetails" -> Json.obj(
-            "title" -> "Mr",
-            "firstName" -> "Ray",
-            "lastName" -> "Golding",
-            "nino" -> "AA000020A"
-          ),
-          "dateOfNotice" -> "2016-06-29",
-          "amountOfCharge" -> currencyValue,
-          "taxYearEnding" -> "2018",
-          "paidUnder237b" -> "Yes"
-        )
-      )
-    )
-  )
-
-  private def chargeGSectionWithValue(currencyValue: BigDecimal): JsObject = Json.obj(
-    "chargeTypeGDetails" -> Json.obj(
-      "totalOTCAmount" -> currencyValue,
-      "memberDetails" -> Json.arr(
-        Json.obj(
-          "memberStatus" -> "New",
-          "memberAFTVersion" -> 1,
-          "individualsDetails" -> Json.obj(
-            "title" -> "Mr",
-            "firstName" -> "Ray",
-            "lastName" -> "Golding",
-            "dateOfBirth" -> "1980-02-29",
-            "nino" -> "AA000020A"
-          ),
-          "dateOfTransfer" -> "2016-06-29",
-          "amountTransferred" -> currencyValue,
-          "amountOfTaxDeducted" -> currencyValue,
-          "qropsReference" -> "Q300000"
-        )
-      )
-    )
-  )
 
   private val fakeRequestForGetDetails = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("startDate", startDt), ("aftVersion", aftVer))
   private val json =
