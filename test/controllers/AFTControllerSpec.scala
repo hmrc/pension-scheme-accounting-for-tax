@@ -337,10 +337,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   "getOverview" must {
 
     "return OK with the Seq of overview details when the details are returned based on pstr start date and end date" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.getAftOverview(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(endDate))(any(), any(), any()))
         .thenReturn(Future.successful(aftOverview))
 
@@ -351,29 +350,27 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       contentAsJson(result) mustBe aftOverviewResponseJson
     }
 
-    "throw BadRequestException when PSTR is not present in the header" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+    "throw BadRequestException when endDate is not present in the header" in {
+
       val controller = application.injector.instanceOf[AFTController]
+
       recoverToExceptionIf[BadRequestException] {
         controller.getOverview()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
-        response.message must include("Bad Request with missing PSTR/Quarter Start Date")
+        response.message must include("Bad Request with no endDate")
       }
     }
 
     "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
-      val application: Application = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-        overrides(modules: _*).build()
+
       val controller = application.injector.instanceOf[AFTController]
+
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[Upstream5xxResponse] {
-        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt, "pstr" -> pstr))
+        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt, "endDate" -> endDate))
       } map { response =>
         response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
         response.getMessage must include("INTERNAL SERVER ERROR")
