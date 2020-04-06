@@ -30,10 +30,12 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
+import org.mockito.Mockito.when
 import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
+import services.AFTService
 import uk.gov.hmrc.http._
 import utils.{JsonFileReader, WireMockHelper}
 
@@ -48,12 +50,14 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   override protected def portConfigKey: String = "microservice.services.des-hod.port"
 
   private val mockAuditService = mock[AuditService]
+  private val mockAftService = mock[AFTService]
 
   private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
 
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
-      bind[AuditService].toInstance(mockAuditService)
+      bind[AuditService].toInstance(mockAuditService),
+      bind[AFTService].toInstance(mockAftService)
     )
 
   private val pstr = "test-pstr"
@@ -80,7 +84,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok
           )
       )
-      connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false) map {
+      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
+
+      connector.fileAFTReturn(pstr, data) map {
         _.status mustBe OK
       }
     }
@@ -96,8 +102,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok.withBody(Json.stringify(successResponse))
           )
       )
+      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false).map { response =>
+      connector.fileAFTReturn(pstr, data).map { response =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.OK, data, Some(successResponse))
       }
@@ -115,8 +122,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok.withBody(Json.stringify(successResponse))
           )
       )
+      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(true)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = true).map { _ =>
+      connector.fileAFTReturn(pstr, data).map { _ =>
         verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAFTReturnOneChargeAndMemberNoValue(pstr, Status.OK, data, Some(successResponse))
       }
@@ -131,9 +139,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             badRequest()
           )
       )
-
+      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
       recoverToExceptionIf[BadRequestException] {
-        connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)
+        connector.fileAFTReturn(pstr, data)
       } map {
         _.responseCode mustEqual BAD_REQUEST
       }
@@ -150,7 +158,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
 
       recoverToExceptionIf[NotFoundException] {
-        connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)
+        connector.fileAFTReturn(pstr, data)
       } map {
         _.responseCode mustEqual NOT_FOUND
       }
@@ -169,7 +177,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
 
       recoverToExceptionIf[NotFoundException] {
-        connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)
+        connector.fileAFTReturn(pstr, data)
       } map {_ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.NOT_FOUND, data, None)
@@ -185,7 +193,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             serverError()
           )
       )
-      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)) map {
+      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {
         _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
       }
     }
@@ -200,8 +208,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             serverError()
           )
       )
+      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data, isOnlyOneChargeWithOneMemberAndNoValue = false)) map {_ =>
+      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {_ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.INTERNAL_SERVER_ERROR, data, None)
       }
@@ -218,6 +227,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
               .withBody(etmpAFTDetailsResponse.toString())
           )
       )
+
       connector.getAftDetails(pstr, startDt, aftVersion).map { response =>
         response mustBe etmpAFTDetailsResponse
       }

@@ -27,6 +27,7 @@ import play.Logger
 import play.api.http.Status
 import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue, Reads}
 import play.api.mvc.RequestHeader
+import services.AFTService
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -35,15 +36,16 @@ import scala.concurrent.{ExecutionContext, Future}
 class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: AuditService,
                              fileAFTReturnAuditService: FileAFTReturnAuditService,
                              aftVersionsAuditEventService: GetAFTVersionsAuditService,
-                             aftDetailsAuditEventService: GetAFTDetailsAuditService) extends HttpErrorFunctions {
+                             aftDetailsAuditEventService: GetAFTDetailsAuditService,
+                             aftService: AFTService) extends HttpErrorFunctions {
 
-  def fileAFTReturn(pstr: String, data: JsValue, isOnlyOneChargeWithOneMemberAndNoValue: Boolean)
+  def fileAFTReturn(pstr: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    if (isOnlyOneChargeWithOneMemberAndNoValue) {
+    if (aftService.isOnlyOneChargeWithOneMemberAndNoValue(data)) {
       http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data) andThen
         fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValueAuditEvent(pstr, data)
