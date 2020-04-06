@@ -57,12 +57,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val nonMemberBasedChargeSections = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
   private val nonMemberBasedChargeNames = Seq("A", "B", "F")
 
-//  private val memberBasedChargeCreationFunctions = Seq(
-//    chargeCSectionWithValue _,
-//    chargeDSectionWithValue _,
-//    chargeESectionWithValue _,
-//    chargeGSectionWithValue _
-//  )
   private val memberBasedChargeNames = Seq("C", "D", "E", "G")
   private val version1 = AFTVersion(1, LocalDate.now())
   private val version2 = AFTVersion(2, LocalDate.now())
