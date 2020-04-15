@@ -20,12 +20,14 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{__, _}
 
-class ChargeFTransformer {
+class ChargeFTransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
     (__ \ 'chargeFDetails).readNullable {
       __.read(
-        ((__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'totalAmount).json.copyFrom((__ \ 'amountTaxDue).json.pick) and
+        (((__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
+          orElse doNothing) and
+          (__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'totalAmount).json.copyFrom((__ \ 'amountTaxDue).json.pick) and
           (__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'dateRegiWithdrawn).json.copyFrom((__ \ 'deRegistrationDate).json.pick)).reduce
       )
     }.map {

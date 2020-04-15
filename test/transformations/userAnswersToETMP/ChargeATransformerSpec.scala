@@ -37,6 +37,22 @@ class ChargeATransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           etmpChargeDetailsPath \ "totalAmount" mustBe uaChargeDetailsPath \ "totalAmount"
       }
     }
+
+    "must transform ChargeADetails from UserAnswers to ETMP ChargeADetails" in {
+      forAll(chargeAUserAnswersGenerator) {
+        userAnswersJson =>
+          val transformer = new ChargeATransformer
+          val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
+
+          val etmpChargeDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeADetails"
+          val uaChargeDetailsPath = userAnswersJson \ "chargeADetails"
+
+          etmpChargeDetailsPath \ "numberOfMembers" mustBe uaChargeDetailsPath \ "numberOfMembers"
+          etmpChargeDetailsPath \ "totalAmtOfTaxDueAtLowerRate" mustBe uaChargeDetailsPath \ "totalAmtOfTaxDueAtLowerRate"
+          etmpChargeDetailsPath \ "totalAmtOfTaxDueAtHigherRate" mustBe uaChargeDetailsPath \ "totalAmtOfTaxDueAtHigherRate"
+          etmpChargeDetailsPath \ "totalAmount" mustBe uaChargeDetailsPath \ "totalAmount"
+      }
+    }
   }
 
 }

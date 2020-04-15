@@ -26,8 +26,10 @@ class ChargeGTransformer extends JsonTransformer {
     (__ \ 'chargeGDetails).readNullable(__.read(readsChargeG)).map(_.getOrElse(Json.obj()))
 
   def readsChargeG: Reads[JsObject] =
-    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { totalCharge =>
-      ((__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
+    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>
+      (((__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
+        orElse doNothing) and
+        (__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
         (__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
     }
 
