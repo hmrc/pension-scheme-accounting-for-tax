@@ -44,7 +44,10 @@ class ChargeCTransformer extends JsonTransformer {
   }
 
   def readsEmployer: Reads[JsObject] = (
-    (__ \ 'memberStatus).json.put(JsString("New")) and
+    ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
+      orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
+      ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
+        orElse doNothing) and
       readsEmployerTypeDetails and
       ((__ \ 'correspondenceAddressDetails).json.copyFrom(__.read(readsCorrespondenceAddress)) and
         (__ \ 'dateOfPayment).json.copyFrom((__ \ 'chargeDetails \ 'paymentDate).json.pick) and

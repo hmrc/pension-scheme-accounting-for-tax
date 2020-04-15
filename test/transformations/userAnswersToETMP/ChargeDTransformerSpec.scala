@@ -20,6 +20,11 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.FreeSpec
 import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
+import play.api.libs.json._
+import play.api.libs.json.Reads._
+import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json.{__, _}
 
 class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
@@ -42,6 +47,7 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (etmpMemberPath(0) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeDetails" \ "taxAt25Percent").as[BigDecimal]
           (etmpMemberPath(0) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeDetails" \ "taxAt55Percent").as[BigDecimal]
           (etmpMemberPath(0) \ "memberStatus").as[String] mustBe "New"
+          (etmpMemberPath(0) \ "memberAFTVersion").asOpt[Int] mustBe None
 
           (etmpMemberPath(1) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(1) \ "memberDetails" \ "firstName").as[String]
 
@@ -54,14 +60,31 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       }
     }
 
-    "must transform optional element - amendedVersion of ChargeDDetails from UserAnswers to ETMP" in {
-      forAll(chargeDUserAnswersGenerator, arbitrary[Int]) {
-        (userAnswersJson, version) =>
-          val updatedJson = userAnswersJson.transform(updateJson(__ \ 'chargeDDetails, name = "amendedVersion", version)).asOpt.value
+    "must transform optional element - amendedVersion, memberStatus and memberAFTVersion of ChargeDDetails from UserAnswers to ETMP" in {
+      forAll(chargeDUserAnswersGenerator, arbitrary[Int], arbitrary[String]) {
+        (userAnswersJson, version, status) =>
+          val jsonTransformer = (__ \ 'chargeDDetails).json.pickBranch(
+            __.json.update(
+              __.read[JsObject].map(o => o ++ Json.obj("amendedVersion" -> version))
+            ) andThen
+              (__ \ 'members).json.update(
+                __.read[JsArray].map {
+                case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] ++
+                  Json.obj("memberAFTVersion" -> version) ++ Json.obj("memberStatus" -> status)))
+              })
+          )
+
+          val updatedJson = userAnswersJson.transform(jsonTransformer).asOpt.value
           val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
 
           (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "amendedVersion").as[Int] mustBe
             (updatedJson \ "chargeDDetails" \ "amendedVersion").as[Int]
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "memberStatus").as[String] mustBe
+            (updatedJson \ "chargeDDetails" \ "members" \ 0 \ "memberStatus").as[String]
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "memberAFTVersion").as[Int] mustBe
+            (updatedJson \ "chargeDDetails" \ "members" \ 0 \ "memberAFTVersion").as[Int]
       }
     }
   }

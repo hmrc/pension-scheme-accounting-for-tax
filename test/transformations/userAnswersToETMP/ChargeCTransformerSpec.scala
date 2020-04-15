@@ -34,7 +34,6 @@ class ChargeCTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           val etmpMemberDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0
           val uaChargeDetailsPath = userAnswersJson \ "chargeCDetails" \ "employers" \ 0
 
-          (etmpMemberDetailsPath \ "memberStatus").as[String] mustBe "New"
           (etmpMemberDetailsPath \ "dateOfPayment").as[String] mustBe (uaChargeDetailsPath \ "chargeDetails" \ "paymentDate").as[String]
           (etmpMemberDetailsPath \ "totalAmountOfTaxDue").as[BigDecimal] mustBe (uaChargeDetailsPath \ "chargeDetails" \ "amountTaxDue").as[BigDecimal]
 
@@ -42,15 +41,21 @@ class ChargeCTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
             (userAnswersJson \ "chargeCDetails" \ "totalChargeAmount").as[BigDecimal]
 
           (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "amendedVersion").asOpt[Int] mustBe None
+
       }
     }
 
-    "must transform optionalElement - amendedVersion for ChargeCDetails from UserAnswers format to ETMP format" in {
+    "must transform optionalElement - amendedVersion, memberAFTVersion and memberStatus for ChargeCDetails from UserAnswers format to ETMP format" in {
       forAll(chargeCUserAnswersGenerator, arbitrary[Int]) {
         (userAnswersJson, version) =>
           val updatedJson = userAnswersJson.transform(updateJson(__ \ 'chargeCDetails, name = "amendedVersion", version)).asOpt.value
           val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
 
+          val etmpMemberDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0
+          val uaChargeDetailsPath = userAnswersJson \ "chargeCDetails" \ "employers" \ 0
+
+          (etmpMemberDetailsPath \ "memberStatus").as[String] mustBe (uaChargeDetailsPath \ "memberStatus").as[String]
+          (etmpMemberDetailsPath \ "memberAFTVersion").as[Int] mustBe (uaChargeDetailsPath \ "memberAFTVersion").as[Int]
           (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "amendedVersion").as[Int] mustBe
             (updatedJson \ "chargeCDetails" \ "amendedVersion").as[Int]
       }
@@ -80,6 +85,8 @@ class ChargeCTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
             "memberDetails" \ 3 \ "memberTypeDetails"
           val uaOrgPathWithoutFilter = userAnswersJson \ "chargeCDetails" \ "employers" \ 4 \ "sponsoringOrganisationDetails"
 
+          (etmpPathAfterFilteredDeleted \ "memberStatus").asOpt[String] mustBe None
+          (etmpPathAfterFilteredDeleted \ "memberAFTVersion").asOpt[String] mustBe None
           (etmpPathAfterFilteredDeleted \ "comOrOrganisationName").as[String] mustBe (uaOrgPathWithoutFilter \ "name").as[String]
           (etmpPathAfterFilteredDeleted \ "crnNumber").as[String] mustBe (uaOrgPathWithoutFilter \ "crn").as[String]
       }

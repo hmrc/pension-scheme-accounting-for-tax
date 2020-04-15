@@ -35,11 +35,14 @@ class ChargeDTransformer extends JsonTransformer {
 
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_))
 
-  def readsMember: Reads[JsObject] =
+  def readsMember: Reads[JsObject] = {
     (readsMemberDetails and
       (__ \ 'dateOfBeneCrysEvent).json.copyFrom((__ \ 'chargeDetails \ 'dateOfEvent).json.pick) and
       (__ \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt25Percent).json.pick) and
       (__ \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt55Percent).json.pick) and
-      (__ \ 'memberStatus).json.put(JsString("New"))).reduce
-
+      ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
+        orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
+      ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
+        orElse doNothing)).reduce
+  }
 }

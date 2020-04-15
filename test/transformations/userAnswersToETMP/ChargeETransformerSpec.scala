@@ -22,6 +22,10 @@ import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+  def etmpMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ i
+
+  def uaMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeEDetails" \ "members" \ i
+  
   private val transformer = new ChargeETransformer
 
   "A Charge E Transformer" - {
@@ -29,22 +33,25 @@ class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       forAll(chargeEUserAnswersGenerator) {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
+          
+          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "firstName").as[String] mustBe
+            (uaMemberPath(userAnswersJson, 0) \ "memberDetails" \ "firstName").as[String]
+          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "lastName").as[String] mustBe
+            (uaMemberPath(userAnswersJson, 0) \ "memberDetails" \ "lastName").as[String]
+          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "nino").as[String] mustBe
+            (uaMemberPath(userAnswersJson, 0) \ "memberDetails" \ "nino").as[String]
+          (etmpMemberPath(transformedJson, 1) \ "individualsDetails" \ "firstName").as[String] mustBe
+            (uaMemberPath(userAnswersJson, 1) \ "memberDetails" \ "firstName").as[String]
 
-          def etmpMemberPath(i: Int): JsLookupResult = transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ i
-
-          def uaMemberPath(i: Int): JsLookupResult = userAnswersJson \ "chargeEDetails" \ "members" \ i
-
-          (etmpMemberPath(0) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "firstName").as[String]
-          (etmpMemberPath(0) \ "individualsDetails" \ "lastName").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "lastName").as[String]
-          (etmpMemberPath(0) \ "individualsDetails" \ "nino").as[String] mustBe (uaMemberPath(0) \ "memberDetails" \ "nino").as[String]
-          (etmpMemberPath(1) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(1) \ "memberDetails" \ "firstName").as[String]
-
-          (etmpMemberPath(0) \ "amountOfCharge").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeDetails" \ "chargeAmount").as[BigDecimal]
-          (etmpMemberPath(0) \ "dateOfNotice").as[String] mustBe (uaMemberPath(0) \ "chargeDetails" \ "dateNoticeReceived").as[String]
-          (etmpMemberPath(0) \ "paidUnder237b").as[String] mustBe
-            (if ((uaMemberPath(0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean]) "Yes" else "No")
-          (etmpMemberPath(0) \ "taxYearEnding").as[String] mustBe (uaMemberPath(0) \ "annualAllowanceYear").as[String]
-          (etmpMemberPath(0) \ "memberStatus").as[String] mustBe "New"
+          (etmpMemberPath(transformedJson, 0) \ "amountOfCharge").as[BigDecimal] mustBe
+            (uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "chargeAmount").as[BigDecimal]
+          (etmpMemberPath(transformedJson, 0) \ "dateOfNotice").as[String] mustBe
+            (uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "dateNoticeReceived").as[String]
+          (etmpMemberPath(transformedJson, 0) \ "paidUnder237b").as[String] mustBe
+            (if ((uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean]) "Yes" else "No")
+          (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String]
+          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe "New"
+          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").asOpt[Int] mustBe None
 
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal] mustBe
             (userAnswersJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal]
@@ -56,13 +63,30 @@ class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
     }
 
     "must transform optional element - amendedVersion of ChargeEDetails from UserAnswers to ETMP" in {
-      forAll(chargeEUserAnswersGenerator, arbitrary[Int]) {
-        (userAnswersJson, version) =>
-          val updatedJson = userAnswersJson.transform(updateJson(__ \ 'chargeEDetails, name = "amendedVersion", version)).asOpt.value
+      forAll(chargeEUserAnswersGenerator, arbitrary[Int], arbitrary[String]) {
+        (userAnswersJson, version, status) =>
+
+          val jsonTransformer = (__ \ 'chargeEDetails).json.pickBranch(
+            __.json.update(
+              __.read[JsObject].map(o => o ++ Json.obj("amendedVersion" -> version))
+            ) andThen
+              (__ \ 'members).json.update(
+                __.read[JsArray].map {
+                  case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] ++
+                    Json.obj("memberAFTVersion" -> version) ++ Json.obj("memberStatus" -> status)))
+                })
+          )
+          val updatedJson = userAnswersJson.transform(jsonTransformer).asOpt.value
           val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
 
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "amendedVersion").as[Int] mustBe
             (updatedJson \ "chargeEDetails" \ "amendedVersion").as[Int]
+
+          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe
+            (uaMemberPath(updatedJson, 0) \ "memberStatus").as[String]
+
+          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").as[Int] mustBe
+            (uaMemberPath(updatedJson, 0) \ "memberAFTVersion").as[Int]
       }
     }
   }

@@ -122,12 +122,16 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
     for {
       firstName <- arbitrary[String]
       lastName <- arbitrary[String]
+      memberStatus <- arbitrary[String]
+      memberVersion <- arbitrary[Int]
       nino <- ninoGen
       taxDue <- arbitrary[BigDecimal] retryUntil (_ > 0)
       addressDetails <- ukAddressGenerator
       date <- dateGenerator
     } yield Json.obj(
           fields = "whichTypeOfSponsoringEmployer" -> "individual",
+          "memberStatus" -> memberStatus,
+          "memberAFTVersion" -> memberVersion,
           "chargeDetails" -> Json.obj(
             fields = "paymentDate" -> date,
             "amountTaxDue" -> taxDue
@@ -202,17 +206,6 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
         Json.obj(
           fields = "members" -> (members ++ deletedMembers),
           "totalChargeAmount" -> totalChargeAmount
-        ))
-
-  val chargeDAllDeletedUserAnswersGenerator: Gen[JsObject] =
-    for {
-      members <- Gen.listOfN(5, chargeDMember())
-      deletedMembers <- Gen.listOfN(2, chargeDMember(isDeleted = true))
-    } yield Json.obj(
-      fields = "chargeDDetails" ->
-        Json.obj(
-          fields = "members" -> (members ++ deletedMembers),
-          "totalChargeAmount" -> BigDecimal(0.00)
         ))
 
   def chargeEMember(isDeleted: Boolean = false): Gen[JsObject] =

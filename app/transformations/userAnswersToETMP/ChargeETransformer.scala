@@ -41,7 +41,10 @@ class ChargeETransformer extends JsonTransformer {
       (__ \ 'dateOfNotice).json.copyFrom((__ \ 'chargeDetails \ 'dateNoticeReceived).json.pick) and
       getPaidUnder237b and
       (__ \ 'taxYearEnding).json.copyFrom((__ \ 'annualAllowanceYear).json.pick) and
-      (__ \ 'memberStatus).json.put(JsString("New"))).reduce
+      ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
+        orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
+      ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
+        orElse doNothing)).reduce
 
   def getPaidUnder237b: Reads[JsObject] =
     (__ \ 'chargeDetails \ 'isPaymentMandatory).read[Boolean].flatMap { flag =>
