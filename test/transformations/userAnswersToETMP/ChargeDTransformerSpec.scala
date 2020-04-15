@@ -16,18 +16,18 @@
 
 package transformations.userAnswersToETMP
 
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.FreeSpec
 import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
+  private val transformer = new ChargeDTransformer
   "A Charge D Transformer" - {
-    "must transform ChargeDDetails from UserAnswers to ETMP ChargeDDetails" in {
+    "must transform ChargeDDetails from UserAnswers to ETMP" in {
       forAll(chargeDUserAnswersGenerator) {
         userAnswersJson =>
-
-          val transformer = new ChargeDTransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
           def etmpMemberPath(i: Int): JsLookupResult = transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ i
@@ -48,7 +48,20 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "totalAmount").as[BigDecimal] mustBe
             (userAnswersJson \ "chargeDDetails" \ "totalChargeAmount").as[BigDecimal]
 
+          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "amendedVersion").asOpt[Int] mustBe None
+
           (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
+      }
+    }
+
+    "must transform optional element - amendedVersion of ChargeDDetails from UserAnswers to ETMP" in {
+      forAll(chargeDUserAnswersGenerator, arbitrary[Int]) {
+        (userAnswersJson, version) =>
+          val updatedJson = userAnswersJson.transform(updateJson(__ \ 'chargeDDetails, name = "amendedVersion", version)).asOpt.value
+          val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "amendedVersion").as[Int] mustBe
+            (updatedJson \ "chargeDDetails" \ "amendedVersion").as[Int]
       }
     }
   }

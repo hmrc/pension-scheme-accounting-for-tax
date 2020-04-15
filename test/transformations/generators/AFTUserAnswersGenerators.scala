@@ -22,7 +22,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.{MustMatchers, OptionValues}
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json._
 
 trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks with OptionValues {
   val ninoGen: Gen[String] = Gen.oneOf(Seq("AB123456C", "CD123456E"))
@@ -258,12 +258,10 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
   val chargeFUserAnswersGenerator: Gen[JsObject] =
     for {
       totalAmount <- arbitrary[BigDecimal]
-      dateRegiWithdrawn <- arbitrary[Option[String]]
     } yield Json.obj(
       fields = "chargeFDetails" ->
         Json.obj(
-          fields = "amountTaxDue" -> totalAmount,
-          "deRegistrationDate" -> dateRegiWithdrawn
+          fields = "amountTaxDue" -> totalAmount
         ))
 
   def chargeGMember(isDeleted: Boolean = false): Gen[JsObject] =
@@ -318,4 +316,8 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
         ))
 
   def nonEmptyString: Gen[String] = Gen.alphaStr.suchThat(!_.isEmpty)
+
+  def updateJson(path: JsPath, name: String, value: Int): Reads[JsObject] = {
+    path.json.update(__.read[JsObject].map(o => o ++ Json.obj(name -> value)))
+  }
 }

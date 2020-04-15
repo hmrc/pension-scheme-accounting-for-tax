@@ -16,43 +16,53 @@
 
 package transformations.userAnswersToETMP
 
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.FreeSpec
 import transformations.generators.AFTUserAnswersGenerators
+import play.api.libs.json.{__, _}
 
 class ChargeATransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
+  import ChargeATransformerSpec._
+
+  private val transformer = new ChargeATransformer
+
   "A Charge A Transformer" - {
-    "must transform ChargeADetails from UserAnswers to ETMP ChargeADetails" in {
+    "must transform mandatory elements of ChargeADetails from UserAnswers to ETMP" in {
       forAll(chargeAUserAnswersGenerator) {
         userAnswersJson =>
-          val transformer = new ChargeATransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          val etmpChargeDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeADetails"
-          val uaChargeDetailsPath = userAnswersJson \ "chargeADetails"
+          (etmpPath(transformedJson) \ "numberOfMembers").as[Int] mustBe (uaPath(userAnswersJson) \ "numberOfMembers").as[Int]
 
-          etmpChargeDetailsPath \ "numberOfMembers" mustBe uaChargeDetailsPath \ "numberOfMembers"
-          etmpChargeDetailsPath \ "totalAmtOfTaxDueAtLowerRate" mustBe uaChargeDetailsPath \ "totalAmtOfTaxDueAtLowerRate"
-          etmpChargeDetailsPath \ "totalAmtOfTaxDueAtHigherRate" mustBe uaChargeDetailsPath \ "totalAmtOfTaxDueAtHigherRate"
-          etmpChargeDetailsPath \ "totalAmount" mustBe uaChargeDetailsPath \ "totalAmount"
+          (etmpPath(transformedJson) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal] mustBe
+            (uaPath(userAnswersJson) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
+
+          (etmpPath(transformedJson) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal] mustBe
+            (uaPath(userAnswersJson) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
+
+          (etmpPath(transformedJson) \ "totalAmount").as[BigDecimal] mustBe (uaPath(userAnswersJson) \ "totalAmount").as[BigDecimal]
+
+          (etmpPath(transformedJson) \ "amendedVersion").asOpt[Int] mustBe None
       }
     }
 
-    "must transform ChargeADetails from UserAnswers to ETMP ChargeADetails" in {
-      forAll(chargeAUserAnswersGenerator) {
-        userAnswersJson =>
-          val transformer = new ChargeATransformer
-          val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
+    "must transform optional elements - amendedVersion of ChargeADetails from UserAnswers to ETMP" in {
+      forAll(chargeAUserAnswersGenerator, arbitrary[Int]) {
+        (userAnswersJson, version) =>
+          val updatedJson = userAnswersJson.transform(updateJson(__ \ 'chargeADetails, name = "amendedVersion", version)).asOpt.value
+          val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
 
-          val etmpChargeDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeADetails"
-          val uaChargeDetailsPath = userAnswersJson \ "chargeADetails"
-
-          etmpChargeDetailsPath \ "numberOfMembers" mustBe uaChargeDetailsPath \ "numberOfMembers"
-          etmpChargeDetailsPath \ "totalAmtOfTaxDueAtLowerRate" mustBe uaChargeDetailsPath \ "totalAmtOfTaxDueAtLowerRate"
-          etmpChargeDetailsPath \ "totalAmtOfTaxDueAtHigherRate" mustBe uaChargeDetailsPath \ "totalAmtOfTaxDueAtHigherRate"
-          etmpChargeDetailsPath \ "totalAmount" mustBe uaChargeDetailsPath \ "totalAmount"
+          (etmpPath(transformedJson) \ "amendedVersion").as[Int] mustBe (uaPath(updatedJson) \ "amendedVersion").as[Int]
       }
     }
   }
-
 }
+
+object ChargeATransformerSpec {
+  def etmpPath(json: JsObject): JsLookupResult = json \ "chargeDetails" \ "chargeTypeADetails"
+
+  def uaPath(json: JsObject): JsLookupResult = json \ "chargeADetails"
+}
+
+

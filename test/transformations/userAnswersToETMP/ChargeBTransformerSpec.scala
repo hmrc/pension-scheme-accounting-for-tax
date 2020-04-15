@@ -16,22 +16,40 @@
 
 package transformations.userAnswersToETMP
 
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.FreeSpec
+import play.api.libs.json.__
 import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeBTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
+  private val transformer = new ChargeBTransformer
+
   "A Charge B Transformer" - {
-    "must transform ChargeBDetails from UserAnswers to ETMP ChargeBDetails" in {
+    "must transform mandatory elements of ChargeBDetails from UserAnswers to ETMP" in {
       forAll(chargeBUserAnswersGenerator) {
         userAnswersJson =>
-          val transformer = new ChargeBTransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "totalAmount" mustBe userAnswersJson \ "chargeBDetails" \ "amountTaxDue"
-          transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "numberOfMembers" mustBe userAnswersJson \ "chargeBDetails" \ "numberOfDeceased"
+          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "totalAmount").as[BigDecimal] mustBe
+            (userAnswersJson \ "chargeBDetails" \ "amountTaxDue").as[BigDecimal]
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "numberOfMembers").as[Int] mustBe
+            (userAnswersJson \ "chargeBDetails" \ "numberOfDeceased").as[Int]
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "amendedVersion").asOpt[Int] mustBe None
+      }
+    }
+
+    "must transform optional elements - amendedVersion of ChargeBDetails from UserAnswers to ETMP" in {
+      forAll(chargeBUserAnswersGenerator, arbitrary[Int]) {
+        (userAnswersJson, version) =>
+          val updatedJson = userAnswersJson.transform(updateJson(__ \ 'chargeBDetails, name = "amendedVersion", version)).asOpt.value
+          val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "amendedVersion").as[Int] mustBe
+            (updatedJson \ "chargeBDetails" \ "amendedVersion").as[Int]
       }
     }
   }
-
 }

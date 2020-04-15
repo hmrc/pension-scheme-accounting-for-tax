@@ -16,18 +16,18 @@
 
 package transformations.userAnswersToETMP
 
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.FreeSpec
 import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+  private val transformer = new ChargeGTransformer
 
   "A ChargeG Transformer" - {
     "must transform ChargeGDetails from UserAnswers to ETMP ChargeGDetails" in {
       forAll(chargeGUserAnswersGenerator) {
         userAnswersJson =>
-
-          val transformer = new ChargeGTransformer
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
           def etmpMemberPath(i: Int): JsLookupResult = transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ i
@@ -47,12 +47,24 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (etmpMemberPath(0) \ "amountOfTaxDeducted").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeAmounts" \ "amountTaxDue").as[BigDecimal]
           (etmpMemberPath(0) \ "memberStatus").as[String] mustBe "New"
 
-          transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "totalAmount" mustBe
-            userAnswersJson \ "chargeGDetails" \ "totalChargeAmount"
+          (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "totalAmount").as[BigDecimal] mustBe
+            (userAnswersJson \ "chargeGDetails" \ "totalChargeAmount").as[BigDecimal]
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "amendedVersion").asOpt[Int] mustBe None
 
           (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
       }
     }
-  }
 
+    "must transform optional element - amendedVersion of ChargeGDetails from UserAnswers to ETMP ChargeGDetails" in {
+      forAll(chargeGUserAnswersGenerator, arbitrary[Int]) {
+        (userAnswersJson, version) =>
+          val updatedJson = userAnswersJson.transform(updateJson(__ \ 'chargeGDetails, name = "amendedVersion", version)).asOpt.value
+          val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "amendedVersion").as[Int] mustBe
+            (updatedJson \ "chargeGDetails" \ "amendedVersion").as[Int]
+      }
+    }
+  }
 }
