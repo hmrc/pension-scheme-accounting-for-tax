@@ -150,7 +150,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    "totalChargeAmount": 1230.02
       |  },
       |  "declaration" : {
-      |    "submittedBy" : "Nigel Smith",
+      |    "submittedBy" : "PSA",
       |    "submittedID" : "A2000000",
       |    "hasAgreed" : true
       |  }
@@ -260,7 +260,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    }
       |  },
       |  "aftDeclarationDetails": {
-      |    "submittedBy": "Nigel Smith",
+      |    "submittedBy": "PSA",
       |    "submittedID": "A2000000",
       |    "psaDeclarationDetails": {
       |      "psaDeclaration1": true,
