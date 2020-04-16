@@ -16,6 +16,8 @@
 
 package transformations.ETMPToUserAnswers
 
+import java.time.LocalDate
+
 import org.scalatest.FreeSpec
 import play.api.libs.json.{JsBoolean, JsDefined, JsLookupResult, JsObject}
 import transformations.generators.AFTETMPResponseGenerators
@@ -33,26 +35,28 @@ class ChargeETransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
 
           def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeEDetails" \ "memberDetails" \ i
 
+          (membersUAPath(0) \ "memberStatus").as[String] mustBe (membersETMPPath(0) \ "memberStatus").as[String]
+          (membersUAPath(0) \ "memberAFTVersion").as[Int] mustBe (membersETMPPath(0) \ "memberAFTVersion").as[Int]
+          (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "firstName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "lastName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "nino").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "nino").as[String]
 
-          membersUAPath(0) \ "memberDetails" \ "firstName" mustBe membersETMPPath(0) \ "individualsDetails" \ "firstName"
-          membersUAPath(0) \ "memberDetails" \ "lastName" mustBe membersETMPPath(0) \ "individualsDetails" \ "lastName"
-          membersUAPath(0) \ "memberDetails" \ "nino" mustBe membersETMPPath(0) \ "individualsDetails" \ "nino"
-
-          membersUAPath(0) \ "chargeDetails" \ "chargeAmount" mustBe membersETMPPath(0) \ "amountOfCharge"
-          membersUAPath(0) \ "chargeDetails" \ "dateNoticeReceived" mustBe membersETMPPath(0) \ "dateOfNotice"
-          membersUAPath(0) \ "chargeDetails" \ "isPaymentMandatory" mustBe JsDefined(JsBoolean(
-              (membersETMPPath(0) \ "paidUnder237b").get.as[String].equals("Yes")))
-
-
-          membersUAPath(0) \ "annualAllowanceYear" mustBe membersETMPPath(0) \ "taxYearEnding"
-
-          transformedJson \ "chargeEDetails" \ "totalChargeAmount" mustBe etmpResponseJson \ "chargeTypeEDetails" \ "totalAmount"
-
-          membersUAPath(1) \ "memberDetails" \ "firstName" mustBe membersETMPPath(1) \ "individualsDetails" \ "firstName"
-
-          (transformedJson \ "chargeEDetails" \ "members").as[Seq[JsObject]].size mustBe 2
+          (membersUAPath(0) \ "chargeDetails" \ "chargeAmount").as[BigDecimal] mustBe (membersETMPPath(0) \ "amountOfCharge").as[BigDecimal]
+          (membersUAPath(0) \ "chargeDetails" \ "dateNoticeReceived").as[LocalDate] mustBe (membersETMPPath(0) \ "dateOfNotice").as[LocalDate]
+          (membersUAPath(0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean] mustBe (membersETMPPath(0) \ "paidUnder237b").get.as[String].equals("Yes")
 
 
+        (membersUAPath(0) \ "annualAllowanceYear").as[Int] mustBe (membersETMPPath(0) \ "taxYearEnding").as[Int]
+
+        (transformedJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
+          (etmpResponseJson \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal]
+
+          (transformedJson \ "chargeEDetails" \ "amendedVersion").as[Int] mustBe
+            (etmpResponseJson \ "chargeTypeEDetails" \ "amendedVersion").as[Int]
+
+        (membersUAPath(1) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(1) \ "individualsDetails" \ "firstName").as[String]
+
+        (transformedJson \ "chargeEDetails" \ "members").as[Seq[JsObject]].size mustBe 2
       }
     }
   }

@@ -38,12 +38,17 @@ class ChargeDTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "lastName").as[String]
           (membersUAPath(0) \ "memberDetails" \ "nino").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "nino").as[String]
 
+          (membersUAPath(0) \ "memberStatus").as[String] mustBe (membersETMPPath(0) \ "memberStatus").as[String]
+          (membersUAPath(0) \ "memberAFTVersion").as[Int] mustBe (membersETMPPath(0) \ "memberAFTVersion").as[Int]
           (membersUAPath(0) \ "chargeDetails" \ "dateOfEvent").as[String] mustBe (membersETMPPath(0) \ "dateOfBenefitCrystalizationEvent").as[String]
           (membersUAPath(0) \ "chargeDetails" \ "taxAt25Percent").as[BigDecimal] mustBe (membersETMPPath(0) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
           (membersUAPath(0) \ "chargeDetails" \ "taxAt55Percent").as[BigDecimal] mustBe (membersETMPPath(0) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
 
           (transformedJson \ "chargeDDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
             (etmpResponseJson \ "chargeTypeDDetails" \ "totalAmount").as[BigDecimal]
+
+          (transformedJson \ "chargeDDetails" \ "amendedVersion").as[Int] mustBe
+            (etmpResponseJson \ "chargeTypeDDetails" \ "amendedVersion").as[Int]
 
           (transformedJson \ "chargeDDetails" \ "members").as[Seq[JsObject]].size mustBe 2
       }

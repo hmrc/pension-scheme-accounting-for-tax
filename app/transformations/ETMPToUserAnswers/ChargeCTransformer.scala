@@ -24,14 +24,16 @@ class ChargeCTransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
     (__ \ 'chargeTypeCDetails).readNullable(__.read(
-      ((__ \ 'chargeCDetails \ 'employers).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
+      ((__ \ 'chargeCDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
+        (__ \ 'chargeCDetails \ 'employers).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
         (__ \ 'chargeCDetails \ 'totalChargeAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
     )).map(_.getOrElse(Json.obj()))
 
   def readsMembers: Reads[JsArray] = __.read(Reads.seq(readsMember)).map(JsArray(_))
 
   def readsMember: Reads[JsObject] =
-    (
+    ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick) and
+      (__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick) and
       (__ \ 'memberTypeDetails).read(readsEmployerTypeDetails) and
         (__ \ 'correspondenceAddressDetails).read(readsCorrespondenceAddressDetails) and
         (__ \ 'chargeDetails \ 'paymentDate).json.copyFrom((__ \ 'dateOfPayment).json.pick) and

@@ -24,7 +24,8 @@ class ChargeDTransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
     (__ \ 'chargeTypeDDetails).readNullable(__.read(
-      ((__ \ 'chargeDDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
+      ((__ \ 'chargeDDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
+        (__ \ 'chargeDDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
         (__ \ 'chargeDDetails \ 'totalChargeAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
     )).map(_.getOrElse(Json.obj()))
 
@@ -32,6 +33,8 @@ class ChargeDTransformer extends JsonTransformer {
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
+      (__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick) and
+      (__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick) and
       (__ \ 'chargeDetails \ 'dateOfEvent).json.copyFrom((__ \ 'dateOfBenefitCrystalizationEvent).json.pick) and
       (__ \ 'chargeDetails \ 'taxAt25Percent).json.copyFrom((__ \ 'totalAmtOfTaxDueAtLowerRate).json.pick) and
       (__ \ 'chargeDetails \ 'taxAt55Percent).json.copyFrom((__ \ 'totalAmtOfTaxDueAtHigherRate).json.pick)).reduce
