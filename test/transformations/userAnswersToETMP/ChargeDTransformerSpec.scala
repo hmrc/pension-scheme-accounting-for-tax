@@ -18,19 +18,16 @@ package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.FreeSpec
-import play.api.libs.json._
-import transformations.generators.AFTUserAnswersGenerators
-import play.api.libs.json._
-import play.api.libs.json.Reads._
-import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{__, _}
+import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
   private val transformer = new ChargeDTransformer
+
   "A Charge D Transformer" - {
-    "must transform ChargeDDetails from UserAnswers to ETMP" in {
+    "must transform mandatory elements of ChargeDDetails from UserAnswers to ETMP" in {
       forAll(chargeDUserAnswersGenerator) {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value

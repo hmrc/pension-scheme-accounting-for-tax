@@ -22,14 +22,14 @@ import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
-  def etmpMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ i
+  private def etmpMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ i
 
-  def uaMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeGDetails" \ "members" \ i
+  private def uaMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeGDetails" \ "members" \ i
   
   private val transformer = new ChargeGTransformer
 
   "A ChargeG Transformer" - {
-    "must transform ChargeGDetails from UserAnswers to ETMP ChargeGDetails" in {
+    "must transform mandatory elements of ChargeGDetails from UserAnswers to ETMP ChargeGDetails" in {
       forAll(chargeGUserAnswersGenerator) {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
@@ -54,6 +54,7 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
             (uaMemberPath(userAnswersJson, 0) \ "chargeAmounts" \ "amountTransferred").as[BigDecimal]
           (etmpMemberPath(transformedJson, 0) \ "amountOfTaxDeducted").as[BigDecimal] mustBe
             (uaMemberPath(userAnswersJson, 0) \ "chargeAmounts" \ "amountTaxDue").as[BigDecimal]
+
           (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe "New"
           (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").asOpt[Int] mustBe None
 

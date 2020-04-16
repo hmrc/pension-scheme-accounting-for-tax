@@ -18,8 +18,8 @@ package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.FreeSpec
-import transformations.generators.AFTUserAnswersGenerators
 import play.api.libs.json.{__, _}
+import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeATransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
@@ -60,9 +60,9 @@ class ChargeATransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 }
 
 object ChargeATransformerSpec {
-  def etmpPath(json: JsObject): JsLookupResult = json \ "chargeDetails" \ "chargeTypeADetails"
+  private def etmpPath(json: JsObject): JsLookupResult = json \ "chargeDetails" \ "chargeTypeADetails"
 
-  def uaPath(json: JsObject): JsLookupResult = json \ "chargeADetails"
+  private def uaPath(json: JsObject): JsLookupResult = json \ "chargeADetails"
 }
 
 
