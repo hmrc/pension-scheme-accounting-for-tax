@@ -16,21 +16,45 @@
 
 package transformations.userAnswersToETMP
 
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.FreeSpec
+import play.api.libs.json.{JsObject, Json, __}
 import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeFTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+  private val transformer = new ChargeFTransformer
 
   "A Charge F Transformer" - {
     "must transform ChargeFDetails from UserAnswers to ETMP ChargeFDetails" in {
       forAll(chargeFUserAnswersGenerator) {
         userAnswersJson =>
-          val transformer = new ChargeFTransformer
+
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
-          transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount" mustBe userAnswersJson \ "chargeFDetails" \ "amountTaxDue"
-          transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn" mustBe userAnswersJson \ "chargeFDetails" \ "deRegistrationDate"
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount").as[BigDecimal] mustBe
+            (userAnswersJson \ "chargeFDetails" \ "amountTaxDue").as[BigDecimal]
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn").asOpt[String] mustBe None
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "amendedVersion").asOpt[Int] mustBe None
+      }
+    }
+
+    "must transform optional element - amendedVersion, deRegistrationDate from ChargeFDetails from UserAnswers to ETMP" in {
+      forAll(chargeFUserAnswersGenerator, arbitrary[Int], arbitrary[String]) {
+        (userAnswersJson, version, date) =>
+          val updatedJson = userAnswersJson.transform(
+            (__ \ 'chargeFDetails).json.update(__.read[JsObject].map(o => o ++ Json.obj("amendedVersion" -> version)
+              ++ Json.obj("deRegistrationDate" -> date)))).asOpt.value
+
+          val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "amendedVersion").as[Int] mustBe
+            (updatedJson \ "chargeFDetails" \ "amendedVersion").as[Int]
+
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn").as[String] mustBe
+            (updatedJson \ "chargeFDetails" \ "deRegistrationDate").as[String]
       }
     }
   }
-
 }

@@ -52,15 +52,19 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |    "numberOfMembers": 2,
       |    "totalAmtOfTaxDueAtLowerRate": 200.02,
       |    "totalAmtOfTaxDueAtHigherRate": 200.02,
-      |    "totalAmount": 200.02
+      |    "totalAmount": 200.02,
+      |    "amendedVersion": 1
       |  },
       |  "chargeBDetails": {
       |    "numberOfDeceased": 2,
-      |    "amountTaxDue": 100.02
+      |    "amountTaxDue": 100.02,
+      |    "amendedVersion": 1
       |  },
       |  "chargeCDetails": {
       |    "employers": [
       |      {
+      |        "memberStatus": "New",
+      |        "memberAFTVersion": 2,
       |        "whichTypeOfSponsoringEmployer": "individual",
       |        "chargeDetails": {
       |          "paymentDate": "2020-01-01",
@@ -82,11 +86,14 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |        }
       |      }
       |    ],
-      |    "totalChargeAmount": 500.02
+      |    "totalChargeAmount": 500.02,
+      |    "amendedVersion": 1
       |  },
       |  "chargeDDetails": {
       |    "members": [
       |      {
+      |        "memberStatus": "Changed",
+      |        "memberAFTVersion": 1,
       |        "memberDetails": {
       |          "firstName": "Joy",
       |          "lastName": "Kenneth",
@@ -100,11 +107,14 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |        }
       |      }
       |    ],
-      |    "totalChargeAmount": 2345.02
+      |    "totalChargeAmount": 2345.02,
+      |    "amendedVersion": 1
       |  },
       |  "chargeEDetails": {
       |    "members": [
       |      {
+      |        "memberStatus": "New",
+      |        "memberAFTVersion": 3,
       |        "memberDetails": {
       |          "firstName": "eFirstName",
       |          "lastName": "eLastName",
@@ -119,15 +129,19 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |        }
       |      }
       |    ],
-      |    "totalChargeAmount": 200.02
+      |    "totalChargeAmount": 200.02,
+      |    "amendedVersion": 1
       |  },
       |  "chargeFDetails": {
+      |    "amendedVersion": 1,
       |    "amountTaxDue": 200.02,
       |    "deRegistrationDate": "1980-02-29"
       |  },
       |  "chargeGDetails": {
       |    "members": [
       |      {
+      |        "memberStatus": "Deleted",
+      |        "memberAFTVersion": 1,
       |        "memberDetails": {
       |          "firstName": "Craig",
       |          "lastName": "White",
@@ -145,7 +159,8 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |        }
       |      }
       |    ],
-      |    "totalChargeAmount": 1230.02
+      |    "totalChargeAmount": 1230.02,
+      |    "amendedVersion": 1
       |  }
       |}""".stripMargin)
 
@@ -162,6 +177,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |  },
       |  "chargeDetails": {
       |    "chargeTypeADetails": {
+      |      "amendedVersion": 1,
       |      "numberOfMembers": 2,
       |      "totalAmtOfTaxDueAtLowerRate": 200.02,
       |      "totalAmtOfTaxDueAtHigherRate": 200.02,
@@ -174,9 +190,11 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |    },
       |    "chargeTypeCDetails": {
       |      "totalAmount": 500.02,
+      |      "amendedVersion": 1,
       |      "memberDetails": [
       |        {
       |          "memberStatus": "New",
+      |          "memberAFTVersion": 2,
       |          "memberTypeDetails": {
       |            "memberType": "Individual",
       |            "individualDetails": {
@@ -204,7 +222,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |      "totalAmount": 2345.02,
       |      "memberDetails": [
       |        {
-      |          "memberStatus": "New",
+      |          "memberStatus": "Changed",
       |          "memberAFTVersion": 1,
       |          "individualsDetails": {
       |            "title": "Mr",
@@ -220,10 +238,12 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |      ]
       |    },
       |    "chargeTypeEDetails": {
+      |      "amendedVersion": 1,
       |      "totalAmount": 200.02,
       |      "memberDetails": [
       |        {
       |          "memberStatus": "New",
+      |          "memberAFTVersion": 3,
       |          "individualsDetails": {
       |            "firstName": "eFirstName",
       |            "lastName": "eLastName",
@@ -237,6 +257,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |      ]
       |    },
       |    "chargeTypeFDetails": {
+      |      "amendedVersion": 1,
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
       |    },
@@ -245,7 +266,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |      "totalOTCAmount": 1230.02,
       |      "memberDetails": [
       |        {
-      |          "memberStatus": "New",
+      |          "memberStatus": "Deleted",
       |          "memberAFTVersion": 1,
       |          "individualsDetails": {
       |            "title": "Mr",

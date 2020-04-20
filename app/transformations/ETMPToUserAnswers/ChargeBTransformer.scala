@@ -25,7 +25,8 @@ class ChargeBTransformer {
   def transformToUserAnswers: Reads[JsObject] =
     (__ \ 'chargeTypeBDetails).readNullable {
       __.read(
-        ((__ \ 'chargeBDetails \ 'numberOfDeceased).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
+        ((__ \ 'chargeBDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
+          (__ \ 'chargeBDetails \ 'numberOfDeceased).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
           (__ \ 'chargeBDetails \ 'amountTaxDue).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
       )
     }.map {

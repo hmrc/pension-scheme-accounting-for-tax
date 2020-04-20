@@ -24,7 +24,8 @@ class ChargeETransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
     (__ \ 'chargeTypeEDetails).readNullable(__.read(
-      ((__ \ 'chargeEDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
+      ((__ \ 'chargeEDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
+        (__ \ 'chargeEDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
         (__ \ 'chargeEDetails \ 'totalChargeAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
     )).map(_.getOrElse(Json.obj()))
 
@@ -32,6 +33,8 @@ class ChargeETransformer extends JsonTransformer {
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
+      (__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick) and
+      (__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick) and
       (__ \ 'chargeDetails \ 'chargeAmount).json.copyFrom((__ \ 'amountOfCharge).json.pick) and
       (__ \ 'chargeDetails \ 'dateNoticeReceived).json.copyFrom((__ \ 'dateOfNotice).json.pick) and
       getPaidUnder237b and

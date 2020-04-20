@@ -33,8 +33,13 @@ class ChargeCTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0
           val etmpPath = etmpJson \ "chargeTypeCDetails" \ "memberDetails" \ 0
 
+          (uaPath \ "memberStatus").as[String] mustBe (etmpPath \ "memberStatus").as[String]
+          (uaPath \ "memberAFTVersion").as[Int] mustBe (etmpPath \ "memberAFTVersion").as[Int]
           (uaPath \ "chargeDetails" \ "paymentDate").as[String] mustBe (etmpPath \ "dateOfPayment").as[String]
           (uaPath \ "chargeDetails" \ "amountTaxDue").as[BigDecimal] mustBe (etmpPath \ "totalAmountOfTaxDue").as[BigDecimal]
+
+          (transformedJson \ "chargeCDetails" \ "amendedVersion").as[Int] mustBe
+            (etmpJson \ "chargeTypeCDetails" \ "amendedVersion").as[Int]
 
           (transformedJson \ "chargeCDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
             (etmpJson \ "chargeTypeCDetails" \ "totalAmount").as[BigDecimal]

@@ -352,6 +352,7 @@ object AFTControllerSpec {
     ),
     "chargeDetails" -> Json.obj(
       "chargeTypeFDetails" -> Json.obj(
+        "amendedVersion" -> 1,
         "totalAmount" -> 200.02,
         "dateRegiWithdrawn" -> "1980-02-29"
       )
@@ -367,6 +368,7 @@ object AFTControllerSpec {
     "pstr" -> "12345678AB",
     "schemeName" -> "PSTR Scheme",
     "chargeFDetails" -> Json.obj(
+       "amendedVersion" -> 1,
       "amountTaxDue" -> 200.02,
       "deRegistrationDate" -> "1980-02-29"
     )

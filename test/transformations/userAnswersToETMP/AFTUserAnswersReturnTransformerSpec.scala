@@ -61,6 +61,8 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    "employers": [
       |      {
       |        "whichTypeOfSponsoringEmployer": "individual",
+      |        "memberStatus": "Changed",
+      |        "memberAFTVersion": 1,
       |        "chargeDetails": {
       |          "paymentDate": "2020-01-01",
       |          "amountTaxDue": 500.02
@@ -80,7 +82,8 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |        }
       |      }
       |    ],
-      |    "totalChargeAmount": 500.02
+      |    "totalChargeAmount": 500.02,
+      |    "amendedVersion": 1
       |  },
       |  "chargeDDetails": {
       |    "numberOfMembers": 2,
@@ -147,7 +150,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    "totalChargeAmount": 1230.02
       |  },
       |  "declaration" : {
-      |    "submittedBy" : "Nigel Smith",
+      |    "submittedBy" : "PSA",
       |    "submittedID" : "A2000000",
       |    "hasAgreed" : true
       |  }
@@ -173,9 +176,11 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    },
       |    "chargeTypeCDetails": {
       |      "totalAmount": 500.02,
+      |      "amendedVersion": 1,
       |      "memberDetails": [
       |        {
-      |          "memberStatus": "New",
+      |          "memberStatus": "Changed",
+      |          "memberAFTVersion": 1,
       |          "memberTypeDetails": {
       |            "memberType": "Individual",
       |            "individualDetails": {
@@ -255,7 +260,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    }
       |  },
       |  "aftDeclarationDetails": {
-      |    "submittedBy": "Nigel Smith",
+      |    "submittedBy": "PSA",
       |    "submittedID": "A2000000",
       |    "psaDeclarationDetails": {
       |      "psaDeclaration1": true,

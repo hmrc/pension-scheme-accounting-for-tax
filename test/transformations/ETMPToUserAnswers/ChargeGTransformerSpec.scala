@@ -33,6 +33,8 @@ class ChargeGTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
 
           def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeGDetails" \ "memberDetails" \ i
 
+          (membersUAPath(0) \ "memberStatus").as[String] mustBe (membersETMPPath(0) \ "memberStatus").as[String]
+          (membersUAPath(0) \ "memberAFTVersion").as[Int] mustBe (membersETMPPath(0) \ "memberAFTVersion").as[Int]
           (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "firstName").as[String]
           (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "lastName").as[String]
           (membersUAPath(0) \ "memberDetails" \ "dob").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "dateOfBirth").as[String]
@@ -45,6 +47,9 @@ class ChargeGTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
 
           (transformedJson \ "chargeGDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
             (etmpResponseJson \ "chargeTypeGDetails" \ "totalOTCAmount").as[BigDecimal]
+
+          (transformedJson \ "chargeGDetails" \ "amendedVersion").as[Int] mustBe
+            (etmpResponseJson \ "chargeTypeGDetails" \ "amendedVersion").as[Int]
 
           (membersUAPath(1) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(1) \ "individualsDetails" \ "firstName").as[String]
 

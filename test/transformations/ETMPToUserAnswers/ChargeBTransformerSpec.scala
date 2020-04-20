@@ -28,11 +28,14 @@ class ChargeBTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           val transformer = new ChargeBTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
 
-          transformedJson \ "chargeBDetails" \ "numberOfDeceased" mustBe
-            etmpResponseJson \ "chargeTypeBDetails" \ "numberOfMembers"
+          (transformedJson \ "chargeBDetails" \ "amendedVersion").as[Int] mustBe
+            (etmpResponseJson \ "chargeTypeBDetails" \ "amendedVersion").as[Int]
 
-          transformedJson \ "chargeBDetails" \ "amountTaxDue" mustBe
-            etmpResponseJson \ "chargeTypeBDetails" \ "totalAmount"
+          (transformedJson \ "chargeBDetails" \ "numberOfDeceased").as[Int] mustBe
+            (etmpResponseJson \ "chargeTypeBDetails" \ "numberOfMembers").as[Int]
+
+          (transformedJson \ "chargeBDetails" \ "amountTaxDue").as[BigDecimal] mustBe
+            (etmpResponseJson \ "chargeTypeBDetails" \ "totalAmount").as[BigDecimal]
       }
     }
   }

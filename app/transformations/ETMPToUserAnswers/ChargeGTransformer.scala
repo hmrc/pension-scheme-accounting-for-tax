@@ -24,7 +24,8 @@ class ChargeGTransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
     (__ \ 'chargeTypeGDetails).readNullable(__.read(
-      ((__ \ 'chargeGDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
+      ((__ \ 'chargeGDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
+        (__ \ 'chargeGDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
         (__ \ 'chargeGDetails \ 'totalChargeAmount).json.copyFrom((__ \ 'totalOTCAmount).json.pick)).reduce
     )).map(_.getOrElse(Json.obj()))
 
@@ -34,6 +35,8 @@ class ChargeGTransformer extends JsonTransformer {
     (readsMemberDetails and
       (__ \ 'memberDetails \ 'dob).json.copyFrom((__ \ 'individualsDetails \ 'dateOfBirth).json.pick) and
       readsQrops and
+      (__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick) and
+      (__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick) and
       (__ \ 'chargeDetails \ 'qropsTransferDate).json.copyFrom((__ \ 'dateOfTransfer).json.pick) and
       (__ \ 'chargeAmounts \ 'amountTransferred).json.copyFrom((__ \ 'amountTransferred).json.pick) and
       (__ \ 'chargeAmounts \ 'amountTaxDue).json.copyFrom((__ \ 'amountOfTaxDeducted).json.pick)).reduce
