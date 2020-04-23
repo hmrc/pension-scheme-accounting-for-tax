@@ -30,7 +30,7 @@ import scala.concurrent.Future
 
 class DataCacheController @Inject()(
                                      config: Configuration,
-                                     repository: DataCacheRepository,
+                                     repo: DataCacheRepository,
                                      val authConnector: AuthConnector,
                                      cc: ControllerComponents
                                    ) extends BackendController(cc) with AuthorisedFunctions {
@@ -43,13 +43,13 @@ class DataCacheController @Inject()(
         request.body.asJson.map {
           jsValue =>
 
-            repository.save(id, jsValue, sessionId)
+            repo.save(id, jsValue, sessionId)
               .map(_ => Created)
         } getOrElse Future.successful(BadRequest)
       }
   }
 
-  def setLock(): Action[AnyContent] = Action.async {
+  def setSessionData(): Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, name) =>
         request.body.asJson.map {
@@ -57,8 +57,8 @@ class DataCacheController @Inject()(
             val optionVersion = request.headers.get("version")
             val optionAccessMode = request.headers.get("accessMode")
             val response = (optionVersion, optionAccessMode) match {
-              case (Some(_), Some(_)) => repository.setLock(id, name, jsValue, sessionId, optionVersion, optionAccessMode)
-              case _ => repository.setLock(id, name, jsValue, sessionId, None, None)
+              case (Some(_), Some(_)) => repo.setSessionData(id, name, jsValue, sessionId, optionVersion, optionAccessMode)
+              case _ => repo.setSessionData(id, name, jsValue, sessionId, None, None)
             }
             response.map(_ => Created)
           }
@@ -66,10 +66,24 @@ class DataCacheController @Inject()(
       }
   }
 
+  def getSessionData: Action[AnyContent] = Action.async {
+    implicit request =>
+      getIdWithName { case (sessionId, id, _) =>
+        repo.getSessionData(sessionId, id).map { response =>
+          Logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
+          response.map { tt =>
+            //val w = repository.model.SessionData.format.writes
+            import repository.model.SessionData._
+            Ok.apply(tt)
+          } getOrElse NotFound
+        }
+      }
+  }
+
   def get: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { (sessionId, id, _) =>
-        repository.get(id, sessionId).map { response =>
+        repo.get(id, sessionId).map { response =>
           Logger.debug(message = s"DataCacheController.get: Response for request Id $id is $response")
           response.map {
             Ok(_)
@@ -81,21 +95,11 @@ class DataCacheController @Inject()(
   def remove: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { (sessionId, id, _) =>
-        repository.remove(id, sessionId).map(_ => Ok)
+        repo.remove(id, sessionId).map(_ => Ok)
       }
   }
 
-  def getSessionData: Action[AnyContent] = Action.async {
-    implicit request =>
-      getIdWithName { case (sessionId, id, _) =>
-        repository.lockedBy(sessionId, id).map { response =>
-          Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
-          response.map {
-            Ok(_)
-          } getOrElse NotFound
-        }
-      }
-  }
+
 
   private def getIdWithName(block: (String, String, String) => Future[Result])
                            (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
