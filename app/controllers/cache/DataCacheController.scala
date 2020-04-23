@@ -85,7 +85,7 @@ class DataCacheController @Inject()(
       }
   }
 
-  def getLock: Action[AnyContent] = Action.async {
+  def getSessionData: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
         repository.lockedBy(sessionId, id).map { response =>

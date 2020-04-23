@@ -8,7 +8,7 @@ GET         /get-aft-versions                       controllers.AFTController.ge
 
 GET         /get-aft-overview                       controllers.AFTController.getOverview
 
-GET         /journey-cache/aft/lock                 controllers.cache.DataCacheController.getLock
+GET         /journey-cache/aft/session-data         controllers.cache.DataCacheController.getSessionData
 POST        /journey-cache/aft/lock                 controllers.cache.DataCacheController.setLock
 GET         /journey-cache/aft                      controllers.cache.DataCacheController.get
 POST        /journey-cache/aft                      controllers.cache.DataCacheController.save

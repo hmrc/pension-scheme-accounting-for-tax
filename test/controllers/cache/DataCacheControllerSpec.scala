@@ -179,7 +179,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.lockedBy(any(), any())(any())) thenReturn Future.successful(Some("test name"))
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.getLock(fakeRequest)
+        val result = controller.getSessionData(fakeRequest)
         status(result) mustEqual OK
         contentAsString(result) mustEqual "test name"
       }
@@ -192,7 +192,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         when(repo.lockedBy(any(), any())(any())) thenReturn Future.successful(None)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.getLock(fakeRequest)
+        val result = controller.getSessionData(fakeRequest)
         status(result) mustEqual NOT_FOUND
       }
     }
