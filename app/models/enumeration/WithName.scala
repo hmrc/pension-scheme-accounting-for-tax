@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 
-package audit
+package models.enumeration
 
-import models.Event
-import models.enumeration.JourneyType
-
-case class EmailAuditEvent(psaId: String, pstr: String, event: Event, journeyType: JourneyType.Name) extends AuditEvent {
-
-  override def auditType: String = s"${journeyType.toString}EmailEvent"
-
-  override def details: Map[String, String] = Map("psaId" -> psaId, "pstr" -> pstr, "event" -> event.toString)
-
+class WithName(string: String) {
+  override val toString: String = string
 }

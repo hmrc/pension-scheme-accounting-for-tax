@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
-package models
+package models.enumeration
 
-class WithName(string: String) {
-  override val toString: String = string
+import models.enumeration.binders.EnumPathBinder
+import play.api.mvc.PathBindable
+
+object JourneyType extends Enumeration {
+  type Name = Value
+  val AFT_RETURN: JourneyType.Value = Value("AFTReturn")
+  val AFT_AMEND: JourneyType.Value = Value("AFTAmendment")
+
+  implicit val journeyTypePathBinder: PathBindable[Name] = EnumPathBinder.pathBinder(this)
 }

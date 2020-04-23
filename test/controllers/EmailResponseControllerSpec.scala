@@ -35,6 +35,7 @@ import uk.gov.hmrc.crypto.{ApplicationCrypto, PlainText}
 import uk.gov.hmrc.http.UnauthorizedException
 
 import scala.concurrent.Future
+import models.enumeration.JourneyType.AFT_RETURN
 
 class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
 
@@ -63,15 +64,15 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
   "EmailResponseController" must {
 
     "respond OK when given EmailEvents" in {
-      val result = controller.retrieveStatus(encryptedPstr)(fakeRequest.withBody(Json.toJson(emailEvents)))
+      val result = controller.retrieveStatus(AFT_RETURN, encryptedPstr)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       status(result) mustBe OK
       verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
-      eventCaptor.getValue mustEqual EmailAuditEvent("A0000000", pstr, Delivered)
+      eventCaptor.getValue mustEqual EmailAuditEvent("A0000000", pstr, Delivered, AFT_RETURN)
     }
 
     "respond with BAD_REQUEST when not given EmailEvents" in {
-      val result = controller.retrieveStatus(encryptedPstr)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
+      val result = controller.retrieveStatus(AFT_RETURN, encryptedPstr)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
 
       verify(mockAuditService, never()).sendEvent(any())(any(), any())
       status(result) mustBe BAD_REQUEST
@@ -79,7 +80,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 
     "respond with FORBIDDEN when URL contains a pstr which does not match PSTR pattern" in {
       val invalidPstr = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText("1234")).value
-      val result = controller.retrieveStatus(invalidPstr)(fakeRequest.withBody(Json.toJson(emailEvents)))
+      val result = controller.retrieveStatus(AFT_RETURN, invalidPstr)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       verify(mockAuditService, never()).sendEvent(any())(any(), any())
       status(result) mustBe FORBIDDEN
@@ -91,7 +92,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
         .thenReturn(Future.successful(Enrolments(Set.empty)))
 
       recoverToExceptionIf[UnauthorizedException] {
-        controller.retrieveStatus(encryptedPstr)(fakeRequest.withBody(Json.toJson(emailEvents)))
+        controller.retrieveStatus(AFT_RETURN, encryptedPstr)(fakeRequest.withBody(Json.toJson(emailEvents)))
       } map { response =>
         response.message mustEqual "Not Authorised - Unable to retrieve enrolments"
       }

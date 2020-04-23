@@ -19,6 +19,7 @@ package controllers
 import audit.{AuditService, EmailAuditEvent}
 import com.google.inject.Inject
 import models.EmailEvents
+import models.enumeration.JourneyType
 import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.mvc._
@@ -39,7 +40,7 @@ class EmailResponseController @Inject()(
                                          val authConnector: AuthConnector
                                        ) extends BackendController(cc) with AuthorisedFunctions {
 
-  def retrieveStatus(id: String): Action[JsValue] = Action(parser.tolerantJson).async {
+  def retrieveStatus(journeyType: JourneyType.Name, id: String): Action[JsValue] = Action(parser.tolerantJson).async {
     implicit request =>
       authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.allEnrolments) { enrolments =>
         val psaId = enrolments.getEnrolment(key = "HMRC-PODS-ORG").flatMap(
@@ -51,8 +52,8 @@ class EmailResponseController @Inject()(
               _ => Future.successful(BadRequest("Bad request received for email call back event")),
               valid => {
                 valid.events.foreach { event =>
-                  Logger.debug(s"Email Audit event coming is $event")
-                  auditService.sendEvent(EmailAuditEvent(psaId, pstr, event.event))
+                  Logger.debug(s"Email Audit event coming from $journeyType is $event")
+                  auditService.sendEvent(EmailAuditEvent(psaId, pstr, event.event, journeyType))
                 }
                 Future.successful(Ok)
               }

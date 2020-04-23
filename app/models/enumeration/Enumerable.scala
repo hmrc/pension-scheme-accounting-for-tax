@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package models
+package models.enumeration
 
 import play.api.libs.json._
 
