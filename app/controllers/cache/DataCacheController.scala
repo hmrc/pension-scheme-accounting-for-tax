@@ -17,12 +17,19 @@
 package controllers.cache
 
 import com.google.inject.Inject
+import play.api.libs.json.Json
 import play.api.mvc._
-import play.api.{Configuration, Logger}
+import play.api.Configuration
+import play.api.Logger
 import repository.DataCacheRepository
+import repository.model.SessionData._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
+import uk.gov.hmrc.auth.core.Enrolment
+import uk.gov.hmrc.http.BadRequestException
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.UnauthorizedException
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -72,9 +79,9 @@ class DataCacheController @Inject()(
         repo.getSessionData(sessionId, id).map { response =>
           Logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
           response.map { tt =>
-            //val w = repository.model.SessionData.format.writes
-            import repository.model.SessionData._
-            Ok.apply(tt)
+            Ok(Json.toJson(tt))
+
+            //Ok.apply(tt)(Json.writes[SessionData])
           } getOrElse NotFound
         }
       }

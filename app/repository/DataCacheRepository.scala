@@ -94,7 +94,8 @@ class DataCacheRepository @Inject()(
     Logger.debug("Calling setSessionData in AFT Cache")
     val document: JsValue = Json.toJson(
       DataCache.applyDataCache(
-        id = id, SessionData(sessionId, name, optionVersion, optionAccessMode),
+        id = id,
+        Some(SessionData(sessionId, Some(name), optionVersion, optionAccessMode)),
         data = userData, expireAt = expireInSeconds
       )
     )
@@ -103,14 +104,6 @@ class DataCacheRepository @Inject()(
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
   }
 
-  /*
->>>>item=DataCache(S24000000012020-04-01,Some(SessionData(session-ec8a9b50-967c-4ae2-9b31-84dd148231ad,TestUser)),
-{"isNewReturn":true,"pstr":"24000001IN","schemeName":"Open Single Trust Scheme with Indiv Establisher and Trustees",
-"isPsaSuspended":false,"aftStatus":"Compiled","schemeStatus":"Open","psaEmail":"nigel@test.com",
-"quarter":{"startDate":"2020-04-01","endDate":"2020-06-30"}},2020-04-23T14:23:15.014Z,2020-05-05T04:09:54.003Z)
-
-*/
-
   def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
     Logger.debug("Calling getSessionData in AFT Cache")
     collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
@@ -118,16 +111,19 @@ class DataCacheRepository @Inject()(
       listDataCache.headOption match {
         case None => None
         case Some(dataCache) =>
-          if (dataCache.sessionData.name.isDefined) {
-            Logger.debug(s"SessionData : ${dataCache.sessionData.name} for logged in session Id: ${sessionId}")
-            val optionLockedByName = if (dataCache.sessionData.sessionId != sessionId) {
-              dataCache.sessionData.name
-            } else {
-              None
+          dataCache.sessionData.map { sd =>
+            sd.name match {
+              case Some(nm) =>
+                Logger.debug(s"SessionData : ${nm} for logged in session Id: ${sessionId}")
+                val optionLockedByName = if (sd.sessionId != sessionId) {
+                  sd.name
+                } else {
+                  None
+                }
+
+                sd copy (name = optionLockedByName)
+              case _ => sd
             }
-            Some(dataCache.sessionData copy (name = optionLockedByName))
-          } else {
-            Some(dataCache.sessionData)
           }
       }
     }
