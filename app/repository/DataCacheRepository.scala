@@ -82,10 +82,10 @@ class DataCacheRepository @Inject()(
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
   }
 
-  def setLock(id: String, name: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def setLock(id: String, name: String, userData: JsValue, sessionId: String, optionVersion: Option[String], optionAccessMode: Option[String])(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.debug("Calling setLock in AFT Cache")
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
-      id = id, Some(LockedBy(sessionId, name)),
+      id = id, Some(LockedBy(sessionId, name, optionVersion, optionAccessMode)),
       data = userData, expireAt = expireInSeconds))
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     val modifier = BSONDocument("$set" -> document)

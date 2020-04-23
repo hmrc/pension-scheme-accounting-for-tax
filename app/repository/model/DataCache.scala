@@ -20,13 +20,12 @@ import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, JsValue, Json}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-case class LockedBy(sessionId: String, name: String)
+case class LockedBy(sessionId: String, name: String, optionVersion: Option[String], optionAccessMode: Option[String])
 object LockedBy {
   implicit val format: Format[LockedBy] = Json.format[LockedBy]
 }
 
 case class DataCache(id: String, lockedBy: Option[LockedBy], data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
-
 object DataCache {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   implicit val format: Format[DataCache] = Json.format[DataCache]
@@ -36,4 +35,5 @@ object DataCache {
 
     DataCache(id, lockedBy, data, lastUpdated, expireAt)
   }
+
 }

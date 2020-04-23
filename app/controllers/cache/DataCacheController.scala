@@ -54,8 +54,13 @@ class DataCacheController @Inject()(
       getIdWithName { case (sessionId, id, name) =>
         request.body.asJson.map {
           jsValue => {
-            repository.setLock(id, name, jsValue, sessionId)
-              .map(_ => Created)
+            val optionVersion = request.headers.get("version")
+            val optionAccessMode = request.headers.get("accessMode")
+            val response = (optionVersion, optionAccessMode) match {
+              case (Some(_), Some(_)) => repository.setLock(id, name, jsValue, sessionId, optionVersion, optionAccessMode)
+              case _ => repository.setLock(id, name, jsValue, sessionId, None, None)
+            }
+            response.map(_ => Created)
           }
         } getOrElse Future.successful(BadRequest)
       }
