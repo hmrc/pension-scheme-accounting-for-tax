@@ -57,14 +57,14 @@ class DataCacheController @Inject()(
       }
   }
 
-  def lockAndSetSessionData(): Action[AnyContent] = Action.async {
+  def setSessionData(lock:Boolean): Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, name) =>
         request.body.asJson.map {
           jsValue => {
             (request.headers.get("version"), request.headers.get("accessMode")) match {
               case (Some(version), Some(accessMode)) =>
-                repo.lockAndSetSessionData(id, name, jsValue, sessionId, version.toInt, accessMode).map(_ => Created)
+                repo.setSessionData(id, if (lock) Some(name) else None, jsValue, sessionId, version.toInt, accessMode).map(_ => Created)
               case _ => Future.successful(BadRequest("Version and/or access mode not present in request header"))
             }
           }

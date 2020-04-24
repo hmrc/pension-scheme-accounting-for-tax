@@ -89,13 +89,13 @@ class DataCacheRepository @Inject()(
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
   }
 
-  def lockAndSetSessionData(id: String, name: String, userData: JsValue, sessionId: String,
-                            version: Int, accessMode: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    Logger.debug("Calling lockAndSetSessionData in AFT Cache")
+  def setSessionData(id: String, name: Option[String], userData: JsValue, sessionId: String,
+                     version: Int, accessMode: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+    Logger.debug("Calling setSessionData in AFT Cache")
     val document: JsValue = Json.toJson(
       DataCache.applyDataCache(
         id = id,
-        Some(SessionData(sessionId, Some(name), version, accessMode)),
+        Some(SessionData(sessionId, name, version, accessMode)),
         data = userData, expireAt = expireInSeconds
       )
     )

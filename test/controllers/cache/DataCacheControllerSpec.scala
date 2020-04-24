@@ -198,14 +198,14 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
     }
   }
 
-  "calling lockAndSetSessionData" must {
+  "calling setSessionData" must {
 
     "return OK when the data is saved successfully" in {
       val app = new GuiceApplicationBuilder()
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.lockAndSetSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.setSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
       val result = controller.lockAndSetSessionData()(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
@@ -217,7 +217,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.lockAndSetSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.setSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
       val result = controller.lockAndSetSessionData()(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
