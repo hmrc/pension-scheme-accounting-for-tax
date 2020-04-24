@@ -198,17 +198,17 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
     }
   }
 
-  "calling setSessionData" must {
+  "calling lockAndSetSessionData" must {
 
     "return OK when the data is saved successfully" in {
       val app = new GuiceApplicationBuilder()
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.setSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.lockAndSetSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-      val result = controller.setSessionData()(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
+      val result = controller.lockAndSetSessionData()(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
       status(result) mustEqual CREATED
     }
 
@@ -217,10 +217,10 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.setSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.lockAndSetSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-      val result = controller.setSessionData()(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+      val result = controller.lockAndSetSessionData()(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
       status(result) mustEqual BAD_REQUEST
     }
   }
