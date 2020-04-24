@@ -78,11 +78,7 @@ class DataCacheController @Inject()(
       getIdWithName { case (sessionId, id, _) =>
         repo.getSessionData(sessionId, id).map { response =>
           Logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
-          response.map { tt =>
-            Ok(Json.toJson(tt))
-
-            //Ok.apply(tt)(Json.writes[SessionData])
-          } getOrElse NotFound
+          response.map(Ok(Json.toJson(_))) getOrElse NotFound
         }
       }
   }
