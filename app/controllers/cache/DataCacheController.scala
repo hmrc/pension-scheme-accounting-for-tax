@@ -22,6 +22,7 @@ import play.api.mvc._
 import play.api.Configuration
 import play.api.Logger
 import repository.DataCacheRepository
+import repository.model.SessionData
 import repository.model.SessionData._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -65,7 +66,9 @@ class DataCacheController @Inject()(
             val optionAccessMode = request.headers.get("accessMode")
             val response = (optionVersion, optionAccessMode) match {
               case (Some(_), Some(_)) => repo.setSessionData(id, name, jsValue, sessionId, optionVersion, optionAccessMode)
-              case _ => repo.setSessionData(id, name, jsValue, sessionId, None, None)
+              case _ =>
+              throw new RuntimeException("no")
+                //repo.setSessionData(id, name, jsValue, sessionId, None, None)
             }
             response.map(_ => Created)
           }
@@ -78,7 +81,10 @@ class DataCacheController @Inject()(
       getIdWithName { case (sessionId, id, _) =>
         repo.getSessionData(sessionId, id).map { response =>
           Logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
-          response.map(Ok(Json.toJson(_))) getOrElse NotFound
+          response match {
+            case None => NotFound
+            case Some(sd) => Ok(Json.toJson(sd))
+          }
         }
       }
   }
