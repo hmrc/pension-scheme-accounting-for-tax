@@ -62,15 +62,11 @@ class DataCacheController @Inject()(
       getIdWithName { case (sessionId, id, name) =>
         request.body.asJson.map {
           jsValue => {
-            val optionVersion = request.headers.get("version")
-            val optionAccessMode = request.headers.get("accessMode")
-            val response = (optionVersion, optionAccessMode) match {
-              case (Some(_), Some(_)) => repo.setSessionData(id, name, jsValue, sessionId, optionVersion, optionAccessMode)
-              case _ =>
-              throw new RuntimeException("no")
-                //repo.setSessionData(id, name, jsValue, sessionId, None, None)
+            (request.headers.get("version"), request.headers.get("accessMode")) match {
+              case (Some(version), Some(accessMode)) =>
+                repo.setSessionData(id, name, jsValue, sessionId, version.toInt, accessMode).map(_ => Created)
+              case _ => Future.successful(BadRequest("Version and/or access mode not present in request header"))
             }
-            response.map(_ => Created)
           }
         } getOrElse Future.successful(BadRequest)
       }

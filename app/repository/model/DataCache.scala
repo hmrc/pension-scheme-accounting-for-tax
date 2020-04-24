@@ -20,7 +20,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, JsValue, Json}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-case class SessionData(sessionId: String, name: Option[String], optionVersion: Option[String], optionAccessMode: Option[String])
+case class SessionData(sessionId: String, name: Option[String], version: Int, accessMode: String)
 object SessionData {
   implicit val format: Format[SessionData] = Json.format[SessionData]
 }
