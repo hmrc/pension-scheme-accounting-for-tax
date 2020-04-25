@@ -72,6 +72,19 @@ class DataCacheController @Inject()(
       }
   }
 
+  def lockedBy: Action[AnyContent] = Action.async {
+    implicit request =>
+      getIdWithName { case (sessionId, id, _) =>
+        repo.lockedBy(sessionId, id).map { response =>
+          Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
+          response match {
+            case None => NotFound
+            case Some(name) => Ok(Json.toJson(name))
+          }
+        }
+      }
+  }
+
   def getSessionData: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>

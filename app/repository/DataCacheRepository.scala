@@ -80,6 +80,7 @@ class DataCacheRepository @Inject()(
     )
   }
 
+  // TODO: Don't overwrite session data - it may not be - test it!!
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.debug("Calling Save in AFT Cache")
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
@@ -89,6 +90,7 @@ class DataCacheRepository @Inject()(
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
   }
 
+  // TODO: if locking then check if already locked to someone else and if so throw exception
   def setSessionData(id: String, name: Option[String], userData: JsValue, sessionId: String,
                      version: Int, accessMode: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.debug("Calling setSessionData in AFT Cache")
@@ -106,24 +108,32 @@ class DataCacheRepository @Inject()(
 
   def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
     Logger.debug("Calling getSessionData in AFT Cache")
-    collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
-      cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]()).map { listDataCache =>
-      listDataCache.headOption match {
-        case None => None
-        case Some(dataCache) =>
-          dataCache.sessionData.map { sd =>
-            sd.name match {
-              case Some(nm) =>
-                Logger.debug(s"SessionData : ${nm} for logged in session Id: ${sessionId}")
-                val optionLockedByName = if (sd.sessionId != sessionId) {
-                  sd.name
-                } else {
-                  None
-                }
+    collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[DataCache]
+      .flatMap { optionDataCache =>
+        lockedBy(sessionId, id).map { lockedBy =>
+          optionDataCache.flatMap { dc =>
+            dc.sessionData.map( _ copy (name = lockedBy))
+          }
+        }
+      }
+  }
 
-                sd copy (name = optionLockedByName)
-              case _ => sd
-            }
+   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+    Logger.debug("Calling lockedBy in AFT Cache")
+    val documentsForReturnAndQuarter = collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
+      cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]())
+
+    documentsForReturnAndQuarter.map {
+      _.find(_.sessionData.exists(_.name.isDefined)) match {
+        case None => None
+        case Some(dc) =>
+          println("\nsess:" + sessionId)
+          println("\nsess2:" + dc.sessionData)
+          dc.sessionData.flatMap {
+            case sd if sd.sessionId != sessionId =>
+              println("\nhhh")
+              sd.name
+            case _ => None
           }
       }
     }

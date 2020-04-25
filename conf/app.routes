@@ -11,6 +11,7 @@ GET         /get-aft-overview                       controllers.AFTController.ge
 GET         /journey-cache/aft/session-data         controllers.cache.DataCacheController.getSessionData
 POST        /journey-cache/aft/session-data         controllers.cache.DataCacheController.setSessionData(lock:Boolean=false)
 POST        /journey-cache/aft/session-data-lock    controllers.cache.DataCacheController.setSessionData(lock:Boolean=true)
+POST        /journey-cache/aft/locked-by            controllers.cache.DataCacheController.lockedBy
 
 GET         /journey-cache/aft                      controllers.cache.DataCacheController.get
 POST        /journey-cache/aft                      controllers.cache.DataCacheController.save
