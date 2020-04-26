@@ -109,33 +109,26 @@ class DataCacheRepository @Inject()(
   def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
     Logger.debug("Calling getSessionData in AFT Cache")
     collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[DataCache]
-      .flatMap { optionDataCache =>
-        lockedBy(sessionId, id).map { lockedBy =>
-          optionDataCache.flatMap { dc =>
-            dc.sessionData.map( _ copy (name = lockedBy))
+      .flatMap {
+        case None => Future.successful(None)
+        case Some(dc) =>
+          lockedBy(sessionId, id).map { lockedBy =>
+            dc.sessionData.map(_ copy (name = lockedBy))
           }
-        }
       }
+
   }
 
-   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+  def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     Logger.debug("Calling lockedBy in AFT Cache")
     val documentsForReturnAndQuarter = collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
       cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]())
 
     documentsForReturnAndQuarter.map {
-      _.find(_.sessionData.exists(_.name.isDefined)) match {
-        case None => None
-        case Some(dc) =>
-          println("\nsess:" + sessionId)
-          println("\nsess2:" + dc.sessionData)
-          dc.sessionData.flatMap {
-            case sd if sd.sessionId != sessionId =>
-              println("\nhhh")
-              sd.name
-            case _ => None
-          }
-      }
+      _.find(_.sessionData.exists(sd => sd.name.isDefined && sd.sessionId != sessionId))
+        .flatMap {
+          _.sessionData.flatMap(_.name)
+        }
     }
   }
 

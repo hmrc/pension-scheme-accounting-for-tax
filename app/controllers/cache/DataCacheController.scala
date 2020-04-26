@@ -117,8 +117,6 @@ class DataCacheController @Inject()(
       }
   }
 
-
-
   private def getIdWithName(block: (String, String, String) => Future[Result])
                            (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
