@@ -89,23 +89,34 @@ class AFTController @Inject()(appConfig: AppConfig,
     implicit request =>
       get { (pstr, startDate) =>
         desConnector.getAftVersions(pstr, startDate).flatMap {
-          case data if data.nonEmpty =>
-            val versionsWithNoValueAndOnlyOneMemberRemoved = data.map {
-              version =>
-                desConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map {
-                  jsValue =>
-                    if (aftService.isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) Seq[AFTVersion]() else Seq(version)
-                }
+          case versions if versions.size == 1 =>  //TODO this case should be removed after 1 July 2020
+                                                  //TODO as this call will be handled as part of calling the overview API
+
+           isChargeNonZero(pstr, startDate, versions.head.reportVersion.toString).map {
+              case true => Ok(Json.toJson(versions))
+              case _ => Ok(Json.toJson(Seq[AFTVersion]()))
+
             }
-            Future.sequence(versionsWithNoValueAndOnlyOneMemberRemoved).map {
-              seqVersions =>
-                Ok(Json.toJson(seqVersions.flatten))
-            }
-          case data =>
-            Future.successful(Ok(Json.toJson(data)))
+          case versions =>
+            Future.successful(Ok(Json.toJson(versions)))
         }
       }
   }
+
+  def getIsChargeNonZero: Action[AnyContent] = Action.async {
+    implicit request =>
+      get { (pstr, startDate) =>
+
+      val versionNumber: String = request.headers.get("aftVersion")
+        .getOrElse(throw new BadRequestException(s"Bad Request without aftVersion"))
+
+        isChargeNonZero(pstr, startDate, versionNumber).map { isNonZero =>
+          Ok(isNonZero.toString)
+        }
+      }
+  }
+
+
 
   def getOverview: Action[AnyContent] = Action.async {
     implicit request =>
@@ -122,7 +133,14 @@ class AFTController @Inject()(appConfig: AppConfig,
       }
   }
 
-
+  private def isChargeNonZero(pstr: String, startDate: String, versionNumber: String
+                     )(implicit hc: HeaderCarrier,
+                       ec: ExecutionContext,
+                       request: RequestHeader): Future[Boolean] = {
+    desConnector.getAftDetails(pstr, startDate, versionNumber).map {jsValue =>
+      !aftService.isChargeZeroedOut(jsValue)
+    }
+  }
 
   private def post(block: (String, JsValue) => Future[Result])
                   (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {

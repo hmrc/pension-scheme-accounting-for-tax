@@ -20,8 +20,8 @@ import play.api.libs.json.{JsArray, JsValue}
 
 class AFTService {
 
-  def isOnlyOneChargeWithOneMemberAndNoValue(jsValue: JsValue): Boolean = {
-
+  def isChargeZeroedOut(jsValue: JsValue): Boolean = {
+println(">>>>>>>>>>>>>>>>>>>>>>>.  "+jsValue)
     val areNoChargesWithValues: Boolean =
       (jsValue \ "chargeDetails" \ "chargeTypeADetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
         (jsValue \ "chargeDetails" \ "chargeTypeBDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&

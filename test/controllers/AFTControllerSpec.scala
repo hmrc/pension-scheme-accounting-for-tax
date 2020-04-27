@@ -29,7 +29,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsBoolean, JsObject, JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.AFTService
@@ -130,7 +130,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   "getVersions" must {
 
-    "return OK with the Seq of version numbers when the details are returned based on pstr and start date" in {
+    "return OK with the version if there is only version and it is not zeroed out" in {
 
       val controller = application.injector.instanceOf[AFTController]
 
@@ -139,7 +139,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
       )
-      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
 
       val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
@@ -147,7 +147,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       contentAsJson(result) mustBe Json.arr(Json.toJson(version1))
     }
 
-    "return OK with an empty sequence when there is only one charge with one member and it's value is zero" in {
+    "return OK with an empty sequence if there is only version and it is zeroed out" in {
 
       val controller = application.injector.instanceOf[AFTController]
 
@@ -156,12 +156,21 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
       )
-      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(true)
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
 
       val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.arr()
+    }
+
+    "return OK with the versions if more than one versions are present" in {
+
+
+      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(Seq(version1, version2))
     }
 
     "throw BadRequestException when PSTR is not present in the header" in {
@@ -278,6 +287,37 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         response.getMessage mustBe "Generic Exception"
       }
     }
+  }
+
+  "getIsChargeNonZero" must {
+
+    "return true when a charge is zeroed out" in {
+
+      val controller = application.injector.instanceOf[AFTController]
+
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+        Future.successful(etmpAFTDetailsResponse))
+
+      val result = controller.getIsChargeNonZero()(fakeRequestForGetDetails)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe JsBoolean(true)
+    }
+
+    "return false when a charge has positive value" in {
+
+      val controller = application.injector.instanceOf[AFTController]
+
+      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+        Future.successful(etmpAFTDetailsResponse))
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
+
+      val result = controller.getIsChargeNonZero()(fakeRequestForGetDetails)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe JsBoolean(false)
+    }
+
   }
 
   "getOverview" must {

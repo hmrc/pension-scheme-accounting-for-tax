@@ -30,14 +30,14 @@ class AFTServiceSpec extends WordSpec with MustMatchers {
       .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
       s"return true where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of zero AND NO OTHER CHARGES" in {
-        aftService.isOnlyOneChargeWithOneMemberAndNoValue(
+        aftService.isChargeZeroedOut(
           createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))) mustBe true
 
       }
 
       s"return false where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of non-zero AND NO OTHER CHARGES" in {
-        aftService.isOnlyOneChargeWithOneMemberAndNoValue(
+        aftService.isChargeZeroedOut(
               createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))) mustBe false
 
       }
@@ -50,7 +50,7 @@ class AFTServiceSpec extends WordSpec with MustMatchers {
         s"return false where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
           s"value of zero BUT also a value in another non-member-based charge (${nonMemberBasedChargeNames(nonMemberBasedChargeSectionIndex)}})" in {
 
-          val result = aftService.isOnlyOneChargeWithOneMemberAndNoValue(
+          val result = aftService.isChargeZeroedOut(
             createAFTDetailsResponse(createChargeSection(zeroCurrencyValue) ++ chargeSectionWithValue(nonMemberBasedChargeSection, nonZeroCurrencyValue)))
           result mustBe false
         }

@@ -3,6 +3,7 @@
 POST         /aft-file-return                       controllers.AFTController.fileReturn
 
 GET         /get-aft-details                       controllers.AFTController.getDetails
+GET         /get-is-aft-non-zero                   controllers.AFTController.getDetails
 
 GET         /get-aft-versions                       controllers.AFTController.getVersions
 
