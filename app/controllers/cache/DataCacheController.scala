@@ -79,7 +79,7 @@ class DataCacheController @Inject()(
           Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
           response match {
             case None => NotFound
-            case Some(name) => Ok(Json.toJson(name))
+            case Some(name) => Ok(name)
           }
         }
       }

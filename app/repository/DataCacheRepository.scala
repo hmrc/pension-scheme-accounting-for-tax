@@ -80,7 +80,6 @@ class DataCacheRepository @Inject()(
     )
   }
 
-  // TODO: Don't overwrite session data - it may not be - test it!!
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.debug("Calling Save in AFT Cache")
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
@@ -90,7 +89,6 @@ class DataCacheRepository @Inject()(
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
   }
 
-  // TODO: if locking then check if already locked to someone else and if so throw exception
   def setSessionData(id: String, name: Option[String], userData: JsValue, sessionId: String,
                      version: Int, accessMode: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.debug("Calling setSessionData in AFT Cache")
@@ -116,7 +114,6 @@ class DataCacheRepository @Inject()(
             dc.sessionData.map(_ copy (name = lockedBy))
           }
       }
-
   }
 
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
