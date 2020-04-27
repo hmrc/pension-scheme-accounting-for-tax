@@ -73,14 +73,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
     overrides(modules: _*).build()
 
-  private def controllerForGetAftVersions: AFTController = {
-
-    val controller = application.injector.instanceOf[AFTController]
-    when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-      Future.successful(versions))
-    controller
-  }
-
   before {
     reset(mockDesConnector)
     reset(mockAftService)
@@ -92,7 +84,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     "return OK when valid response from DES" in {
 
       val controller = application.injector.instanceOf[AFTController]
-      val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
 
       when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
@@ -118,7 +109,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     "return OK when valid response from DES for payload with only one member based charge and zero value" in {
 
       val controller = application.injector.instanceOf[AFTController]
-      val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
       val jsonPayload = jsonOneMemberZeroValue
 
       when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
