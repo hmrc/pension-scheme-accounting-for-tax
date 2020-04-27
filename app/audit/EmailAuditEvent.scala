@@ -19,10 +19,10 @@ package audit
 import models.Event
 import models.enumeration.JourneyType
 
-case class EmailAuditEvent(psaId: String, pstr: String, event: Event, journeyType: JourneyType.Name) extends AuditEvent {
+case class EmailAuditEvent(psaId: String, event: Event, journeyType: JourneyType.Name) extends AuditEvent {
 
   override def auditType: String = s"${journeyType.toString}EmailEvent"
 
-  override def details: Map[String, String] = Map("psaId" -> psaId, "pstr" -> pstr, "event" -> event.toString)
+  override def details: Map[String, String] = Map("psaId" -> psaId, "event" -> event.toString)
 
 }

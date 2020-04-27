@@ -26,14 +26,12 @@ class EmailAuditEventSpec extends FlatSpec with Matchers {
 
     val event = EmailAuditEvent(
       psaId = "A2500001",
-      pstr = "12345678AB",
       event = Sent,
       journeyType = AFT_RETURN
     )
 
     val expected: Map[String, String] = Map(
       "psaId" -> "A2500001",
-      "pstr" -> "12345678AB",
       "event" -> Sent.toString
     )
 
