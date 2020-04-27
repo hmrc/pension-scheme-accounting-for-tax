@@ -18,6 +18,7 @@ package controllers.cache
 
 import akka.util.ByteString
 import org.apache.commons.lang3.RandomUtils
+import org.mockito.Matchers
 import org.mockito.Matchers.{eq => eqTo, _}
 import org.mockito.Mockito.{reset, when}
 import org.scalatest.{BeforeAndAfter, MustMatchers, WordSpec}
@@ -28,6 +29,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository.DataCacheRepository
+import repository.model.SessionData
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.BadRequestException
@@ -170,18 +172,21 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       }
     }
 
-    "calling getLock" must {
+    "calling getSessionData" must {
       "return OK with locked by user name" in {
         val app = new GuiceApplicationBuilder()
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
+
+        val sd = SessionData("id", Some("test name"), 1, "")
+
         val controller = app.injector.instanceOf[DataCacheController]
-        when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(Some("test name"))
+        when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(Some(sd))
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
         val result = controller.getSessionData(fakeRequest)
         status(result) mustEqual OK
-        contentAsString(result) mustEqual "test name"
+        contentAsJson(result) mustEqual Json.toJson(sd)
       }
 
       "return Not Found when it is not locked" in {
@@ -201,14 +206,24 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
   "calling setSessionData" must {
 
     "return OK when the data is saved successfully" in {
+      val accessMode = "compile"
+      val version = 1
       val app = new GuiceApplicationBuilder()
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.setSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.setSessionData(Matchers.eq(id),
+        Matchers.eq(Some("test name")), any(), any(),
+        Matchers.eq(version), Matchers.eq(accessMode))(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-      val result = controller.lockAndSetSessionData()(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
+      val result = controller.setSessionData(true)(fakePostRequest
+        .withJsonBody(Json.obj("value" -> "data"))
+          .withHeaders(
+            "version" -> version.toString,
+            "accessMode" -> accessMode
+          )
+      )
       status(result) mustEqual CREATED
     }
 
@@ -217,10 +232,11 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.setSessionData(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.setSessionData(any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-      val result = controller.lockAndSetSessionData()(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+      val result = controller
+        .setSessionData(true)(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
       status(result) mustEqual BAD_REQUEST
     }
   }
