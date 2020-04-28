@@ -10,6 +10,7 @@ GET         /get-aft-overview                       controllers.AFTController.ge
 
 GET         /journey-cache/aft/lock                 controllers.cache.DataCacheController.getLock
 POST        /journey-cache/aft/lock                 controllers.cache.DataCacheController.setLock
+DELETE      /journey-cache/aft/lock                 controllers.cache.DataCacheController.releaseLockWithSessionId
 GET         /journey-cache/aft                      controllers.cache.DataCacheController.get
 POST        /journey-cache/aft                      controllers.cache.DataCacheController.save
 DELETE      /journey-cache/aft                      controllers.cache.DataCacheController.remove

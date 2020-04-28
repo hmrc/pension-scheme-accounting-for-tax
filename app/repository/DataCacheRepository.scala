@@ -108,6 +108,12 @@ class DataCacheRepository @Inject()(
     collection.delete.one(selector).map(_.ok)
   }
 
+  def removeWithSessionId(sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+    Logger.warn(message = s"Removing all rows with session id:$sessionId")
+    val selector = BSONDocument("lockedBy.sessionId" -> sessionId)
+    collection.delete.one(selector).map(_.ok)
+  }
+
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     Logger.debug("Calling lockedBy in AFT Cache")
     collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).

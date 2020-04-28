@@ -30,13 +30,15 @@ import play.api.test.Helpers._
 import repository.DataCacheRepository
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.retrieve.Name
-import uk.gov.hmrc.http.BadRequestException
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
 
 import scala.concurrent.Future
 
 class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfter {
 
   import DataCacheController._
+
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val repo = mock[DataCacheRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
@@ -222,6 +224,32 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
 
       val result = controller.setLock()(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
       status(result) mustEqual BAD_REQUEST
+    }
+  }
+
+  "calling releaseLockWithSessionId" must {
+
+    "return OK when the data is removed successfully" in {
+      val app = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+        .overrides(modules: _*).build()
+      val controller = app.injector.instanceOf[DataCacheController]
+      when(repo.removeWithSessionId(any())(any())) thenReturn Future.successful(true)
+      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+
+      val result = controller.releaseLockWithSessionId(fakeRequest)
+      status(result) mustEqual OK
+    }
+
+    "throw an exception when the call is not authorised" in {
+      val app = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+        .overrides(modules: _*).build()
+      val controller = app.injector.instanceOf[DataCacheController]
+      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
+
+      val result = controller.releaseLockWithSessionId(fakeRequest)
+      an[CredNameNotFoundFromAuth] must be thrownBy status(result)
     }
   }
 
