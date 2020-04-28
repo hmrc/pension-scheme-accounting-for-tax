@@ -38,7 +38,7 @@ import scala.concurrent.Future
 
 class DataCacheController @Inject()(
                                      config: Configuration,
-                                     repo: DataCacheRepository,
+                                     repository: DataCacheRepository,
                                      val authConnector: AuthConnector,
                                      cc: ControllerComponents
                                    ) extends BackendController(cc) with AuthorisedFunctions {
@@ -51,7 +51,7 @@ class DataCacheController @Inject()(
         request.body.asJson.map {
           jsValue =>
 
-            repo.save(id, jsValue, sessionId)
+            repository.save(id, jsValue, sessionId)
               .map(_ => Created)
         } getOrElse Future.successful(BadRequest)
       }
@@ -64,7 +64,7 @@ class DataCacheController @Inject()(
           jsValue => {
             (request.headers.get("version"), request.headers.get("accessMode")) match {
               case (Some(version), Some(accessMode)) =>
-                repo.setSessionData(id, if (lock) Some(name) else None, jsValue, sessionId, version.toInt, accessMode).map(_ => Created)
+                repository.setSessionData(id, if (lock) Some(name) else None, jsValue, sessionId, version.toInt, accessMode).map(_ => Created)
               case _ => Future.successful(BadRequest("Version and/or access mode not present in request header"))
             }
           }
@@ -75,7 +75,7 @@ class DataCacheController @Inject()(
   def lockedBy: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
-        repo.lockedBy(sessionId, id).map { response =>
+        repository.lockedBy(sessionId, id).map { response =>
           Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
           response match {
             case None => NotFound
@@ -88,7 +88,7 @@ class DataCacheController @Inject()(
   def getSessionData: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
-        repo.getSessionData(sessionId, id).map { response =>
+        repository.getSessionData(sessionId, id).map { response =>
           Logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
           response match {
             case None => NotFound
@@ -101,7 +101,7 @@ class DataCacheController @Inject()(
   def get: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { (sessionId, id, _) =>
-        repo.get(id, sessionId).map { response =>
+        repository.get(id, sessionId).map { response =>
           Logger.debug(message = s"DataCacheController.get: Response for request Id $id is $response")
           response.map {
             Ok(_)
@@ -113,7 +113,7 @@ class DataCacheController @Inject()(
   def remove: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { (sessionId, id, _) =>
-        repo.remove(id, sessionId).map(_ => Ok)
+        repository.remove(id, sessionId).map(_ => Ok)
       }
   }
 
