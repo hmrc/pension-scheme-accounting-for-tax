@@ -49,15 +49,19 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |    "endDate": "2019-03-31"
       |  },
       |  "chargeADetails": {
-      |    "numberOfMembers": 2,
-      |    "totalAmtOfTaxDueAtLowerRate": 200.02,
-      |    "totalAmtOfTaxDueAtHigherRate": 200.02,
-      |    "totalAmount": 200.02,
+      |    "chargeDetails": {
+      |      "numberOfMembers": 2,
+      |      "totalAmtOfTaxDueAtLowerRate": 200.02,
+      |      "totalAmtOfTaxDueAtHigherRate": 200.02,
+      |      "totalAmount": 200.02
+      |    },
       |    "amendedVersion": 1
       |  },
       |  "chargeBDetails": {
-      |    "numberOfDeceased": 2,
-      |    "amountTaxDue": 100.02,
+      |    "chargeDetails": {
+      |      "numberOfDeceased": 2,
+      |      "amountTaxDue": 100.02
+      |    },
       |    "amendedVersion": 1
       |  },
       |  "chargeCDetails": {
@@ -133,9 +137,11 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |    "amendedVersion": 1
       |  },
       |  "chargeFDetails": {
-      |    "amendedVersion": 1,
-      |    "amountTaxDue": 200.02,
-      |    "deRegistrationDate": "1980-02-29"
+      |    "chargeDetails": {
+      |      "amountTaxDue": 200.02,
+      |      "deRegistrationDate": "1980-02-29"
+      |    },
+      |    "amendedVersion": 1
       |  },
       |  "chargeGDetails": {
       |    "members": [
