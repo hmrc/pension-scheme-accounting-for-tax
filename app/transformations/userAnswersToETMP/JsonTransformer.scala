@@ -43,8 +43,11 @@ trait JsonTransformer {
 
   private def filterDeleted(jsValueSeq: Seq[JsValue], isDeletedPath: String): Seq[JsValue] = {
     jsValueSeq.filterNot { json =>
-      (json \ isDeletedPath \ "isDeleted").validate[Boolean] match {
-        case JsSuccess(e, _) => e
+      val isDeleted = json \ isDeletedPath \ "isDeleted"
+      val memberStatus = json \ "memberStatus"
+
+      (isDeleted.validate[Boolean], memberStatus.validate[String]) match {
+        case (JsSuccess(e, _), JsSuccess(status, _)) if status != "Deleted" => e
         case _ => false
       }
     }

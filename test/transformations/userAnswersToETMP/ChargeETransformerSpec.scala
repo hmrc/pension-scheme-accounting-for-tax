@@ -25,15 +25,16 @@ class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
   private def etmpMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ i
 
   private def uaMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeEDetails" \ "members" \ i
-  
+
   private val transformer = new ChargeETransformer
 
   "A Charge E Transformer" - {
-    "must transform mandatory elements of ChargeEDetails from UserAnswers to ETMP ChargeEDetails" in {
+    "must filter out the members with memberStatus not Deleted and isDeleted flag is true," +
+      "also transform all elements of ChargeEDetails from UserAnswers to ETMP" in {
       forAll(chargeEUserAnswersGenerator) {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
-          
+
           (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "firstName").as[String] mustBe
             (uaMemberPath(userAnswersJson, 0) \ "memberDetails" \ "firstName").as[String]
           (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "lastName").as[String] mustBe
@@ -53,19 +54,19 @@ class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
             (if ((uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean]) "Yes" else "No")
           (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String]
 
-          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe "New"
-          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").asOpt[Int] mustBe None
+          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "memberStatus").as[String]
+          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").as[Int] mustBe (uaMemberPath(userAnswersJson, 0) \ "memberAFTVersion").as[Int]
 
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal] mustBe
             (userAnswersJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal]
 
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "amendedVersion").asOpt[Int] mustBe None
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
+          (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 6
       }
     }
 
-    "must transform optional element - amendedVersion, memberStatus and memberAFTVersion of ChargeEDetails from UserAnswers to ETMP" in {
+    "must transform optional elements - amendedVersion, memberStatus and memberAFTVersion of ChargeEDetails from UserAnswers to ETMP" in {
       forAll(chargeEUserAnswersGenerator, arbitrary[Int], arbitrary[String]) {
         (userAnswersJson, version, status) =>
 
@@ -75,8 +76,7 @@ class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
             ) andThen
               (__ \ 'members).json.update(
                 __.read[JsArray].map {
-                  case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] ++
-                    Json.obj("memberAFTVersion" -> version) ++ Json.obj("memberStatus" -> status)))
+                  case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] - "memberAFTVersion" - "memberStatus") ++ arr.tail)
                 })
           )
           val updatedJson = userAnswersJson.transform(jsonTransformer).asOpt.value
@@ -85,11 +85,9 @@ class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "amendedVersion").as[Int] mustBe
             (updatedJson \ "chargeEDetails" \ "amendedVersion").as[Int]
 
-          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe
-            (uaMemberPath(updatedJson, 0) \ "memberStatus").as[String]
+          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe "New"
 
-          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").as[Int] mustBe
-            (uaMemberPath(updatedJson, 0) \ "memberAFTVersion").as[Int]
+          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").asOpt[Int] mustBe None
       }
     }
   }

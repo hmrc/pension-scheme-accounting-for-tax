@@ -25,11 +25,12 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
   private def etmpMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ i
 
   private def uaMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeGDetails" \ "members" \ i
-  
+
   private val transformer = new ChargeGTransformer
 
   "A ChargeG Transformer" - {
-    "must transform mandatory elements of ChargeGDetails from UserAnswers to ETMP ChargeGDetails" in {
+    "must filter out the members with memberStatus not Deleted and isDeleted flag is true," +
+      "also transform all elements of ChargeEDetails from UserAnswers to ETMP" in {
       forAll(chargeGUserAnswersGenerator) {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
@@ -55,19 +56,23 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (etmpMemberPath(transformedJson, 0) \ "amountOfTaxDeducted").as[BigDecimal] mustBe
             (uaMemberPath(userAnswersJson, 0) \ "chargeAmounts" \ "amountTaxDue").as[BigDecimal]
 
-          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe "New"
-          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").asOpt[Int] mustBe None
+          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe
+            (uaMemberPath(userAnswersJson, 0) \ "memberStatus").as[String]
+
+          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").as[Int] mustBe
+            (uaMemberPath(userAnswersJson, 0) \ "memberAFTVersion").as[Int]
 
           (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "totalAmount").as[BigDecimal] mustBe
             (userAnswersJson \ "chargeGDetails" \ "totalChargeAmount").as[BigDecimal]
 
           (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "amendedVersion").asOpt[Int] mustBe None
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
+          (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 7
       }
     }
 
-    "must transform optional element - amendedVersion of ChargeGDetails from UserAnswers to ETMP ChargeGDetails" in {
+    "must transform optional element - amendedVersion, memberStatus and memberAFTVersion of" +
+      "ChargeGDetails from UserAnswers to ETMP ChargeGDetails" in {
       forAll(chargeGUserAnswersGenerator, arbitrary[Int], arbitrary[String]) {
         (userAnswersJson, version, status) =>
 
@@ -77,8 +82,7 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
             ) andThen
               (__ \ 'members).json.update(
                 __.read[JsArray].map {
-                  case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] ++
-                    Json.obj("memberAFTVersion" -> version) ++ Json.obj("memberStatus" -> status)))
+                  case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] - "memberAFTVersion" - "memberStatus") ++ arr.tail)
                 })
           )
           val updatedJson = userAnswersJson.transform(jsonTransformer).asOpt.value
@@ -87,11 +91,9 @@ class ChargeGTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (transformedJson \ "chargeDetails" \ "chargeTypeGDetails" \ "amendedVersion").as[Int] mustBe
             (updatedJson \ "chargeGDetails" \ "amendedVersion").as[Int]
 
-          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe
-            (uaMemberPath(updatedJson, 0) \ "memberStatus").as[String]
+          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe "New"
 
-          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").as[Int] mustBe
-            (uaMemberPath(updatedJson, 0) \ "memberAFTVersion").as[Int]
+          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").asOpt[Int] mustBe None
       }
     }
   }
