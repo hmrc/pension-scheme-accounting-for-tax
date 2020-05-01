@@ -18,6 +18,7 @@ package controllers.cache
 
 import akka.util.ByteString
 import org.apache.commons.lang3.RandomUtils
+import org.mockito.Matchers
 import org.mockito.Matchers.{eq => eqTo, _}
 import org.mockito.Mockito.{reset, when}
 import org.scalatest.{BeforeAndAfter, MustMatchers, WordSpec}
@@ -28,6 +29,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository.DataCacheRepository
+import repository.model.SessionData
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.http.BadRequestException
@@ -170,18 +172,21 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       }
     }
 
-    "calling getLock" must {
+    "calling getSessionData" must {
       "return OK with locked by user name" in {
         val app = new GuiceApplicationBuilder()
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
+
+        val sd = SessionData("id", Some("test name"), 1, "")
+
         val controller = app.injector.instanceOf[DataCacheController]
-        when(repo.lockedBy(any(), any())(any())) thenReturn Future.successful(Some("test name"))
+        when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(Some(sd))
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.getLock(fakeRequest)
+        val result = controller.getSessionData(fakeRequest)
         status(result) mustEqual OK
-        contentAsString(result) mustEqual "test name"
+        contentAsJson(result) mustEqual Json.toJson(sd)
       }
 
       "return Not Found when it is not locked" in {
@@ -189,27 +194,54 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[DataCacheController]
-        when(repo.lockedBy(any(), any())(any())) thenReturn Future.successful(None)
+        when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(None)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.getLock(fakeRequest)
+        val result = controller.getSessionData(fakeRequest)
         status(result) mustEqual NOT_FOUND
       }
     }
   }
 
-  "calling setLock" must {
-
+  "calling setSessionData" must {
     "return OK when the data is saved successfully" in {
+      val accessMode = "compile"
+      val version = 1
       val app = new GuiceApplicationBuilder()
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.setLock(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.setSessionData(Matchers.eq(id),
+        Matchers.eq(Some("test name")), any(), any(),
+        Matchers.eq(version), Matchers.eq(accessMode))(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-      val result = controller.setLock()(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
+      val result = controller.setSessionData(true)(fakePostRequest
+        .withJsonBody(Json.obj("value" -> "data"))
+          .withHeaders(
+            "version" -> version.toString,
+            "accessMode" -> accessMode
+          )
+      )
       status(result) mustEqual CREATED
+    }
+
+    "return BAD REQUEST when header data is missing" in {
+      val accessMode = "compile"
+      val version = 1
+      val app = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+        .overrides(modules: _*).build()
+      val controller = app.injector.instanceOf[DataCacheController]
+      when(repo.setSessionData(Matchers.eq(id),
+        Matchers.eq(Some("test name")), any(), any(),
+        Matchers.eq(version), Matchers.eq(accessMode))(any())) thenReturn Future.successful(true)
+      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+
+      val result = controller.setSessionData(true)(fakePostRequest
+        .withJsonBody(Json.obj("value" -> "data"))
+      )
+      status(result) mustEqual BAD_REQUEST
     }
 
     "return BAD REQUEST when the request body cannot be parsed" in {
@@ -217,12 +249,45 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.setLock(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.setSessionData(any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-      val result = controller.setLock()(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+      val result = controller
+        .setSessionData(true)(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
       status(result) mustEqual BAD_REQUEST
     }
+  }
+
+
+
+
+  "calling lockedBy" must {
+    "return OK when the data is retrieved" in {
+      val lockedByUser = "bob"
+      val app = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+        .overrides(modules: _*).build()
+      val controller = app.injector.instanceOf[DataCacheController]
+      when(repo.lockedBy(any(), any())(any())).thenReturn(Future.successful(Some(lockedByUser)))
+      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+
+      val result = controller.lockedBy()(fakeRequest)
+      status(result) mustEqual OK
+      contentAsString(result) mustBe lockedByUser
+    }
+
+    "return NOT FOUND when not locked" in {
+      val app = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+        .overrides(modules: _*).build()
+      val controller = app.injector.instanceOf[DataCacheController]
+      when(repo.lockedBy(any(), any())(any())).thenReturn(Future.successful(None))
+      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+
+      val result = controller.lockedBy()(fakeRequest)
+      status(result) mustEqual NOT_FOUND
+    }
+
   }
 
 }
