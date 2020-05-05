@@ -22,23 +22,41 @@ import play.api.libs.json.{JsObject, Json}
 class AFTServiceSpec extends WordSpec with MustMatchers {
 
   import AFTServiceSpec._
+
   val aftService = new AFTService
 
-  "isOnlyOneChargeWithOneMemberAndNoValue" must {
+  "isOnlyOneChargeWithNoValue" must {
 
     memberBasedChargeCreationFunctions
       .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
       s"return true where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of zero AND NO OTHER CHARGES" in {
-        aftService.isOnlyOneChargeWithOneMemberAndNoValue(
+        aftService.isOnlyOneChargeWithNoValue(
           createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))) mustBe true
 
       }
 
       s"return false where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of non-zero AND NO OTHER CHARGES" in {
-        aftService.isOnlyOneChargeWithOneMemberAndNoValue(
-              createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))) mustBe false
+        aftService.isOnlyOneChargeWithNoValue(
+          createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))) mustBe false
+
+      }
+    }
+
+    schemeLevelChargeCreationFunctions
+      .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
+      s"return true where there is a charge of type ${nonMemberBasedChargeNames(chargeSectionIndex)} with a " +
+        s"value of zero AND NO OTHER CHARGES" in {
+        aftService.isOnlyOneChargeWithNoValue(
+          createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))) mustBe true
+
+      }
+
+      s"return false where there is a charge of type ${nonMemberBasedChargeNames(chargeSectionIndex)} with a " +
+        s"value of non-zero AND NO OTHER CHARGES" in {
+        aftService.isOnlyOneChargeWithNoValue(
+          createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))) mustBe false
 
       }
     }
@@ -50,12 +68,26 @@ class AFTServiceSpec extends WordSpec with MustMatchers {
         s"return false where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
           s"value of zero BUT also a value in another non-member-based charge (${nonMemberBasedChargeNames(nonMemberBasedChargeSectionIndex)}})" in {
 
-          val result = aftService.isOnlyOneChargeWithOneMemberAndNoValue(
+          val result = aftService.isOnlyOneChargeWithNoValue(
             createAFTDetailsResponse(createChargeSection(zeroCurrencyValue) ++ chargeSectionWithValue(nonMemberBasedChargeSection, nonZeroCurrencyValue)))
           result mustBe false
         }
       }
-   }
+    }
+
+    memberBasedChargeCreationFunctions
+      .zipWithIndex.foreach { case (memberBasedChargeSection, nonMemberBasedChargeSectionIndex) =>
+      schemeLevelChargeCreationFunctions
+        .zipWithIndex.foreach { case (createChargeSection, chargeSectionIndex) =>
+        s"return false where there is a charge of type ${nonMemberBasedChargeNames(chargeSectionIndex)} with a " +
+          s"value of zero BUT also a value in another member-based charge (${memberBasedChargeNames(nonMemberBasedChargeSectionIndex)}})" in {
+
+          val result = aftService.isOnlyOneChargeWithNoValue(
+            createAFTDetailsResponse(createChargeSection(zeroCurrencyValue) ++ memberBasedChargeSection(nonZeroCurrencyValue)))
+          result mustBe false
+        }
+      }
+    }
   }
 
 }
@@ -72,9 +104,16 @@ object AFTServiceSpec {
     chargeGSectionWithValue _
   )
 
+  private val schemeLevelChargeCreationFunctions = Seq(
+    chargeASectionWithValue _,
+    chargeBSectionWithValue _,
+    chargeFSectionWithValue _
+  )
   private val nonMemberBasedChargeSections = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
+  private val memberBasedChargeSections = Seq("chargeTypeCDetails", "chargeTypeDDetails", "chargeTypeEDetails", "chargeTypeGDetails")
   private val nonMemberBasedChargeNames = Seq("A", "B", "F")
   private val memberBasedChargeNames = Seq("C", "D", "E", "G")
+
   private def chargeSectionWithValue(section: String, currencyValue: BigDecimal): JsObject =
     Json.obj(
       section -> Json.obj(
@@ -84,6 +123,32 @@ object AFTServiceSpec {
 
   private def createAFTDetailsResponse(chargeSection: JsObject): JsObject = Json.obj(
     "chargeDetails" -> chargeSection
+  )
+
+  private def chargeASectionWithValue(currencyValue: BigDecimal): JsObject = Json.obj(
+    "chargeTypeADetails" -> Json.obj(
+      "amendedVersion" -> 1,
+      "numberOfMembers" -> 2,
+      "totalAmtOfTaxDueAtLowerRate" -> currencyValue,
+      "totalAmtOfTaxDueAtHigherRate" -> currencyValue,
+      "totalAmount" -> currencyValue
+    )
+  )
+
+  private def chargeBSectionWithValue(currencyValue: BigDecimal): JsObject = Json.obj(
+    "chargeTypeBDetails" -> Json.obj(
+      "amendedVersion" -> 1,
+      "numberOfMembers" -> 2,
+      "totalAmount" -> currencyValue
+    )
+  )
+
+  private def chargeFSectionWithValue(currencyValue: BigDecimal): JsObject = Json.obj(
+    "chargeTypeBDetails" -> Json.obj(
+      "amendedVersion" -> 1,
+      "totalAmount" -> currencyValue,
+      "dateRegiWithdrawn" -> "1980-02-29"
+    )
   )
 
   private def chargeCSectionWithValue(currencyValue: BigDecimal): JsObject = Json.obj(
