@@ -94,7 +94,7 @@ class AFTController @Inject()(appConfig: AppConfig,
               version =>
                 desConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map {
                   jsValue =>
-                    if (aftService.isOnlyOneChargeWithOneMemberAndNoValue(jsValue)) Seq[AFTVersion]() else Seq(version)
+                    if (aftService.isOnlyOneChargeWithNoValue(jsValue)) Seq[AFTVersion]() else Seq(version)
                 }
             }
             Future.sequence(versionsWithNoValueAndOnlyOneMemberRemoved).map {

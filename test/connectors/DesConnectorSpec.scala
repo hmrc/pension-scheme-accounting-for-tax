@@ -84,7 +84,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok
           )
       )
-      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
+      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(false)
 
       connector.fileAFTReturn(pstr, data) map {
         _.status mustBe OK
@@ -102,7 +102,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok.withBody(Json.stringify(successResponse))
           )
       )
-      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
+      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       connector.fileAFTReturn(pstr, data).map { response =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
@@ -111,7 +111,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     }
 
 
-    "send the FileAFTReturnOneChargeAndMemberNoValue audit event when ETMP has returned OK and true passed into method" in {
+    "send the FileAFTReturnOneChargeAndNoValue audit event when ETMP has returned OK and true passed into method" in {
       Mockito.reset(mockAuditService)
       val data = Json.obj(fields = "Id" -> "value")
       val successResponse = Json.obj("response" -> "success")
@@ -122,11 +122,11 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok.withBody(Json.stringify(successResponse))
           )
       )
-      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(true)
+      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(true)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       connector.fileAFTReturn(pstr, data).map { _ =>
         verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustEqual FileAFTReturnOneChargeAndMemberNoValue(pstr, Status.OK, data, Some(successResponse))
+        eventCaptor.getValue mustEqual FileAFTReturnOneChargeAndNoValue(pstr, Status.OK, data, Some(successResponse))
       }
     }
 
@@ -139,7 +139,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             badRequest()
           )
       )
-      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
+      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(false)
       recoverToExceptionIf[BadRequestException] {
         connector.fileAFTReturn(pstr, data)
       } map {
@@ -208,7 +208,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             serverError()
           )
       )
-      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
+      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {_ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
