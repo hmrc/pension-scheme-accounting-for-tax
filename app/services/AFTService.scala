@@ -21,25 +21,35 @@ import play.api.libs.json.{JsArray, JsValue}
 class AFTService {
 
   def isChargeZeroedOut(jsValue: JsValue): Boolean = {
-    val areNoChargesWithValues: Boolean =
-      (jsValue \ "chargeDetails" \ "chargeTypeADetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeBDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeCDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeDDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue) &&
-        (jsValue \ "chargeDetails" \ "chargeTypeGDetails" \ "totalOTCAmount").toOption.flatMap(_.validate[BigDecimal].asOpt).forall(_ == zeroCurrencyValue)
+    val memberLevelCharges = Seq("chargeTypeCDetails", "chargeTypeDDetails", "chargeTypeEDetails", "chargeTypeGDetails")
+    val schemeLevelCharges = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
 
-    val isOnlyOneChargeWithOneMember: Boolean = Seq(
-        (jsValue \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1),
-        (jsValue \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1),
-        (jsValue \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1),
-        (jsValue \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1)
-      ).count(_ == true) <= 1
+    val allNonEmptyCharges: Seq[(Boolean, String)] =
+      (memberLevelCharges.map(chargeDetails => ((jsValue \ "chargeDetails"\ chargeDetails).isDefined, chargeDetails)) ++
+        schemeLevelCharges.map(chargeDetails => ((jsValue \ "chargeDetails" \ chargeDetails).isDefined, chargeDetails)))
+        .filter(_._1)
 
-    areNoChargesWithValues && isOnlyOneChargeWithOneMember
+    if (allNonEmptyCharges.size == 1) {
+      allNonEmptyCharges.headOption match {
+        case Some((_, "chargeTypeGDetails")) => onlyLastZeroAmountMemberG(chargeType = "chargeTypeGDetails", jsValue)
+        case Some((_, chargeType)) if memberLevelCharges.contains(chargeType) => onlyLastZeroAmountMember(chargeType, jsValue)
+        case Some((_, chargeType)) =>  (jsValue \ "chargeDetails" \ chargeType \ "totalAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
+        case _ => false
+      }
+    } else {
+      false
+    }
   }
 
   private val zeroCurrencyValue = BigDecimal(0.00)
 
+  private def onlyLastZeroAmountMemberG(chargeType: String, jsValue: JsValue): Boolean = {
+    (jsValue \ "chargeDetails" \ chargeType \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1) &&
+      (jsValue \ "chargeDetails" \ chargeType \ "totalOTCAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
+  }
+
+  private def onlyLastZeroAmountMember(chargeType: String, jsValue: JsValue): Boolean = {
+    (jsValue \ "chargeDetails" \ chargeType \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1) &&
+      (jsValue \ "chargeDetails" \ chargeType \ "totalAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
+  }
 }

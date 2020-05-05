@@ -111,7 +111,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     }
 
 
-    "send the FileAFTReturnOneChargeAndMemberNoValue audit event when ETMP has returned OK and true passed into method" in {
+    "send the FileAFTReturnOneChargeAndNoValue audit event when ETMP has returned OK and true passed into method" in {
       Mockito.reset(mockAuditService)
       val data = Json.obj(fields = "Id" -> "value")
       val successResponse = Json.obj("response" -> "success")
@@ -126,7 +126,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       connector.fileAFTReturn(pstr, data).map { _ =>
         verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustEqual FileAFTReturnOneChargeAndMemberNoValue(pstr, Status.OK, data, Some(successResponse))
+        eventCaptor.getValue mustEqual FileAFTReturnOneChargeAndNoValue(pstr, Status.OK, data, Some(successResponse))
       }
     }
 

@@ -48,7 +48,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
     if (aftService.isChargeZeroedOut(data)) {
       http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data) andThen
-        fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValueAuditEvent(pstr, data)
+        fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, data)
     } else {
       http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data)

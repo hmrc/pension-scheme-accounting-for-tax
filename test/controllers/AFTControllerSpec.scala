@@ -19,17 +19,16 @@ package controllers
 import java.time.LocalDate
 
 import connectors.DesConnector
-import models.AFTOverview
-import models.AFTVersion
+import models.{AFTOverview, AFTVersion}
+import org.mockito.Matchers
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
-import org.mockito.{ArgumentCaptor, Matchers}
 import org.scalatest.{AsyncWordSpec, BeforeAndAfter, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
-import play.api.libs.json.{JsArray, JsBoolean, JsObject, JsValue, Json}
+import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import services.AFTService
@@ -50,14 +49,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val mockDesConnector = mock[DesConnector]
   private val mockAftService = mock[AFTService]
   private val authConnector: AuthConnector = mock[AuthConnector]
-
-  private val zeroCurrencyValue = BigDecimal(0.00)
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
-  private val nonMemberBasedChargeSections = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
-  private val nonMemberBasedChargeNames = Seq("A", "B", "F")
-
-  private val memberBasedChargeNames = Seq("C", "D", "E", "G")
   private val version1 = AFTVersion(1, LocalDate.now())
   private val version2 = AFTVersion(2, LocalDate.now())
   private val versions = Seq(version1, version2)
@@ -92,7 +85,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     "return OK when valid response from DES" in {
 
       val controller = application.injector.instanceOf[AFTController]
-      val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
 
       when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
@@ -118,7 +110,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     "return OK when valid response from DES for payload with only one member based charge and zero value" in {
 
       val controller = application.injector.instanceOf[AFTController]
-      val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
       val jsonPayload = jsonOneMemberZeroValue
 
       when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
@@ -408,9 +399,11 @@ object AFTControllerSpec {
     "pstr" -> "12345678AB",
     "schemeName" -> "PSTR Scheme",
     "chargeFDetails" -> Json.obj(
-       "amendedVersion" -> 1,
+      "chargeDetails" -> Json.obj(
       "amountTaxDue" -> 200.02,
       "deRegistrationDate" -> "1980-02-29"
+      ),
+      "amendedVersion" -> 1
     )
   )
 
@@ -473,12 +466,14 @@ object AFTControllerSpec {
     """{
       |  "aftStatus": "Compiled",
       |  "quarter": {
-      |       "startDate": "2019-01-01",
-      |       "endDate": "2019-03-31"
+      |    "startDate": "2019-01-01",
+      |    "endDate": "2019-03-31"
       |  },
       |  "chargeFDetails": {
-      |    "amountTaxDue": 200.02,
-      |    "deRegistrationDate": "1980-02-29"
+      |    "chargeDetails": {
+      |      "amountTaxDue": 200.02,
+      |      "deRegistrationDate": "1980-02-29"
+      |    }
       |  }
       |}""".stripMargin
   private val fileAFTUaRequestJson = Json.parse(json)

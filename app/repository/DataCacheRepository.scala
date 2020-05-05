@@ -17,18 +17,25 @@
 package repository
 
 import com.google.inject.Inject
-import org.joda.time.{DateTime, DateTimeZone}
+import org.joda.time.DateTime
+import org.joda.time.DateTimeZone
 import play.api.libs.json._
-import play.api.{Configuration, Logger}
+import play.api.Configuration
+import play.api.Logger
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.{Cursor, ReadPreference}
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import reactivemongo.api.Cursor
+import reactivemongo.api.ReadPreference
+import reactivemongo.api.indexes.Index
+import reactivemongo.api.indexes.IndexType
+import reactivemongo.bson.BSONDocument
+import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import repository.model.{DataCache, LockedBy}
+import repository.model.DataCache
+import repository.model.SessionData
 import uk.gov.hmrc.mongo.ReactiveRepository
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 class DataCacheRepository @Inject()(
                                      mongoComponent: ReactiveMongoComponent,
@@ -82,14 +89,44 @@ class DataCacheRepository @Inject()(
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
   }
 
-  def setLock(id: String, name: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    Logger.debug("Calling setLock in AFT Cache")
-    val document: JsValue = Json.toJson(DataCache.applyDataCache(
-      id = id, Some(LockedBy(sessionId, name)),
-      data = userData, expireAt = expireInSeconds))
+  def setSessionData(id: String, name: Option[String], userData: JsValue, sessionId: String,
+                     version: Int, accessMode: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+    Logger.debug("Calling setSessionData in AFT Cache")
+    val document: JsValue = Json.toJson(
+      DataCache.applyDataCache(
+        id = id,
+        Some(SessionData(sessionId, name, version, accessMode)),
+        data = userData, expireAt = expireInSeconds
+      )
+    )
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     val modifier = BSONDocument("$set" -> document)
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
+  }
+
+  def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
+    Logger.debug("Calling getSessionData in AFT Cache")
+    collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[DataCache]
+      .flatMap {
+        case None => Future.successful(None)
+        case Some(dc) =>
+          lockedBy(sessionId, id).map { lockedBy =>
+            dc.sessionData.map(_ copy (name = lockedBy))
+          }
+      }
+  }
+
+  def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+    Logger.debug("Calling lockedBy in AFT Cache")
+    val documentsForReturnAndQuarter = collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
+      cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]())
+
+    documentsForReturnAndQuarter.map {
+      _.find(_.sessionData.exists(sd => sd.name.isDefined && sd.sessionId != sessionId))
+        .flatMap {
+          _.sessionData.flatMap(_.name)
+        }
+    }
   }
 
   def get(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
@@ -106,19 +143,5 @@ class DataCacheRepository @Inject()(
     Logger.warn(message = s"Removing row from collection ${collection.name} id:$id")
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     collection.delete.one(selector).map(_.ok)
-  }
-
-  def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
-    Logger.debug("Calling lockedBy in AFT Cache")
-    collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
-      cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]()).map {
-      _.find(_.lockedBy.nonEmpty).flatMap { dataCache =>
-        Logger.debug(s"LockedBy : ${dataCache.lockedBy} for logged in session Id: ${sessionId}")
-        dataCache.lockedBy match {
-          case Some(lockedBy) if lockedBy.sessionId != sessionId => Some(lockedBy.name)
-          case _ => None
-        }
-      }
-    }
   }
 }

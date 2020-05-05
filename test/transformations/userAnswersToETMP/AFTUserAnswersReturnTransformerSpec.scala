@@ -48,14 +48,19 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    "endDate": "2019-03-31"
       |  },
       |  "chargeADetails": {
-      |    "numberOfMembers": 2,
-      |    "totalAmtOfTaxDueAtLowerRate": 200.02,
-      |    "totalAmtOfTaxDueAtHigherRate": 200.02,
-      |    "totalAmount": 200.02
+      |    "chargeDetails": {
+      |      "numberOfMembers": 2,
+      |      "totalAmtOfTaxDueAtLowerRate": 200.02,
+      |      "totalAmtOfTaxDueAtHigherRate": 200.02,
+      |      "totalAmount": 200.02
+      |    },
+      |    "amendedVersion": 2
       |  },
       |  "chargeBDetails": {
-      |    "numberOfDeceased": 4,
-      |    "amountTaxDue": 55.55
+      |    "chargeDetails": {
+      |      "numberOfDeceased": 4,
+      |      "amountTaxDue": 55.55
+      |    }
       |  },
       |  "chargeCDetails": {
       |    "employers": [
@@ -124,8 +129,10 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    "totalChargeAmount": 200.02
       |  },
       |  "chargeFDetails": {
-      |    "amountTaxDue": 200.02,
-      |    "deRegistrationDate": "1980-02-29"
+      |    "chargeDetails": {
+      |      "amountTaxDue": 200.02,
+      |      "deRegistrationDate": "1980-02-29"
+      |    }
       |  },
       |  "chargeGDetails": {
       |    "members": [
@@ -168,7 +175,8 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |      "numberOfMembers": 2,
       |      "totalAmtOfTaxDueAtLowerRate": 200.02,
       |      "totalAmtOfTaxDueAtHigherRate": 200.02,
-      |      "totalAmount": 200.02
+      |      "totalAmount": 200.02,
+      |      "amendedVersion": 2
       |    },
       |    "chargeTypeBDetails": {
       |      "numberOfMembers": 4,

@@ -31,10 +31,10 @@ class ChargeBTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           (transformedJson \ "chargeBDetails" \ "amendedVersion").as[Int] mustBe
             (etmpResponseJson \ "chargeTypeBDetails" \ "amendedVersion").as[Int]
 
-          (transformedJson \ "chargeBDetails" \ "numberOfDeceased").as[Int] mustBe
+          (transformedJson \ "chargeBDetails" \ "chargeDetails" \ "numberOfDeceased").as[Int] mustBe
             (etmpResponseJson \ "chargeTypeBDetails" \ "numberOfMembers").as[Int]
 
-          (transformedJson \ "chargeBDetails" \ "amountTaxDue").as[BigDecimal] mustBe
+          (transformedJson \ "chargeBDetails" \ "chargeDetails" \ "amountTaxDue").as[BigDecimal] mustBe
             (etmpResponseJson \ "chargeTypeBDetails" \ "totalAmount").as[BigDecimal]
       }
     }
