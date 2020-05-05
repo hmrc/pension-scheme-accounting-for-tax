@@ -117,6 +117,13 @@ class DataCacheController @Inject()(
       }
   }
 
+  def releaseLockWithSessionId: Action[AnyContent] = Action.async {
+    implicit request =>
+      getSessionId { sessionId =>
+        repository.removeWithSessionId(sessionId).map(_ => Ok)
+      }
+  }
+
   private def getIdWithName(block: (String, String, String) => Future[Result])
                            (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
@@ -124,6 +131,16 @@ class DataCacheController @Inject()(
         val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
         val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
         block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim)
+      case _ => Future.failed(CredNameNotFoundFromAuth())
+    }
+  }
+
+  private def getSessionId(block: (String) => Future[Result])
+                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
+      case Some(_) =>
+        val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
+        block(sessionId)
       case _ => Future.failed(CredNameNotFoundFromAuth())
     }
   }
