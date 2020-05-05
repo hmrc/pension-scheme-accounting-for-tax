@@ -30,10 +30,12 @@ class ChargeATransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           val chargeAResponse = etmpResponseJson \ "chargeTypeADetails"
 
           (transformedJson \ "amendedVersion").as[Int] mustBe (chargeAResponse \ "amendedVersion").as[Int]
-          (transformedJson \ "numberOfMembers").as[Int] mustBe (chargeAResponse \ "numberOfMembers").as[Int]
-          (transformedJson \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal] mustBe (chargeAResponse \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
-          (transformedJson \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal] mustBe (chargeAResponse \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
-          (transformedJson \ "totalAmount").as[BigDecimal] mustBe (chargeAResponse \ "totalAmount").as[BigDecimal]
+          (transformedJson \ "chargeDetails" \ "numberOfMembers").as[Int] mustBe (chargeAResponse \ "numberOfMembers").as[Int]
+          (transformedJson \ "chargeDetails" \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal] mustBe
+            (chargeAResponse \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
+          (transformedJson \ "chargeDetails" \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal] mustBe
+            (chargeAResponse \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
+          (transformedJson \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe (chargeAResponse \ "totalAmount").as[BigDecimal]
       }
     }
   }

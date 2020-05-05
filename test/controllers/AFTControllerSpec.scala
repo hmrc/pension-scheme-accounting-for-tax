@@ -358,9 +358,11 @@ object AFTControllerSpec {
     "pstr" -> "12345678AB",
     "schemeName" -> "PSTR Scheme",
     "chargeFDetails" -> Json.obj(
-       "amendedVersion" -> 1,
+      "chargeDetails" -> Json.obj(
       "amountTaxDue" -> 200.02,
       "deRegistrationDate" -> "1980-02-29"
+      ),
+      "amendedVersion" -> 1
     )
   )
 
@@ -423,12 +425,14 @@ object AFTControllerSpec {
     """{
       |  "aftStatus": "Compiled",
       |  "quarter": {
-      |       "startDate": "2019-01-01",
-      |       "endDate": "2019-03-31"
+      |    "startDate": "2019-01-01",
+      |    "endDate": "2019-03-31"
       |  },
       |  "chargeFDetails": {
-      |    "amountTaxDue": 200.02,
-      |    "deRegistrationDate": "1980-02-29"
+      |    "chargeDetails": {
+      |      "amountTaxDue": 200.02,
+      |      "deRegistrationDate": "1980-02-29"
+      |    }
       |  }
       |}""".stripMargin
   private val fileAFTUaRequestJson = Json.parse(json)

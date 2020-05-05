@@ -26,10 +26,10 @@ class ChargeATransformer {
     (__ \ 'chargeTypeADetails).readNullable {
     __.read(
       ((__ \ 'chargeADetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
-        (__ \ 'chargeADetails \ 'numberOfMembers).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
-        (__ \ 'chargeADetails \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'totalAmtOfTaxDueAtLowerRate).json.pick) and
-        (__ \ 'chargeADetails \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom((__ \ 'totalAmtOfTaxDueAtHigherRate).json.pick) and
-        (__ \ 'chargeADetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
+        (__ \ 'chargeADetails \ 'chargeDetails \ 'numberOfMembers).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
+        (__ \ 'chargeADetails \ 'chargeDetails \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'totalAmtOfTaxDueAtLowerRate).json.pick) and
+        (__ \ 'chargeADetails \ 'chargeDetails \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom((__ \ 'totalAmtOfTaxDueAtHigherRate).json.pick) and
+        (__ \ 'chargeADetails \ 'chargeDetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
     )
   }.map {
     _.getOrElse(Json.obj())

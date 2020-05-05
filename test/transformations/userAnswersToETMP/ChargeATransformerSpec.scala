@@ -33,15 +33,15 @@ class ChargeATransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          (etmpPath(transformedJson) \ "numberOfMembers").as[Int] mustBe (uaPath(userAnswersJson) \ "numberOfMembers").as[Int]
+          (etmpPath(transformedJson) \ "numberOfMembers").as[Int] mustBe (uaPath(userAnswersJson) \ "chargeDetails" \ "numberOfMembers").as[Int]
 
           (etmpPath(transformedJson) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal] mustBe
-            (uaPath(userAnswersJson) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
+            (uaPath(userAnswersJson) \ "chargeDetails" \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
 
           (etmpPath(transformedJson) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal] mustBe
-            (uaPath(userAnswersJson) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
+            (uaPath(userAnswersJson) \ "chargeDetails" \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
 
-          (etmpPath(transformedJson) \ "totalAmount").as[BigDecimal] mustBe (uaPath(userAnswersJson) \ "totalAmount").as[BigDecimal]
+          (etmpPath(transformedJson) \ "totalAmount").as[BigDecimal] mustBe (uaPath(userAnswersJson) \ "chargeDetails" \ "totalAmount").as[BigDecimal]
 
           (etmpPath(transformedJson) \ "amendedVersion").asOpt[Int] mustBe None
       }
