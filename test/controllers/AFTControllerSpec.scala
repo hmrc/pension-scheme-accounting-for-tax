@@ -73,14 +73,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
     overrides(modules: _*).build()
 
-  private def controllerForGetAftVersions: AFTController = {
-
-    val controller = application.injector.instanceOf[AFTController]
-    when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-      Future.successful(versions))
-    controller
-  }
-
   before {
     reset(mockDesConnector)
     reset(mockAftService)
@@ -92,7 +84,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     "return OK when valid response from DES" in {
 
       val controller = application.injector.instanceOf[AFTController]
-      val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
 
       when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
@@ -118,7 +109,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     "return OK when valid response from DES for payload with only one member based charge and zero value" in {
 
       val controller = application.injector.instanceOf[AFTController]
-      val eventCaptor = ArgumentCaptor.forClass(classOf[Boolean])
       val jsonPayload = jsonOneMemberZeroValue
 
       when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
@@ -139,7 +129,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
       )
-      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(false)
+      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(false)
 
       val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
@@ -156,7 +146,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
       )
-      when(mockAftService.isOnlyOneChargeWithOneMemberAndNoValue(any())).thenReturn(true)
+      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(true)
 
       val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
@@ -368,9 +358,11 @@ object AFTControllerSpec {
     "pstr" -> "12345678AB",
     "schemeName" -> "PSTR Scheme",
     "chargeFDetails" -> Json.obj(
-       "amendedVersion" -> 1,
+      "chargeDetails" -> Json.obj(
       "amountTaxDue" -> 200.02,
       "deRegistrationDate" -> "1980-02-29"
+      ),
+      "amendedVersion" -> 1
     )
   )
 
@@ -433,12 +425,14 @@ object AFTControllerSpec {
     """{
       |  "aftStatus": "Compiled",
       |  "quarter": {
-      |       "startDate": "2019-01-01",
-      |       "endDate": "2019-03-31"
+      |    "startDate": "2019-01-01",
+      |    "endDate": "2019-03-31"
       |  },
       |  "chargeFDetails": {
-      |    "amountTaxDue": 200.02,
-      |    "deRegistrationDate": "1980-02-29"
+      |    "chargeDetails": {
+      |      "amountTaxDue": 200.02,
+      |      "deRegistrationDate": "1980-02-29"
+      |    }
       |  }
       |}""".stripMargin
   private val fileAFTUaRequestJson = Json.parse(json)

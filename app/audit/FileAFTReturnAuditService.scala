@@ -37,14 +37,14 @@ class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
       auditService.sendEvent(FileAftReturn(pstr, error.responseCode, data, None))
   }
 
-  def sendFileAFTReturnWhereOnlyOneChargeWithOneMemberAndNoValueAuditEvent(pstr: String, data: JsValue)
-                                 (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[HttpResponse], Unit] = {
+  def sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr: String, data: JsValue)
+                                                              (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[HttpResponse], Unit] = {
     case Success(httpResponse) =>
-      auditService.sendEvent(FileAFTReturnOneChargeAndMemberNoValue(pstr, Status.OK, data, Some(httpResponse.json)))
+      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, Status.OK, data, Some(httpResponse.json)))
     case Failure(error: UpstreamErrorResponse) =>
-      auditService.sendEvent(FileAFTReturnOneChargeAndMemberNoValue(pstr, error.upstreamResponseCode, data, None))
+      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, error.upstreamResponseCode, data, None))
     case Failure(error: HttpException) =>
-      auditService.sendEvent(FileAFTReturnOneChargeAndMemberNoValue(pstr, error.responseCode, data, None))
+      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, error.responseCode, data, None))
   }
 }
 
@@ -71,13 +71,13 @@ case class FileAftReturn(
   )
 }
 
-case class FileAFTReturnOneChargeAndMemberNoValue(
+case class FileAFTReturnOneChargeAndNoValue(
                           pstr: String,
                           status: Int,
                           request: JsValue,
                           response: Option[JsValue]
                         ) extends AuditEvent {
-  override def auditType: String = "AftPostOneChargeAndMemberNoValue"
+  override def auditType: String = "AftPostOneChargeWithNoValue"
 
   override def details: Map[String, String] = Map(
     "pstr" -> pstr,

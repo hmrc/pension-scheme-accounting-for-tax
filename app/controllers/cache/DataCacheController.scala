@@ -17,12 +17,20 @@
 package controllers.cache
 
 import com.google.inject.Inject
+import play.api.libs.json.Json
 import play.api.mvc._
-import play.api.{Configuration, Logger}
+import play.api.Configuration
+import play.api.Logger
 import repository.DataCacheRepository
+import repository.model.SessionData
+import repository.model.SessionData._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
+import uk.gov.hmrc.auth.core.Enrolment
+import uk.gov.hmrc.http.BadRequestException
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.UnauthorizedException
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -49,15 +57,44 @@ class DataCacheController @Inject()(
       }
   }
 
-  def setLock(): Action[AnyContent] = Action.async {
+  def setSessionData(lock:Boolean): Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, name) =>
         request.body.asJson.map {
           jsValue => {
-            repository.setLock(id, name, jsValue, sessionId)
-              .map(_ => Created)
+            (request.headers.get("version"), request.headers.get("accessMode")) match {
+              case (Some(version), Some(accessMode)) =>
+                repository.setSessionData(id, if (lock) Some(name) else None, jsValue, sessionId, version.toInt, accessMode).map(_ => Created)
+              case _ => Future.successful(BadRequest("Version and/or access mode not present in request header"))
+            }
           }
         } getOrElse Future.successful(BadRequest)
+      }
+  }
+
+  def lockedBy: Action[AnyContent] = Action.async {
+    implicit request =>
+      getIdWithName { case (sessionId, id, _) =>
+        repository.lockedBy(sessionId, id).map { response =>
+          Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
+          response match {
+            case None => NotFound
+            case Some(name) => Ok(name)
+          }
+        }
+      }
+  }
+
+  def getSessionData: Action[AnyContent] = Action.async {
+    implicit request =>
+      getIdWithName { case (sessionId, id, _) =>
+        repository.getSessionData(sessionId, id).map { response =>
+          Logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
+          response match {
+            case None => NotFound
+            case Some(sd) => Ok(Json.toJson(sd))
+          }
+        }
       }
   }
 
@@ -77,18 +114,6 @@ class DataCacheController @Inject()(
     implicit request =>
       getIdWithName { (sessionId, id, _) =>
         repository.remove(id, sessionId).map(_ => Ok)
-      }
-  }
-
-  def getLock: Action[AnyContent] = Action.async {
-    implicit request =>
-      getIdWithName { case (sessionId, id, _) =>
-        repository.lockedBy(sessionId, id).map { response =>
-          Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
-          response.map {
-            Ok(_)
-          } getOrElse NotFound
-        }
       }
   }
 

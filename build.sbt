@@ -1,3 +1,4 @@
+import play.sbt.routes.RoutesKeys
 import scoverage.ScoverageKeys
 import uk.gov.hmrc.DefaultBuildSettings.integrationTestSettings
 import uk.gov.hmrc.SbtArtifactory
@@ -12,7 +13,10 @@ lazy val microservice = Project(appName, file("."))
     libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test
   )
   .settings(publishingSettings: _*)
-  .settings(PlayKeys.devSettings += "play.server.http.port" -> "8207")
+  .settings(
+    RoutesKeys.routesImport ++= Seq("models.enumeration.JourneyType"),
+    PlayKeys.devSettings += "play.server.http.port" -> "8207"
+  )
   .configs(IntegrationTest)
   .settings(integrationTestSettings(): _*)
   .settings(
