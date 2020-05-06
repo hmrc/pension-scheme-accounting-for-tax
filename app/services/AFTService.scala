@@ -20,7 +20,7 @@ import play.api.libs.json.{JsArray, JsValue}
 
 class AFTService {
 
-  def isOnlyOneChargeWithNoValue(jsValue: JsValue): Boolean = {
+  def isChargeZeroedOut(jsValue: JsValue): Boolean = {
     val memberLevelCharges = Seq("chargeTypeCDetails", "chargeTypeDDetails", "chargeTypeEDetails", "chargeTypeGDetails")
     val schemeLevelCharges = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
 
