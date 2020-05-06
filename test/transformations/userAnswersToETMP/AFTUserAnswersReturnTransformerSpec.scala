@@ -94,11 +94,28 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |    "numberOfMembers": 2,
       |    "members": [
       |      {
+      |        "memberStatus": "Deleted",
+      |        "memberAFTVersion": 1,
       |        "memberDetails": {
       |          "firstName": "firstName",
       |          "lastName": "lastName",
       |          "nino": "AC100100A",
-      |          "isDeleted": false
+      |          "isDeleted": true
+      |        },
+      |        "chargeDetails": {
+      |          "dateOfEvent": "2020-01-10",
+      |          "taxAt25Percent": 100,
+      |          "taxAt55Percent": 100.02
+      |        }
+      |      },
+      |      {
+      |        "memberStatus": "New",
+      |        "memberAFTVersion": 1,
+      |        "memberDetails": {
+      |          "firstName": "secondName",
+      |          "lastName": "lastName",
+      |          "nino": "AC100100A",
+      |          "isDeleted": true
       |        },
       |        "chargeDetails": {
       |          "dateOfEvent": "2020-01-10",
@@ -215,7 +232,8 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |      "totalAmount": 200.02,
       |      "memberDetails": [
       |        {
-      |          "memberStatus": "New",
+      |          "memberStatus": "Deleted",
+      |          "memberAFTVersion": 1,
       |          "individualsDetails": {
       |            "firstName": "firstName",
       |            "lastName": "lastName",

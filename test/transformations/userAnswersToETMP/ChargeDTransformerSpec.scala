@@ -27,7 +27,8 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
   private val transformer = new ChargeDTransformer
 
   "A Charge D Transformer" - {
-    "must transform mandatory elements of ChargeDDetails from UserAnswers to ETMP" in {
+    "must filter out the members with memberStatus not Deleted and isDeleted flag is true," +
+      "also transform mandatory elements of ChargeDDetails from UserAnswers to ETMP" in {
       forAll(chargeDUserAnswersGenerator) {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
@@ -43,8 +44,8 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (etmpMemberPath(0) \ "dateOfBeneCrysEvent").as[String] mustBe (uaMemberPath(0) \ "chargeDetails" \ "dateOfEvent").as[String]
           (etmpMemberPath(0) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeDetails" \ "taxAt25Percent").as[BigDecimal]
           (etmpMemberPath(0) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal] mustBe (uaMemberPath(0) \ "chargeDetails" \ "taxAt55Percent").as[BigDecimal]
-          (etmpMemberPath(0) \ "memberStatus").as[String] mustBe "New"
-          (etmpMemberPath(0) \ "memberAFTVersion").asOpt[Int] mustBe None
+          (etmpMemberPath(0) \ "memberStatus").as[String] mustBe (uaMemberPath(0) \ "memberStatus").as[String]
+          (etmpMemberPath(0) \ "memberAFTVersion").as[Int] mustBe (uaMemberPath(0) \ "memberAFTVersion").as[Int]
 
           (etmpMemberPath(1) \ "individualsDetails" \ "firstName").as[String] mustBe (uaMemberPath(1) \ "memberDetails" \ "firstName").as[String]
 
@@ -53,22 +54,21 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
           (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "amendedVersion").asOpt[Int] mustBe None
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
+          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 6
       }
     }
 
     "must transform optional element - amendedVersion, memberStatus and memberAFTVersion of ChargeDDetails from UserAnswers to ETMP" in {
-      forAll(chargeDUserAnswersGenerator, arbitrary[Int], arbitrary[String]) {
-        (userAnswersJson, version, status) =>
+      forAll(chargeDUserAnswersGenerator, arbitrary[Int]) {
+        (userAnswersJson, version) =>
           val jsonTransformer = (__ \ 'chargeDDetails).json.pickBranch(
             __.json.update(
               __.read[JsObject].map(o => o ++ Json.obj("amendedVersion" -> version))
             ) andThen
               (__ \ 'members).json.update(
                 __.read[JsArray].map {
-                case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] ++
-                  Json.obj("memberAFTVersion" -> version) ++ Json.obj("memberStatus" -> status)))
-              })
+                  case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] - "memberAFTVersion" - "memberStatus") ++ arr.tail)
+                })
           )
 
           val updatedJson = userAnswersJson.transform(jsonTransformer).asOpt.value
@@ -77,11 +77,9 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "amendedVersion").as[Int] mustBe
             (updatedJson \ "chargeDDetails" \ "amendedVersion").as[Int]
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "memberStatus").as[String] mustBe
-            (updatedJson \ "chargeDDetails" \ "members" \ 0 \ "memberStatus").as[String]
+          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "memberStatus").as[String] mustBe "New"
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "memberAFTVersion").as[Int] mustBe
-            (updatedJson \ "chargeDDetails" \ "members" \ 0 \ "memberAFTVersion").as[Int]
+          (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails" \ 0 \ "memberAFTVersion").asOpt[Int] mustBe None
       }
     }
   }

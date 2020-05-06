@@ -128,12 +128,12 @@ class ChargeCTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       }
     }
 
-    "must filter out the employers with isDeleted flag as true while transforming from UserAnswers to ETMP format" in {
+    "must filter out the employers with isDeleted flag as true and memberStatus is not Deleted while transforming from UserAnswers to ETMP format" in {
       forAll(chargeCUserAnswersGenerator) {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 4
+          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
       }
     }
   }
