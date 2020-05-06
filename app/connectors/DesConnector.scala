@@ -45,7 +45,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    if (aftService.isOnlyOneChargeWithNoValue(data)) {
+    if (aftService.isChargeZeroedOut(data)) {
       http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data) andThen
         fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, data)

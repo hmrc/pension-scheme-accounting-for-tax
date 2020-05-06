@@ -84,7 +84,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok
           )
       )
-      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(false)
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
 
       connector.fileAFTReturn(pstr, data) map {
         _.status mustBe OK
@@ -102,7 +102,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok.withBody(Json.stringify(successResponse))
           )
       )
-      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(false)
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       connector.fileAFTReturn(pstr, data).map { response =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
@@ -122,7 +122,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             ok.withBody(Json.stringify(successResponse))
           )
       )
-      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(true)
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       connector.fileAFTReturn(pstr, data).map { _ =>
         verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
@@ -139,7 +139,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             badRequest()
           )
       )
-      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(false)
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
       recoverToExceptionIf[BadRequestException] {
         connector.fileAFTReturn(pstr, data)
       } map {
@@ -208,7 +208,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             serverError()
           )
       )
-      when(mockAftService.isOnlyOneChargeWithNoValue(any())).thenReturn(false)
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
       recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {_ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
