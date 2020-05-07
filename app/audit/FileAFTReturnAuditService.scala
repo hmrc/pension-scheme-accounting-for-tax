@@ -27,29 +27,30 @@ import scala.util.{Failure, Success, Try}
 
 class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
 
-  def sendFileAFTReturnAuditEvent(pstr: String, data: JsValue)
+  def sendFileAFTReturnAuditEvent(pstr: String, journeyType: String, data: JsValue)
                                  (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[HttpResponse], Unit] = {
     case Success(httpResponse) =>
-      auditService.sendEvent(FileAftReturn(pstr, Status.OK, data, Some(httpResponse.json)))
+      auditService.sendEvent(FileAftReturn(pstr, journeyType, Status.OK, data, Some(httpResponse.json)))
     case Failure(error: UpstreamErrorResponse) =>
-      auditService.sendEvent(FileAftReturn(pstr, error.upstreamResponseCode, data, None))
+      auditService.sendEvent(FileAftReturn(pstr, journeyType, error.upstreamResponseCode, data, None))
     case Failure(error: HttpException) =>
-      auditService.sendEvent(FileAftReturn(pstr, error.responseCode, data, None))
+      auditService.sendEvent(FileAftReturn(pstr, journeyType, error.responseCode, data, None))
   }
 
-  def sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr: String, data: JsValue)
+  def sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr: String, journeyType: String, data: JsValue)
                                                               (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[HttpResponse], Unit] = {
     case Success(httpResponse) =>
-      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, Status.OK, data, Some(httpResponse.json)))
+      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, journeyType, Status.OK, data, Some(httpResponse.json)))
     case Failure(error: UpstreamErrorResponse) =>
-      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, error.upstreamResponseCode, data, None))
+      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, journeyType, error.upstreamResponseCode, data, None))
     case Failure(error: HttpException) =>
-      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, error.responseCode, data, None))
+      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, journeyType, error.responseCode, data, None))
   }
 }
 
 case class FileAftReturn(
                           pstr: String,
+                          journeyType: String,
                           status: Int,
                           request: JsValue,
                           response: Option[JsValue]
@@ -59,7 +60,7 @@ case class FileAftReturn(
   override def details: Map[String, String] = Map(
     "pstr" -> pstr,
     "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String].getOrElse(""),
-    "aftStatus" -> (request \ "aftDetails" \ "aftStatus").asOpt[String].getOrElse(""),
+    "aftStatus" -> s"$journeyType${(request \ "aftDetails" \ "aftStatus").asOpt[String].getOrElse("")}",
     "status" -> status.toString,
     "request" -> Json.stringify(request),
     "response" -> {
@@ -73,6 +74,7 @@ case class FileAftReturn(
 
 case class FileAFTReturnOneChargeAndNoValue(
                           pstr: String,
+                          journeyType: String,
                           status: Int,
                           request: JsValue,
                           response: Option[JsValue]
@@ -82,7 +84,7 @@ case class FileAFTReturnOneChargeAndNoValue(
   override def details: Map[String, String] = Map(
     "pstr" -> pstr,
     "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String].getOrElse(""),
-    "aftStatus" -> (request \ "aftDetails" \ "aftStatus").asOpt[String].getOrElse(""),
+    "aftStatus" -> s"$journeyType${(request \ "aftDetails" \ "aftStatus").asOpt[String].getOrElse("")}",
     "status" -> status.toString,
     "request" -> Json.stringify(request),
     "response" -> {

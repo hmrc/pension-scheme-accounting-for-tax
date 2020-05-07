@@ -16,6 +16,7 @@
 
 package audit
 
+import models.enumeration.JourneyType
 import org.scalatest.{FlatSpec, Matchers}
 import play.api.libs.json.Json
 
@@ -25,6 +26,7 @@ class FileAftReturnSpec extends FlatSpec with Matchers {
 
     val pstr = "test-pstr"
     val quarterStartDate = "2020-01-01"
+    val journeyType = JourneyType.AFT_RETURN.toString
     val aftStatus = "Compiled"
     val status = 1
     val request = Json.obj(
@@ -37,6 +39,7 @@ class FileAftReturnSpec extends FlatSpec with Matchers {
 
     val event = FileAftReturn(
       pstr = pstr,
+      journeyType = journeyType,
       status = status,
       request = request,
       response = Some(response)
@@ -45,7 +48,7 @@ class FileAftReturnSpec extends FlatSpec with Matchers {
     val expected: Map[String, String] = Map(
       "pstr" -> pstr,
       "quarterStartDate" -> quarterStartDate,
-      "aftStatus" -> aftStatus,
+      "aftStatus" -> s"$journeyType$aftStatus",
       "status" -> status.toString,
       "request" -> Json.stringify(request),
       "response" -> Json.stringify(response)

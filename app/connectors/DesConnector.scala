@@ -39,7 +39,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
                              aftDetailsAuditEventService: GetAFTDetailsAuditService,
                              aftService: AFTService) extends HttpErrorFunctions {
 
-  def fileAFTReturn(pstr: String, data: JsValue)
+  def fileAFTReturn(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
 
@@ -47,11 +47,11 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
 
     if (aftService.isChargeZeroedOut(data)) {
       http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
-        fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data) andThen
-        fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, data)
+        fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data) andThen
+        fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
     } else {
       http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
-        fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, data)
+        fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
     }
   }
 
