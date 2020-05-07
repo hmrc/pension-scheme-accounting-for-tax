@@ -86,7 +86,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
 
-      connector.fileAFTReturn(pstr, "", data) map {
+      connector.fileAFTReturn(pstr, journeyType, data) map {
         _.status mustBe OK
       }
     }
