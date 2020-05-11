@@ -60,7 +60,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |  "chargeBDetails": {
       |    "chargeDetails": {
       |      "numberOfDeceased": 2,
-      |      "amountTaxDue": 100.02
+      |      "totalAmount": 100.02
       |    },
       |    "amendedVersion": 1
       |  },
@@ -138,7 +138,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |  },
       |  "chargeFDetails": {
       |    "chargeDetails": {
-      |      "amountTaxDue": 200.02,
+      |      "totalAmount": 200.02,
       |      "deRegistrationDate": "1980-02-29"
       |    },
       |    "amendedVersion": 1

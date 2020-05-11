@@ -32,7 +32,7 @@ class ChargeFTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
           (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount").as[BigDecimal] mustBe
-            (userAnswersJson \ "chargeFDetails" \ "chargeDetails" \ "amountTaxDue").as[BigDecimal]
+            (userAnswersJson \ "chargeFDetails" \ "chargeDetails" \ "totalAmount").as[BigDecimal]
 
           (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn").asOpt[String] mustBe None
 

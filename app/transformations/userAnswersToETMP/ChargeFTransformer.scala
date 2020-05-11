@@ -27,7 +27,7 @@ class ChargeFTransformer extends JsonTransformer {
       __.read(
         (((__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
           orElse doNothing) and
-          (__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'totalAmount).json.copyFrom((__ \ 'chargeDetails \ 'amountTaxDue).json.pick) and
+          (__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'totalAmount).json.copyFrom((__ \ 'chargeDetails \ 'totalAmount).json.pick) and
           ((__ \ 'chargeDetails \ 'chargeTypeFDetails \ 'dateRegiWithdrawn).json.copyFrom((__ \ 'chargeDetails \ 'deRegistrationDate).json.pick)
             orElse doNothing)).reduce
       )

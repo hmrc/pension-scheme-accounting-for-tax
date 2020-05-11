@@ -32,7 +32,7 @@ class ChargeFTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           val chargeFResponse = etmpResponseJson  \ "chargeTypeFDetails"
 
           (transformedJson \ "amendedVersion").as[Int] mustBe (chargeFResponse \ "amendedVersion").as[Int]
-          (transformedJson \ "chargeDetails" \ "amountTaxDue").as[BigDecimal] mustBe (chargeFResponse \ "totalAmount").as[BigDecimal]
+          (transformedJson \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe (chargeFResponse \ "totalAmount").as[BigDecimal]
           (transformedJson \ "chargeDetails" \ "deRegistrationDate").as[LocalDate] mustBe (chargeFResponse \ "dateRegiWithdrawn").as[LocalDate]
 
       }
