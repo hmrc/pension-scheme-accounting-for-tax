@@ -405,7 +405,7 @@ object AFTControllerSpec {
     "schemeName" -> "PSTR Scheme",
     "chargeFDetails" -> Json.obj(
       "chargeDetails" -> Json.obj(
-      "amountTaxDue" -> 200.02,
+      "totalAmount" -> 200.02,
       "deRegistrationDate" -> "1980-02-29"
       ),
       "amendedVersion" -> 1
@@ -476,7 +476,7 @@ object AFTControllerSpec {
       |  },
       |  "chargeFDetails": {
       |    "chargeDetails": {
-      |      "amountTaxDue": 200.02,
+      |      "totalAmount": 200.02,
       |      "deRegistrationDate": "1980-02-29"
       |    }
       |  }

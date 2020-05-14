@@ -28,7 +28,7 @@ class ChargeBTransformer extends JsonTransformer {
         (((__ \ 'chargeDetails \ 'chargeTypeBDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
           orElse doNothing) and
           (__ \ 'chargeDetails \ 'chargeTypeBDetails \ 'numberOfMembers).json.copyFrom((__ \ 'chargeDetails \ 'numberOfDeceased).json.pick) and
-          (__ \ 'chargeDetails \ 'chargeTypeBDetails \ 'totalAmount).json.copyFrom((__ \ 'chargeDetails \ 'amountTaxDue).json.pick)).reduce
+          (__ \ 'chargeDetails \ 'chargeTypeBDetails \ 'totalAmount).json.copyFrom((__ \ 'chargeDetails \ 'totalAmount).json.pick)).reduce
       )
     }.map {
       _.getOrElse(Json.obj())

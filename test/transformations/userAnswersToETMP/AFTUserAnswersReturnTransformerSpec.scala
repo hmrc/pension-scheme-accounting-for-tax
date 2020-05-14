@@ -59,7 +59,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |  "chargeBDetails": {
       |    "chargeDetails": {
       |      "numberOfDeceased": 4,
-      |      "amountTaxDue": 55.55
+      |      "totalAmount": 55.55
       |    }
       |  },
       |  "chargeCDetails": {
@@ -147,7 +147,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |  },
       |  "chargeFDetails": {
       |    "chargeDetails": {
-      |      "amountTaxDue": 200.02,
+      |      "totalAmount": 200.02,
       |      "deRegistrationDate": "1980-02-29"
       |    }
       |  },

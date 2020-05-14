@@ -27,7 +27,7 @@ class ChargeFTransformer {
     (__ \ 'chargeTypeFDetails).readNullable {
     __.read(
       ((__ \ 'chargeFDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
-        ( __ \ 'chargeFDetails \ 'chargeDetails \ 'amountTaxDue).json.copyFrom((__ \ 'totalAmount).json.pick) and
+        ( __ \ 'chargeFDetails \ 'chargeDetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick) and
         ( __ \ 'chargeFDetails \ 'chargeDetails \ 'deRegistrationDate).json.copyFrom((__ \ 'dateRegiWithdrawn).json.pick)).reduce
     )
   }.map {

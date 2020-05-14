@@ -117,7 +117,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
       fields = "chargeBDetails" ->
         Json.obj(
           fields = "chargeDetails" -> Json.obj(
-            "amountTaxDue" -> totalAmount,
+            "totalAmount" -> totalAmount,
           "numberOfDeceased" -> numberOfMembers
           )
         )
@@ -262,7 +262,7 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
       fields = "chargeFDetails" ->
         Json.obj(
           fields = "chargeDetails" -> Json.obj(
-            "amountTaxDue" -> totalAmount
+            "totalAmount" -> totalAmount
           )
         )
     )

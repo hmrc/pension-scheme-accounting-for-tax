@@ -27,7 +27,7 @@ class ChargeBTransformer {
       __.read(
         ((__ \ 'chargeBDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
           (__ \ 'chargeBDetails \ 'chargeDetails \ 'numberOfDeceased).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
-          (__ \ 'chargeBDetails \ 'chargeDetails \ 'amountTaxDue).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
+          (__ \ 'chargeBDetails \ 'chargeDetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
       )
     }.map {
       _.getOrElse(Json.obj())
