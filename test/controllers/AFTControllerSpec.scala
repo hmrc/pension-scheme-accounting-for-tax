@@ -19,6 +19,7 @@ package controllers
 import java.time.LocalDate
 
 import connectors.DesConnector
+import models.enumeration.JourneyType
 import models.{AFTOverview, AFTVersion}
 import org.mockito.Matchers
 import org.mockito.Matchers.any
@@ -54,6 +55,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val version1 = AFTVersion(1, LocalDate.now())
   private val version2 = AFTVersion(2, LocalDate.now())
   private val versions = Seq(version1, version2)
+  private val journeyType = JourneyType.AFT_RETURN.toString
 
   val modules: Seq[GuiceableModule] =
     Seq(
@@ -86,10 +88,11 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
+      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
 
-      val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
+      val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
+        newHeaders = "pstr" -> pstr, "journeyType" -> journeyType))
       status(result) mustBe OK
     }
 
@@ -97,11 +100,12 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
+      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.failed(Upstream5xxResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[Upstream5xxResponse] {
-        controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(newHeaders = "pstr" -> pstr))
+        controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).
+          withHeaders(newHeaders = "pstr" -> pstr, "journeyType" -> journeyType))
       } map {
         _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
       }
@@ -112,9 +116,10 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
       val jsonPayload = jsonOneMemberZeroValue
 
-      when(mockDesConnector.fileAFTReturn(any(), any())(any(), any(), any()))
+      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(jsonPayload))))
-      val result = controller.fileReturn()(fakeRequest.withJsonBody(jsonPayload).withHeaders(newHeaders = "pstr" -> pstr))
+      val result = controller.fileReturn()(fakeRequest.withJsonBody(jsonPayload).
+        withHeaders(newHeaders = "pstr" -> pstr, "journeyType" -> journeyType))
       status(result) mustBe OK
     }
   }

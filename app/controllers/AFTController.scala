@@ -47,13 +47,14 @@ class AFTController @Inject()(appConfig: AppConfig,
   def fileReturn(): Action[AnyContent] = Action.async {
     implicit request =>
 
-      post { (pstr, userAnswersJson) =>
+      post { (pstr, journeyType, userAnswersJson) =>
         Logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
         userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
           case JsSuccess(dataToBeSendToETMP, _) =>
             Logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
             desConnector.fileAFTReturn(
               pstr,
+              journeyType,
               dataToBeSendToETMP
             ).map {
               response =>
@@ -142,7 +143,7 @@ class AFTController @Inject()(appConfig: AppConfig,
     }
   }
 
-  private def post(block: (String, JsValue) => Future[Result])
+  private def post(block: (String, String, JsValue) => Future[Result])
                   (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
 
     Logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
@@ -151,12 +152,14 @@ class AFTController @Inject()(appConfig: AppConfig,
       case Some(_) =>
         (
           request.headers.get("pstr"),
+          request.headers.get("journeyType"),
           request.body.asJson
         ) match {
-          case (Some(pstr), Some(js)) =>
-            block(pstr, js)
-          case (pstr, jsValue) =>
-            Future.failed(new BadRequestException(s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
+          case (Some(pstr), Some(journeyType), Some(js)) =>
+            block(pstr, journeyType, js)
+          case (pstr, journeyType, jsValue) =>
+            Future.failed(new BadRequestException(
+              s"Bad Request without pstr ($pstr), journeyType ($journeyType) or request body ($jsValue)"))
         }
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))

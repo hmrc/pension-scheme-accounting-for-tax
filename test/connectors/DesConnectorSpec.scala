@@ -20,17 +20,16 @@ import java.time.LocalDate
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
-import models.AFTVersion
-import models.AFTOverview
+import models.{AFTOverview, AFTVersion}
+import models.enumeration.JourneyType
 import org.mockito.Matchers.any
-import org.mockito.Mockito.{times, verify}
+import org.mockito.Mockito.{times, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
-import org.mockito.Mockito.when
 import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
@@ -72,6 +71,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30), 3, false, true)
   private val overview2 = AFTOverview(LocalDate.of(2020, 7, 1), LocalDate.of(2020, 10, 31), 2, true, true)
   private val aftOverview = Seq(overview1, overview2)
+  private val journeyType = JourneyType.AFT_RETURN.toString
 
   "fileAFTReturn" must {
 
@@ -86,7 +86,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
 
-      connector.fileAFTReturn(pstr, data) map {
+      connector.fileAFTReturn(pstr, journeyType, data) map {
         _.status mustBe OK
       }
     }
@@ -104,9 +104,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      connector.fileAFTReturn(pstr, data).map { response =>
+      connector.fileAFTReturn(pstr, journeyType, data).map { response =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.OK, data, Some(successResponse))
+        eventCaptor.getValue mustEqual FileAftReturn(pstr, journeyType, Status.OK, data, Some(successResponse))
       }
     }
 
@@ -124,9 +124,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      connector.fileAFTReturn(pstr, data).map { _ =>
+      connector.fileAFTReturn(pstr, journeyType, data).map { _ =>
         verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustEqual FileAFTReturnOneChargeAndNoValue(pstr, Status.OK, data, Some(successResponse))
+        eventCaptor.getValue mustEqual FileAFTReturnOneChargeAndNoValue(pstr, journeyType, Status.OK, data, Some(successResponse))
       }
     }
 
@@ -141,7 +141,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
       recoverToExceptionIf[BadRequestException] {
-        connector.fileAFTReturn(pstr, data)
+        connector.fileAFTReturn(pstr, journeyType, data)
       } map {
         _.responseCode mustEqual BAD_REQUEST
       }
@@ -158,7 +158,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
 
       recoverToExceptionIf[NotFoundException] {
-        connector.fileAFTReturn(pstr, data)
+        connector.fileAFTReturn(pstr, journeyType, data)
       } map {
         _.responseCode mustEqual NOT_FOUND
       }
@@ -177,10 +177,10 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
 
       recoverToExceptionIf[NotFoundException] {
-        connector.fileAFTReturn(pstr, data)
+        connector.fileAFTReturn(pstr, journeyType, data)
       } map {_ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.NOT_FOUND, data, None)
+        eventCaptor.getValue mustEqual FileAftReturn(pstr, journeyType, Status.NOT_FOUND, data, None)
       }
     }
 
@@ -193,7 +193,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             serverError()
           )
       )
-      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {
+      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, journeyType, data)) map {
         _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
       }
     }
@@ -210,9 +210,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, data)) map {_ =>
+      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, journeyType, data)) map {_ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustEqual FileAftReturn(pstr, Status.INTERNAL_SERVER_ERROR, data, None)
+        eventCaptor.getValue mustEqual FileAftReturn(pstr, journeyType, Status.INTERNAL_SERVER_ERROR, data, None)
       }
     }
   }
