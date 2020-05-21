@@ -132,8 +132,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |        "memberDetails": {
       |          "firstName": "eFirstName",
       |          "lastName": "eLastName",
-      |          "nino": "AE100100A",
-      |          "isDeleted": false
+      |          "nino": "AE100100A"
       |        },
       |        "annualAllowanceYear": "2020",
       |        "chargeDetails": {
@@ -158,8 +157,7 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |          "firstName": "Craig",
       |          "lastName": "White",
       |          "dob": "1980-02-29",
-      |          "nino": "AA012000A",
-      |          "isDeleted": false
+      |          "nino": "AA012000A"
       |        },
       |        "chargeDetails": {
       |          "qropsReferenceNumber": "300000",

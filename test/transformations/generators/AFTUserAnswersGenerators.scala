@@ -173,8 +173,8 @@ trait AFTUserAnswersGenerators extends MustMatchers with ScalaCheckDrivenPropert
 
   val chargeCUserAnswersGenerator: Gen[JsObject] =
     for {
-      individualEmployers <- Gen.listOfN(2, chargeCIndividualEmployer())
-      orgEmployers <- Gen.listOfN(2, chargeCCompanyEmployer())
+      individualEmployers <- Gen.listOfN(2, chargeCIndividualEmployer)
+      orgEmployers <- Gen.listOfN(2, chargeCCompanyEmployer)
       totalChargeAmount <- arbitrary[BigDecimal] retryUntil (_ > 0)
     } yield Json.obj(
       fields = "chargeCDetails" ->

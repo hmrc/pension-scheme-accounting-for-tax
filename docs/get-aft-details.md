@@ -57,8 +57,7 @@ Returns AFT Details
         "sponsoringIndividualDetails": {
           "firstName": "testFirst",
           "lastName": "testLast",
-          "nino": "AB100100A",
-          "isDeleted": false
+          "nino": "AB100100A"
         },
         "sponsoringEmployerAddress": {
           "line1": "line1",
@@ -81,8 +80,7 @@ Returns AFT Details
         "memberDetails": {
           "firstName": "Joy",
           "lastName": "Kenneth",
-          "nino": "AA089000A",
-          "isDeleted": false
+          "nino": "AA089000A"
         },
         "chargeDetails": {
           "dateOfEvent": "2016-02-29",
@@ -102,8 +100,7 @@ Returns AFT Details
         "memberDetails": {
           "firstName": "eFirstName",
           "lastName": "eLastName",
-          "nino": "AE100100A",
-          "isDeleted": false
+          "nino": "AE100100A"
         },
         "annualAllowanceYear": "2020",
         "chargeDetails": {
@@ -130,8 +127,7 @@ Returns AFT Details
           "firstName": "Craig",
           "lastName": "White",
           "dob": "1980-02-29",
-          "nino": "AA012000A",
-          "isDeleted": false
+          "nino": "AA012000A"
         },
         "chargeDetails": {
           "qropsReferenceNumber": "300000",

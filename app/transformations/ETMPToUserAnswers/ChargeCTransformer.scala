@@ -47,15 +47,13 @@ class ChargeCTransformer extends JsonTransformer {
           (__ \ 'whichTypeOfSponsoringEmployer).json.put(JsString("individual")) and
             (__ \ 'sponsoringIndividualDetails \ 'firstName).json.copyFrom((__ \ 'individualDetails \ 'firstName).json.pick) and
             (__ \ 'sponsoringIndividualDetails \ 'lastName).json.copyFrom((__ \ 'individualDetails \ 'lastName).json.pick) and
-            (__ \ 'sponsoringIndividualDetails \ 'nino).json.copyFrom((__ \ 'individualDetails \ 'nino).json.pick) and
-            (__ \ 'sponsoringIndividualDetails \ 'isDeleted).json.put(JsBoolean(false))
+            (__ \ 'sponsoringIndividualDetails \ 'nino).json.copyFrom((__ \ 'individualDetails \ 'nino).json.pick)
           ).reduce
       case _ =>
         (
           (__ \ 'whichTypeOfSponsoringEmployer).json.put(JsString("organisation")) and
             (__ \ 'sponsoringOrganisationDetails \ 'name).json.copyFrom((__ \ 'comOrOrganisationName).json.pick) and
-            (__ \ 'sponsoringOrganisationDetails \ 'crn).json.copyFrom((__ \ 'crnNumber).json.pick) and
-            (__ \ 'sponsoringOrganisationDetails \ 'isDeleted).json.put(JsBoolean(false))
+            (__ \ 'sponsoringOrganisationDetails \ 'crn).json.copyFrom((__ \ 'crnNumber).json.pick)
           ).reduce
     }
 

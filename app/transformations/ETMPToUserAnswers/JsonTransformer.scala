@@ -29,7 +29,7 @@ trait JsonTransformer {
   def readsMemberDetails: Reads[JsObject] =
     ((__ \ 'memberDetails \ 'firstName).json.copyFrom((__ \ 'individualsDetails \ 'firstName).json.pick) and
       (__ \ 'memberDetails \ 'lastName).json.copyFrom((__ \ 'individualsDetails \ 'lastName).json.pick) and
-      (__ \ 'memberDetails \ 'nino).json.copyFrom((__ \ 'individualsDetails \ 'nino).json.pick) and
-      (__ \ 'memberDetails \ 'isDeleted).json.put(JsBoolean(false))).reduce
+      (__ \ 'memberDetails \ 'nino).json.copyFrom((__ \ 'individualsDetails \ 'nino).json.pick)
+      ).reduce
 
 }

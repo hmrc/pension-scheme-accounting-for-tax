@@ -77,8 +77,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |        "sponsoringIndividualDetails": {
       |          "firstName": "testFirst",
       |          "lastName": "testLast",
-      |          "nino": "AB100100A",
-      |          "isDeleted": false
+      |          "nino": "AB100100A"
       |        },
       |        "sponsoringEmployerAddress": {
       |          "line1": "line1",
@@ -101,8 +100,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |        "memberDetails": {
       |          "firstName": "Joy",
       |          "lastName": "Kenneth",
-      |          "nino": "AA089000A",
-      |          "isDeleted": false
+      |          "nino": "AA089000A"
       |        },
       |        "chargeDetails": {
       |          "dateOfEvent": "2016-02-29",
@@ -122,8 +120,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |        "memberDetails": {
       |          "firstName": "eFirstName",
       |          "lastName": "eLastName",
-      |          "nino": "AE100100A",
-      |          "isDeleted": false
+      |          "nino": "AE100100A"
       |        },
       |        "annualAllowanceYear": "2020",
       |        "chargeDetails": {
@@ -152,8 +149,7 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |          "firstName": "Craig",
       |          "lastName": "White",
       |          "dob": "1980-02-29",
-      |          "nino": "AA012000A",
-      |          "isDeleted": false
+      |          "nino": "AA012000A"
       |        },
       |        "chargeDetails": {
       |          "qropsReferenceNumber": "300000",

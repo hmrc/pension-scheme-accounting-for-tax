@@ -60,7 +60,6 @@ class ChargeCTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
           (uaPath \ "firstName").as[String] mustBe (etmpPath \ "firstName").as[String]
           (uaPath \ "lastName").as[String] mustBe (etmpPath \ "lastName").as[String]
           (uaPath \ "nino").as[String] mustBe (etmpPath \ "nino").as[String]
-          (uaPath \ "isDeleted").as[Boolean] mustBe false
       }
     }
 
