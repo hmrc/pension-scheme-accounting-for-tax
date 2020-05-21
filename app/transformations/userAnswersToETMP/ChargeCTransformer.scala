@@ -34,9 +34,9 @@ class ChargeCTransformer extends JsonTransformer {
     }
 
   def readsEmployers: Reads[JsArray] = {
-    readsFiltered(_ \ "sponsoringIndividualDetails", readsEmployer, isDeletedPath = "sponsoringIndividualDetails").map(JsArray(_)).flatMap {
+    readsFiltered(_ \ "sponsoringIndividualDetails", readsEmployer).map(JsArray(_)).flatMap {
       filteredIndividuals =>
-        readsFiltered(_ \ "sponsoringOrganisationDetails", readsEmployer, isDeletedPath = "sponsoringOrganisationDetails").map(JsArray(_)).map {
+        readsFiltered(_ \ "sponsoringOrganisationDetails", readsEmployer).map(JsArray(_)).map {
           filteredOrganisations =>
             filteredIndividuals ++ filteredOrganisations
         }
