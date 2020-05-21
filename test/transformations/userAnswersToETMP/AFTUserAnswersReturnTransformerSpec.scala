@@ -226,23 +226,35 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       |        }
       |      ]
       |    },
-      |    "chargeTypeDDetails": {
-      |      "totalAmount": 200.02,
+      |  "chargeTypeDDetails": {
       |      "memberDetails": [
-      |        {
-      |          "memberStatus": "Deleted",
-      |          "memberAFTVersion": 1,
-      |          "individualsDetails": {
-      |            "firstName": "firstName",
-      |            "lastName": "lastName",
-      |            "nino": "AC100100A"
-      |          },
-      |          "dateOfBeneCrysEvent": "2020-01-10",
-      |          "totalAmtOfTaxDueAtLowerRate": 100,
-      |          "totalAmtOfTaxDueAtHigherRate": 100.02
-      |        }
-      |      ]
-      |    },
+      |         {
+      |             "dateOfBeneCrysEvent": "2020-01-10",
+      |             "individualsDetails": {
+      |                 "firstName": "firstName",
+      |                 "lastName": "lastName",
+      |                 "nino": "AC100100A"
+      |             },
+      |             "memberAFTVersion": 1,
+      |             "memberStatus": "Deleted",
+      |             "totalAmtOfTaxDueAtHigherRate": 100.02,
+      |             "totalAmtOfTaxDueAtLowerRate": 100
+      |         },
+      |         {
+      |             "dateOfBeneCrysEvent": "2020-01-10",
+      |             "individualsDetails": {
+      |                 "firstName": "secondName",
+      |                 "lastName": "lastName",
+      |                 "nino": "AC100100A"
+      |             },
+      |             "memberAFTVersion": 1,
+      |             "memberStatus": "New",
+      |             "totalAmtOfTaxDueAtHigherRate": 100.02,
+      |             "totalAmtOfTaxDueAtLowerRate": 100
+      |         }
+      |     ],
+      |     "totalAmount": 200.02
+      | },
       |    "chargeTypeEDetails": {
       |      "totalAmount": 200.02,
       |      "memberDetails": [
