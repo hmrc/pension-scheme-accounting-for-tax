@@ -27,7 +27,7 @@ class ChargeDTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
   private val transformer = new ChargeDTransformer
 
   "A Charge D Transformer" - {
-    "must filter out the members with memberStatus not Deleted and isDeleted flag is true," +
+    "must filter out the members with memberStatus not Deleted" +
       "also transform mandatory elements of ChargeDDetails from UserAnswers to ETMP" in {
       forAll(chargeDUserAnswersGenerator) {
         userAnswersJson =>

@@ -69,8 +69,7 @@ File an AFT Return
          "memberDetails": {
            "firstName": "firstName",
            "lastName": "lastName",
-           "nino": "AC100100A",
-           "isDeleted": false
+           "nino": "AC100100A"
          },
          "chargeDetails": {
            "dateOfEvent": "2020-01-10",
@@ -87,8 +86,7 @@ File an AFT Return
          "memberDetails": {
            "firstName": "eFirstName",
            "lastName": "eLastName",
-           "nino": "AE100100A",
-           "isDeleted": false
+           "nino": "AE100100A"
          },
          "annualAllowanceYear": "2020",
          "chargeDetails": {
@@ -111,8 +109,7 @@ File an AFT Return
            "firstName": "Craig",
            "lastName": "White",
            "dob": "1980-02-29",
-           "nino": "AA012000A",
-           "isDeleted": false
+           "nino": "AA012000A"
          },
          "chargeDetails": {
            "qropsReferenceNumber": "300000",

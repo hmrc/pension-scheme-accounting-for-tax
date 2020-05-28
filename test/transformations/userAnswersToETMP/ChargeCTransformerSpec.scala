@@ -81,14 +81,14 @@ class ChargeCTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          val etmpPathAfterFilteredDeleted = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \
-            "memberDetails" \ 3 \ "memberTypeDetails"
-          val uaOrgPathWithoutFilter = userAnswersJson \ "chargeCDetails" \ "employers" \ 4 \ "sponsoringOrganisationDetails"
+          val etmpPathAfterTransformation = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \
+            "memberDetails" \ 2 \ "memberTypeDetails"
+          val uaOrgPathWithoutFilter = userAnswersJson \ "chargeCDetails" \ "employers" \ 2 \ "sponsoringOrganisationDetails"
 
-          (etmpPathAfterFilteredDeleted \ "memberStatus").asOpt[String] mustBe None
-          (etmpPathAfterFilteredDeleted \ "memberAFTVersion").asOpt[String] mustBe None
-          (etmpPathAfterFilteredDeleted \ "comOrOrganisationName").as[String] mustBe (uaOrgPathWithoutFilter \ "name").as[String]
-          (etmpPathAfterFilteredDeleted \ "crnNumber").as[String] mustBe (uaOrgPathWithoutFilter \ "crn").as[String]
+          (etmpPathAfterTransformation \ "memberStatus").asOpt[String] mustBe None
+          (etmpPathAfterTransformation \ "memberAFTVersion").asOpt[String] mustBe None
+          (etmpPathAfterTransformation \ "comOrOrganisationName").as[String] mustBe (uaOrgPathWithoutFilter \ "name").as[String]
+          (etmpPathAfterTransformation \ "crnNumber").as[String] mustBe (uaOrgPathWithoutFilter \ "crn").as[String]
       }
     }
 
@@ -115,8 +115,8 @@ class ChargeCTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          val etmpAddressPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 3 \ "correspondenceAddressDetails"
-          val uaAddressPath = userAnswersJson \ "chargeCDetails" \ "employers" \ 4 \ "sponsoringEmployerAddress"
+          val etmpAddressPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 2 \ "correspondenceAddressDetails"
+          val uaAddressPath = userAnswersJson \ "chargeCDetails" \ "employers" \ 2 \ "sponsoringEmployerAddress"
 
           (etmpAddressPath \ "nonUKAddress").as[String] mustBe "True"
           (etmpAddressPath \ "addressLine1").as[String] mustBe (uaAddressPath \ "line1").as[String]
@@ -128,12 +128,12 @@ class ChargeCTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
       }
     }
 
-    "must filter out the employers with isDeleted flag as true and memberStatus is not Deleted while transforming from UserAnswers to ETMP format" in {
+    "must filter out the employers with memberStatus is not Deleted while transforming from UserAnswers to ETMP format" in {
       forAll(chargeCUserAnswersGenerator) {
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 5
+          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 4
       }
     }
   }

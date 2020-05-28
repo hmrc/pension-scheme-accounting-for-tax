@@ -496,8 +496,7 @@ object AFTControllerSpec {
       |                    "sponsoringIndividualDetails" : {
       |                        "firstName" : "asas",
       |                        "lastName" : "asa",
-      |                        "nino" : "CS121212C",
-      |                        "isDeleted" : false
+      |                        "nino" : "CS121212C"
       |                    },
       |                    "whichTypeOfSponsoringEmployer" : "individual",
       |                    "sponsoringEmployerAddress" : {

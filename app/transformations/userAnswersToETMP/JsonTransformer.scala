@@ -31,24 +31,12 @@ trait JsonTransformer {
       (__ \ 'individualsDetails \ 'lastName).json.copyFrom((__ \ 'memberDetails \ 'lastName).json.pick) and
       (__ \ 'individualsDetails \ 'nino).json.copyFrom((__ \ 'memberDetails \ 'nino).json.pick) reduce
 
-  def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T], isDeletedPath: String = "memberDetails"): Reads[Seq[T]] = new Reads[Seq[T]] {
+  def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T]): Reads[Seq[T]] = new Reads[Seq[T]] {
     override def reads(json: JsValue): JsResult[Seq[T]] = {
       json match {
         case JsArray(members) =>
-          readFilteredSeq(JsSuccess(Nil), filterDeleted(members, isDeletedPath), isA, readsA)
+          readFilteredSeq(JsSuccess(Nil), members, isA, readsA)
         case _ => JsSuccess(Nil)
-      }
-    }
-  }
-
-  private def filterDeleted(jsValueSeq: Seq[JsValue], isDeletedPath: String): Seq[JsValue] = {
-    jsValueSeq.filterNot { json =>
-      val isDeleted = json \ isDeletedPath \ "isDeleted"
-      val memberStatus = json \ "memberStatus"
-
-      (isDeleted.validate[Boolean], memberStatus.validate[String]) match {
-        case (JsSuccess(e, _), JsSuccess(status, _)) if status != "Deleted" => e
-        case _ => false
       }
     }
   }

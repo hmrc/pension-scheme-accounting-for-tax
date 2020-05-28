@@ -29,7 +29,7 @@ class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
   private val transformer = new ChargeETransformer
 
   "A Charge E Transformer" - {
-    "must filter out the members with memberStatus not Deleted and isDeleted flag is true," +
+    "must filter out the members with memberStatus not Deleted" +
       "also transform all elements of ChargeEDetails from UserAnswers to ETMP" in {
       forAll(chargeEUserAnswersGenerator) {
         userAnswersJson =>
