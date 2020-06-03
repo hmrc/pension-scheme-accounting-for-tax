@@ -20,23 +20,31 @@ import java.time.LocalDate
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
-import models.{AFTOverview, AFTVersion}
+import models.AFTOverview
+import models.AFTVersion
 import models.enumeration.JourneyType
 import org.mockito.Matchers.any
-import org.mockito.Mockito.{times, verify, when}
-import org.mockito.{ArgumentCaptor, Mockito}
-import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
+import org.mockito.ArgumentCaptor
+import org.mockito.Mockito
+import org.scalatest.AsyncWordSpec
+import org.scalatest.EitherValues
+import org.scalatest.MustMatchers
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import services.AFTService
 import uk.gov.hmrc.http._
-import utils.{JsonFileReader, WireMockHelper}
+import utils.JsonFileReader
+import utils.WireMockHelper
 
 class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with JsonFileReader
   with EitherValues with MockitoSugar {
@@ -178,7 +186,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
 
       recoverToExceptionIf[NotFoundException] {
         connector.fileAFTReturn(pstr, journeyType, data)
-      } map {_ =>
+      } map { _ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, journeyType, Status.NOT_FOUND, data, None)
       }
@@ -210,7 +218,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, journeyType, data)) map {_ =>
+      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, journeyType, data)) map { _ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, journeyType, Status.INTERNAL_SERVER_ERROR, data, None)
       }
@@ -360,8 +368,10 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     "return the seq of versions returned from the ETMP" in {
       val aftVersionsResponseJson = Json.arr(
         Json.obj(fields = "reportVersion" -> 1,
-        "compilationOrSubmissionDate" -> "2019-10-17T09:31:47Z"),
+          "reportStatus" -> "submitted",
+          "compilationOrSubmissionDate" -> "2019-10-17T09:31:47Z"),
         Json.obj(fields = "reportVersion" -> 2,
+          "reportStatus" -> "compiled",
           "compilationOrSubmissionDate" -> "2019-10-17T09:31:47Z"))
       server.stubFor(
         get(urlEqualTo(getAftVersionsUrl))
@@ -373,16 +383,18 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       connector.getAftVersions(pstr, startDt).map { response =>
         response mustBe Seq(
-          AFTVersion(1, LocalDate.of(2019, 10, 17)),
-          AFTVersion(2, LocalDate.of(2019, 10, 17)))
+          AFTVersion(1, LocalDate.of(2019, 10, 17), "submitted"),
+          AFTVersion(2, LocalDate.of(2019, 10, 17), "compiled"))
       }
     }
 
     "send the GetReportVersions audit event when the success response returned from ETMP" in {
       Mockito.reset(mockAuditService)
       val aftVersionsResponseJson = Json.arr(Json.obj(fields = "reportVersion" -> 1,
+        "reportStatus" -> "submitted",
         "compilationOrSubmissionDate" -> "2019-10-17T09:31:47Z"),
         Json.obj(fields = "reportVersion" -> 2,
+          "reportStatus" -> "compiled",
           "compilationOrSubmissionDate" -> "2019-10-17T09:31:47Z"))
 
       server.stubFor(
@@ -504,18 +516,18 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     "return the seq of overviewDetails returned from the ETMP" in {
       val aftOverviewResponseJson = Json.arr(
         Json.obj(
-            "periodStartDate"-> "2020-04-01",
-            "periodEndDate"-> "2020-06-30",
-            "numberOfVersions"-> 3,
-            "submittedVersionAvailable"-> "No",
-            "compiledVersionAvailable"-> "Yes"
+          "periodStartDate" -> "2020-04-01",
+          "periodEndDate" -> "2020-06-30",
+          "numberOfVersions" -> 3,
+          "submittedVersionAvailable" -> "No",
+          "compiledVersionAvailable" -> "Yes"
         ),
         Json.obj(
-            "periodStartDate"-> "2020-07-01",
-            "periodEndDate"-> "2020-10-31",
-            "numberOfVersions"-> 2,
-            "submittedVersionAvailable"-> "Yes",
-            "compiledVersionAvailable"-> "Yes"
+          "periodStartDate" -> "2020-07-01",
+          "periodEndDate" -> "2020-10-31",
+          "numberOfVersions" -> 2,
+          "submittedVersionAvailable" -> "Yes",
+          "compiledVersionAvailable" -> "Yes"
         )
       )
 
