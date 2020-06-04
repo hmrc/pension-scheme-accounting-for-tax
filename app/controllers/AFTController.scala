@@ -126,6 +126,7 @@ class AFTController @Inject()(appConfig: AppConfig,
           case Some(endDate) =>
             desConnector.getAftOverview(pstr, startDate, endDate).flatMap {
               data =>
+                println( "\n>>>" + Json.toJson(data))
                 Future.successful(Ok(Json.toJson(data)))
             }
           case _ =>

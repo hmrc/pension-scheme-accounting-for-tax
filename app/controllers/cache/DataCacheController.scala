@@ -62,9 +62,16 @@ class DataCacheController @Inject()(
       getIdWithName { case (sessionId, id, name) =>
         request.body.asJson.map {
           jsValue => {
-            (request.headers.get("version"), request.headers.get("accessMode")) match {
-              case (Some(version), Some(accessMode)) =>
-                repository.setSessionData(id, if (lock) Some(name) else None, jsValue, sessionId, version.toInt, accessMode).map(_ => Created)
+            (request.headers.get("version"), request.headers.get("accessMode"), request.headers.get("hasFirstSubmissionBeenMade")) match {
+              case (Some(version), Some(accessMode), Some(hasFirstSubmissionBeenMade)) =>
+                repository.setSessionData(id,
+                  if (lock) Some(name) else None,
+                  jsValue,
+                  sessionId,
+                  version.toInt,
+                  accessMode,
+                  hasFirstSubmissionBeenMade.equals("true")
+                ).map(_ => Created)
               case _ => Future.successful(BadRequest("Version and/or access mode not present in request header"))
             }
           }
