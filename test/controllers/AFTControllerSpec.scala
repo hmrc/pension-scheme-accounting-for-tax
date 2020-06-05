@@ -55,7 +55,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val version1 = AFTVersion(1, LocalDate.now())
   private val version2 = AFTVersion(2, LocalDate.now())
   private val versions = Seq(version1, version2)
-  private val journeyType = JourneyType.AFT_RETURN.toString
+  private val journeyType = JourneyType.AFT_RETURN
 
   val modules: Seq[GuiceableModule] =
     Seq(
@@ -91,8 +91,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
 
-      val result = controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
-        newHeaders = "pstr" -> pstr, "journeyType" -> journeyType))
+      val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
+        newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
     }
 
@@ -104,8 +104,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
         .thenReturn(Future.failed(Upstream5xxResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[Upstream5xxResponse] {
-        controller.fileReturn()(fakeRequest.withJsonBody(fileAFTUaRequestJson).
-          withHeaders(newHeaders = "pstr" -> pstr, "journeyType" -> journeyType))
+        controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
+          withHeaders(newHeaders = "pstr" -> pstr))
       } map {
         _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
       }
@@ -118,8 +118,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, Some(jsonPayload))))
-      val result = controller.fileReturn()(fakeRequest.withJsonBody(jsonPayload).
-        withHeaders(newHeaders = "pstr" -> pstr, "journeyType" -> journeyType))
+      val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(jsonPayload).
+        withHeaders(newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
     }
   }
