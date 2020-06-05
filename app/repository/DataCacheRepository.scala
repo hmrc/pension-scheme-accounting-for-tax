@@ -90,12 +90,12 @@ class DataCacheRepository @Inject()(
   }
 
   def setSessionData(id: String, name: Option[String], userData: JsValue, sessionId: String,
-                     version: Int, accessMode: String, hasFirstSubmissionBeenMade: Boolean)(implicit ec: ExecutionContext): Future[Boolean] = {
+                     version: Int, accessMode: String, areSubmittedVersionsAvailable: Boolean)(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.debug("Calling setSessionData in AFT Cache")
     val document: JsValue = Json.toJson(
       DataCache.applyDataCache(
         id = id,
-        Some(SessionData(sessionId, name, version, accessMode, hasFirstSubmissionBeenMade)),
+        Some(SessionData(sessionId, name, version, accessMode, areSubmittedVersionsAvailable)),
         data = userData, expireAt = expireInSeconds
       )
     )

@@ -180,7 +180,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
 
-        val sd = SessionData("id", Some("test name"), 1, "", hasFirstSubmissionBeenMade = false)
+        val sd = SessionData("id", Some("test name"), 1, "", areSubmittedVersionsAvailable = false)
 
         val controller = app.injector.instanceOf[DataCacheController]
         when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(Some(sd))
@@ -223,7 +223,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
           .withHeaders(
             "version" -> version.toString,
             "accessMode" -> accessMode,
-            "hasFirstSubmissionBeenMade" -> "false"
+            "areSubmittedVersionsAvailable" -> "false"
           )
       )
       status(result) mustEqual CREATED
