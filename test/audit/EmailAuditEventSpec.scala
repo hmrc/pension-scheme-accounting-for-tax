@@ -18,7 +18,7 @@ package audit
 
 import models.Sent
 import org.scalatest.{FlatSpec, Matchers}
-import models.enumeration.JourneyType.AFT_RETURN
+import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
 
 class EmailAuditEventSpec extends FlatSpec with Matchers {
 
@@ -27,7 +27,7 @@ class EmailAuditEventSpec extends FlatSpec with Matchers {
     val event = EmailAuditEvent(
       psaId = "A2500001",
       event = Sent,
-      journeyType = AFT_RETURN
+      journeyType = AFT_SUBMIT_RETURN
     )
 
     val expected: Map[String, String] = Map(
@@ -35,7 +35,7 @@ class EmailAuditEventSpec extends FlatSpec with Matchers {
       "event" -> Sent.toString
     )
 
-    event.auditType shouldBe "AFTReturnEmailEvent"
+    event.auditType shouldBe "AFTReturnSubmittedEmailEvent"
     event.details shouldBe expected
   }
 }

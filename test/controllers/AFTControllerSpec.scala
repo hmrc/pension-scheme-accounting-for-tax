@@ -55,7 +55,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val version1 = AFTVersion(1, LocalDate.now())
   private val version2 = AFTVersion(2, LocalDate.now())
   private val versions = Seq(version1, version2)
-  private val journeyType = JourneyType.AFT_RETURN
+  private val journeyType = JourneyType.AFT_SUBMIT_RETURN
 
   val modules: Seq[GuiceableModule] =
     Seq(

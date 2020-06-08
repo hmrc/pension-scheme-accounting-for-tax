@@ -71,7 +71,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30), 3, false, true)
   private val overview2 = AFTOverview(LocalDate.of(2020, 7, 1), LocalDate.of(2020, 10, 31), 2, true, true)
   private val aftOverview = Seq(overview1, overview2)
-  private val journeyType = JourneyType.AFT_RETURN.toString
+  private val journeyType = JourneyType.AFT_SUBMIT_RETURN.toString
 
   "fileAFTReturn" must {
 

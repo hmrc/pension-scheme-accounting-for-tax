@@ -26,7 +26,7 @@ class FileAftReturnSpec extends FlatSpec with Matchers {
 
     val pstr = "test-pstr"
     val quarterStartDate = "2020-01-01"
-    val journeyType = JourneyType.AFT_RETURN.toString
+    val journeyType = JourneyType.AFT_SUBMIT_RETURN.toString
     val aftStatus = "Compiled"
     val status = 1
     val request = Json.obj(
@@ -48,7 +48,7 @@ class FileAftReturnSpec extends FlatSpec with Matchers {
     val expected: Map[String, String] = Map(
       "pstr" -> pstr,
       "quarterStartDate" -> quarterStartDate,
-      "aftStatus" -> s"$journeyType$aftStatus",
+      "aftStatus" -> journeyType,
       "status" -> status.toString,
       "request" -> Json.stringify(request),
       "response" -> Json.stringify(response)
