@@ -52,8 +52,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
-  private val version1 = AFTVersion(1, LocalDate.now())
-  private val version2 = AFTVersion(2, LocalDate.now())
+  private val version1 = AFTVersion(1, LocalDate.now(), "submitted")
+  private val version2 = AFTVersion(2, LocalDate.now(), "compiled")
   private val versions = Seq(version1, version2)
   private val journeyType = JourneyType.AFT_RETURN
 
@@ -131,7 +131,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-        Future.successful(Seq(AFTVersion(1, LocalDate.now()))))
+        Future.successful(Seq(AFTVersion(1, LocalDate.now(), "submitted"))))
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
       )
@@ -148,7 +148,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-        Future.successful(Seq(AFTVersion(1, LocalDate.now()))))
+        Future.successful(Seq(AFTVersion(1, LocalDate.now(), "submitted"))))
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
       )
@@ -161,9 +161,11 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     }
 
     "return OK with the versions if more than one versions are present" in {
-
-
-      val result = controllerForGetAftVersions.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+      val result = controllerForGetAftVersions
+        .getVersions()(fakeRequest.withHeaders(
+          newHeaders = "pstr" -> pstr,
+          "startDate" -> startDt
+        ))
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(Seq(version1, version2))
