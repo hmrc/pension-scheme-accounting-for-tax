@@ -180,7 +180,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
 
-        val sd = SessionData("id", Some("test name"), 1, "")
+        val sd = SessionData("id", Some("test name"), 1, "", areSubmittedVersionsAvailable = false)
 
         val controller = app.injector.instanceOf[DataCacheController]
         when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(Some(sd))
@@ -213,16 +213,21 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.setSessionData(Matchers.eq(id),
+      when(repo.setSessionData(
+        Matchers.eq(id),
         Matchers.eq(Some("test name")), any(), any(),
-        Matchers.eq(version), Matchers.eq(accessMode))(any())) thenReturn Future.successful(true)
+        Matchers.eq(version),
+        Matchers.eq(accessMode),
+        Matchers.eq(true)
+      )(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
       val result = controller.setSessionData(true)(fakePostRequest
         .withJsonBody(Json.obj("value" -> "data"))
           .withHeaders(
             "version" -> version.toString,
-            "accessMode" -> accessMode
+            "accessMode" -> accessMode,
+            "areSubmittedVersionsAvailable" -> "true"
           )
       )
       status(result) mustEqual CREATED
@@ -237,7 +242,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
       val controller = app.injector.instanceOf[DataCacheController]
       when(repo.setSessionData(Matchers.eq(id),
         Matchers.eq(Some("test name")), any(), any(),
-        Matchers.eq(version), Matchers.eq(accessMode))(any())) thenReturn Future.successful(true)
+        Matchers.eq(version), Matchers.eq(accessMode), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
       val result = controller.setSessionData(true)(fakePostRequest
@@ -251,7 +256,7 @@ class DataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSug
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[DataCacheController]
-      when(repo.setSessionData(any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.setSessionData(any(), any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
       val result = controller
