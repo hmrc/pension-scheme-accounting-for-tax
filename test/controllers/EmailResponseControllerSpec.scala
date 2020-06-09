@@ -17,7 +17,7 @@
 package controllers
 
 import audit.{AuditService, EmailAuditEvent}
-import models.enumeration.JourneyType.AFT_RETURN
+import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
 import models.{Sent, _}
 import org.joda.time.DateTime
 import org.mockito.Matchers.any
@@ -62,15 +62,15 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
   "EmailResponseController" must {
 
     "respond OK when given EmailEvents" in {
-      val result = controller.retrieveStatus(AFT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
+      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       status(result) mustBe OK
       verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
-      eventCaptor.getValue mustEqual EmailAuditEvent("A0000000", Delivered, AFT_RETURN)
+      eventCaptor.getValue mustEqual EmailAuditEvent("A0000000", Delivered, AFT_SUBMIT_RETURN)
     }
 
     "respond with BAD_REQUEST when not given EmailEvents" in {
-      val result = controller.retrieveStatus(AFT_RETURN)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
+      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
 
       verify(mockAuditService, never()).sendEvent(any())(any(), any())
       status(result) mustBe BAD_REQUEST
@@ -81,7 +81,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
         .thenReturn(Future.successful(Enrolments(Set.empty)))
 
       recoverToExceptionIf[UnauthorizedException] {
-        controller.retrieveStatus(AFT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
+        controller.retrieveStatus(AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
       } map { response =>
         response.message mustEqual "Not Authorised - Unable to retrieve enrolments"
       }

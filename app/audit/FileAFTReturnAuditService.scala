@@ -60,7 +60,7 @@ case class FileAftReturn(
   override def details: Map[String, String] = Map(
     "pstr" -> pstr,
     "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String].getOrElse(""),
-    "aftStatus" -> s"$journeyType${(request \ "aftDetails" \ "aftStatus").asOpt[String].getOrElse("")}",
+    "aftStatus" -> journeyType,
     "status" -> status.toString,
     "request" -> Json.stringify(request),
     "response" -> {
@@ -84,7 +84,7 @@ case class FileAFTReturnOneChargeAndNoValue(
   override def details: Map[String, String] = Map(
     "pstr" -> pstr,
     "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String].getOrElse(""),
-    "aftStatus" -> s"$journeyType${(request \ "aftDetails" \ "aftStatus").asOpt[String].getOrElse("")}",
+    "aftStatus" -> journeyType,
     "status" -> status.toString,
     "request" -> Json.stringify(request),
     "response" -> {
