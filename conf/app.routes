@@ -19,6 +19,7 @@ GET         /journey-cache/aft                      controllers.cache.DataCacheC
 POST        /journey-cache/aft                      controllers.cache.DataCacheController.save
 DELETE      /journey-cache/aft                      controllers.cache.DataCacheController.remove
 
-POST        /email-response/:journeyType            controllers.EmailResponseController.retrieveStatus(journeyType: JourneyType.Name)
-
 GET         /psa-financial-statement                controllers.FinancialStatementController.psaStatement
+
+POST        /email-response/:journeyType/*id            controllers.EmailResponseController.retrieveStatus(journeyType: JourneyType.Name, id: String)
+
