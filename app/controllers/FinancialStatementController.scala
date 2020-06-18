@@ -33,27 +33,35 @@ class FinancialStatementController @Inject()(appConfig: AppConfig,
                                              cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
                                              val authConnector: AuthConnector
-                             )(implicit ec: ExecutionContext)
+                                            )(implicit ec: ExecutionContext)
   extends BackendController(cc) with HttpErrorFunctions with Results with AuthorisedFunctions {
 
   def psaStatement: Action[AnyContent] = Action.async {
     implicit request =>
-      get { psaId =>
+      get(key = "psaId") { psaId =>
         financialStatementConnector.getPsaFS(psaId).map { data =>
-                  Ok(Json.toJson(data))
-            }
+          Ok(Json.toJson(data))
         }
       }
+  }
 
+  def schemeStatement: Action[AnyContent] = Action.async {
+    implicit request =>
+      get(key = "pstr") { pstr =>
+        financialStatementConnector.getSchemeFS(pstr).map { data =>
+          Ok(Json.toJson(data))
+        }
+      }
+  }
 
-  private def get(block: String => Future[Result])
+  private def get(key: String)(block: String => Future[Result])
                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
 
     authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.externalId) {
       case Some(_) =>
-        request.headers.get("psaId") match {
-          case Some(psaId) => block(psaId)
-          case _ => Future.failed(new BadRequestException("Bad Request with missing PSA ID"))
+        request.headers.get(key) match {
+          case Some(id) => block(id)
+          case _ => Future.failed(new BadRequestException(s"Bad Request with missing $key"))
         }
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))

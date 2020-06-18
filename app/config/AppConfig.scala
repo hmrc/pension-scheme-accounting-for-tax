@@ -34,8 +34,14 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   lazy val desEnvironment: String = runModeConfiguration.getOptional[String]("microservice.services.des-hod.env").getOrElse("local")
   lazy val authorization: String = "Bearer " + runModeConfiguration.getOptional[String]("microservice.services.des-hod.authorizationToken").getOrElse("local")
 
+  lazy val integrationframeworkEnvironment: String = runModeConfiguration.getOptional[String](
+    path = "microservice.services.if-hod.env").getOrElse("local")
+  lazy val integrationframeworkAuthorization: String = "Bearer " + runModeConfiguration.getOptional[String](
+    path = "microservice.services.if-hod.authorizationToken").getOrElse("local")
+
   def getAftDetailsUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-details")}"
   def getAftVersionUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-version")}"
   def getAftOverviewUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-overview")}"
   def psaFinancialStatementUrl = s"$baseURL${config.get[String](path = "serviceUrls.psa-financial-statement")}"
+  def schemeFinancialStatementUrl = s"$baseURL${config.get[String](path = "serviceUrls.scheme-financial-statement")}"
 }

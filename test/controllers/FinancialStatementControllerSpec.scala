@@ -19,7 +19,7 @@ package controllers
 import java.time.LocalDate
 
 import connectors.FinancialStatementConnector
-import models.PsaFS
+import models.{PsaFS, SchemeFS}
 import org.mockito.Matchers
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
@@ -45,7 +45,8 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val fakeRequest = FakeRequest("GET", "/")
-  private val fakeRequestWithHeaders = fakeRequest.withHeaders(("psaId", psaId))
+  private val fakeRequestWithPsaId = fakeRequest.withHeaders(("psaId", psaId))
+  private val fakeRequestWithPstr = fakeRequest.withHeaders(("pstr", pstr))
   private val mockFSConnector = mock[FinancialStatementConnector]
   private val authConnector: AuthConnector = mock[AuthConnector]
 
@@ -64,7 +65,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
   }
 
-  "getAftDetails" must {
+  "getPsaFS" must {
 
     "return OK when the details are returned based on pstr, start date and AFT version" in {
 
@@ -73,7 +74,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
       when(mockFSConnector.getPsaFS(Matchers.eq(psaId))(any(), any(), any())).thenReturn(
         Future.successful(psaFSResponse))
 
-      val result = controller.psaStatement()(fakeRequestWithHeaders)
+      val result = controller.psaStatement()(fakeRequestWithPsaId)
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(psaFSResponse)
@@ -87,7 +88,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
         controller.psaStatement()(fakeRequest)
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing PSA ID"
+        response.getMessage mustBe "Bad Request with missing psaId"
       }
     }
 
@@ -99,26 +100,60 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
         Future.failed(new Exception("Generic Exception")))
 
       recoverToExceptionIf[Exception] {
-        controller.psaStatement()(fakeRequestWithHeaders)
+        controller.psaStatement()(fakeRequestWithPsaId)
       } map { response =>
         response.getMessage mustBe "Generic Exception"
       }
     }
   }
 
-  def errorResponse(code: String): String = {
-    Json.stringify(
-      Json.obj(
-        "code" -> code,
-        "reason" -> s"Reason for $code"
-      )
-    )
+  "getSchemeFS" must {
+
+    "return OK when the details are returned based on pstr" in {
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(Matchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModel))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(schemeModel)
+    }
+
+    "throw BadRequestException when PSTR is not present in the header" in {
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      recoverToExceptionIf[BadRequestException] {
+        controller.schemeStatement()(fakeRequest)
+      } map { response =>
+        response.responseCode mustBe BAD_REQUEST
+        response.getMessage mustBe "Bad Request with missing pstr"
+      }
+    }
+
+    "throw generic exception when any other exception returned from Des" in {
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(Matchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.failed(new Exception("Generic Exception")))
+
+      recoverToExceptionIf[Exception] {
+        controller.schemeStatement()(fakeRequestWithPstr)
+      } map { response =>
+        response.getMessage mustBe "Generic Exception"
+      }
+    }
   }
 }
 
 
 object FinancialStatementControllerSpec {
   private val psaId = "test-psa-id"
+  private val pstr = "test-pstr"
 
   private val psaFSResponse: Seq[PsaFS] = Seq(
     PsaFS(
@@ -128,21 +163,33 @@ object FinancialStatementControllerSpec {
       outstandingAmount = 56049.08,
       stoodOverAmount = 25089.08,
       amountDue = 1029.05,
-      periodStartDate =  LocalDate.parse("2020-04-01"),
-      periodEndDate =  LocalDate.parse("2020-06-30"),
+      periodStartDate = LocalDate.parse("2020-04-01"),
+      periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN"
-    ),
-    PsaFS(
-      chargeReference = "XY002610150184",
-      chargeType = "AFT Initial LFP",
-      dueDate = Some(LocalDate.parse("2020-02-15")),
-      outstandingAmount = 56049.08,
-      stoodOverAmount = 25089.08,
-      amountDue = 1029.05,
-      periodStartDate =  LocalDate.parse("2020-04-01"),
-      periodEndDate =  LocalDate.parse("2020-06-30"),
-      pstr = "24000041IN"
     )
   )
+
+  private val schemeModel: Seq[SchemeFS] = Seq(
+    SchemeFS(
+      chargeReference = s"XY002610150184",
+      chargeType = "PSS AFT Return",
+      dueDate = Some(LocalDate.parse("2020-02-15")),
+      amountDue = 1029.05,
+      outstandingAmount = 56049.08,
+      accruedInterestTotal = 100.05,
+      stoodOverAmount = 25089.08,
+      periodStartDate = Some(LocalDate.parse("2020-04-01")),
+      periodEndDate = Some(LocalDate.parse("2020-06-30"))
+    )
+  )
+
+  def errorResponse(code: String): String = {
+    Json.stringify(
+      Json.obj(
+        "code" -> code,
+        "reason" -> s"Reason for $code"
+      )
+    )
+  }
 }
 
