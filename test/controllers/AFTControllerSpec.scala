@@ -77,9 +77,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   }
 
   before {
-    reset(mockDesConnector)
-    reset(mockAftService)
-    reset(authConnector)
+    reset(mockDesConnector, mockAftService, authConnector)
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
   }
 
