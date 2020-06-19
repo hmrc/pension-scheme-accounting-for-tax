@@ -19,13 +19,14 @@ package audit
 import models.Sent
 import org.scalatest.{FlatSpec, Matchers}
 import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
+import uk.gov.hmrc.domain.PsaId
 
 class EmailAuditEventSpec extends FlatSpec with Matchers {
 
   "EmailAuditEvent" should "output the correct map of data" in {
 
     val event = EmailAuditEvent(
-      psaId = "A2500001",
+      psaId = PsaId("A2500001"),
       event = Sent,
       journeyType = AFT_SUBMIT_RETURN
     )

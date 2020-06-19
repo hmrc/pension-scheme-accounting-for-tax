@@ -32,7 +32,8 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.http.UnauthorizedException
+import uk.gov.hmrc.crypto.{ApplicationCrypto, PlainText}
+import uk.gov.hmrc.domain.PsaId
 
 import scala.concurrent.Future
 
@@ -52,6 +53,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 
   private val injector = application.injector
   private val controller = injector.instanceOf[EmailResponseController]
+  private val encrypted = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(psa.id)).value
 
   override def beforeEach(): Unit = {
     Mockito.reset(mockAuditService, mockAuthConnector)
@@ -62,34 +64,24 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
   "EmailResponseController" must {
 
     "respond OK when given EmailEvents" in {
-      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
+      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, encrypted)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       status(result) mustBe OK
-      verify(mockAuditService, times(2)).sendEvent(eventCaptor.capture())(any(), any())
-      eventCaptor.getValue mustEqual EmailAuditEvent("A0000000", Delivered, AFT_SUBMIT_RETURN)
+      verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
+      eventCaptor.getValue mustEqual EmailAuditEvent(psa, Complained, AFT_SUBMIT_RETURN)
     }
 
     "respond with BAD_REQUEST when not given EmailEvents" in {
-      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
+      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, encrypted)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
 
       verify(mockAuditService, never()).sendEvent(any())(any(), any())
       status(result) mustBe BAD_REQUEST
-    }
-
-    "throw AuthorisationException if there are no enrolments" in {
-      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
-        .thenReturn(Future.successful(Enrolments(Set.empty)))
-
-      recoverToExceptionIf[UnauthorizedException] {
-        controller.retrieveStatus(AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
-      } map { response =>
-        response.message mustEqual "Not Authorised - Unable to retrieve enrolments"
-      }
     }
   }
 }
 
 object EmailResponseControllerSpec {
+  private val psa = PsaId("A7654321")
   private val fakeRequest = FakeRequest("", "")
   private val enrolments = Enrolments(Set(
     Enrolment("HMRC-PODS-ORG", Seq(
@@ -97,5 +89,6 @@ object EmailResponseControllerSpec {
     ), "Activated", None)
   ))
   private val eventCaptor = ArgumentCaptor.forClass(classOf[EmailAuditEvent])
-  private val emailEvents = EmailEvents(Seq(EmailEvent(Sent, DateTime.now()), EmailEvent(Delivered, DateTime.now())))
+  private val emailEvents = EmailEvents(Seq(EmailEvent(Sent, DateTime.now()), EmailEvent(Delivered, DateTime.now()),
+    EmailEvent(PermanentBounce, DateTime.now()), EmailEvent(Opened, DateTime.now()), EmailEvent(Complained, DateTime.now())))
 }
