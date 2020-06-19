@@ -41,7 +41,7 @@ object SchemeFS {
     (chargeReference, chargeType, dueDateOpt, amountDue, outstandingAmount, accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt) =>
       SchemeFS(
         chargeReference,
-        ChargeType.valueWithName(chargeType),
+        SchemeChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
         amountDue,
         outstandingAmount,
@@ -55,7 +55,7 @@ object SchemeFS {
   implicit val formats: Format[SchemeFS] = Json.format[SchemeFS]
 }
 
-object ChargeType extends Enumeration {
+object SchemeChargeType extends Enumeration {
 
   sealed case class TypeValue(name: String, value: String) extends Val(name)
 

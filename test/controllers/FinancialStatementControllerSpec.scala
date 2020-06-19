@@ -44,19 +44,16 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  private val fakeRequest = FakeRequest("GET", "/")
-  private val fakeRequestWithPsaId = fakeRequest.withHeaders(("psaId", psaId))
-  private val fakeRequestWithPstr = fakeRequest.withHeaders(("pstr", pstr))
   private val mockFSConnector = mock[FinancialStatementConnector]
   private val authConnector: AuthConnector = mock[AuthConnector]
 
-  val modules: Seq[GuiceableModule] =
+  private val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[FinancialStatementConnector].toInstance(mockFSConnector)
     )
 
-  val application: Application = new GuiceApplicationBuilder()
+  private val application: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
     overrides(modules: _*).build()
 
@@ -147,6 +144,20 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
         response.getMessage mustBe "Generic Exception"
       }
     }
+
+    "throw Unauthorised Exception when there is external id is not present in auth" in {
+      when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(Matchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModel))
+
+      recoverToExceptionIf[UnauthorizedException] {
+        controller.schemeStatement()(fakeRequestWithPstr)
+      } map { response =>
+        response.getMessage mustBe "Not Authorised - Unable to retrieve credentials - externalId"
+      }
+    }
   }
 }
 
@@ -154,6 +165,9 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
 object FinancialStatementControllerSpec {
   private val psaId = "test-psa-id"
   private val pstr = "test-pstr"
+  private val fakeRequest = FakeRequest("GET", "/")
+  private val fakeRequestWithPsaId = fakeRequest.withHeaders(("psaId", psaId))
+  private val fakeRequestWithPstr = fakeRequest.withHeaders(("pstr", pstr))
 
   private val psaFSResponse: Seq[PsaFS] = Seq(
     PsaFS(
@@ -182,14 +196,5 @@ object FinancialStatementControllerSpec {
       periodEndDate = Some(LocalDate.parse("2020-06-30"))
     )
   )
-
-  def errorResponse(code: String): String = {
-    Json.stringify(
-      Json.obj(
-        "code" -> code,
-        "reason" -> s"Reason for $code"
-      )
-    )
-  }
 }
 
