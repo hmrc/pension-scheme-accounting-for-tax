@@ -57,7 +57,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
   private val psaId = "test-psa-id"
   private val getAftUrl = s"/pension-online/financial-statements/psaid/$psaId?dataset=medium"
 
-  "getAftDetails" must {
+  "getPsaFS" must {
     "return user answer json when successful response returned from ETMP" in {
       server.stubFor(
         get(urlEqualTo(getAftUrl))
