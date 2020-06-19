@@ -62,7 +62,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
   }
 
-  "getPsaFS" must {
+  "psaStatement" must {
 
     "return OK when the details are returned based on pstr, start date and AFT version" in {
 
@@ -104,7 +104,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
     }
   }
 
-  "getSchemeFS" must {
+  "schemeStatement" must {
 
     "return OK when the details are returned based on pstr" in {
 

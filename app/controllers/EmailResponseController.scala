@@ -18,46 +18,53 @@ package controllers
 
 import audit.{AuditService, EmailAuditEvent}
 import com.google.inject.Inject
-import models.EmailEvents
 import models.enumeration.JourneyType
+import models.{EmailEvents, Opened}
 import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.mvc._
 import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.http.UnauthorizedException
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Crypted}
+import uk.gov.hmrc.domain.PsaId
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 class EmailResponseController @Inject()(
                                          auditService: AuditService,
                                          cc: ControllerComponents,
+                                         crypto: ApplicationCrypto,
                                          parser: PlayBodyParsers,
                                          val authConnector: AuthConnector
                                        ) extends BackendController(cc) with AuthorisedFunctions {
 
-  def retrieveStatus(journeyType: JourneyType.Name): Action[JsValue] = Action(parser.tolerantJson).async {
+  def retrieveStatus(journeyType: JourneyType.Name, id: String): Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
-      authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.allEnrolments) { enrolments =>
-        val psaId = enrolments.getEnrolment(key = "HMRC-PODS-ORG").flatMap(
-          _.getIdentifier("PSAID")).map(_.value).getOrElse(throw InsufficientEnrolments("Unable to retrieve Psa Id"))
-
-        request.body.validate[EmailEvents].fold(
-          _ => Future.successful(BadRequest("Bad request received for email call back event")),
-          valid => {
-            valid.events.foreach { event =>
-              Logger.debug(s"Email Audit event coming from $journeyType is $event")
-              auditService.sendEvent(EmailAuditEvent(psaId, event.event, journeyType))
+      validatePsaId(id) match {
+        case Right(psaId) =>
+          request.body.validate[EmailEvents].fold(
+            _ => BadRequest("Bad request received for email call back event"),
+            valid => {
+              valid.events.filterNot(
+                _.event == Opened
+              ).foreach { event =>
+                Logger.debug(s"Email Audit event coming from $journeyType is $event")
+                auditService.sendEvent(EmailAuditEvent(psaId, event.event, journeyType))
+              }
+              Ok
             }
-            Future.successful(Ok)
-          }
-        )
-      } recoverWith {
-        case e: AuthorisationException =>
-          Logger.warn(message = s"Authorization Failed with error $e")
-          Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve enrolments"))
+          )
+
+        case Left(result) => result
       }
   }
+
+  private def validatePsaId(id: String): Either[Result, PsaId] =
+    try {
+      Right(PsaId {
+        crypto.QueryParameterCrypto.decrypt(Crypted(id)).value
+      })
+    } catch {
+      case _: IllegalArgumentException => Left(Forbidden("Malformed PSAID"))
+    }
 }

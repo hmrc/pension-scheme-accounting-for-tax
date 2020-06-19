@@ -28,12 +28,15 @@ object Event extends Enumerable.Implicits {
   override def toString: String = super.toString.toLowerCase
 
   implicit val enumerable: Enumerable[Event] = Enumerable(
-    Seq(Sent, Delivered).map(v => v.toString -> v): _*
+    Seq(Sent, Delivered, PermanentBounce, Opened, Complained).map(v => v.toString -> v): _*
   )
 }
 
 case object Sent extends WithName("Sent") with Event
 case object Delivered extends WithName("Delivered") with Event
+case object PermanentBounce extends WithName("PermanentBounce") with Event
+case object Opened extends WithName("Opened") with Event
+case object Complained extends WithName("Complained") with Event
 
 case class EmailEvent(event: Event, detected: DateTime)
 
@@ -47,12 +50,13 @@ object EmailEvent {
 
   implicit val write: Writes[EmailEvent] = (
     (JsPath \ "event").write[Event] and (JsPath \ "detected").write[DateTime]
-  ) ( emailEvent => (emailEvent.event, emailEvent.detected) )
+    ) ( emailEvent => (emailEvent.event, emailEvent.detected) )
 
 }
 
 case class EmailEvents(events: Seq[EmailEvent])
 
 object EmailEvents {
-  implicit val format: OFormat[EmailEvents] = Json.format[EmailEvents]
+  implicit val format = Json.format[EmailEvents]
 }
+
