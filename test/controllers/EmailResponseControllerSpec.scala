@@ -53,7 +53,8 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 
   private val injector = application.injector
   private val controller = injector.instanceOf[EmailResponseController]
-  private val encrypted = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(psa.id)).value
+  private val encryptedPsaId = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(psa.id)).value
+  private val encryptedEmail = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(email)).value
 
   override def beforeEach(): Unit = {
     Mockito.reset(mockAuditService, mockAuthConnector)
@@ -64,15 +65,15 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
   "EmailResponseController" must {
 
     "respond OK when given EmailEvents" in {
-      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, encrypted)(fakeRequest.withBody(Json.toJson(emailEvents)))
+      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, encryptedEmail, encryptedPsaId)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       status(result) mustBe OK
       verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
-      eventCaptor.getValue mustEqual EmailAuditEvent(psa, Complained, AFT_SUBMIT_RETURN)
+      eventCaptor.getValue mustEqual EmailAuditEvent(psa, email, Complained, AFT_SUBMIT_RETURN)
     }
 
     "respond with BAD_REQUEST when not given EmailEvents" in {
-      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, encrypted)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
+      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, encryptedEmail, encryptedPsaId)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
 
       verify(mockAuditService, never()).sendEvent(any())(any(), any())
       status(result) mustBe BAD_REQUEST
@@ -82,6 +83,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 
 object EmailResponseControllerSpec {
   private val psa = PsaId("A7654321")
+  private val email = "test@test.com"
   private val fakeRequest = FakeRequest("", "")
   private val enrolments = Enrolments(Set(
     Enrolment("HMRC-PODS-ORG", Seq(

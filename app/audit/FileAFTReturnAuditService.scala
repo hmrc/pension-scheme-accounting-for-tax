@@ -62,10 +62,10 @@ case class FileAftReturn(
     "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String].getOrElse(""),
     "aftStatus" -> journeyType,
     "status" -> status.toString,
-    "request" -> Json.stringify(request),
+    "request" -> Json.prettyPrint(request),
     "response" -> {
       response match {
-        case Some(json) => Json.stringify(json)
+        case Some(json) => Json.prettyPrint(json)
         case _ => ""
       }
     }
@@ -86,10 +86,10 @@ case class FileAFTReturnOneChargeAndNoValue(
     "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String].getOrElse(""),
     "aftStatus" -> journeyType,
     "status" -> status.toString,
-    "request" -> Json.stringify(request),
+    "request" -> Json.prettyPrint(request),
     "response" -> {
       response match {
-        case Some(json) => Json.stringify(json)
+        case Some(json) => Json.prettyPrint(json)
         case _ => ""
       }
     }
