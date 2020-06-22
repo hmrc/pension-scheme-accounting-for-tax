@@ -50,8 +50,8 @@ class FileAftReturnSpec extends FlatSpec with Matchers {
       "quarterStartDate" -> quarterStartDate,
       "aftStatus" -> journeyType,
       "status" -> status.toString,
-      "request" -> Json.stringify(request),
-      "response" -> Json.stringify(response)
+      "request" -> Json.prettyPrint(request),
+      "response" -> Json.prettyPrint(response)
     )
 
     event.details shouldBe expected

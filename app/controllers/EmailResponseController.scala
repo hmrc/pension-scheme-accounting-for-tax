@@ -38,10 +38,10 @@ class EmailResponseController @Inject()(
                                          val authConnector: AuthConnector
                                        ) extends BackendController(cc) with AuthorisedFunctions {
 
-  def retrieveStatus(journeyType: JourneyType.Name, id: String): Action[JsValue] = Action(parser.tolerantJson) {
+  def retrieveStatus(journeyType: JourneyType.Name, email: String, id: String): Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
-      validatePsaId(id) match {
-        case Right(psaId) =>
+      validatePsaIdEmail(id, email) match {
+        case Right(Tuple2(psaId, emailAddress)) =>
           request.body.validate[EmailEvents].fold(
             _ => BadRequest("Bad request received for email call back event"),
             valid => {
@@ -49,7 +49,7 @@ class EmailResponseController @Inject()(
                 _.event == Opened
               ).foreach { event =>
                 Logger.debug(s"Email Audit event coming from $journeyType is $event")
-                auditService.sendEvent(EmailAuditEvent(psaId, event.event, journeyType))
+                auditService.sendEvent(EmailAuditEvent(psaId, emailAddress, event.event, journeyType))
               }
               Ok
             }
@@ -59,12 +59,20 @@ class EmailResponseController @Inject()(
       }
   }
 
-  private def validatePsaId(id: String): Either[Result, PsaId] =
+  private def validatePsaIdEmail(id: String, email: String): Either[Result, (PsaId, String)] = {
+    val psaId = crypto.QueryParameterCrypto.decrypt(Crypted(id)).value
+    val emailAddress = crypto.QueryParameterCrypto.decrypt(Crypted(email)).value
+    val emailRegex: String = "^(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"" +
+      "(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")" +
+      "@(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?|" +
+      "\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-zA-Z0-9-]*[a-zA-Z0-9]:" +
+      "(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])$"
+
     try {
-      Right(PsaId {
-        crypto.QueryParameterCrypto.decrypt(Crypted(id)).value
-      })
+      require(emailAddress.matches(emailRegex))
+      Right(Tuple2(PsaId(psaId), emailAddress))
     } catch {
-      case _: IllegalArgumentException => Left(Forbidden("Malformed PSAID"))
+      case _: IllegalArgumentException => Left(Forbidden(s"Malformed PSAID : $psaId or Email : $emailAddress"))
     }
+  }
 }

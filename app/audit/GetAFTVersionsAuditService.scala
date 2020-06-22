@@ -55,7 +55,7 @@ case class GetAFTVersions(
     "status" -> status.toString,
     "response" -> {
       response match {
-        case Some(json) => Json.stringify(json)
+        case Some(json) => Json.prettyPrint(json)
         case _ => ""
       }
     }

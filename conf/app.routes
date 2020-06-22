@@ -22,5 +22,5 @@ DELETE      /journey-cache/aft                      controllers.cache.DataCacheC
 GET         /psa-financial-statement                controllers.FinancialStatementController.psaStatement
 GET         /scheme-financial-statement             controllers.FinancialStatementController.schemeStatement
 
-POST        /email-response/:journeyType/*id            controllers.EmailResponseController.retrieveStatus(journeyType: JourneyType.Name, id: String)
+POST        /email-response/:journeyType/:email/*id        controllers.EmailResponseController.retrieveStatus(journeyType: JourneyType.Name, email: String, id: String)
 
