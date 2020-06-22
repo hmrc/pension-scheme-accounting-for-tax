@@ -16,12 +16,9 @@
 
 package connectors
 
-import java.util.UUID.randomUUID
-
 import com.google.inject.Inject
 import config.AppConfig
-import models.PsaFS
-import play.Logger
+import models.{PsaFS, SchemeFS}
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http._
@@ -30,12 +27,14 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialStatementConnector @Inject()(http: HttpClient,
-                                            config: AppConfig) extends HttpErrorFunctions {
+                                            config: AppConfig,
+                                            headerUtils: HeaderUtils) extends HttpErrorFunctions {
 
   def getPsaFS(psaId: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
 
     val url: String = config.psaFinancialStatementUrl.format(psaId)
-    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders =
+      headerUtils.integrationFrameworkHeader(implicitly[HeaderCarrier](headerCarrier)))
 
     http.GET[JsValue](url)(implicitly, hc, implicitly).map { responseJson =>
 
@@ -46,18 +45,18 @@ class FinancialStatementConnector @Inject()(http: HttpClient,
     }
   }
 
+  def getSchemeFS(pstr: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFS]] = {
 
-  private def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
-    val requestId = getCorrelationId(hc.requestId.map(_.value))
+    val url: String = config.schemeFinancialStatementUrl.format(pstr)
+    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders =
+      headerUtils.integrationFrameworkHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    Seq("Environment" -> config.desEnvironment, "Authorization" -> config.authorization,
-      "Content-Type" -> "application/json", "CorrelationId" -> requestId)
-  }
+    http.GET[JsValue](url)(implicitly, hc, implicitly).map { responseJson =>
 
-  def getCorrelationId(requestId: Option[String]): String = {
-    requestId.getOrElse {
-      Logger.error("No Request Id found")
-      randomUUID.toString
-    }.replaceAll("(govuk-tax-)", "").slice(0, 36)
+      responseJson.validate[Seq[SchemeFS]](Reads.seq(SchemeFS.rds)) match {
+        case JsSuccess(statements, _) => statements
+        case JsError(errors) => throw JsResultException(errors)
+      }
+    }
   }
 }

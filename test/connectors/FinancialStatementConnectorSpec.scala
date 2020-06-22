@@ -20,21 +20,20 @@ import java.time.LocalDate
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
-import models.PsaFS
-import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
+import models.{PsaFS, SchemeFS}
+import org.scalatest.{AsyncWordSpec, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import services.AFTService
 import uk.gov.hmrc.http._
-import utils.{JsonFileReader, WireMockHelper}
+import utils.WireMockHelper
 
-class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with JsonFileReader
-  with EitherValues with MockitoSugar {
+class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with MockitoSugar {
 
   import FinancialStatementConnectorSpec._
 
@@ -55,12 +54,14 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
     )
 
   private val psaId = "test-psa-id"
-  private val getAftUrl = s"/pension-online/financial-statements/psaid/$psaId?dataset=medium"
+  private val pstr = "test-pstr"
+  private val getPsaFSUrl = s"/pension-online/financial-statements/psaid/$psaId?dataset=medium"
+  private val getSchemeFSUrl = s"/pension-online/financial-statements/pstr/$pstr?dataset=medium"
 
   "getPsaFS" must {
     "return user answer json when successful response returned from ETMP" in {
       server.stubFor(
-        get(urlEqualTo(getAftUrl))
+        get(urlEqualTo(getPsaFSUrl))
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
@@ -75,7 +76,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
 
     "return a BadRequestException for a 400 INVALID_PSTR response" in {
       server.stubFor(
-        get(urlEqualTo(getAftUrl))
+        get(urlEqualTo(getPsaFSUrl))
           .willReturn(
             badRequest
               .withHeader("Content-Type", "application/json")
@@ -93,7 +94,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
 
     "return Not Found - 404" in {
       server.stubFor(
-        get(urlEqualTo(getAftUrl))
+        get(urlEqualTo(getPsaFSUrl))
           .willReturn(
             notFound
               .withBody(errorResponse("NOT_FOUND"))
@@ -111,7 +112,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
     "throw Upstream4XX for server unavailable - 403" in {
 
       server.stubFor(
-        get(urlEqualTo(getAftUrl))
+        get(urlEqualTo(getPsaFSUrl))
           .willReturn(
             forbidden
               .withBody(errorResponse("FORBIDDEN"))
@@ -127,7 +128,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
     "throw Upstream5XX for internal server error - 500 and log the event as error" in {
 
       server.stubFor(
-        get(urlEqualTo(getAftUrl))
+        get(urlEqualTo(getPsaFSUrl))
           .willReturn(
             serverError
               .withBody(errorResponse("SERVER_ERROR"))
@@ -143,27 +144,94 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
     }
   }
 
-  "getCorrelationId" must {
-    "return the correct CorrelationId when the request Id is more than 32 characters" in {
-      val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2dfe")
-      val result = connector.getCorrelationId(requestId)
-      result mustBe "4725c811-9251-4c06-9b8f-f1d84659b2df"
+  "getSchemeFS" must {
+    "return user answer json when successful response returned from ETMP" in {
+      server.stubFor(
+        get(urlEqualTo(getSchemeFSUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(schemeFSResponse.toString())
+          )
+      )
+
+      connector.getSchemeFS(pstr).map { response =>
+        response mustBe schemeModel
+      }
     }
 
+    "return a BadRequestException for a 400 INVALID_PSTR response" in {
+      server.stubFor(
+        get(urlEqualTo(getSchemeFSUrl))
+          .willReturn(
+            badRequest
+              .withHeader("Content-Type", "application/json")
+              .withBody(errorResponse("INVALID_PSTR"))
+          )
+      )
 
-    "return the correct CorrelationId when the request Id is less than 32 characters" in {
-      val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1")
-      val result = connector.getCorrelationId(requestId)
-      result mustBe "4725c811-9251-4c06-9b8f-f1"
+      recoverToExceptionIf[BadRequestException] {
+        connector.getSchemeFS(pstr)
+      } map { errorResponse =>
+        errorResponse.responseCode mustEqual BAD_REQUEST
+        errorResponse.message must include("INVALID_PSTR")
+      }
     }
 
-    "return the correct CorrelationId when the request Id does not have gov-uk-tax or -" in {
-      val requestId = Some("4725c81192514c069b8ff1")
-      val result = connector.getCorrelationId(requestId)
-      result mustBe "4725c81192514c069b8ff1"
+    "return Not Found - 404" in {
+      server.stubFor(
+        get(urlEqualTo(getSchemeFSUrl))
+          .willReturn(
+            notFound
+              .withBody(errorResponse("NOT_FOUND"))
+          )
+      )
+
+      recoverToExceptionIf[NotFoundException] {
+        connector.getSchemeFS(pstr)
+      } map { errorResponse =>
+        errorResponse.responseCode mustEqual NOT_FOUND
+        errorResponse.message must include("NOT_FOUND")
+      }
+    }
+
+    "throw Upstream4XX for server unavailable - 403" in {
+
+      server.stubFor(
+        get(urlEqualTo(getSchemeFSUrl))
+          .willReturn(
+            forbidden
+              .withBody(errorResponse("FORBIDDEN"))
+          )
+      )
+      recoverToExceptionIf[Upstream4xxResponse](connector.getSchemeFS(pstr)) map {
+        ex =>
+          ex.upstreamResponseCode mustBe FORBIDDEN
+          ex.message must include("FORBIDDEN")
+      }
+    }
+
+    "throw Upstream5XX for internal server error - 500 and log the event as error" in {
+
+      server.stubFor(
+        get(urlEqualTo(getSchemeFSUrl))
+          .willReturn(
+            serverError
+              .withBody(errorResponse("SERVER_ERROR"))
+          )
+      )
+
+      recoverToExceptionIf[Upstream5xxResponse](connector.getSchemeFS(pstr)) map {
+        ex =>
+          ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+          ex.message must include("SERVER_ERROR")
+          ex.reportAs mustBe BAD_GATEWAY
+      }
     }
   }
+}
 
+object FinancialStatementConnectorSpec {
   def errorResponse(code: String): String = {
     Json.stringify(
       Json.obj(
@@ -172,21 +240,19 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
       )
     )
   }
-}
 
-object FinancialStatementConnectorSpec {
   private val psaFSResponse: JsValue = Json.arr(
     Json.obj(
-    "chargeReference" -> "XY002610150184",
-    "chargeType" -> "57001080",
-    "dueDate" -> "2020-02-15",
-    "outstandingAmount" -> 56049.08,
-    "stoodOverAmount" -> 25089.08,
-    "amountDue" -> 1029.05,
-    "periodStartDate" -> "2020-04-01",
-    "periodEndDate" -> "2020-06-30",
-    "pstr" -> "24000040IN"
-  ),
+      "chargeReference" -> "XY002610150184",
+      "chargeType" -> "57001080",
+      "dueDate" -> "2020-02-15",
+      "outstandingAmount" -> 56049.08,
+      "stoodOverAmount" -> 25089.08,
+      "amountDue" -> 1029.05,
+      "periodStartDate" -> "2020-04-01",
+      "periodEndDate" -> "2020-06-30",
+      "pstr" -> "24000040IN"
+    ),
     Json.obj(
       "chargeReference" -> "XY002610150184",
       "chargeType" -> "57001080",
@@ -201,15 +267,15 @@ object FinancialStatementConnectorSpec {
   )
 
   private val psaModel: Seq[PsaFS] = Seq(
-      PsaFS(
+    PsaFS(
       chargeReference = "XY002610150184",
       chargeType = "AFT Initial LFP",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       outstandingAmount = 56049.08,
       stoodOverAmount = 25089.08,
       amountDue = 1029.05,
-      periodStartDate =  LocalDate.parse("2020-04-01"),
-      periodEndDate =  LocalDate.parse("2020-06-30"),
+      periodStartDate = LocalDate.parse("2020-04-01"),
+      periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN"
     ),
     PsaFS(
@@ -219,9 +285,43 @@ object FinancialStatementConnectorSpec {
       outstandingAmount = 56049.08,
       stoodOverAmount = 25089.08,
       amountDue = 1029.05,
-      periodStartDate =  LocalDate.parse("2020-04-01"),
-      periodEndDate =  LocalDate.parse("2020-06-30"),
+      periodStartDate = LocalDate.parse("2020-04-01"),
+      periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000041IN"
     )
+  )
+
+  private def schemeFSJsValue(chargeReference: String): JsObject = Json.obj(
+    "chargeReference" -> s"XY00261015018$chargeReference",
+    "chargeType" -> "56001000",
+    "dueDate" -> "2020-02-15",
+    "outstandingAmount" -> 56049.08,
+    "stoodOverAmount" -> 25089.08,
+    "amountDue" -> 1029.05,
+    "accruedInterestTotal" -> 100.05,
+    "periodStartDate" -> "2020-04-01",
+    "periodEndDate" -> "2020-06-30"
+  )
+
+  private def schemeFSModel(chargeReference: String) = SchemeFS(
+    chargeReference = s"XY00261015018$chargeReference",
+    chargeType = "PSS AFT Return",
+    dueDate = Some(LocalDate.parse("2020-02-15")),
+    amountDue = 1029.05,
+    outstandingAmount = 56049.08,
+    accruedInterestTotal = 100.05,
+    stoodOverAmount = 25089.08,
+    periodStartDate = Some(LocalDate.parse("2020-04-01")),
+    periodEndDate = Some(LocalDate.parse("2020-06-30"))
+  )
+
+  private val schemeFSResponse: JsValue = Json.arr(
+    schemeFSJsValue(chargeReference = "4"),
+    schemeFSJsValue(chargeReference = "5")
+  )
+
+  private val schemeModel: Seq[SchemeFS] = Seq(
+    schemeFSModel(chargeReference = "4"),
+    schemeFSModel(chargeReference = "5")
   )
 }

@@ -19,7 +19,7 @@ package controllers
 import java.time.LocalDate
 
 import connectors.FinancialStatementConnector
-import models.PsaFS
+import models.{PsaFS, SchemeFS}
 import org.mockito.Matchers
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
@@ -44,18 +44,16 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  private val fakeRequest = FakeRequest("GET", "/")
-  private val fakeRequestWithHeaders = fakeRequest.withHeaders(("psaId", psaId))
   private val mockFSConnector = mock[FinancialStatementConnector]
   private val authConnector: AuthConnector = mock[AuthConnector]
 
-  val modules: Seq[GuiceableModule] =
+  private val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[FinancialStatementConnector].toInstance(mockFSConnector)
     )
 
-  val application: Application = new GuiceApplicationBuilder()
+  private val application: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
     overrides(modules: _*).build()
 
@@ -73,7 +71,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
       when(mockFSConnector.getPsaFS(Matchers.eq(psaId))(any(), any(), any())).thenReturn(
         Future.successful(psaFSResponse))
 
-      val result = controller.psaStatement()(fakeRequestWithHeaders)
+      val result = controller.psaStatement()(fakeRequestWithPsaId)
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(psaFSResponse)
@@ -87,7 +85,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
         controller.psaStatement()(fakeRequest)
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing PSA ID"
+        response.getMessage mustBe "Bad Request with missing psaId"
       }
     }
 
@@ -99,26 +97,77 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
         Future.failed(new Exception("Generic Exception")))
 
       recoverToExceptionIf[Exception] {
-        controller.psaStatement()(fakeRequestWithHeaders)
+        controller.psaStatement()(fakeRequestWithPsaId)
       } map { response =>
         response.getMessage mustBe "Generic Exception"
       }
     }
   }
 
-  def errorResponse(code: String): String = {
-    Json.stringify(
-      Json.obj(
-        "code" -> code,
-        "reason" -> s"Reason for $code"
-      )
-    )
+  "schemeStatement" must {
+
+    "return OK when the details are returned based on pstr" in {
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(Matchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModel))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(schemeModel)
+    }
+
+    "throw BadRequestException when PSTR is not present in the header" in {
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      recoverToExceptionIf[BadRequestException] {
+        controller.schemeStatement()(fakeRequest)
+      } map { response =>
+        response.responseCode mustBe BAD_REQUEST
+        response.getMessage mustBe "Bad Request with missing pstr"
+      }
+    }
+
+    "throw generic exception when any other exception returned from Des" in {
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(Matchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.failed(new Exception("Generic Exception")))
+
+      recoverToExceptionIf[Exception] {
+        controller.schemeStatement()(fakeRequestWithPstr)
+      } map { response =>
+        response.getMessage mustBe "Generic Exception"
+      }
+    }
+
+    "throw Unauthorised Exception when there is external id is not present in auth" in {
+      when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(Matchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModel))
+
+      recoverToExceptionIf[UnauthorizedException] {
+        controller.schemeStatement()(fakeRequestWithPstr)
+      } map { response =>
+        response.getMessage mustBe "Not Authorised - Unable to retrieve credentials - externalId"
+      }
+    }
   }
 }
 
 
 object FinancialStatementControllerSpec {
   private val psaId = "test-psa-id"
+  private val pstr = "test-pstr"
+  private val fakeRequest = FakeRequest("GET", "/")
+  private val fakeRequestWithPsaId = fakeRequest.withHeaders(("psaId", psaId))
+  private val fakeRequestWithPstr = fakeRequest.withHeaders(("pstr", pstr))
 
   private val psaFSResponse: Seq[PsaFS] = Seq(
     PsaFS(
@@ -128,20 +177,23 @@ object FinancialStatementControllerSpec {
       outstandingAmount = 56049.08,
       stoodOverAmount = 25089.08,
       amountDue = 1029.05,
-      periodStartDate =  LocalDate.parse("2020-04-01"),
-      periodEndDate =  LocalDate.parse("2020-06-30"),
+      periodStartDate = LocalDate.parse("2020-04-01"),
+      periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN"
-    ),
-    PsaFS(
-      chargeReference = "XY002610150184",
-      chargeType = "AFT Initial LFP",
+    )
+  )
+
+  private val schemeModel: Seq[SchemeFS] = Seq(
+    SchemeFS(
+      chargeReference = s"XY002610150184",
+      chargeType = "PSS AFT Return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
-      outstandingAmount = 56049.08,
-      stoodOverAmount = 25089.08,
       amountDue = 1029.05,
-      periodStartDate =  LocalDate.parse("2020-04-01"),
-      periodEndDate =  LocalDate.parse("2020-06-30"),
-      pstr = "24000041IN"
+      outstandingAmount = 56049.08,
+      accruedInterestTotal = 100.05,
+      stoodOverAmount = 25089.08,
+      periodStartDate = Some(LocalDate.parse("2020-04-01")),
+      periodEndDate = Some(LocalDate.parse("2020-06-30"))
     )
   )
 }
