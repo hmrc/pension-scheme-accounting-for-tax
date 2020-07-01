@@ -255,7 +255,7 @@ object FinancialStatementConnectorSpec {
     ),
     Json.obj(
       "chargeReference" -> "XY002610150184",
-      "chargeType" -> "57001080",
+      "chargeType" -> "57001091",
       "dueDate" -> "2020-02-15",
       "outstandingAmount" -> 56049.08,
       "stoodOverAmount" -> 25089.08,
@@ -269,7 +269,7 @@ object FinancialStatementConnectorSpec {
   private val psaModel: Seq[PsaFS] = Seq(
     PsaFS(
       chargeReference = "XY002610150184",
-      chargeType = "AFT Initial LFP",
+      chargeType = "Accounting for Tax late filing penalty",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       outstandingAmount = 56049.08,
       stoodOverAmount = 25089.08,
@@ -280,7 +280,7 @@ object FinancialStatementConnectorSpec {
     ),
     PsaFS(
       chargeReference = "XY002610150184",
-      chargeType = "AFT Initial LFP",
+      chargeType = "Accounting for Tax further late filing penalty",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       outstandingAmount = 56049.08,
       stoodOverAmount = 25089.08,
@@ -305,7 +305,7 @@ object FinancialStatementConnectorSpec {
 
   private def schemeFSModel(chargeReference: String) = SchemeFS(
     chargeReference = s"XY00261015018$chargeReference",
-    chargeType = "PSS AFT Return",
+    chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
     amountDue = 1029.05,
     outstandingAmount = 56049.08,

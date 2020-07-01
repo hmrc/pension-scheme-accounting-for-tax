@@ -17,6 +17,7 @@
 package models
 
 import java.time.LocalDate
+
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, JsPath, Json, Reads}
 
@@ -42,7 +43,7 @@ object PsaFS {
      periodStartDate, periodEndDate, pstr) =>
       PsaFS(
         chargeReference,
-        chargeTypeMap.getOrElse(chargeType, "Unknown charge type"),
+        PsaChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
         amountDue,
         outstandingAmount,
@@ -54,16 +55,23 @@ object PsaFS {
   )
 
   implicit val formats: Format[PsaFS] = Json.format[PsaFS]
-  
-  val chargeTypeMap: Map[String, String] = Map(
-    "57001080" -> "AFT Initial LFP",
-    "57001091" -> "AFT Daily LFP",
-    "57301080" -> "AFT 30 Day LPP",
-    "57301091" -> "AFT 6 Month LPP",
-    "57301092" -> "AFT 12 Month LPP",
-    "57401080" -> "OTC 30 Day LPP",
-    "57401091" -> "OTC 6 Month LPP",
-    "57401092" -> "OTC 12 Month LPP",
-    "00600100" -> "Payment on Account"
-  )
+}
+
+object PsaChargeType extends Enumeration {
+
+  sealed case class TypeValue(name: String, value: String) extends Val(name)
+
+  val aftInitialLFP = TypeValue("57001080", "Accounting for Tax late filing penalty")
+  val aftDailyLFP = TypeValue("57001091", "Accounting for Tax further late filing penalty")
+  val aft30DayLPP = TypeValue("57301080", "Accounting for Tax late payment penalty (30 days)")
+  val aft6MonthLPP = TypeValue("57301091", "Accounting for Tax late payment penalty (6 months)")
+  val aft12MonthLPP = TypeValue("57301092", "Accounting for Tax late payment penalty (12 months)")
+  val otc30DayLPP = TypeValue("57401080", "Overseas transfer charge late payment penalty (30 days)")
+  val otc6MonthLPP = TypeValue("57401091", "Overseas transfer charge late payment penalty (6 months)")
+  val otc12MonthLPP = TypeValue("57401092", "Overseas transfer charge late payment penalty (12 months)")
+  val paymentOnAccount = TypeValue("00600100", "Payment on account")
+
+  def valueWithName(name: String): String = {
+    withName(name).asInstanceOf[TypeValue].value
+  }
 }
