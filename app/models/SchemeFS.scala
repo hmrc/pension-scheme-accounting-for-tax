@@ -59,11 +59,11 @@ object SchemeChargeType extends Enumeration {
 
   sealed case class TypeValue(name: String, value: String) extends Val(name)
 
-  val aftReturn = TypeValue("56001000", "PSS AFT Return")
-  val aftReturnInterest = TypeValue("56052000", "PSS AFT Return Interest")
-  val otcAftReturn = TypeValue("56101000", "PSS OTC AFT Return")
-  val otcAftReturnInterest = TypeValue("56152000", "PSS OTC AFT Return Interest")
-  val paymentOnAccount = TypeValue("00600100", "Payment on Account")
+  val aftReturn = TypeValue("56001000", "Accounting for Tax return")
+  val aftReturnInterest = TypeValue("56052000", "Interest on Accounting for Tax return")
+  val otcAftReturn = TypeValue("56101000", "Overseas transfer charge")
+  val otcAftReturnInterest = TypeValue("56152000", "Interest on overseas transfer charge")
+  val paymentOnAccount = TypeValue("00600100", "Payment on account")
 
   def valueWithName(name: String): String = {
     withName(name).asInstanceOf[TypeValue].value

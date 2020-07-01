@@ -22,50 +22,52 @@ import java.util.NoSuchElementException
 import org.scalatest.{MustMatchers, OptionValues, WordSpec}
 import play.api.libs.json.{JsValue, Json}
 
-class SchemeFSReadsSpec extends WordSpec with OptionValues with MustMatchers {
+class PsaFSReadsSpec extends WordSpec with OptionValues with MustMatchers {
 
-  import SchemeFSReadsSpec._
+  import PsaFSReadsSpec._
 
-  "Scheme FS" must {
+  "Psa FS" must {
     "format " when {
       "reading from json" in {
-        val result = Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56001000"))(SchemeFS.rds).asOpt.value
-        result mustBe schemeFSModel
+        val result = Json.fromJson[PsaFS](psaFSResponseJson(chargeType = "57401091"))(PsaFS.rds).asOpt.value
+        result mustBe psaFSModel
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56000000"))(SchemeFS.rds).asOpt.value
+          Json.fromJson[PsaFS](psaFSResponseJson(chargeType = "56000000"))(PsaFS.rds).asOpt.value
         }
       }
     }
   }
 }
+object PsaFSReadsSpec {
 
-object SchemeFSReadsSpec {
-  private def schemeFSResponseJson(chargeType: String): JsValue = Json.obj(
+  private def psaFSResponseJson(chargeType: String): JsValue = Json.obj(
     "chargeReference" -> "XY002610150184",
     "chargeType" -> s"$chargeType",
     "dueDate" -> "2020-02-15",
-    "amountDue" -> 1029.05,
     "outstandingAmount" -> 56049.08,
-    "accruedInterestTotal" -> 100.05,
     "stoodOverAmount" -> 25089.08,
+    "amountDue" -> 1029.05,
     "periodStartDate" -> "2020-04-01",
-    "periodEndDate" -> "2020-06-30"
+    "periodEndDate" -> "2020-06-30",
+    "pstr" -> "24000040IN"
   )
 
-  private def schemeFSModel = SchemeFS(
+  private def psaFSModel = PsaFS(
     chargeReference = "XY002610150184",
-    chargeType = "Accounting for Tax return",
+    chargeType = "Overseas transfer charge late payment penalty (6 months)",
     dueDate = Some(LocalDate.parse("2020-02-15")),
-    amountDue = 1029.05,
     outstandingAmount = 56049.08,
-    accruedInterestTotal = 100.05,
     stoodOverAmount = 25089.08,
-    periodStartDate = Some(LocalDate.parse("2020-04-01")),
-    periodEndDate = Some(LocalDate.parse("2020-06-30"))
+    amountDue = 1029.05,
+    periodStartDate = LocalDate.parse("2020-04-01"),
+    periodEndDate = LocalDate.parse("2020-06-30"),
+    pstr = "24000040IN"
   )
 }
+
+
 
 
