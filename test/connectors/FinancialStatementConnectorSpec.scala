@@ -26,9 +26,10 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{Json, JsObject, JsValue}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
+import repository.DataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
 import utils.WireMockHelper
@@ -39,6 +40,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
 
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
   private implicit lazy val rh: RequestHeader = FakeRequest("", "")
+  private val repo = mock[DataCacheRepository]
 
   override protected def portConfigKey: String = "microservice.services.des-hod.port"
 
@@ -50,7 +52,8 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
       bind[AuditService].toInstance(mockAuditService),
-      bind[AFTService].toInstance(mockAftService)
+      bind[AFTService].toInstance(mockAftService),
+      bind[DataCacheRepository].toInstance(repo)
     )
 
   private val psaId = "test-psa-id"

@@ -18,13 +18,14 @@ package audit
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
-import org.mockito.{ArgumentCaptor, Matchers}
-import org.scalatest.{AsyncFlatSpec, Inside, Matchers, MustMatchers, WordSpec}
+import org.mockito.{Matchers, ArgumentCaptor}
+import org.scalatest.{Inside, MustMatchers, WordSpec, AsyncFlatSpec, Matchers}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
+import repository.DataCacheRepository
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.audit.model.DataEvent
@@ -64,10 +65,11 @@ class AuditServiceSpec extends WordSpec with MustMatchers with Inside {
 object AuditServiceSpec extends MockitoSugar {
 
   val mockAuditConnector: AuditConnector = mock[AuditConnector]
-
+  val repo = mock[DataCacheRepository]
   private val app = new GuiceApplicationBuilder()
     .overrides(
-      bind[AuditConnector].toInstance(mockAuditConnector)
+      bind[AuditConnector].toInstance(mockAuditConnector),
+      bind[DataCacheRepository].toInstance(repo)
     )
     .build()
 

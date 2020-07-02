@@ -31,6 +31,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import repository.DataCacheRepository
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
@@ -46,11 +47,12 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
 
   private val mockFSConnector = mock[FinancialStatementConnector]
   private val authConnector: AuthConnector = mock[AuthConnector]
-
+  private val repo = mock[DataCacheRepository]
   private val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
-      bind[FinancialStatementConnector].toInstance(mockFSConnector)
+      bind[FinancialStatementConnector].toInstance(mockFSConnector),
+      bind[DataCacheRepository].toInstance(repo)
     )
 
   private val application: Application = new GuiceApplicationBuilder()
@@ -58,7 +60,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
     overrides(modules: _*).build()
 
   before {
-    reset(mockFSConnector, authConnector)
+    reset(mockFSConnector, authConnector, repo)
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
   }
 
