@@ -41,7 +41,6 @@ import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
-import repository.DataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
@@ -54,7 +53,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
 
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
   private implicit lazy val rh: RequestHeader = FakeRequest("", "")
-  private val repo = mock[DataCacheRepository]
+
   override protected def portConfigKey: String = "microservice.services.des-hod.port"
 
   private val mockAuditService = mock[AuditService]
@@ -65,8 +64,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
       bind[AuditService].toInstance(mockAuditService),
-      bind[AFTService].toInstance(mockAftService),
-      bind[DataCacheRepository].toInstance(repo)
+      bind[AFTService].toInstance(mockAftService)
     )
 
   private val pstr = "test-pstr"
