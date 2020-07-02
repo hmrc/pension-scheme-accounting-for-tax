@@ -32,6 +32,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import repository.DataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
@@ -56,12 +57,13 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val version2 = AFTVersion(2, LocalDate.now(), "compiled")
   private val versions = Seq(version1, version2)
   private val journeyType = JourneyType.AFT_SUBMIT_RETURN
-
+  private val repo = mock[DataCacheRepository]
   val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[DesConnector].toInstance(mockDesConnector),
-      bind[AFTService].toInstance(mockAftService)
+      bind[AFTService].toInstance(mockAftService),
+      bind[DataCacheRepository].toInstance(repo)
     )
 
   val application: Application = new GuiceApplicationBuilder()
