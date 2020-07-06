@@ -55,7 +55,7 @@ case class FileAftReturn(
                           request: JsValue,
                           response: Option[JsValue]
                         ) extends AuditEvent {
-  override def auditType: String = "AftPost"
+  override def auditType: String = "AFTPost"
 
   override def details: Map[String, String] = Map(
     "pstr" -> pstr,
@@ -79,7 +79,7 @@ case class FileAFTReturnOneChargeAndNoValue(
                           request: JsValue,
                           response: Option[JsValue]
                         ) extends AuditEvent {
-  override def auditType: String = "AftPostOneChargeWithNoValue"
+  override def auditType: String = "AFTPostOneChargeWithNoValue"
 
   override def details: Map[String, String] = Map(
     "pstr" -> pstr,
