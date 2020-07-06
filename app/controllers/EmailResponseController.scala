@@ -40,8 +40,6 @@ class EmailResponseController @Inject()(
 
   def retrieveStatus(journeyType: JourneyType.Name, email: String, id: String): Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
-      Logger.debug(s"sessionId in Email Response: ${request.headers.get("X-Session-ID")}")
-      Logger.debug(s"requestId in Email Response: ${request.headers.get("X-Request-ID")}")
       validatePsaIdEmail(id, email) match {
         case Right(Tuple2(psaId, emailAddress)) =>
           request.body.validate[EmailEvents].fold(
