@@ -18,7 +18,7 @@ package audit
 
 import com.google.inject.Inject
 import play.api.http.Status
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http.{HttpException, UpstreamErrorResponse}
 
@@ -57,17 +57,12 @@ case class GetAFTDetails(
 
   override def auditType: String = "AFTGet"
 
-  override def details: Map[String, String] = Map(
+  override def details: JsObject = Json.obj(
     "pstr" -> pstr,
     "quarterStartDate" -> startDate,
-    "aftStatus" -> response.flatMap(res => (res \ "aftDetails" \ "aftStatus").asOpt[String]).getOrElse(""),
+    "aftStatus" -> response.flatMap(res => (res \ "aftDetails" \ "aftStatus").asOpt[String]),
     "status" -> status.toString,
-    "response" -> {
-      response match {
-        case Some(json) => Json.prettyPrint(json)
-        case _ => ""
-      }
-    }
+    "response" -> response
   )
 }
 

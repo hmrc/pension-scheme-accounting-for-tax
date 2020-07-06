@@ -18,7 +18,7 @@ package audit
 
 import com.google.inject.Inject
 import models.AFTVersion
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http.{HttpException, UpstreamErrorResponse}
 
@@ -28,7 +28,7 @@ import scala.util.{Failure, Try}
 class GetAFTVersionsAuditService @Inject()(auditService: AuditService) {
 
   def sendAFTVersionsAuditEvent(pstr: String, startDate: String)
-               (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[Seq[AFTVersion]], Unit] = {
+                               (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[Seq[AFTVersion]], Unit] = {
     case Failure(e: UpstreamErrorResponse) =>
       auditService.sendEvent(
         GetAFTVersions(pstr, startDate, e.upstreamResponseCode, None)
@@ -49,16 +49,11 @@ case class GetAFTVersions(
 
   override def auditType: String = "GetReportVersions"
 
-  override def details: Map[String, String] = Map(
+  override def details: JsObject = Json.obj(
     "pstr" -> pstr,
     "quarterStartDate" -> startDate,
     "status" -> status.toString,
-    "response" -> {
-      response match {
-        case Some(json) => Json.prettyPrint(json)
-        case _ => ""
-      }
-    }
+    "response" -> response
   )
 }
 

@@ -16,8 +16,10 @@
 
 package audit
 
+import play.api.libs.json.JsObject
+
 trait AuditEvent {
   def auditType: String
 
-  def details: Map[String, String]
+  def details: JsObject
 }

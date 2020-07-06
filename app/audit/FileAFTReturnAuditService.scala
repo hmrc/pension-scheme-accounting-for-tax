@@ -18,7 +18,7 @@ package audit
 
 import com.google.inject.Inject
 import play.api.http.Status
-import play.api.libs.json.{Format, JsValue, Json}
+import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http.{HttpException, HttpResponse, UpstreamErrorResponse}
 
@@ -57,42 +57,32 @@ case class FileAftReturn(
                         ) extends AuditEvent {
   override def auditType: String = "AFTPost"
 
-  override def details: Map[String, String] = Map(
+  override def details: JsObject = Json.obj(
     "pstr" -> pstr,
-    "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String].getOrElse(""),
+    "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String],
     "aftStatus" -> journeyType,
     "status" -> status.toString,
-    "request" -> Json.prettyPrint(request),
-    "response" -> {
-      response match {
-        case Some(json) => Json.prettyPrint(json)
-        case _ => ""
-      }
-    }
+    "request" -> request,
+    "response" -> response
   )
 }
 
 case class FileAFTReturnOneChargeAndNoValue(
-                          pstr: String,
-                          journeyType: String,
-                          status: Int,
-                          request: JsValue,
-                          response: Option[JsValue]
-                        ) extends AuditEvent {
+                                             pstr: String,
+                                             journeyType: String,
+                                             status: Int,
+                                             request: JsValue,
+                                             response: Option[JsValue]
+                                           ) extends AuditEvent {
   override def auditType: String = "AFTPostOneChargeWithNoValue"
 
-  override def details: Map[String, String] = Map(
+  override def details: JsObject = Json.obj(
     "pstr" -> pstr,
-    "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String].getOrElse(""),
+    "quarterStartDate" -> (request \ "aftDetails" \ "quarterStartDate").asOpt[String],
     "aftStatus" -> journeyType,
     "status" -> status.toString,
-    "request" -> Json.prettyPrint(request),
-    "response" -> {
-      response match {
-        case Some(json) => Json.prettyPrint(json)
-        case _ => ""
-      }
-    }
+    "request" -> request,
+    "response" -> response
   )
 }
 
