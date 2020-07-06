@@ -23,11 +23,12 @@ import org.scalatest.{AsyncFlatSpec, Inside, Matchers, MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
-import uk.gov.hmrc.play.audit.model.DataEvent
+import uk.gov.hmrc.play.audit.model.{DataEvent, ExtendedDataEvent}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -42,18 +43,20 @@ class AuditServiceSpec extends WordSpec with MustMatchers with Inside {
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = fakeRequest()
 
       val event = TestAuditEvent("test-audit-payload")
-      val templateCaptor = ArgumentCaptor.forClass(classOf[DataEvent])
+      val templateCaptor = ArgumentCaptor.forClass(classOf[ExtendedDataEvent])
 
-      when(mockAuditConnector.sendEvent(any())(any(), any()))
+      when(mockAuditConnector.sendExtendedEvent(any())(any(), any()))
         .thenReturn(Future.successful(Success))
       auditService().sendEvent(event)
 
-      verify(mockAuditConnector, times(1)).sendEvent(templateCaptor.capture())
+      verify(mockAuditConnector, times(1)).sendExtendedEvent(templateCaptor.capture())
       inside(templateCaptor.getValue) {
-        case DataEvent(auditSource, auditType, _, _, detail, _) =>
+        case ExtendedDataEvent(auditSource, auditType, _, _, detail, _) =>
           auditSource mustBe appName
           auditType mustBe "TestAuditEvent"
-          detail must contain("payload" -> "test-audit-payload")
+          detail mustBe Json.obj(
+            "payload" -> "test-audit-payload"
+          )
       }
     }
 
@@ -85,8 +88,8 @@ case class TestAuditEvent(payload: String) extends AuditEvent {
 
   override def auditType: String = "TestAuditEvent"
 
-  override def details: Map[String, String] =
-    Map(
+  override def details: JsObject =
+    Json.obj(
       "payload" -> payload
     )
 

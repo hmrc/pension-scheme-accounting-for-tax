@@ -19,6 +19,7 @@ package audit
 import models.Sent
 import org.scalatest.{FlatSpec, Matchers}
 import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
+import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.domain.PsaId
 
 class EmailAuditEventSpec extends FlatSpec with Matchers {
@@ -32,7 +33,7 @@ class EmailAuditEventSpec extends FlatSpec with Matchers {
       journeyType = AFT_SUBMIT_RETURN
     )
 
-    val expected: Map[String, String] = Map(
+    val expected: JsObject = Json.obj(
       "psaId" -> "A2500001",
       "emailAddress" -> "test@test.com",
       "event" -> Sent.toString

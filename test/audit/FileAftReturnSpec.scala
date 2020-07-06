@@ -18,7 +18,7 @@ package audit
 
 import models.enumeration.JourneyType
 import org.scalatest.{FlatSpec, Matchers}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 
 class FileAftReturnSpec extends FlatSpec with Matchers {
 
@@ -45,13 +45,13 @@ class FileAftReturnSpec extends FlatSpec with Matchers {
       response = Some(response)
     )
 
-    val expected: Map[String, String] = Map(
+    val expected: JsObject = Json.obj(
       "pstr" -> pstr,
       "quarterStartDate" -> quarterStartDate,
       "aftStatus" -> journeyType,
       "status" -> status.toString,
-      "request" -> Json.prettyPrint(request),
-      "response" -> Json.prettyPrint(response)
+      "request" -> request,
+      "response" -> response
     )
 
     event.details shouldBe expected
