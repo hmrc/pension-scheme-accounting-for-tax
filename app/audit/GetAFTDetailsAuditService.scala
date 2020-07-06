@@ -55,7 +55,7 @@ case class GetAFTDetails(
                           response: Option[JsValue]
                         ) extends AuditEvent {
 
-  override def auditType: String = "AftGet"
+  override def auditType: String = "AFTGet"
 
   override def details: Map[String, String] = Map(
     "pstr" -> pstr,
