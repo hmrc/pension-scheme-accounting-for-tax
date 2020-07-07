@@ -38,9 +38,9 @@ class EmailResponseController @Inject()(
                                          val authConnector: AuthConnector
                                        ) extends BackendController(cc) with AuthorisedFunctions {
 
-  def retrieveStatus(journeyType: JourneyType.Name, email: String, id: String): Action[JsValue] = Action(parser.tolerantJson) {
+  def retrieveStatus(journeyType: JourneyType.Name, requestId: String, email: String, encryptedPsaId: String): Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
-      validatePsaIdEmail(id, email) match {
+      validatePsaIdEmail(encryptedPsaId, email) match {
         case Right(Tuple2(psaId, emailAddress)) =>
           request.body.validate[EmailEvents].fold(
             _ => BadRequest("Bad request received for email call back event"),
@@ -49,7 +49,7 @@ class EmailResponseController @Inject()(
                 _.event == Opened
               ).foreach { event =>
                 Logger.debug(s"Email Audit event coming from $journeyType is $event")
-                auditService.sendEvent(EmailAuditEvent(psaId, emailAddress, event.event, journeyType))
+                auditService.sendEvent(EmailAuditEvent(psaId, emailAddress, event.event, journeyType, requestId))
               }
               Ok
             }
@@ -59,8 +59,8 @@ class EmailResponseController @Inject()(
       }
   }
 
-  private def validatePsaIdEmail(id: String, email: String): Either[Result, (PsaId, String)] = {
-    val psaId = crypto.QueryParameterCrypto.decrypt(Crypted(id)).value
+  private def validatePsaIdEmail(encryptedPsaId: String, email: String): Either[Result, (PsaId, String)] = {
+    val psaId = crypto.QueryParameterCrypto.decrypt(Crypted(encryptedPsaId)).value
     val emailAddress = crypto.QueryParameterCrypto.decrypt(Crypted(email)).value
     val emailRegex: String = "^(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"" +
       "(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")" +

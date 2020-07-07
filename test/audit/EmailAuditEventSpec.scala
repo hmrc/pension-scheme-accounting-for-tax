@@ -30,10 +30,12 @@ class EmailAuditEventSpec extends FlatSpec with Matchers {
       psaId = PsaId("A2500001"),
       emailAddress = "test@test.com",
       event = Sent,
-      journeyType = AFT_SUBMIT_RETURN
+      journeyType = AFT_SUBMIT_RETURN,
+      requestId = "test-request-id"
     )
 
     val expected: JsObject = Json.obj(
+      "email-initiation-request-id" -> "test-request-id",
       "psaId" -> "A2500001",
       "emailAddress" -> "test@test.com",
       "event" -> Sent.toString
