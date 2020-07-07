@@ -21,10 +21,15 @@ import models.enumeration.JourneyType
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.domain.PsaId
 
-case class EmailAuditEvent(psaId: PsaId, emailAddress: String, event: Event, journeyType: JourneyType.Name) extends AuditEvent {
+case class EmailAuditEvent(psaId: PsaId, emailAddress: String, event: Event, journeyType: JourneyType.Name, requestId: String) extends AuditEvent {
 
   override def auditType: String = s"${journeyType.toString}EmailEvent"
 
-  override def details: JsObject = Json.obj("psaId" -> psaId.id, "emailAddress" -> emailAddress, "event" -> event.toString)
+  override def details: JsObject = Json.obj(fields =
+    "email-initiation-request-id" -> requestId,
+    "psaId" -> psaId.id,
+    "emailAddress" -> emailAddress,
+    "event" -> event.toString
+  )
 
 }

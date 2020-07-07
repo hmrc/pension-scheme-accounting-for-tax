@@ -38,7 +38,7 @@ class EmailResponseController @Inject()(
                                          val authConnector: AuthConnector
                                        ) extends BackendController(cc) with AuthorisedFunctions {
 
-  def retrieveStatus(journeyType: JourneyType.Name, email: String, id: String): Action[JsValue] = Action(parser.tolerantJson) {
+  def retrieveStatus(journeyType: JourneyType.Name, requestId: String, email: String, id: String): Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
       validatePsaIdEmail(id, email) match {
         case Right(Tuple2(psaId, emailAddress)) =>
@@ -49,7 +49,7 @@ class EmailResponseController @Inject()(
                 _.event == Opened
               ).foreach { event =>
                 Logger.debug(s"Email Audit event coming from $journeyType is $event")
-                auditService.sendEvent(EmailAuditEvent(psaId, emailAddress, event.event, journeyType))
+                auditService.sendEvent(EmailAuditEvent(psaId, emailAddress, event.event, journeyType, requestId))
               }
               Ok
             }
