@@ -188,6 +188,7 @@ object FinancialStatementControllerSpec {
       chargeReference = s"XY002610150184",
       chargeType = "PSS AFT Return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
+      totalAmount = 80000.00,
       amountDue = 1029.05,
       outstandingAmount = 56049.08,
       accruedInterestTotal = 100.05,

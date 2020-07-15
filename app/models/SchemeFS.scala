@@ -21,7 +21,7 @@ import java.time.LocalDate
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, JsPath, Json, Reads}
 
-case class SchemeFS(chargeReference: String, chargeType: String, dueDate: Option[LocalDate], amountDue: BigDecimal,
+case class SchemeFS(chargeReference: String, chargeType: String, dueDate: Option[LocalDate], totalAmount: BigDecimal, amountDue: BigDecimal,
                     outstandingAmount: BigDecimal, accruedInterestTotal: BigDecimal, stoodOverAmount: BigDecimal,
                     periodStartDate: Option[LocalDate], periodEndDate: Option[LocalDate])
 
@@ -31,6 +31,7 @@ object SchemeFS {
     (JsPath \ "chargeReference").read[String] and
       (JsPath \ "chargeType").read[String] and
       (JsPath \ "dueDate").readNullable[String] and
+      (JsPath \ "totalAmount").read[BigDecimal] and
       (JsPath \ "amountDue").read[BigDecimal] and
       (JsPath \ "outstandingAmount").read[BigDecimal] and
       (JsPath \ "accruedInterestTotal").read[BigDecimal] and
@@ -38,11 +39,13 @@ object SchemeFS {
       (JsPath \ "periodStartDate").readNullable[String] and
       (JsPath \ "periodEndDate").readNullable[String]
     ) (
-    (chargeReference, chargeType, dueDateOpt, amountDue, outstandingAmount, accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt) =>
+    (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
+     accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt) =>
       SchemeFS(
         chargeReference,
         SchemeChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
+        totalAmount,
         amountDue,
         outstandingAmount,
         accruedInterestTotal,
