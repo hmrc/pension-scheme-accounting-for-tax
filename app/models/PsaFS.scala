@@ -22,8 +22,9 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, JsPath, Json, Reads}
 
 case class PsaFS(chargeReference: String, chargeType: String, dueDate: Option[LocalDate],
-                 amountDue: BigDecimal, outstandingAmount: BigDecimal, stoodOverAmount: BigDecimal,
-                 periodStartDate: LocalDate, periodEndDate: LocalDate, pstr: String)
+                 totalAmount: BigDecimal, amountDue: BigDecimal, outstandingAmount: BigDecimal,
+                 stoodOverAmount: BigDecimal, periodStartDate: LocalDate, periodEndDate: LocalDate,
+                 pstr: String)
 
 object PsaFS {
 
@@ -31,6 +32,7 @@ object PsaFS {
     (JsPath \ "chargeReference").read[String] and
       (JsPath \ "chargeType").read[String] and
       (JsPath \ "dueDate").readNullable[String] and
+      (JsPath \ "totalAmount").read[BigDecimal] and
       (JsPath \ "amountDue").read[BigDecimal] and
       (JsPath \ "outstandingAmount").read[BigDecimal] and
       (JsPath \ "stoodOverAmount").read[BigDecimal] and
@@ -39,12 +41,13 @@ object PsaFS {
       (JsPath \ "pstr").read[String]
     ) (
     (chargeReference, chargeType, dueDateOpt,
-     amountDue, outstandingAmount, stoodOverAmount,
+     totalAmount, amountDue, outstandingAmount, stoodOverAmount,
      periodStartDate, periodEndDate, pstr) =>
       PsaFS(
         chargeReference,
         PsaChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
+        totalAmount,
         amountDue,
         outstandingAmount,
         stoodOverAmount,

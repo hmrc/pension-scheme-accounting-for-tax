@@ -174,6 +174,7 @@ object FinancialStatementControllerSpec {
       chargeReference = "XY002610150184",
       chargeType = "AFT Initial LFP",
       dueDate = Some(LocalDate.parse("2020-02-15")),
+      totalAmount = 80000.00,
       outstandingAmount = 56049.08,
       stoodOverAmount = 25089.08,
       amountDue = 1029.05,
