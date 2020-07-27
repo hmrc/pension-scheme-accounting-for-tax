@@ -32,7 +32,7 @@ class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
     case Success(httpResponse) =>
       auditService.sendEvent(FileAftReturn(pstr, journeyType, Status.OK, data, Some(httpResponse.json)))
     case Failure(error: UpstreamErrorResponse) =>
-      auditService.sendEvent(FileAftReturn(pstr, journeyType, error.upstreamResponseCode, data, None))
+      auditService.sendEvent(FileAftReturn(pstr, journeyType, error.statusCode, data, None))
     case Failure(error: HttpException) =>
       auditService.sendEvent(FileAftReturn(pstr, journeyType, error.responseCode, data, None))
   }
@@ -42,7 +42,7 @@ class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
     case Success(httpResponse) =>
       auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, journeyType, Status.OK, data, Some(httpResponse.json)))
     case Failure(error: UpstreamErrorResponse) =>
-      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, journeyType, error.upstreamResponseCode, data, None))
+      auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, journeyType, error.statusCode, data, None))
     case Failure(error: HttpException) =>
       auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, journeyType, error.responseCode, data, None))
   }

@@ -31,7 +31,7 @@ class GetAFTVersionsAuditService @Inject()(auditService: AuditService) {
                                (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[Seq[AFTVersion]], Unit] = {
     case Failure(e: UpstreamErrorResponse) =>
       auditService.sendEvent(
-        GetAFTVersions(pstr, startDate, e.upstreamResponseCode, None)
+        GetAFTVersions(pstr, startDate, e.statusCode, None)
       )
     case Failure(e: HttpException) =>
       auditService.sendEvent(

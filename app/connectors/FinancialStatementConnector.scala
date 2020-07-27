@@ -23,6 +23,8 @@ import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import play.api.http.Status._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -30,18 +32,26 @@ class FinancialStatementConnector @Inject()(http: HttpClient,
                                             config: AppConfig,
                                             headerUtils: HeaderUtils) extends HttpErrorFunctions {
 
-  def getPsaFS(psaId: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
+  def getPsaFS(psaId: String)(implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Either[HttpResponse, Seq[PsaFS]]] = {
 
     val url: String = config.psaFinancialStatementUrl.format(psaId)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders =
       headerUtils.integrationFrameworkHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    http.GET[JsValue](url)(implicitly, hc, implicitly).map { responseJson =>
+    http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
 
-      responseJson.validate[Seq[PsaFS]](Reads.seq(PsaFS.rds)) match {
-        case JsSuccess(statements, _) => statements
-        case JsError(errors) => throw JsResultException(errors)
+      response.status match {
+        case OK =>
+          Json.toJson(response.body).validate[Seq[PsaFS]](Reads.seq(PsaFS.rds)) match {
+            case JsSuccess(statements, _) => Right(statements)
+            case JsError(errors) => throw JsResultException(errors)
+          }
+        case _ => Left(response)
       }
+      //      responseJson.validate[Seq[PsaFS]](Reads.seq(PsaFS.rds)) match {
+      //        case JsSuccess(statements, _) => statements
+      //        case JsError(errors) => throw JsResultException(errors)
+      //      }
     }
   }
 

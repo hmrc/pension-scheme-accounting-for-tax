@@ -40,7 +40,7 @@ class FinancialStatementController @Inject()(appConfig: AppConfig,
     implicit request =>
       get(key = "psaId") { psaId =>
         financialStatementConnector.getPsaFS(psaId).map { data =>
-          Ok(Json.toJson(data))
+          Ok(Json.toJson(data.right.get))
         }
       }
   }
