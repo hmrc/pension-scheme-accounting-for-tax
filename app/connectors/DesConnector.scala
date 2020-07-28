@@ -25,12 +25,14 @@ import models.AFTVersion
 import models.AFTOverview
 import play.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue, Reads}
+import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue, Json, Reads}
 import play.api.mvc.RequestHeader
 import services.AFTService
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.http.HttpReads.Implicits._
+//import uk.gov.hmrc.http.HttpReads.Implicits.readJsValue
+import play.api.http.Status._
+import utils.HttpResponseHelper
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -38,7 +40,9 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
                              fileAFTReturnAuditService: FileAFTReturnAuditService,
                              aftVersionsAuditEventService: GetAFTVersionsAuditService,
                              aftDetailsAuditEventService: GetAFTDetailsAuditService,
-                             aftService: AFTService) extends HttpErrorFunctions {
+                             aftService: AFTService)
+  extends HttpErrorFunctions
+    with HttpResponseHelper {
 
   def fileAFTReturn(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
@@ -47,11 +51,23 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
     if (aftService.isChargeZeroedOut(data)) {
-      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
+      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) map {
+        response =>
+          response.status match {
+            case OK => response
+            case _ => handleErrorResponse("POST", fileAFTReturnURL)(response)
+          }
+      } andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data) andThen
         fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
     } else {
-      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) andThen
+      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) map {
+        response =>
+          response.status match {
+            case OK => response
+            case _ => handleErrorResponse("POST", fileAFTReturnURL)(response)
+          }
+      } andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
     }
   }
@@ -62,26 +78,35 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
     val getAftUrl: String = config.getAftDetailsUrl.format(pstr, startDate, aftVersion)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    http.GET[JsValue](getAftUrl)(implicitly, hc, implicitly) andThen
-      aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, startDate)
+    http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
+      response =>
+        response.status match {
+          case OK => Json.parse(response.body)
+          case _ => handleErrorResponse("POST", getAftUrl)(response)
+        }
+    } andThen aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, startDate)
   }
 
   def getAftVersions(pstr: String, startDate: String)
-                         (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[AFTVersion]] = {
+                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[AFTVersion]] = {
 
     val getAftVersionUrl: String = config.getAftVersionUrl.format(pstr, startDate)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    http.GET[JsValue](getAftVersionUrl)(implicitly, hc, implicitly).map { responseJson =>
-      auditService.sendEvent(GetAFTVersions(pstr, startDate, Status.OK, Some(responseJson)))
+    http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map {
+      response =>
+        response.status match {
+          case OK =>
+            auditService.sendEvent(GetAFTVersions(pstr, startDate, Status.OK, Some(Json.parse(response.body))))
 
-      responseJson.validate[Seq[AFTVersion]](Reads.seq(AFTVersion.rds)) match {
-        case JsSuccess(versions, _) => versions
-        case JsError(errors) => throw JsResultException(errors)
-      }
-    }
-  } andThen aftVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate) recoverWith {
-    case _: NotFoundException => Future.successful(Nil)
+            Json.parse(response.body).validate[Seq[AFTVersion]](Reads.seq(AFTVersion.rds)) match {
+              case JsSuccess(versions, _) => versions
+              case JsError(errors) => throw JsResultException(errors)
+            }
+          case _ =>
+            handleErrorResponse("POST", getAftVersionUrl)(response)
+        }
+    } andThen aftVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate)
   }
 
   def getAftOverview(pstr: String, startDate: String, endDate: String)
@@ -90,15 +115,17 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
     val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
 
-    http.GET[JsValue](getAftVersionUrl)(implicitly, hc, implicitly).map { responseJson =>
-
-      responseJson.validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
-        case JsSuccess(versions, _) => versions
-        case JsError(errors) => throw JsResultException(errors)
+    http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
+      response.status match {
+        case OK =>
+          Json.parse(response.body).validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
+            case JsSuccess(versions, _) => versions
+            case JsError(errors) => throw JsResultException(errors)
+          }
+        case _ =>
+          handleErrorResponse("POST", getAftVersionUrl)(response)
       }
     }
-  } recoverWith {
-    case _: NotFoundException => Future.successful(Nil)
   }
 
   private def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {

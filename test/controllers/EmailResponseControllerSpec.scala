@@ -31,6 +31,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import repository.DataCacheRepository
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.crypto.{ApplicationCrypto, PlainText}
 import uk.gov.hmrc.domain.PsaId
@@ -43,11 +44,13 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 
   private val mockAuditService = mock[AuditService]
   private val mockAuthConnector = mock[AuthConnector]
+  private val mockDataCacheRepository = mock[DataCacheRepository]
 
   private val application: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
     overrides(Seq(
       bind[AuthConnector].toInstance(mockAuthConnector),
+      bind[DataCacheRepository].toInstance(mockDataCacheRepository),
       bind[AuditService].toInstance(mockAuditService)
     )).build()
 

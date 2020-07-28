@@ -20,31 +20,24 @@ import java.time.LocalDate
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
-import models.AFTOverview
-import models.AFTVersion
+import models.{AFTOverview, AFTVersion}
 import models.enumeration.JourneyType
 import org.mockito.Matchers.any
-import org.mockito.Mockito.times
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.when
-import org.mockito.ArgumentCaptor
-import org.mockito.Mockito
-import org.scalatest.AsyncWordSpec
-import org.scalatest.EitherValues
-import org.scalatest.MustMatchers
+import org.mockito.{ArgumentCaptor, Mockito}
+import org.mockito.Mockito.{times, verify, when}
+import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
-import play.api.libs.json.JsValue
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
+import repository.DataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
-import utils.JsonFileReader
-import utils.WireMockHelper
+import utils.{JsonFileReader, WireMockHelper}
 
 class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with JsonFileReader
   with EitherValues with MockitoSugar {
@@ -58,12 +51,14 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
 
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
+  private val mockDataCacheRepository = mock[DataCacheRepository]
 
   private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
 
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
       bind[AuditService].toInstance(mockAuditService),
+      bind[DataCacheRepository].toInstance(mockDataCacheRepository),
       bind[AFTService].toInstance(mockAftService)
     )
 
@@ -112,7 +107,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      connector.fileAFTReturn(pstr, journeyType, data).map { response =>
+      connector.fileAFTReturn(pstr, journeyType, data).map { _ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, journeyType, Status.OK, data, Some(successResponse))
       }
@@ -201,8 +196,8 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
             serverError()
           )
       )
-      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, journeyType, data)) map {
-        _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+      recoverToExceptionIf[UpstreamErrorResponse](connector.fileAFTReturn(pstr, journeyType, data)) map {
+        _.statusCode mustBe INTERNAL_SERVER_ERROR
       }
     }
 
@@ -218,7 +213,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
       val eventCaptor = ArgumentCaptor.forClass(classOf[FileAftReturn])
-      recoverToExceptionIf[Upstream5xxResponse](connector.fileAFTReturn(pstr, journeyType, data)) map { _ =>
+      recoverToExceptionIf[UpstreamErrorResponse](connector.fileAFTReturn(pstr, journeyType, data)) map { _ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual FileAftReturn(pstr, journeyType, Status.INTERNAL_SERVER_ERROR, data, None)
       }
@@ -321,9 +316,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
               .withBody(errorResponse("FORBIDDEN"))
           )
       )
-      recoverToExceptionIf[Upstream4xxResponse](connector.getAftDetails(pstr, startDt, aftVersion)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getAftDetails(pstr, startDt, aftVersion)) map {
         ex =>
-          ex.upstreamResponseCode mustBe FORBIDDEN
+          ex.statusCode mustBe FORBIDDEN
           ex.message must include("FORBIDDEN")
       }
     }
@@ -338,8 +333,8 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
       val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTDetails])
-      recoverToExceptionIf[Upstream4xxResponse](connector.getAftDetails(pstr, startDt, aftVersion)) map {
-        ex =>
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getAftDetails(pstr, startDt, aftVersion)) map {
+        _ =>
           verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
           eventCaptor.getValue mustEqual audit.GetAFTDetails(pstr, startDt, Status.FORBIDDEN, None)
       }
@@ -355,9 +350,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
 
-      recoverToExceptionIf[Upstream5xxResponse](connector.getAftDetails(pstr, startDt, aftVersion)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getAftDetails(pstr, startDt, aftVersion)) map {
         ex =>
-          ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+          ex.statusCode mustBe INTERNAL_SERVER_ERROR
           ex.message must include("SERVER_ERROR")
           ex.reportAs mustBe BAD_GATEWAY
       }
@@ -406,7 +401,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
       val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTVersions])
-      connector.getAftVersions(pstr, startDt).map { response =>
+      connector.getAftVersions(pstr, startDt).map { _ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual audit.GetAFTVersions(pstr, startDt, Status.OK, Some(aftVersionsResponseJson))
       }
@@ -439,8 +434,11 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
 
-      connector.getAftVersions(pstr, startDt).map { response =>
-        response mustBe Nil
+      recoverToExceptionIf[NotFoundException] {
+        connector.getAftVersions(pstr, startDt)
+      } map { response =>
+        response.responseCode mustEqual NOT_FOUND
+        response.message must include("NOT_FOUND")
       }
     }
 
@@ -455,7 +453,11 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       )
 
       val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTVersions])
-      connector.getAftVersions(pstr, startDt).map { response =>
+      recoverToExceptionIf[NotFoundException] {
+        connector.getAftVersions(pstr, startDt)
+      } map { response =>
+        response.responseCode mustEqual NOT_FOUND
+        response.message must include("NOT_FOUND")
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustEqual audit.GetAFTVersions(pstr, startDt, Status.NOT_FOUND, None)
       }
@@ -470,9 +472,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
               .withBody(errorResponse("FORBIDDEN"))
           )
       )
-      recoverToExceptionIf[Upstream4xxResponse](connector.getAftVersions(pstr, startDt)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getAftVersions(pstr, startDt)) map {
         ex =>
-          ex.upstreamResponseCode mustBe FORBIDDEN
+          ex.statusCode mustBe FORBIDDEN
           ex.message must include("FORBIDDEN")
       }
     }
@@ -487,9 +489,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
 
-      recoverToExceptionIf[Upstream5xxResponse](connector.getAftVersions(pstr, startDt)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getAftVersions(pstr, startDt)) map {
         ex =>
-          ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+          ex.statusCode mustBe INTERNAL_SERVER_ERROR
           ex.message must include("SERVER_ERROR")
       }
     }
@@ -504,7 +506,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
       val eventCaptor = ArgumentCaptor.forClass(classOf[GetAFTVersions])
-      recoverToExceptionIf[Upstream5xxResponse](connector.getAftVersions(pstr, startDt)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getAftVersions(pstr, startDt)) map {
         _ =>
           verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
           eventCaptor.getValue mustEqual audit.GetAFTVersions(pstr, startDt, Status.INTERNAL_SERVER_ERROR, None)
@@ -571,8 +573,11 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
 
-      connector.getAftOverview(pstr, startDt, endDate).map { response =>
-        response mustBe Nil
+      recoverToExceptionIf[NotFoundException] {
+        connector.getAftOverview(pstr, startDt, endDate)
+      } map { response =>
+        response.responseCode mustEqual NOT_FOUND
+        response.message must include("NOT_FOUND")
       }
     }
 
@@ -585,9 +590,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
               .withBody(errorResponse("FORBIDDEN"))
           )
       )
-      recoverToExceptionIf[Upstream4xxResponse](connector.getAftOverview(pstr, startDt, endDate)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getAftOverview(pstr, startDt, endDate)) map {
         ex =>
-          ex.upstreamResponseCode mustBe FORBIDDEN
+          ex.statusCode mustBe FORBIDDEN
           ex.message must include("FORBIDDEN")
       }
     }
@@ -602,9 +607,9 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           )
       )
 
-      recoverToExceptionIf[Upstream5xxResponse](connector.getAftOverview(pstr, startDt, endDate)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getAftOverview(pstr, startDt, endDate)) map {
         ex =>
-          ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+          ex.statusCode mustBe INTERNAL_SERVER_ERROR
           ex.message must include("SERVER_ERROR")
       }
     }

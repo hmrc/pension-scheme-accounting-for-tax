@@ -32,6 +32,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import repository.DataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
@@ -50,6 +51,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val mockDesConnector = mock[DesConnector]
   private val mockAftService = mock[AFTService]
   private val authConnector: AuthConnector = mock[AuthConnector]
+  private val mockDataCacheRepository = mock[DataCacheRepository]
+
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
   private val version1 = AFTVersion(1, LocalDate.now(), "submitted")
@@ -61,7 +64,8 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[DesConnector].toInstance(mockDesConnector),
-      bind[AFTService].toInstance(mockAftService)
+      bind[AFTService].toInstance(mockAftService),
+      bind[DataCacheRepository].toInstance(mockDataCacheRepository)
     )
 
   val application: Application = new GuiceApplicationBuilder()

@@ -29,6 +29,7 @@ import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsObject, JsResultException, JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
+import repository.DataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
 import utils.WireMockHelper
@@ -44,12 +45,14 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
 
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
+  private val mockDataCacheRepository = mock[DataCacheRepository]
 
   private lazy val connector: FinancialStatementConnector = injector.instanceOf[FinancialStatementConnector]
 
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
       bind[AuditService].toInstance(mockAuditService),
+      bind[DataCacheRepository].toInstance(mockDataCacheRepository),
       bind[AFTService].toInstance(mockAftService)
     )
 
@@ -74,7 +77,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
       }
     }
 
-    "return a JsResultException for anything else" in {
+    "return a BadRequestException for anything else" in {
       server.stubFor(
         get(urlEqualTo(getPsaFSUrl))
           .willReturn(
@@ -84,10 +87,11 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
           )
       )
 
-      recoverToExceptionIf[JsResultException] {
+      recoverToExceptionIf[BadRequestException] {
         connector.getPsaFS(psaId)
       } map { errorResponse =>
-        errorResponse mustBe JsResultException
+        errorResponse.responseCode mustBe BAD_REQUEST
+        errorResponse.message must include("INVALID_PSTR")
       }
     }
 
@@ -100,7 +104,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
           )
       )
 
-      recoverToExceptionIf[JsResultException] {
+      recoverToExceptionIf[NotFoundException] {
         connector.getPsaFS(psaId)
       } map { errorResponse =>
         errorResponse.responseCode mustEqual NOT_FOUND

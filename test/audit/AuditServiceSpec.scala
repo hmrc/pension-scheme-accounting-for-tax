@@ -26,6 +26,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
+import repository.DataCacheRepository
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.audit.model.{DataEvent, ExtendedDataEvent}
@@ -66,11 +67,13 @@ class AuditServiceSpec extends WordSpec with MustMatchers with Inside {
 
 object AuditServiceSpec extends MockitoSugar {
 
-  val mockAuditConnector: AuditConnector = mock[AuditConnector]
+  private val mockAuditConnector: AuditConnector = mock[AuditConnector]
+  private val mockDataCacheRepository = mock[DataCacheRepository]
 
   private val app = new GuiceApplicationBuilder()
     .overrides(
-      bind[AuditConnector].toInstance(mockAuditConnector)
+      bind[AuditConnector].toInstance(mockAuditConnector),
+      bind[DataCacheRepository].toInstance(mockDataCacheRepository)
     )
     .build()
 

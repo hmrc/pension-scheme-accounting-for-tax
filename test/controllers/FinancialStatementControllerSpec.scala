@@ -31,6 +31,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import repository.DataCacheRepository
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
@@ -46,10 +47,13 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
 
   private val mockFSConnector = mock[FinancialStatementConnector]
   private val authConnector: AuthConnector = mock[AuthConnector]
+  private val mockDataCacheRepository = mock[DataCacheRepository]
+
 
   private val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
+      bind[DataCacheRepository].toInstance(mockDataCacheRepository),
       bind[FinancialStatementConnector].toInstance(mockFSConnector)
     )
 
