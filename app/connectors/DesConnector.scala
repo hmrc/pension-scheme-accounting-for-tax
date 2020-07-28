@@ -30,7 +30,6 @@ import play.api.mvc.RequestHeader
 import services.AFTService
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-//import uk.gov.hmrc.http.HttpReads.Implicits.readJsValue
 import play.api.http.Status._
 import utils.HttpResponseHelper
 
@@ -82,7 +81,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
       response =>
         response.status match {
           case OK => Json.parse(response.body)
-          case _ => handleErrorResponse("POST", getAftUrl)(response)
+          case _ => handleErrorResponse("GET", getAftUrl)(response)
         }
     } andThen aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, startDate)
   }
@@ -104,7 +103,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
               case JsError(errors) => throw JsResultException(errors)
             }
           case _ =>
-            handleErrorResponse("POST", getAftVersionUrl)(response)
+            handleErrorResponse("GET", getAftVersionUrl)(response)
         }
     } andThen aftVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate)
   }
@@ -123,7 +122,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
             case JsError(errors) => throw JsResultException(errors)
           }
         case _ =>
-          handleErrorResponse("POST", getAftVersionUrl)(response)
+          handleErrorResponse("GET", getAftVersionUrl)(response)
       }
     }
   }
