@@ -16,7 +16,6 @@
 
 package controllers
 
-import config.AppConfig
 import connectors.FinancialStatementConnector
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
@@ -25,16 +24,20 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import utils.HttpResponseHelper
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
-class FinancialStatementController @Inject()(appConfig: AppConfig,
-                                             cc: ControllerComponents,
+class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
                                              val authConnector: AuthConnector
                                             )(implicit ec: ExecutionContext)
-  extends BackendController(cc) with HttpErrorFunctions with Results with AuthorisedFunctions {
+  extends BackendController(cc)
+    with HttpErrorFunctions
+    with Results
+    with AuthorisedFunctions
+    with HttpResponseHelper {
 
   def psaStatement: Action[AnyContent] = Action.async {
     implicit request =>

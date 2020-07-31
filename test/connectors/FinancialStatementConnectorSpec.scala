@@ -26,9 +26,10 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsObject, JsResultException, JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
+import repository.DataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
 import utils.WireMockHelper
@@ -44,12 +45,14 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
 
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
+  private val mockDataCacheRepository = mock[DataCacheRepository]
 
   private lazy val connector: FinancialStatementConnector = injector.instanceOf[FinancialStatementConnector]
 
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
       bind[AuditService].toInstance(mockAuditService),
+      bind[DataCacheRepository].toInstance(mockDataCacheRepository),
       bind[AFTService].toInstance(mockAftService)
     )
 
@@ -74,7 +77,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
       }
     }
 
-    "return a BadRequestException for a 400 INVALID_PSTR response" in {
+    "return a BadRequestException for anything else" in {
       server.stubFor(
         get(urlEqualTo(getPsaFSUrl))
           .willReturn(
@@ -87,7 +90,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
       recoverToExceptionIf[BadRequestException] {
         connector.getPsaFS(psaId)
       } map { errorResponse =>
-        errorResponse.responseCode mustEqual BAD_REQUEST
+        errorResponse.responseCode mustBe BAD_REQUEST
         errorResponse.message must include("INVALID_PSTR")
       }
     }
@@ -109,7 +112,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
       }
     }
 
-    "throw Upstream4XX for server unavailable - 403" in {
+    "throw UpstreamErrorResponse for server unavailable - 403" in {
 
       server.stubFor(
         get(urlEqualTo(getPsaFSUrl))
@@ -118,14 +121,14 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
               .withBody(errorResponse("FORBIDDEN"))
           )
       )
-      recoverToExceptionIf[Upstream4xxResponse](connector.getPsaFS(psaId)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getPsaFS(psaId)) map {
         ex =>
-          ex.upstreamResponseCode mustBe FORBIDDEN
+          ex.statusCode mustBe FORBIDDEN
           ex.message must include("FORBIDDEN")
       }
     }
 
-    "throw Upstream5XX for internal server error - 500 and log the event as error" in {
+    "throw UpstreamErrorResponse for internal server error - 500 and log the event as error" in {
 
       server.stubFor(
         get(urlEqualTo(getPsaFSUrl))
@@ -135,9 +138,9 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
           )
       )
 
-      recoverToExceptionIf[Upstream5xxResponse](connector.getPsaFS(psaId)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getPsaFS(psaId)) map {
         ex =>
-          ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+          ex.statusCode mustBe INTERNAL_SERVER_ERROR
           ex.message must include("SERVER_ERROR")
           ex.reportAs mustBe BAD_GATEWAY
       }
@@ -195,7 +198,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
       }
     }
 
-    "throw Upstream4XX for server unavailable - 403" in {
+    "throw UpstreamErrorResponse for server unavailable - 403" in {
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSUrl))
@@ -204,14 +207,14 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
               .withBody(errorResponse("FORBIDDEN"))
           )
       )
-      recoverToExceptionIf[Upstream4xxResponse](connector.getSchemeFS(pstr)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getSchemeFS(pstr)) map {
         ex =>
-          ex.upstreamResponseCode mustBe FORBIDDEN
+          ex.statusCode mustBe FORBIDDEN
           ex.message must include("FORBIDDEN")
       }
     }
 
-    "throw Upstream5XX for internal server error - 500 and log the event as error" in {
+    "throw UpstreamErrorResponse for internal server error - 500 and log the event as error" in {
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSUrl))
@@ -221,9 +224,9 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
           )
       )
 
-      recoverToExceptionIf[Upstream5xxResponse](connector.getSchemeFS(pstr)) map {
+      recoverToExceptionIf[UpstreamErrorResponse](connector.getSchemeFS(pstr)) map {
         ex =>
-          ex.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+          ex.statusCode mustBe INTERNAL_SERVER_ERROR
           ex.message must include("SERVER_ERROR")
           ex.reportAs mustBe BAD_GATEWAY
       }

@@ -32,7 +32,7 @@ class GetAFTDetailsAuditService @Inject()(auditService: AuditService) {
     case Success(response) =>
       sendEvent(pstr, startDate, Status.OK, Some(response))
     case Failure(error: UpstreamErrorResponse) =>
-      sendEvent(pstr, startDate, error.upstreamResponseCode, None)
+      sendEvent(pstr, startDate, error.statusCode, None)
     case Failure(error: HttpException) =>
       sendEvent(pstr, startDate, error.responseCode, None)
   }
