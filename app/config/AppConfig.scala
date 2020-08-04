@@ -30,6 +30,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   val graphiteHost: String = config.get[String](path = "microservice.metrics.graphite.host")
 
   private val baseURL: String = servicesConfig.baseUrl(serviceName = "des-hod")
+  private val ifURL: String = servicesConfig.baseUrl(serviceName = "if-hod")
   val fileAFTReturnURL: String = s"$baseURL${config.get[String](path = "serviceUrls.file-aft-return")}"
   lazy val desEnvironment: String = runModeConfiguration.getOptional[String]("microservice.services.des-hod.env").getOrElse("local")
   lazy val authorization: String = "Bearer " + runModeConfiguration.getOptional[String]("microservice.services.des-hod.authorizationToken").getOrElse("local")
@@ -42,6 +43,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   def getAftDetailsUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-details")}"
   def getAftVersionUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-version")}"
   def getAftOverviewUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-overview")}"
-  def psaFinancialStatementUrl = s"$baseURL${config.get[String](path = "serviceUrls.psa-financial-statement")}"
-  def schemeFinancialStatementUrl = s"$baseURL${config.get[String](path = "serviceUrls.scheme-financial-statement")}"
+  def psaFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.psa-financial-statement")}"
+  def schemeFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement")}"
 }
