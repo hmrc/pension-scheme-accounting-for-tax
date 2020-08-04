@@ -40,7 +40,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
   private implicit lazy val rh: RequestHeader = FakeRequest("", "")
 
-  override protected def portConfigKey: String = "microservice.services.des-hod.port"
+  override protected def portConfigKey: String = "microservice.services.if-hod.port"
 
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
