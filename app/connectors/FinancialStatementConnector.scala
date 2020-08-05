@@ -20,6 +20,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.{PsaFS, SchemeFS}
 import play.api.libs.json._
+import play.api.Logger
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
@@ -45,6 +46,7 @@ class FinancialStatementConnector @Inject()(http: HttpClient,
 
       response.status match {
         case OK =>
+          Logger.error(s"\n\n\n\t${response.body}\n\n\n")
           Json.parse(response.body).validate[Seq[PsaFS]](Reads.seq(PsaFS.rds)) match {
             case JsSuccess(statements, _) => statements
             case JsError(errors) => throw JsResultException(errors)
