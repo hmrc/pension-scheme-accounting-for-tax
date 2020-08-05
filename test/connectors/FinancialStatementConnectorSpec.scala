@@ -246,6 +246,15 @@ object FinancialStatementConnectorSpec {
 
   private val psaFSResponse: JsValue = Json.arr(
     Json.obj(
+      "chargeReference"-> "Not Applicable",
+      "chargeType"-> "00600100",
+      "totalAmount"-> -15000.00,
+      "dueDate"-> "2020-06-25",
+      "amountDue"-> -15000.00,
+      "outstandingAmount"-> -15000.00,
+      "stoodOverAmount"-> 0.00
+    ),
+    Json.obj(
       "chargeReference" -> "XY002610150184",
       "chargeType" -> "57001080",
       "dueDate" -> "2020-02-15",
