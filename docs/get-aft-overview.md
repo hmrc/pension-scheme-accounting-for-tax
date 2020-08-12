@@ -41,13 +41,19 @@ Returns AFT Versions Overview
 ]
 ```
 
-* **Error Response:**
+* **4XX Responses:**
 
   * **Code:** 403 FORBIDDEN <br />
     **Content:** `{
                      "code": "REQUEST_NOT_PROCESSED",
                                        "reason": "The remote endpoint has indicated that request could not be processed."
                   }`
+                  
+  * **Code:** 404 NOT_FOUND <br />
+    **Content:** `{
+                   "code": "NO_REPORT_FOUND",
+                                     "reason": "The remote endpoint has indicated No Scheme report was found for the given period."
+                }`
     
   * **Code:** 400 BAD_REQUEST <br />
     **Content:** `{    
@@ -63,8 +69,8 @@ Returns AFT Versions Overview
                                                         ]
                   }`
     
-  * **Code:** 4XX Upstream4xxResponse <br />
+  * **Code:** 4XX UpstreamErrorResponse <br />
 
-  OR anything else
+* **5XX Responses:**
 
-  * **Code:** 5XX Upstream5xxResponse <br />
+  * **Code:** 5XX UpstreamErrorResponse <br />
