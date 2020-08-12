@@ -564,6 +564,20 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       }
     }
 
+    "return a Seq.empty for NOT FOUND - 404 with response code NO_REPORT_FOUND" in {
+      server.stubFor(
+        get(urlEqualTo(getAftOverviewUrl))
+          .willReturn(
+            notFound
+              .withBody(errorResponse("NO_REPORT_FOUND"))
+          )
+      )
+
+        connector.getAftOverview(pstr, startDt, endDate) map { response =>
+          response mustEqual Seq.empty
+        }
+    }
+
     "return a NotFoundException for NOT FOUND - 404" in {
       server.stubFor(
         get(urlEqualTo(getAftOverviewUrl))
