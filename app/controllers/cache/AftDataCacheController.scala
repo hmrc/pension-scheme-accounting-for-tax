@@ -21,7 +21,7 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.Configuration
 import play.api.Logger
-import repository.DataCacheRepository
+import repository.AftDataCacheRepository
 import repository.model.SessionData
 import repository.model.SessionData._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
@@ -36,14 +36,14 @@ import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class DataCacheController @Inject()(
-                                     config: Configuration,
-                                     repository: DataCacheRepository,
-                                     val authConnector: AuthConnector,
-                                     cc: ControllerComponents
+class AftDataCacheController @Inject()(
+                                        config: Configuration,
+                                        repository: AftDataCacheRepository,
+                                        val authConnector: AuthConnector,
+                                        cc: ControllerComponents
                                    ) extends BackendController(cc) with AuthorisedFunctions {
 
-  import DataCacheController._
+  import AftDataCacheController._
 
   def save: Action[AnyContent] = Action.async {
     implicit request =>
@@ -153,7 +153,7 @@ class DataCacheController @Inject()(
   }
 }
 
-object DataCacheController {
+object AftDataCacheController {
 
   case object MissingHeadersException extends BadRequestException("Missing id(pstr and startDate) or Session Id from headers")
 

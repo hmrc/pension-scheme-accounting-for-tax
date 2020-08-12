@@ -29,7 +29,7 @@ import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsObject, JsResultException, JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
-import repository.DataCacheRepository
+import repository.AftDataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
 import utils.WireMockHelper
@@ -45,14 +45,14 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
 
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
-  private val mockDataCacheRepository = mock[DataCacheRepository]
+  private val mockDataCacheRepository = mock[AftDataCacheRepository]
 
   private lazy val connector: FinancialStatementConnector = injector.instanceOf[FinancialStatementConnector]
 
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
       bind[AuditService].toInstance(mockAuditService),
-      bind[DataCacheRepository].toInstance(mockDataCacheRepository),
+      bind[AftDataCacheRepository].toInstance(mockDataCacheRepository),
       bind[AFTService].toInstance(mockAftService)
     )
 
