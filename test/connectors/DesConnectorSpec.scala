@@ -113,7 +113,6 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       }
     }
 
-
     "send the FileAFTReturnOneChargeAndNoValue audit event when ETMP has returned OK and true passed into method" in {
       Mockito.reset(mockAuditService)
       val data = Json.obj(fields = "Id" -> "value")

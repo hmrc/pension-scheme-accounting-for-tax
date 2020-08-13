@@ -21,8 +21,12 @@ import java.time.LocalDate
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.{PsaFS, SchemeFS}
+import org.mockito.Matchers.any
+import org.mockito.Mockito.{times, verify, when}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.{AsyncWordSpec, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
@@ -74,6 +78,24 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
 
       connector.getPsaFS(psaId).map { response =>
         response mustBe psaModel
+      }
+    }
+
+    "send the GetPsaFS audit event when ETMP has returned OK" in {
+      Mockito.reset(mockAuditService)
+      server.stubFor(
+        get(urlEqualTo(getPsaFSUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(psaFSResponse.toString())
+          )
+      )
+
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetPsaFS])
+      connector.getPsaFS(psaId).map { _ =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual GetPsaFS(psaId, Status.OK, Some(Json.toJson(psaModel)))
       }
     }
 
@@ -160,6 +182,24 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
 
       connector.getSchemeFS(pstr).map { response =>
         response mustBe schemeModel
+      }
+    }
+
+    "send the GetSchemeFS audit event when ETMP has returned OK" in {
+      Mockito.reset(mockAuditService)
+      server.stubFor(
+        get(urlEqualTo(getSchemeFSUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(schemeFSResponse.toString())
+          )
+      )
+
+      val eventCaptor = ArgumentCaptor.forClass(classOf[GetSchemeFS])
+      connector.getSchemeFS(pstr).map { _ =>
+        verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
+        eventCaptor.getValue mustEqual GetSchemeFS(pstr, Status.OK, Some(Json.toJson(schemeModel)))
       }
     }
 
