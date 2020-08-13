@@ -121,6 +121,9 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
             case JsSuccess(versions, _) => versions
             case JsError(errors) => throw JsResultException(errors)
           }
+        case NOT_FOUND if (Json.parse(response.body) \ "code").as[String].equals("NO_REPORT_FOUND") =>
+          Logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
+          Seq.empty[AFTOverview]
         case _ =>
           handleErrorResponse("GET", getAftVersionUrl)(response)
       }
