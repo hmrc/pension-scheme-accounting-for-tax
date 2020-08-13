@@ -30,14 +30,14 @@ import reactivemongo.api.indexes.IndexType
 import reactivemongo.bson.BSONDocument
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import repository.model.DataCache
+import repository.model.AftDataCache
 import repository.model.SessionData
 import uk.gov.hmrc.mongo.ReactiveRepository
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-class DataCacheRepository @Inject()(
+class AftDataCacheRepository @Inject()(
                                      mongoComponent: ReactiveMongoComponent,
                                      configuration: Configuration
                                    )(implicit val ec: ExecutionContext) extends ReactiveRepository[JsValue, BSONObjectID](
@@ -82,7 +82,7 @@ class DataCacheRepository @Inject()(
 
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.debug("Calling Save in AFT Cache")
-    val document: JsValue = Json.toJson(DataCache.applyDataCache(
+    val document: JsValue = Json.toJson(AftDataCache.applyDataCache(
       id = id, None, data = userData, expireAt = expireInSeconds))
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     val modifier = BSONDocument("$set" -> document)
@@ -93,7 +93,7 @@ class DataCacheRepository @Inject()(
                      version: Int, accessMode: String, areSubmittedVersionsAvailable: Boolean)(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.debug("Calling setSessionData in AFT Cache")
     val document: JsValue = Json.toJson(
-      DataCache.applyDataCache(
+      AftDataCache.applyDataCache(
         id = id,
         Some(SessionData(sessionId, name, version, accessMode, areSubmittedVersionsAvailable)),
         data = userData, expireAt = expireInSeconds
@@ -106,7 +106,7 @@ class DataCacheRepository @Inject()(
 
   def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
     Logger.debug("Calling getSessionData in AFT Cache")
-    collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[DataCache]
+    collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[AftDataCache]
       .flatMap {
         case None => Future.successful(None)
         case Some(dc) =>
@@ -119,7 +119,7 @@ class DataCacheRepository @Inject()(
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
     Logger.debug("Calling lockedBy in AFT Cache")
     val documentsForReturnAndQuarter = collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
-      cursor[DataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[DataCache]]())
+      cursor[AftDataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[AftDataCache]]())
 
     documentsForReturnAndQuarter.map {
       _.find(_.sessionData.exists(sd => sd.name.isDefined && sd.sessionId != sessionId))
@@ -131,7 +131,7 @@ class DataCacheRepository @Inject()(
 
   def get(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
     Logger.debug("Calling get in AFT Cache")
-    collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[DataCache].map {
+    collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[AftDataCache].map {
       _.map {
         dataEntry =>
           dataEntry.data

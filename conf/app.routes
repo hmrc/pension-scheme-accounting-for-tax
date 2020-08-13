@@ -9,15 +9,19 @@ GET           /get-aft-versions                                            contr
 
 GET           /get-aft-overview                                            controllers.AFTController.getOverview
 
-GET           /journey-cache/aft/session-data                              controllers.cache.DataCacheController.getSessionData
-POST          /journey-cache/aft/session-data                              controllers.cache.DataCacheController.setSessionData(lock:Boolean=false)
-POST          /journey-cache/aft/session-data-lock                         controllers.cache.DataCacheController.setSessionData(lock:Boolean=true)
-GET           /journey-cache/aft/lock                                      controllers.cache.DataCacheController.lockedBy
-DELETE        /journey-cache/aft/lock                                      controllers.cache.DataCacheController.releaseLockWithSessionId
+GET           /journey-cache/aft/session-data                              controllers.cache.AftDataCacheController.getSessionData
+POST          /journey-cache/aft/session-data                              controllers.cache.AftDataCacheController.setSessionData(lock:Boolean=false)
+POST          /journey-cache/aft/session-data-lock                         controllers.cache.AftDataCacheController.setSessionData(lock:Boolean=true)
+GET           /journey-cache/aft/lock                                      controllers.cache.AftDataCacheController.lockedBy
+DELETE        /journey-cache/aft/lock                                      controllers.cache.AftDataCacheController.releaseLockWithSessionId
 
-GET           /journey-cache/aft                                           controllers.cache.DataCacheController.get
-POST          /journey-cache/aft                                           controllers.cache.DataCacheController.save
-DELETE        /journey-cache/aft                                           controllers.cache.DataCacheController.remove
+GET           /journey-cache/aft                                           controllers.cache.AftDataCacheController.get
+POST          /journey-cache/aft                                           controllers.cache.AftDataCacheController.save
+DELETE        /journey-cache/aft                                           controllers.cache.AftDataCacheController.remove
+
+GET           /cache/financialInfo                                         controllers.cache.FinancialInfoCacheController.get
+POST          /cache/financialInfo                                         controllers.cache.FinancialInfoCacheController.save
+DELETE        /cache/financialInfo                                         controllers.cache.FinancialInfoCacheController.remove
 
 GET           /psa-financial-statement                                     controllers.FinancialStatementController.psaStatement
 GET           /scheme-financial-statement                                  controllers.FinancialStatementController.schemeStatement

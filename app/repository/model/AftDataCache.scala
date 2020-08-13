@@ -25,15 +25,15 @@ object SessionData {
   implicit val format: Format[SessionData] = Json.format[SessionData]
 }
 
-case class DataCache(id: String, sessionData: Option[SessionData], data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
-object DataCache {
+case class AftDataCache(id: String, sessionData: Option[SessionData], data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
+object AftDataCache {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-  implicit val format: Format[DataCache] = Json.format[DataCache]
+  implicit val format: Format[AftDataCache] = Json.format[AftDataCache]
   def applyDataCache(id: String,
                      sessionData: Option[SessionData],
                      data: JsValue,
                      lastUpdated: DateTime = DateTime.now(DateTimeZone.UTC),
-                     expireAt: DateTime): DataCache = {
-    DataCache(id, sessionData, data, lastUpdated, expireAt)
+                     expireAt: DateTime): AftDataCache = {
+    AftDataCache(id, sessionData, data, lastUpdated, expireAt)
   }
 }
