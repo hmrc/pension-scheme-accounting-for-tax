@@ -32,7 +32,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.DataCacheRepository
+import repository.AftDataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
@@ -51,7 +51,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private val mockDesConnector = mock[DesConnector]
   private val mockAftService = mock[AFTService]
   private val authConnector: AuthConnector = mock[AuthConnector]
-  private val mockDataCacheRepository = mock[DataCacheRepository]
+  private val mockDataCacheRepository = mock[AftDataCacheRepository]
 
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
@@ -65,7 +65,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       bind[AuthConnector].toInstance(authConnector),
       bind[DesConnector].toInstance(mockDesConnector),
       bind[AFTService].toInstance(mockAftService),
-      bind[DataCacheRepository].toInstance(mockDataCacheRepository)
+      bind[AftDataCacheRepository].toInstance(mockDataCacheRepository)
     )
 
   val application: Application = new GuiceApplicationBuilder()
@@ -91,7 +91,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(OK, Some(fileAFTUaRequestJson))))
+        .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaRequestJson.toString)))
 
       val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
@@ -103,13 +103,13 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.failed(Upstream5xxResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+        .thenReturn(Future.failed(UpstreamErrorResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
-      recoverToExceptionIf[Upstream5xxResponse] {
+      recoverToExceptionIf[UpstreamErrorResponse] {
         controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map {
-        _.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+        _.statusCode mustBe INTERNAL_SERVER_ERROR
       }
     }
 
@@ -119,7 +119,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val jsonPayload = jsonOneMemberZeroValue
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(OK, Some(jsonPayload))))
+        .thenReturn(Future.successful(HttpResponse(OK, jsonPayload.toString)))
       val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(jsonPayload).
         withHeaders(newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
@@ -135,7 +135,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.successful(Seq(AFTVersion(1, LocalDate.now(), "submitted"))))
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
+        Future.successful(createAFTDetailsResponse(chargeSectionWithValue(nonZeroCurrencyValue)))
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
 
@@ -152,7 +152,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.successful(Seq(AFTVersion(1, LocalDate.now(), "submitted"))))
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeSectionWithValue("chargeADetails", nonZeroCurrencyValue)))
+        Future.successful(createAFTDetailsResponse(chargeSectionWithValue(nonZeroCurrencyValue)))
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
 
@@ -190,12 +190,12 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+        Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
-      recoverToExceptionIf[Upstream5xxResponse] {
+      recoverToExceptionIf[UpstreamErrorResponse] {
         controller.getVersions()(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt, "pstr" -> pstr))
       } map { response =>
-        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+        response.statusCode mustBe INTERNAL_SERVER_ERROR
         response.getMessage must include("INTERNAL SERVER ERROR")
         response.reportAs mustBe INTERNAL_SERVER_ERROR
       }
@@ -249,12 +249,12 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(Upstream4xxResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
+        Future.failed(UpstreamErrorResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
 
-      recoverToExceptionIf[Upstream4xxResponse] {
+      recoverToExceptionIf[UpstreamErrorResponse] {
         controller.getDetails()(fakeRequestForGetDetails)
       } map { response =>
-        response.upstreamResponseCode mustBe NOT_FOUND
+        response.statusCode mustBe NOT_FOUND
         response.getMessage mustBe errorResponse("NOT_FOUND")
       }
     }
@@ -264,12 +264,12 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+        Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
-      recoverToExceptionIf[Upstream5xxResponse] {
+      recoverToExceptionIf[UpstreamErrorResponse] {
         controller.getDetails()(fakeRequestForGetDetails)
       } map { response =>
-        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+        response.statusCode mustBe INTERNAL_SERVER_ERROR
         response.getMessage mustBe errorResponse("INTERNAL_SERVER_ERROR")
       }
     }
@@ -353,12 +353,12 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-        Future.failed(Upstream5xxResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+        Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
-      recoverToExceptionIf[Upstream5xxResponse] {
+      recoverToExceptionIf[UpstreamErrorResponse] {
         controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt, "endDate" -> endDate))
       } map { response =>
-        response.upstreamResponseCode mustBe INTERNAL_SERVER_ERROR
+        response.statusCode mustBe INTERNAL_SERVER_ERROR
         response.getMessage must include("INTERNAL SERVER ERROR")
         response.reportAs mustBe INTERNAL_SERVER_ERROR
       }
@@ -462,9 +462,9 @@ object AFTControllerSpec {
 
   private val aftOverview = Seq(overview1, overview2)
 
-  private def chargeSectionWithValue(section: String, currencyValue: BigDecimal): JsObject =
+  private def chargeSectionWithValue(currencyValue: BigDecimal): JsObject =
     Json.obj(
-      section -> Json.obj(
+      "chargeADetails" -> Json.obj(
         "totalAmount" -> currencyValue
       )
     )
