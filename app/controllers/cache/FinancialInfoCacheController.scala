@@ -51,7 +51,7 @@ class FinancialInfoCacheController @Inject()(
     implicit request =>
       getId { id =>
         repository.get(id).map { response =>
-          Logger.debug(message = s"AftDataCacheController.get: Response for request Id $id is $response")
+          Logger.debug(message = s"FinancialInfoCacheController.get: Response for request Id $id is $response")
           response.map {
             Ok(_)
           } getOrElse NotFound
