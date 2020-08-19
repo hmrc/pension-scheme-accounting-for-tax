@@ -181,7 +181,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
       }
     }
 
-    "return Not Found - 404" in {
+    "return Empty sequence - 404" in {
       server.stubFor(
         get(urlEqualTo(getSchemeFSUrl))
           .willReturn(
@@ -190,11 +190,8 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
           )
       )
 
-      recoverToExceptionIf[NotFoundException] {
-        connector.getSchemeFS(pstr)
-      } map { errorResponse =>
-        errorResponse.responseCode mustEqual NOT_FOUND
-        errorResponse.message must include("NOT_FOUND")
+      connector.getSchemeFS(pstr).map { response =>
+        response mustBe Seq.empty
       }
     }
 
