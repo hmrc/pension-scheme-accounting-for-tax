@@ -16,6 +16,7 @@
 
 package connectors
 
+import audit.FinancialInfoAuditService
 import com.google.inject.Inject
 import config.AppConfig
 import models.{PsaFS, SchemeFS}
@@ -30,7 +31,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialStatementConnector @Inject()(http: HttpClient,
                                             config: AppConfig,
-                                            headerUtils: HeaderUtils)
+                                            headerUtils: HeaderUtils,
+                                            financialInfoAuditService: FinancialInfoAuditService)
   extends HttpErrorFunctions with HttpResponseHelper {
 
   def getPsaFS(psaId: String)
@@ -67,7 +69,7 @@ class FinancialStatementConnector @Inject()(http: HttpClient,
         case _ =>
           handleErrorResponse("GET", url)(response)
       }
-    }
+    } andThen financialInfoAuditService.sendPsaFSAuditEvent(psaId)
   }
 
   def getSchemeFS(pstr: String)
@@ -89,6 +91,6 @@ class FinancialStatementConnector @Inject()(http: HttpClient,
         case _ =>
           handleErrorResponse("GET", url)(response)
       }
-    }
+    } andThen financialInfoAuditService.sendSchemeFSAuditEvent(pstr)
   }
 }
