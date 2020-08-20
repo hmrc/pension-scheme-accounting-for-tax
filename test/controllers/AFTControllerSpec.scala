@@ -128,7 +128,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
   "getVersions" must {
 
-    "return OK with the version if there is only version and it is not zeroed out" in {
+    "return OK with the version if there is only version" in {
 
       val controller = application.injector.instanceOf[AFTController]
 
@@ -143,23 +143,6 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.arr(Json.toJson(version1))
-    }
-
-    "return OK with an empty sequence if there is only version and it is zeroed out" in {
-
-      val controller = application.injector.instanceOf[AFTController]
-
-      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
-        Future.successful(Seq(AFTVersion(1, LocalDate.now(), "submitted"))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
-        Future.successful(createAFTDetailsResponse(chargeSectionWithValue(nonZeroCurrencyValue)))
-      )
-      when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
-
-      val result = controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.arr()
     }
 
     "return OK with the versions if more than one versions are present" in {

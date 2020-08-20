@@ -19,7 +19,6 @@ package controllers
 import config.AppConfig
 import connectors.DesConnector
 import javax.inject.{Inject, Singleton}
-import models.AFTVersion
 import models.enumeration.JourneyType
 import play.api.Logger
 import play.api.libs.json._
@@ -90,18 +89,7 @@ class AFTController @Inject()(appConfig: AppConfig,
   def getVersions: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
-        desConnector.getAftVersions(pstr, startDate).flatMap {
-          case versions if versions.size == 1 =>  //TODO this case should be removed after 1 July 2020
-                                                  //TODO as this call will be handled as part of calling the overview API
-
-           isChargeNonZero(pstr, startDate, versions.head.reportVersion.toString).map {
-              case true => Ok(Json.toJson(versions))
-              case _ => Ok(Json.toJson(Seq[AFTVersion]()))
-
-            }
-          case versions =>
-            Future.successful(Ok(Json.toJson(versions)))
-        }
+        desConnector.getAftVersions(pstr, startDate).map(v => Ok(Json.toJson(v)))
       }
   }
 
