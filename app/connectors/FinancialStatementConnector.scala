@@ -88,6 +88,7 @@ class FinancialStatementConnector @Inject()(http: HttpClient,
             case JsSuccess(statements, _) => statements
             case JsError(errors) => throw JsResultException(errors)
           }
+        case NOT_FOUND => Seq.empty
         case _ =>
           handleErrorResponse("GET", url)(response)
       }
