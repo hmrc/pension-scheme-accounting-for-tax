@@ -27,6 +27,7 @@ import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.Logger
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -52,6 +53,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
   private val mockDataCacheRepository = mock[AftDataCacheRepository]
+  private val mockLogger = mock[Logger]
 
   private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
 
@@ -59,7 +61,8 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AftDataCacheRepository].toInstance(mockDataCacheRepository),
-      bind[AFTService].toInstance(mockAftService)
+      bind[AFTService].toInstance(mockAftService),
+      bind[Logger].toInstance(mockLogger)
     )
 
   private val pstr = "test-pstr"
@@ -147,6 +150,29 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
         connector.fileAFTReturn(pstr, journeyType, data)
       } map {
         _.responseCode mustEqual BAD_REQUEST
+      }
+    }
+
+    "return BAD REQUEST when ETMP has returned BadRequestException with Invalid Payload" in {
+      val data = Json.obj(fields = "Id" -> "value")
+      server.stubFor(
+        post(urlEqualTo(aftSubmitUrl))
+          .withRequestBody(equalTo(Json.stringify(data)))
+          .willReturn(
+            badRequest()
+              .withHeader("Content-Type", "application/json")
+              .withBody(errorResponse("INVALID_PAYLOAD"))
+          )
+      )
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
+      val eventCaptor = ArgumentCaptor.forClass(classOf[String])
+      recoverToExceptionIf[BadRequestException] {
+        connector.fileAFTReturn(pstr, journeyType, data)
+      } map {
+        errorResponse =>
+          verify(mockLogger, times(1)).warn(eventCaptor.capture())
+          errorResponse.responseCode mustEqual BAD_REQUEST
+          errorResponse.message must include("INVALID_PAYLOAD")
       }
     }
 
