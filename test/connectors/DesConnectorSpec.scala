@@ -20,14 +20,13 @@ import java.time.LocalDate
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
-import models.{AFTOverview, AFTVersion}
 import models.enumeration.JourneyType
+import models.{AFTOverview, AFTVersion}
 import org.mockito.Matchers.any
-import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito.{times, verify, when}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.Logger
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -53,7 +52,6 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
   private val mockDataCacheRepository = mock[AftDataCacheRepository]
-  private val mockLogger = mock[Logger]
 
   private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
 
@@ -61,8 +59,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AftDataCacheRepository].toInstance(mockDataCacheRepository),
-      bind[AFTService].toInstance(mockAftService),
-      bind[Logger].toInstance(mockLogger)
+      bind[AFTService].toInstance(mockAftService)
     )
 
   private val pstr = "test-pstr"
