@@ -54,7 +54,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
         response =>
           response.status match {
             case OK => response
-            case _ => handleErrorResponse("POST", fileAFTReturnURL)(response)
+            case _ => handleErrorResponse("POST", fileAFTReturnURL, journeyType)(response)
           }
       } andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data) andThen
@@ -64,7 +64,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
         response =>
           response.status match {
             case OK => response
-            case _ => handleErrorResponse("POST", fileAFTReturnURL)(response)
+            case _ => handleErrorResponse("POST", fileAFTReturnURL, journeyType)(response)
           }
       } andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
