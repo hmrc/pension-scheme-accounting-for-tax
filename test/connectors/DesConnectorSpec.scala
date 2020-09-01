@@ -153,29 +153,6 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
       }
     }
 
-    "return BAD REQUEST when ETMP has returned BadRequestException with Invalid Payload" in {
-      val data = Json.obj(fields = "Id" -> "value")
-      server.stubFor(
-        post(urlEqualTo(aftSubmitUrl))
-          .withRequestBody(equalTo(Json.stringify(data)))
-          .willReturn(
-            badRequest()
-              .withHeader("Content-Type", "application/json")
-              .withBody(errorResponse("INVALID_PAYLOAD"))
-          )
-      )
-      when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
-      val eventCaptor = ArgumentCaptor.forClass(classOf[String])
-      recoverToExceptionIf[BadRequestException] {
-        connector.fileAFTReturn(pstr, journeyType, data)
-      } map {
-        errorResponse =>
-          verify(mockLogger, times(1)).warn(eventCaptor.capture())
-          errorResponse.responseCode mustEqual BAD_REQUEST
-          errorResponse.message must include("INVALID_PAYLOAD")
-      }
-    }
-
     "return NOT FOUND when ETMP has returned NotFoundException" in {
       val data = Json.obj(fields = "Id" -> "value")
       server.stubFor(
