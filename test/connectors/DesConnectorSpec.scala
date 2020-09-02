@@ -20,11 +20,11 @@ import java.time.LocalDate
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
-import models.{AFTOverview, AFTVersion}
 import models.enumeration.JourneyType
+import models.{AFTOverview, AFTVersion}
 import org.mockito.Matchers.any
-import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito.{times, verify, when}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status
