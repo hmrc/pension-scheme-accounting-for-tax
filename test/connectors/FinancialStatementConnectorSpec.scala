@@ -117,7 +117,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
       }
     }
 
-    "return Not Found - 404" in {
+    "return Empty sequence - 404" in {
       server.stubFor(
         get(urlEqualTo(getPsaFSUrl))
           .willReturn(
@@ -126,11 +126,9 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers wi
           )
       )
 
-      recoverToExceptionIf[NotFoundException] {
-        connector.getPsaFS(psaId)
-      } map { errorResponse =>
-        errorResponse.responseCode mustEqual NOT_FOUND
-        errorResponse.message must include("NOT_FOUND")
+      connector.getPsaFS(psaId) map {
+        response =>
+          response mustBe Seq.empty
       }
     }
 
@@ -283,13 +281,13 @@ object FinancialStatementConnectorSpec {
 
   private val psaFSResponse: JsValue = Json.arr(
     Json.obj(
-      "chargeReference"-> "Not Applicable",
-      "chargeType"-> "00600100",
-      "totalAmount"-> -15000.00,
-      "dueDate"-> "2020-06-25",
-      "amountDue"-> -15000.00,
-      "outstandingAmount"-> -15000.00,
-      "stoodOverAmount"-> 0.00
+      "chargeReference" -> "Not Applicable",
+      "chargeType" -> "00600100",
+      "totalAmount" -> -15000.00,
+      "dueDate" -> "2020-06-25",
+      "amountDue" -> -15000.00,
+      "outstandingAmount" -> -15000.00,
+      "stoodOverAmount" -> 0.00
     ),
     Json.obj(
       "chargeReference" -> "XY002610150184",
