@@ -66,6 +66,8 @@ class FinancialStatementConnector @Inject()(http: HttpClient,
             case JsError(errors) =>
               throw JsResultException(errors)
           }
+        case NOT_FOUND =>
+          Seq.empty[PsaFS]
         case _ =>
           handleErrorResponse("GET", url)(response)
       }
@@ -88,7 +90,8 @@ class FinancialStatementConnector @Inject()(http: HttpClient,
             case JsSuccess(statements, _) => statements
             case JsError(errors) => throw JsResultException(errors)
           }
-        case NOT_FOUND => Seq.empty
+        case NOT_FOUND =>
+          Seq.empty[SchemeFS]
         case _ =>
           handleErrorResponse("GET", url)(response)
       }
