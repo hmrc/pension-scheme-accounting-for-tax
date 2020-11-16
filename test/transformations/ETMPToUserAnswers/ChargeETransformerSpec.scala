@@ -19,7 +19,7 @@ package transformations.ETMPToUserAnswers
 import java.time.LocalDate
 
 import org.scalatest.FreeSpec
-import play.api.libs.json.{JsBoolean, JsDefined, JsLookupResult, JsObject}
+import play.api.libs.json.{JsLookupResult, JsObject}
 import transformations.generators.AFTETMPResponseGenerators
 
 class ChargeETransformerSpec extends FreeSpec with AFTETMPResponseGenerators {

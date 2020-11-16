@@ -38,7 +38,6 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSugar with BeforeAndAfter with JsonFileReader {
@@ -309,7 +308,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftOverview(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(endDate))(any(), any(), any()))
+      when(mockDesConnector.getAftOverview(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(endDate))(any(), any()))
         .thenReturn(Future.successful(aftOverview))
 
       val result = controller.getOverview()(fakeRequest

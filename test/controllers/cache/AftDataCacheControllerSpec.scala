@@ -32,7 +32,7 @@ import repository.AftDataCacheRepository
 import repository.model.SessionData
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.retrieve.Name
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
@@ -133,7 +133,8 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
         when(repo.save(any(), any(), any())(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.save(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+        val result = controller.save(fakePostRequest.withRawBody(
+          ByteString(RandomUtils.nextBytes(512001))))
         status(result) mustEqual BAD_REQUEST
       }
 

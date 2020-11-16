@@ -22,7 +22,7 @@ import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.{PsaFS, SchemeFS}
 import org.mockito.Matchers.any
-import org.mockito.Mockito.{times, verify, when}
+import org.mockito.Mockito.{times, verify}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.{AsyncWordSpec, MustMatchers}
 import org.scalatestplus.mockito.MockitoSugar
@@ -30,7 +30,7 @@ import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
-import play.api.libs.json.{JsObject, JsResultException, JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import repository.AftDataCacheRepository

@@ -67,7 +67,7 @@ class FinancialInfoCacheController @Inject()(
   }
 
   private def getId(block: String => Future[Result])
-                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+                           (implicit hc: HeaderCarrier): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.externalId) {
       case Some(id) => block(id)
       case _ => Future.failed(IdNotFoundFromAuth())
