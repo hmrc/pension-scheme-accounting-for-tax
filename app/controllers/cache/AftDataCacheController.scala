@@ -17,12 +17,12 @@
 package controllers.cache
 
 import com.google.inject.Inject
+import models.LockDetail
 import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.Configuration
 import play.api.Logger
 import repository.AftDataCacheRepository
-import repository.model.SessionData
 import repository.model.SessionData._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -32,7 +32,9 @@ import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.UnauthorizedException
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import models.LockDetail.formats
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -64,14 +66,19 @@ class AftDataCacheController @Inject()(
           jsValue => {
             (request.headers.get("version"), request.headers.get("accessMode"), request.headers.get("areSubmittedVersionsAvailable")) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
-                repository.setSessionData(id,
-                  if (lock) Some(name) else None,
-                  jsValue,
-                  sessionId,
-                  version.toInt,
-                  accessMode,
-                  areSubmittedVersionsAvailable.equals("true")
-                ).map(_ => Created)
+                for {
+                  psAdministratorOrPractitionerId <- retrievePsAdministratorOrPractitionerIdFromAuth
+                  _ <- repository.setSessionData(id,
+                    if (lock) Some(LockDetail(name, psAdministratorOrPractitionerId)) else None,
+                    jsValue,
+                    sessionId,
+                    version.toInt,
+                    accessMode,
+                    areSubmittedVersionsAvailable.equals("true")
+                  )
+                } yield {
+                  Created
+                }
               case _ => Future.successful(BadRequest("Version and/or access mode not present in request header"))
             }
           }
@@ -86,7 +93,7 @@ class AftDataCacheController @Inject()(
           Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
           response match {
             case None => NotFound
-            case Some(name) => Ok(name)
+            case Some(lockDetail) => Ok(Json.toJson(lockDetail))
           }
         }
       }
@@ -129,6 +136,19 @@ class AftDataCacheController @Inject()(
       getSessionId { sessionId =>
         repository.removeWithSessionId(sessionId).map(_ => Ok)
       }
+  }
+
+  private def retrievePsAdministratorOrPractitionerIdFromAuth(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader) = {
+    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.allEnrolments) { enrolments =>
+      (
+        enrolments.getEnrolment(key = "HMRC-PODS-ORG").flatMap(_.getIdentifier("PSAID").map(_.value)),
+        enrolments.getEnrolment(key = "HMRC-PODSPP-ORG").flatMap(_.getIdentifier("PSAID").map(_.value))
+      ) match {
+        case (Some(psaId), _) => Future.successful(psaId)
+        case (_, Some(pspId)) => Future.successful(pspId)
+        case _ => throw new RuntimeException("No psa or psp ID found")
+      }
+    }
   }
 
   private def getIdWithName(block: (String, String, String) => Future[Result])
