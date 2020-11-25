@@ -159,7 +159,7 @@ class AftDataCacheController @Inject()(
         ) match {
           case (Some(psaId), _) => psaId
           case (_, Some(pspId)) => pspId
-          case _ => throw new RuntimeException("No psa or psp ID found")
+          case _ => throw new RuntimeException(s"No psa or psp ID found in enrolments for logged-in user: ${enrolments.enrolments}")
         }
 
         val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
