@@ -153,21 +153,18 @@ class AftDataCacheController @Inject()(
     (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.name and Retrievals.allEnrolments) {
       case Some(name) ~ enrolments =>
-        val futurePsAdministratorOrPractitionerId = (
+        val psAdministratorOrPractitionerId = (
           enrolments.getEnrolment(key = "HMRC-PODS-ORG").flatMap(_.getIdentifier("PSAID").map(_.value)),
           enrolments.getEnrolment(key = "HMRC-PODSPP-ORG").flatMap(_.getIdentifier("PSPID").map(_.value))
         ) match {
-          case (Some(psaId), _) =>
-            Future.successful(psaId)
-          case (_, Some(pspId)) => Future.successful(pspId)
+          case (Some(psaId), _) => psaId
+          case (_, Some(pspId)) => pspId
           case _ => throw new RuntimeException("No psa or psp ID found")
         }
 
-        futurePsAdministratorOrPractitionerId.flatMap { psAdministratorOrPractitionerId =>
-          val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
-          val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
-          block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim, psAdministratorOrPractitionerId)
-        }
+        val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
+        val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
+        block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim, psAdministratorOrPractitionerId)
       case _ => Future.failed(CredNameNotFoundFromAuth())
     }
   }
