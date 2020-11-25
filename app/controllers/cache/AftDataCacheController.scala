@@ -66,18 +66,14 @@ class AftDataCacheController @Inject()(
           jsValue => {
             (request.headers.get("version"), request.headers.get("accessMode"), request.headers.get("areSubmittedVersionsAvailable")) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
-                for {
-                    _ <- repository.setSessionData(id,
-                      if (lock) Some(LockDetail(name, psAdministratorOrPractitionerId)) else None,
-                      jsValue,
-                      sessionId,
-                      version.toInt,
-                      accessMode,
-                      areSubmittedVersionsAvailable.equals("true")
-                    )
-                } yield {
-                  Created
-                }
+                repository.setSessionData(id,
+                  if (lock) Some(LockDetail(name, psAdministratorOrPractitionerId)) else None,
+                  jsValue,
+                  sessionId,
+                  version.toInt,
+                  accessMode,
+                  areSubmittedVersionsAvailable.equals("true")
+                ).map(_ => Created)
               case _ => Future.successful(BadRequest("Version and/or access mode not present in request header"))
             }
           }
