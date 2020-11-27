@@ -128,8 +128,11 @@ class AftDataCacheRepository @Inject()(
 
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[LockDetail]] = {
     Logger.debug("Calling lockedBy in AFT Cache")
-    val documentsForReturnAndQuarter = collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
-      cursor[AftDataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[AftDataCache]]())
+    val documentsForReturnAndQuarter = collection
+      .find(BSONDocument("id" -> id), projection = Option.empty[JsObject])
+      .cursor[AftDataCache](ReadPreference.primary)
+      .collect[List](-1, Cursor.FailOnError[List[AftDataCache]]())
+
     documentsForReturnAndQuarter.map {
       _.find(_.sessionData.exists(sd => sd.lockDetail.isDefined && sd.sessionId != sessionId))
         .flatMap {

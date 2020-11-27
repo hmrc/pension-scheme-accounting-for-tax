@@ -155,7 +155,7 @@ class AFTController @Inject()(
   private def get(block: (String, String) => Future[Result])
                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
 
-    authorised().retrieve(Retrievals.externalId) {
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
       case Some(_) =>
         (
           request.headers.get("pstr"),

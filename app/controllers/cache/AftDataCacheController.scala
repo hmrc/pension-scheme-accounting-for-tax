@@ -39,11 +39,11 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class AftDataCacheController @Inject()(
-  config: Configuration,
-  repository: AftDataCacheRepository,
-  val authConnector: AuthConnector,
-  cc: ControllerComponents
-) extends BackendController(cc) with AuthorisedFunctions {
+                                        config: Configuration,
+                                        repository: AftDataCacheRepository,
+                                        val authConnector: AuthConnector,
+                                        cc: ControllerComponents
+                                      ) extends BackendController(cc) with AuthorisedFunctions {
 
   import AftDataCacheController._
 
@@ -59,9 +59,9 @@ class AftDataCacheController @Inject()(
       }
   }
 
-  def setSessionData(lock:Boolean): Action[AnyContent] = Action.async {
+  def setSessionData(lock: Boolean): Action[AnyContent] = Action.async {
     implicit request =>
-      getIdWithNameAndPsAdministratorOrPractitionerId { case (sessionId, id, name, psAdministratorOrPractitionerId) =>
+      getIdWithNameAndPsaOrPspId { case (sessionId, id, name, psAdministratorOrPractitionerId) =>
         request.body.asJson.map {
           jsValue => {
             (request.headers.get("version"), request.headers.get("accessMode"), request.headers.get("areSubmittedVersionsAvailable")) match {
@@ -135,8 +135,8 @@ class AftDataCacheController @Inject()(
   }
 
   private def getIdWithName(block: (String, String, String) => Future[Result])
-    (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(psaEnrolment).retrieve(Retrievals.name) {
+                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+    authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name) {
       case Some(name) =>
         val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
         val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
@@ -145,16 +145,16 @@ class AftDataCacheController @Inject()(
     }
   }
 
-  private def getIdWithNameAndPsAdministratorOrPractitionerId(block: (String, String, String, String) => Future[Result])
-    (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+  private def getIdWithNameAndPsaOrPspId(block: (String, String, String, String) => Future[Result])
+                                        (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name and Retrievals.allEnrolments) {
       case Some(name) ~ enrolments =>
         val psAdministratorOrPractitionerId = (
-          enrolments.getEnrolment(key = psaEnrolment.key).flatMap(_.getIdentifier("PSAID").map(_.value)),
-          enrolments.getEnrolment(key = pspEnrolment.key).flatMap(_.getIdentifier("PSPID").map(_.value))
+          enrolments.getEnrolment(key = pspEnrolment.key).flatMap(_.getIdentifier("PSPID").map(_.value)),
+          enrolments.getEnrolment(key = psaEnrolment.key).flatMap(_.getIdentifier("PSAID").map(_.value))
         ) match {
-          case (Some(psaId), _) => psaId
-          case (_, Some(pspId)) => pspId
+          case (Some(pspId), _) => pspId
+          case (_, Some(psaId)) => psaId
           case _ => throw MissingIDException
         }
 
@@ -166,7 +166,7 @@ class AftDataCacheController @Inject()(
   }
 
   private def getSessionId(block: (String) => Future[Result])
-    (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+                          (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name) {
       case Some(_) =>
         val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
