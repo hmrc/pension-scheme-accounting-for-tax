@@ -17,6 +17,7 @@
 package repository
 
 import com.google.inject.Inject
+import models.LockDetail
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 import play.api.libs.json._
@@ -89,13 +90,20 @@ class AftDataCacheRepository @Inject()(
     collection.update.one(selector, modifier, upsert = true).map(_.ok)
   }
 
-  def setSessionData(id: String, name: Option[String], userData: JsValue, sessionId: String,
-                     version: Int, accessMode: String, areSubmittedVersionsAvailable: Boolean)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def setSessionData(
+    id: String,
+    lockDetail: Option[LockDetail],
+    userData: JsValue,
+    sessionId: String,
+    version: Int,
+    accessMode: String,
+    areSubmittedVersionsAvailable: Boolean
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     Logger.debug("Calling setSessionData in AFT Cache")
     val document: JsValue = Json.toJson(
       AftDataCache.applyDataCache(
         id = id,
-        Some(SessionData(sessionId, name, version, accessMode, areSubmittedVersionsAvailable)),
+        Some(SessionData(sessionId, lockDetail, version, accessMode, areSubmittedVersionsAvailable)),
         data = userData, expireAt = expireInSeconds
       )
     )
@@ -110,21 +118,22 @@ class AftDataCacheRepository @Inject()(
       .flatMap {
         case None => Future.successful(None)
         case Some(dc) =>
-          lockedBy(sessionId, id).map { lockedBy =>
-            dc.sessionData.map(_ copy (name = lockedBy))
+          lockedBy(sessionId, id).map { lockDetail =>
+            dc.sessionData.map{oo =>
+              oo copy (lockDetail = lockDetail)
+            }
           }
       }
   }
 
-  def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[String]] = {
+  def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[LockDetail]] = {
     Logger.debug("Calling lockedBy in AFT Cache")
     val documentsForReturnAndQuarter = collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).
       cursor[AftDataCache](ReadPreference.primary).collect[List](-1, Cursor.FailOnError[List[AftDataCache]]())
-
     documentsForReturnAndQuarter.map {
-      _.find(_.sessionData.exists(sd => sd.name.isDefined && sd.sessionId != sessionId))
+      _.find(_.sessionData.exists(sd => sd.lockDetail.isDefined && sd.sessionId != sessionId))
         .flatMap {
-          _.sessionData.flatMap(_.name)
+          _.sessionData.flatMap(_.lockDetail)
         }
     }
   }

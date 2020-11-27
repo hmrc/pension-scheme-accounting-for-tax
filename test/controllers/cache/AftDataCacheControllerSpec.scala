@@ -17,22 +17,33 @@
 package controllers.cache
 
 import akka.util.ByteString
+import models.LockDetail
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.Matchers
-import org.mockito.Matchers.{eq => eqTo, _}
-import org.mockito.Mockito.{reset, when}
-import org.scalatest.{BeforeAndAfter, MustMatchers, WordSpec}
+import org.mockito.Matchers.{eq => eqTo}
+import org.mockito.Matchers._
+import org.mockito.Mockito.reset
+import org.mockito.Mockito.when
+import org.scalatest.BeforeAndAfter
+import org.scalatest.MustMatchers
+import org.scalatest.WordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
-import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository.AftDataCacheRepository
 import repository.model.SessionData
 import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.Enrolment
+import uk.gov.hmrc.auth.core.EnrolmentIdentifier
+import uk.gov.hmrc.auth.core.Enrolments
 import uk.gov.hmrc.auth.core.retrieve.Name
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
@@ -48,6 +59,9 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
   private val sessionId = "sessionId"
   private val fakeRequest = FakeRequest().withHeaders("X-Session-ID" -> sessionId, "id" -> id)
   private val fakePostRequest = FakeRequest("POST", "/").withHeaders("X-Session-ID" -> sessionId, "id" -> id)
+  private val psaId = "A2222222"
+  private val pspId = "22222222"
+
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
@@ -180,7 +194,7 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
 
-        val sd = SessionData("id", Some("test name"), 1, "", areSubmittedVersionsAvailable = false)
+        val sd = SessionData("id", Some(LockDetail("test name", psaId)), 1, "", areSubmittedVersionsAvailable = false)
 
         val controller = app.injector.instanceOf[AftDataCacheController]
         when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(Some(sd))
@@ -205,8 +219,23 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
     }
   }
 
+  private def expectedAuthorisations(id:String) = {
+    val (enrolmentId, idType) = if (id.startsWith("A")) {
+      ("HMRC-PODS-ORG", "PSAID")
+    } else {
+      ("HMRC-PODSPP-ORG", "PSPID")
+    }
+
+    Option(Name(Some("test"), Some("name"))) and
+      Enrolments(
+        Set(
+          Enrolment(enrolmentId, Seq(EnrolmentIdentifier(idType, id)), "Activated", None)
+        )
+      )
+  }
+
   "calling setSessionData" must {
-    "return OK when the data is saved successfully" in {
+    "return OK when the data is saved successfully for a PSA ID" in {
       val accessMode = "compile"
       val version = 1
       val app = new GuiceApplicationBuilder()
@@ -215,12 +244,14 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
       val controller = app.injector.instanceOf[AftDataCacheController]
       when(repo.setSessionData(
         Matchers.eq(id),
-        Matchers.eq(Some("test name")), any(), any(),
+        Matchers.eq(Some(LockDetail("test name", psaId))), any(), any(),
         Matchers.eq(version),
         Matchers.eq(accessMode),
         Matchers.eq(true)
       )(any())) thenReturn Future.successful(true)
-      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+
+      when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.successful(expectedAuthorisations(psaId)))
 
       val result = controller.setSessionData(true)(fakePostRequest
         .withJsonBody(Json.obj("value" -> "data"))
@@ -233,6 +264,35 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
       status(result) mustEqual CREATED
     }
 
+    "return OK when the data is saved successfully for a PSP ID" in {
+      val accessMode = "compile"
+      val version = 1
+      val app = new GuiceApplicationBuilder()
+        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+        .overrides(modules: _*).build()
+      val controller = app.injector.instanceOf[AftDataCacheController]
+      when(repo.setSessionData(
+        Matchers.eq(id),
+        Matchers.eq(Some(LockDetail("test name", pspId))), any(), any(),
+        Matchers.eq(version),
+        Matchers.eq(accessMode),
+        Matchers.eq(true)
+      )(any())) thenReturn Future.successful(true)
+
+      when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.successful(expectedAuthorisations(pspId)))
+
+      val result = controller.setSessionData(true)(fakePostRequest
+        .withJsonBody(Json.obj("value" -> "data"))
+        .withHeaders(
+          "version" -> version.toString,
+          "accessMode" -> accessMode,
+          "areSubmittedVersionsAvailable" -> "true"
+        )
+      )
+      status(result) mustEqual CREATED
+    }
+
     "return BAD REQUEST when header data is missing" in {
       val accessMode = "compile"
       val version = 1
@@ -241,10 +301,10 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[AftDataCacheController]
       when(repo.setSessionData(Matchers.eq(id),
-        Matchers.eq(Some("test name")), any(), any(),
+        Matchers.eq(Some(LockDetail("test name", psaId))), any(), any(),
         Matchers.eq(version), Matchers.eq(accessMode), any())(any())) thenReturn Future.successful(true)
-      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
-
+      when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.successful(expectedAuthorisations(psaId)))
       val result = controller.setSessionData(true)(fakePostRequest
         .withJsonBody(Json.obj("value" -> "data"))
       )
@@ -257,7 +317,8 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[AftDataCacheController]
       when(repo.setSessionData(any(), any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful(true)
-      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+      when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.successful(expectedAuthorisations(psaId)))
 
       val result = controller
         .setSessionData(true)(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
@@ -270,7 +331,7 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
 
   "calling lockedBy" must {
     "return OK when the data is retrieved" in {
-      val lockedByUser = "bob"
+      val lockedByUser = LockDetail("bob", psaId)
       val app = new GuiceApplicationBuilder()
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
@@ -280,7 +341,7 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
 
       val result = controller.lockedBy()(fakeRequest)
       status(result) mustEqual OK
-      contentAsString(result) mustBe lockedByUser
+      contentAsString(result) mustBe Json.toJson(lockedByUser).toString
     }
 
     "return NOT FOUND when not locked" in {
