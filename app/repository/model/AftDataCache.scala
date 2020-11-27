@@ -16,16 +16,24 @@
 
 package repository.model
 
-import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.json.{Format, JsValue, Json}
+import models.LockDetail
+import org.joda.time.{DateTimeZone, DateTime}
+import play.api.libs.json.{Format, Json, JsValue}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-case class SessionData(sessionId: String, name: Option[String], version: Int, accessMode: String, areSubmittedVersionsAvailable: Boolean)
+case class SessionData(
+  sessionId: String,
+  lockDetail: Option[LockDetail],
+  version: Int,
+  accessMode: String,
+  areSubmittedVersionsAvailable: Boolean
+)
 object SessionData {
   implicit val format: Format[SessionData] = Json.format[SessionData]
 }
 
 case class AftDataCache(id: String, sessionData: Option[SessionData], data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
+
 object AftDataCache {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   implicit val format: Format[AftDataCache] = Json.format[AftDataCache]

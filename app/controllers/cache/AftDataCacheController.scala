@@ -17,12 +17,12 @@
 package controllers.cache
 
 import com.google.inject.Inject
+import models.LockDetail
 import play.api.libs.json.Json
 import play.api.mvc._
 import play.api.Configuration
 import play.api.Logger
 import repository.AftDataCacheRepository
-import repository.model.SessionData
 import repository.model.SessionData._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.AuthConnector
@@ -32,16 +32,18 @@ import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.UnauthorizedException
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import models.LockDetail.formats
+import uk.gov.hmrc.auth.core.retrieve.~
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class AftDataCacheController @Inject()(
-                                        config: Configuration,
-                                        repository: AftDataCacheRepository,
-                                        val authConnector: AuthConnector,
-                                        cc: ControllerComponents
-                                   ) extends BackendController(cc) with AuthorisedFunctions {
+  config: Configuration,
+  repository: AftDataCacheRepository,
+  val authConnector: AuthConnector,
+  cc: ControllerComponents
+) extends BackendController(cc) with AuthorisedFunctions {
 
   import AftDataCacheController._
 
@@ -59,13 +61,13 @@ class AftDataCacheController @Inject()(
 
   def setSessionData(lock:Boolean): Action[AnyContent] = Action.async {
     implicit request =>
-      getIdWithName { case (sessionId, id, name) =>
+      getIdWithNameAndPsAdministratorOrPractitionerId { case (sessionId, id, name, psAdministratorOrPractitionerId) =>
         request.body.asJson.map {
           jsValue => {
             (request.headers.get("version"), request.headers.get("accessMode"), request.headers.get("areSubmittedVersionsAvailable")) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
                 repository.setSessionData(id,
-                  if (lock) Some(name) else None,
+                  if (lock) Some(LockDetail(name, psAdministratorOrPractitionerId)) else None,
                   jsValue,
                   sessionId,
                   version.toInt,
@@ -77,6 +79,7 @@ class AftDataCacheController @Inject()(
           }
         } getOrElse Future.successful(BadRequest)
       }
+
   }
 
   def lockedBy: Action[AnyContent] = Action.async {
@@ -86,7 +89,7 @@ class AftDataCacheController @Inject()(
           Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
           response match {
             case None => NotFound
-            case Some(name) => Ok(name)
+            case Some(lockDetail) => Ok(Json.toJson(lockDetail))
           }
         }
       }
@@ -132,8 +135,8 @@ class AftDataCacheController @Inject()(
   }
 
   private def getIdWithName(block: (String, String, String) => Future[Result])
-                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
+    (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+    authorised(psaEnrolment).retrieve(Retrievals.name) {
       case Some(name) =>
         val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
         val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
@@ -142,9 +145,29 @@ class AftDataCacheController @Inject()(
     }
   }
 
+  private def getIdWithNameAndPsAdministratorOrPractitionerId(block: (String, String, String, String) => Future[Result])
+    (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+    authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name and Retrievals.allEnrolments) {
+      case Some(name) ~ enrolments =>
+        val psAdministratorOrPractitionerId = (
+          enrolments.getEnrolment(key = psaEnrolment.key).flatMap(_.getIdentifier("PSAID").map(_.value)),
+          enrolments.getEnrolment(key = pspEnrolment.key).flatMap(_.getIdentifier("PSPID").map(_.value))
+        ) match {
+          case (Some(psaId), _) => psaId
+          case (_, Some(pspId)) => pspId
+          case _ => throw MissingIDException
+        }
+
+        val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
+        val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
+        block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim, psAdministratorOrPractitionerId)
+      case _ => Future.failed(CredNameNotFoundFromAuth())
+    }
+  }
+
   private def getSessionId(block: (String) => Future[Result])
-                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.name) {
+    (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+    authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name) {
       case Some(_) =>
         val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
         block(sessionId)
@@ -157,7 +180,12 @@ object AftDataCacheController {
 
   case object MissingHeadersException extends BadRequestException("Missing id(pstr and startDate) or Session Id from headers")
 
+  case object MissingIDException extends BadRequestException("Missing psa ID or psp ID from enrolments")
+
   case class CredNameNotFoundFromAuth(msg: String = "Not Authorised - Unable to retrieve credentials - name")
     extends UnauthorizedException(msg)
+
+  private val psaEnrolment = Enrolment("HMRC-PODS-ORG")
+  private val pspEnrolment = Enrolment("HMRC-PODSPP-ORG")
 
 }
