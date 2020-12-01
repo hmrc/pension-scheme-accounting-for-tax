@@ -39,7 +39,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class AftDataCacheController @Inject()(
-                                        config: Configuration,
                                         repository: AftDataCacheRepository,
                                         val authConnector: AuthConnector,
                                         cc: ControllerComponents
@@ -61,13 +60,17 @@ class AftDataCacheController @Inject()(
 
   def setSessionData(lock: Boolean): Action[AnyContent] = Action.async {
     implicit request =>
-      getIdWithNameAndPsaOrPspId { case (sessionId, id, name, psAdministratorOrPractitionerId) =>
+      getIdWithNameAndPsaOrPspId { case (sessionId, id, name, psaOrPspId) =>
         request.body.asJson.map {
           jsValue => {
-            (request.headers.get("version"), request.headers.get("accessMode"), request.headers.get("areSubmittedVersionsAvailable")) match {
+            (
+              request.headers.get("version"),
+              request.headers.get("accessMode"),
+              request.headers.get("areSubmittedVersionsAvailable")
+            ) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
                 repository.setSessionData(id,
-                  if (lock) Some(LockDetail(name, psAdministratorOrPractitionerId)) else None,
+                  if (lock) Some(LockDetail(name, psaOrPspId)) else None,
                   jsValue,
                   sessionId,
                   version.toInt,
@@ -149,7 +152,7 @@ class AftDataCacheController @Inject()(
                                         (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name and Retrievals.allEnrolments) {
       case Some(name) ~ enrolments =>
-        val psAdministratorOrPractitionerId = (
+        val psaOrPspId = (
           enrolments.getEnrolment(key = pspEnrolment.key).flatMap(_.getIdentifier("PSPID").map(_.value)),
           enrolments.getEnrolment(key = psaEnrolment.key).flatMap(_.getIdentifier("PSAID").map(_.value))
         ) match {
@@ -160,7 +163,7 @@ class AftDataCacheController @Inject()(
 
         val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
         val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
-        block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim, psAdministratorOrPractitionerId)
+        block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim, psaOrPspId)
       case _ => Future.failed(CredNameNotFoundFromAuth())
     }
   }
