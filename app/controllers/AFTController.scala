@@ -135,7 +135,7 @@ class AFTController @Inject()(
 
     Logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
 
-    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.externalId) {
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
       case Some(_) =>
         (
           request.headers.get("pstr"),
