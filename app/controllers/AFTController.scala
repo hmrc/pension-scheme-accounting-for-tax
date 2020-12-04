@@ -16,7 +16,6 @@
 
 package controllers
 
-import config.AppConfig
 import connectors.DesConnector
 import javax.inject.{Inject, Singleton}
 import models.enumeration.JourneyType
@@ -34,13 +33,13 @@ import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
-class AFTController @Inject()(appConfig: AppConfig,
-                              cc: ControllerComponents,
-                              desConnector: DesConnector,
-                              val authConnector: AuthConnector,
-                              aftReturnTransformer: AFTReturnTransformer,
-                              aftDetailsTransformer: AFTDetailsTransformer,
-                              aftService: AFTService
+class AFTController @Inject()(
+                               cc: ControllerComponents,
+                               desConnector: DesConnector,
+                               val authConnector: AuthConnector,
+                               aftReturnTransformer: AFTReturnTransformer,
+                               aftDetailsTransformer: AFTDetailsTransformer,
+                               aftService: AFTService
                              )(implicit ec: ExecutionContext)
   extends BackendController(cc) with HttpErrorFunctions with Results with AuthorisedFunctions {
 
@@ -107,7 +106,6 @@ class AFTController @Inject()(appConfig: AppConfig,
   }
 
 
-
   def getOverview: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
@@ -157,7 +155,7 @@ class AFTController @Inject()(appConfig: AppConfig,
   private def get(block: (String, String) => Future[Result])
                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
 
-    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.externalId) {
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
       case Some(_) =>
         (
           request.headers.get("pstr"),
