@@ -19,8 +19,10 @@ package transformations.userAnswersToETMP
 import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, Reads, Json, JsObject}
-import transformations.ETMPToUserAnswers.JsonTransformer
+import play.api.libs.json.JsObject
+import play.api.libs.json.Json
+import play.api.libs.json.Reads
+import play.api.libs.json.__
 
 class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
                                      chargeBTransformer: ChargeBTransformer,

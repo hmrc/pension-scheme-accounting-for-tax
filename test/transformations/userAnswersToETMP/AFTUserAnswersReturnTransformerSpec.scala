@@ -22,13 +22,7 @@ import transformations.generators.AFTUserAnswersGenerators
 
 class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
 
-  private val chargeATransformer = new ChargeATransformer
-  private val chargeBTransformer = new ChargeBTransformer
-  private val chargeCTransformer = new ChargeCTransformer
-  private val chargeDTransformer = new ChargeDTransformer
-  private val chargeETransformer = new ChargeETransformer
-  private val chargeFTransformer = new ChargeFTransformer
-  private val chargeGTransformer = new ChargeGTransformer
+  import AFTUserAnswersReturnTransformerSpec._
 
   "An AFTReturn Transformer" - {
     "must transform from UserAnswers to ETMP AFT Return format for PSA" in {
@@ -47,6 +41,16 @@ class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGe
       transformedEtmpJson mustBe etmpResponseJsonPSP
     }
   }
+}
+
+object AFTUserAnswersReturnTransformerSpec {
+  private val chargeATransformer = new ChargeATransformer
+  private val chargeBTransformer = new ChargeBTransformer
+  private val chargeCTransformer = new ChargeCTransformer
+  private val chargeDTransformer = new ChargeDTransformer
+  private val chargeETransformer = new ChargeETransformer
+  private val chargeFTransformer = new ChargeFTransformer
+  private val chargeGTransformer = new ChargeGTransformer
 
   private val userAnswersRequestJsonPSA = Json.parse(
     """{
