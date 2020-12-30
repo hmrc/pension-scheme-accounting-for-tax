@@ -60,7 +60,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
   private def get(key: String)(block: String => Future[Result])
                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
 
-    authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.externalId) {
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
       case Some(_) =>
         request.headers.get(key) match {
           case Some(id) => block(id)
