@@ -109,7 +109,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
   }
 
   def getAftOverview(pstr: String, startDate: String, endDate: String)
-                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[AFTOverview]] = {
+                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
 
     val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))

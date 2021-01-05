@@ -18,22 +18,17 @@ package controllers.cache
 
 import com.google.inject.Inject
 import models.LockDetail
+import models.LockDetail.formats
+import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc._
-import play.api.Configuration
-import play.api.Logger
 import repository.AftDataCacheRepository
 import repository.model.SessionData._
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.auth.core.AuthorisedFunctions
-import uk.gov.hmrc.auth.core.Enrolment
-import uk.gov.hmrc.http.BadRequestException
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.UnauthorizedException
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import models.LockDetail.formats
 import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

@@ -110,7 +110,6 @@ object AFTServiceSpec {
     chargeFSectionWithValue _
   )
   private val nonMemberBasedChargeSections = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
-  private val memberBasedChargeSections = Seq("chargeTypeCDetails", "chargeTypeDDetails", "chargeTypeEDetails", "chargeTypeGDetails")
   private val nonMemberBasedChargeNames = Seq("A", "B", "F")
   private val memberBasedChargeNames = Seq("C", "D", "E", "G")
 
@@ -248,35 +247,4 @@ object AFTServiceSpec {
       )
     )
   )
-
-  private val jsonOneMemberZeroValue = Json.parse(
-    """{
-      |  "aftStatus": "Compiled",
-      |  "quarter": {
-      |       "startDate": "2019-01-01",
-      |       "endDate": "2019-03-31"
-      |  },
-      |  "chargeCDetails": {
-      |         "employers" : [
-      |                {
-      |                    "sponsoringIndividualDetails" : {
-      |                        "firstName" : "asas",
-      |                        "lastName" : "asa",
-      |                        "nino" : "CS121212C"
-      |                    },
-      |                    "whichTypeOfSponsoringEmployer" : "individual",
-      |                    "sponsoringEmployerAddress" : {
-      |                        "line1" : "asas",
-      |                        "line2" : "asas",
-      |                        "country" : "FR"
-      |                    },
-      |                    "chargeDetails" : {
-      |                        "paymentDate" : "2000-01-01",
-      |                        "amountTaxDue" : 0
-      |                    }
-      |                }
-      |            ],
-      |            "totalChargeAmount" : 0
-      |  }
-      |}""".stripMargin)
 }
