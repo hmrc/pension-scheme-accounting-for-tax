@@ -57,6 +57,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
   private val injector = application.injector
   private val controller = injector.instanceOf[EmailResponseController]
   private val encryptedPsaId = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(psa)).value
+  private val encryptedPspId = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(psp)).value
   private val encryptedEmail = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(email)).value
 
   override def beforeEach(): Unit = {
@@ -67,13 +68,22 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 
   "EmailResponseController" must {
 
-    "respond OK when given EmailEvents" in {
+    "respond OK when given EmailEvents for PSA" in {
       val result = controller
         .sendAuditEvents(requestId, encryptedPsaId, SubmitterType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       status(result) mustBe OK
       verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
       eventCaptor.getValue mustEqual EmailAuditEvent(psa, SubmitterType.PSA, email, Complained, AFT_SUBMIT_RETURN, requestId)
+    }
+
+    "respond OK when given EmailEvents for PSP" in {
+      val result = controller
+        .sendAuditEvents(requestId, encryptedPspId, SubmitterType.PSP, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
+
+      status(result) mustBe OK
+      verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
+      eventCaptor.getValue mustEqual EmailAuditEvent(psp, SubmitterType.PSP, email, Complained, AFT_SUBMIT_RETURN, requestId)
     }
 
     "respond with BAD_REQUEST when not given EmailEvents" in {
@@ -88,6 +98,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 
 object EmailResponseControllerSpec {
   private val psa = "A7654321"
+  private val psp = "21111111"
   private val email = "test@test.com"
   private val requestId = "test-request-id"
   private val fakeRequest = FakeRequest("", "")
