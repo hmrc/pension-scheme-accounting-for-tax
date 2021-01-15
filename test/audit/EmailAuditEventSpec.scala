@@ -19,15 +19,16 @@ package audit
 import models.Sent
 import org.scalatest.{FlatSpec, Matchers}
 import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
-import play.api.libs.json.{JsObject, Json}
-import uk.gov.hmrc.domain.PsaId
+import models.enumeration.SubmitterType
+import play.api.libs.json.{Json, JsObject}
 
 class EmailAuditEventSpec extends FlatSpec with Matchers {
 
   "EmailAuditEvent" should "output the correct map of data" in {
 
     val event = EmailAuditEvent(
-      psaId = PsaId("A2500001"),
+      psaOrPspId = "A2500001",
+      submittedBy = SubmitterType.PSA,
       emailAddress = "test@test.com",
       event = Sent,
       journeyType = AFT_SUBMIT_RETURN,
@@ -38,7 +39,8 @@ class EmailAuditEventSpec extends FlatSpec with Matchers {
       "email-initiation-request-id" -> "test-request-id",
       "psaId" -> "A2500001",
       "emailAddress" -> "test@test.com",
-      "event" -> Sent.toString
+      "event" -> Sent.toString,
+      "submittedBy" -> SubmitterType.PSA.toString
     )
 
     event.auditType shouldBe "AFTReturnSubmittedEmailEvent"

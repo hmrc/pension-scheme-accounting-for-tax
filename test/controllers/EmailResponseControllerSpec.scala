@@ -18,12 +18,13 @@ package controllers
 
 import audit.{AuditService, EmailAuditEvent}
 import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
+import models.enumeration.SubmitterType
 import models.{Sent, _}
 import org.joda.time.DateTime
 import org.mockito.Matchers.any
-import org.mockito.Mockito.{never, times, verify, when}
+import org.mockito.Mockito.{times, never, when, verify}
 import org.mockito.{ArgumentCaptor, Mockito}
-import org.scalatest.{AsyncWordSpec, BeforeAndAfterEach, MustMatchers}
+import org.scalatest.{AsyncWordSpec, MustMatchers, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
@@ -34,7 +35,6 @@ import play.api.test.Helpers._
 import repository.AftDataCacheRepository
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.crypto.{ApplicationCrypto, PlainText}
-import uk.gov.hmrc.domain.PsaId
 
 import scala.concurrent.Future
 
@@ -56,7 +56,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 
   private val injector = application.injector
   private val controller = injector.instanceOf[EmailResponseController]
-  private val encryptedPsaId = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(psa.id)).value
+  private val encryptedPsaId = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(psa)).value
   private val encryptedEmail = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(email)).value
 
   override def beforeEach(): Unit = {
@@ -68,17 +68,17 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
   "EmailResponseController" must {
 
     "respond OK when given EmailEvents" in {
-      val result = controller.sendAuditEvents(
-        requestId, encryptedPsaId, SubmitterType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
-      //val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, requestId, encryptedEmail, encryptedPsaId)(fakeRequest.withBody(Json.toJson(emailEvents)))
+      val result = controller
+        .sendAuditEvents(requestId, encryptedPsaId, SubmitterType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       status(result) mustBe OK
       verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
-      eventCaptor.getValue mustEqual EmailAuditEvent(psa, email, Complained, AFT_SUBMIT_RETURN, requestId)
+      eventCaptor.getValue mustEqual EmailAuditEvent(psa, SubmitterType.PSA, email, Complained, AFT_SUBMIT_RETURN, requestId)
     }
 
     "respond with BAD_REQUEST when not given EmailEvents" in {
-      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, requestId, encryptedEmail, encryptedPsaId)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
+      val result = controller
+        .sendAuditEvents(requestId, encryptedPsaId, SubmitterType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
 
       verify(mockAuditService, never()).sendEvent(any())(any(), any())
       status(result) mustBe BAD_REQUEST
@@ -87,7 +87,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 }
 
 object EmailResponseControllerSpec {
-  private val psa = PsaId("A7654321")
+  private val psa = "A7654321"
   private val email = "test@test.com"
   private val requestId = "test-request-id"
   private val fakeRequest = FakeRequest("", "")

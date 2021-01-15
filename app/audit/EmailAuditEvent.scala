@@ -16,9 +16,9 @@
 
 package audit
 
-import models.SubmitterType.SubmitterType
-import models.{Event, SubmitterType}
-import models.enumeration.JourneyType
+import models.enumeration.SubmitterType.SubmitterType
+import models.Event
+import models.enumeration.{JourneyType, SubmitterType}
 import play.api.libs.json.{Json, JsObject}
 
 case class EmailAuditEvent(psaOrPspId: String, submittedBy: SubmitterType, emailAddress: String, event: Event,
@@ -32,6 +32,6 @@ case class EmailAuditEvent(psaOrPspId: String, submittedBy: SubmitterType, email
       case _ => Json.obj("pspId" -> psaOrPspId)
     }
     Json.obj(fields = "email-initiation-request-id" -> requestId, "emailAddress" -> emailAddress,
-      "event" -> event.toString, "submittedBy" -> submittedBy) ++ psaOrPspIdJson
+      "event" -> event.toString, "submittedBy" -> submittedBy.toString) ++ psaOrPspIdJson
   }
 }

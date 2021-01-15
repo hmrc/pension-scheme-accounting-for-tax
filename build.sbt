@@ -15,7 +15,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(scalaVersion := "2.12.11")
   .settings(publishingSettings: _*)
   .settings(
-    RoutesKeys.routesImport ++= Seq("models.enumeration.JourneyType"),
+    RoutesKeys.routesImport ++= Seq("models.enumeration.JourneyType", "models.enumeration.SubmitterType"),
     PlayKeys.devSettings += "play.server.http.port" -> "8207"
   )
   .configs(IntegrationTest)
