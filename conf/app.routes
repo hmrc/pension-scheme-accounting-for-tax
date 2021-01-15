@@ -26,5 +26,6 @@ DELETE        /cache/financialInfo                                         contr
 GET           /psa-financial-statement                                     controllers.FinancialStatementController.psaStatement
 GET           /scheme-financial-statement                                  controllers.FinancialStatementController.schemeStatement
 
-POST          /email-response/:journeyType/:requestId/:email/:psaId        controllers.EmailResponseController.retrieveStatus(journeyType: JourneyType.Name, requestId: String, email: String, psaId: String)
+POST          /email-response/:journeyType/:requestId/:email/:psaId        controllers.EmailResponseController.retrieveStatusPsa(journeyType: JourneyType.Name, requestId: String, email: String, psaId: String)
+POST          /email-response-psp/:journeyType/:requestId/:email/:pspId    controllers.EmailResponseController.retrieveStatusPsp(journeyType: JourneyType.Name, requestId: String, email: String, pspId: String)
 
