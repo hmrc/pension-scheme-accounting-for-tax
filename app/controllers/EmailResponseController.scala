@@ -18,8 +18,9 @@ package controllers
 
 import audit.{AuditService, EmailAuditEvent}
 import com.google.inject.Inject
+import models.SubmitterType.SubmitterType
 import models.enumeration.JourneyType
-import models.{EmailEvents, Opened}
+import models.{EmailEvents, Opened, SubmitterType}
 import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.mvc._
@@ -37,24 +38,36 @@ class EmailResponseController @Inject()(
                                          val authConnector: AuthConnector
                                        ) extends BackendController(cc) with AuthorisedFunctions {
 
-  def retrieveStatusPsa(journeyType: JourneyType.Name, requestId: String, email: String, encryptedPsaId: String): Action[JsValue] =
-    Action(parser.tolerantJson) {
-      implicit request =>
-        sendAuditEvents(requestId, encryptedPsaId, "PSA", email, journeyType)
-    }
 
-  def retrieveStatusPsp(journeyType: JourneyType.Name, requestId: String, email: String, encryptedPspId: String): Action[JsValue] =
-    Action(parser.tolerantJson) {
-      implicit request =>
-        sendAuditEvents(requestId, encryptedPspId, "PSP", email, journeyType)
-    }
+  //def retrieveStatus(journeyType: JourneyType.Name, requestId: String, email: String, encryptedPsaId: String): Action[JsValue] = Action(parser.tolerantJson) {
+  //  implicit request =>
+  //    validatePsaIdEmail(encryptedPsaId, email) match {
+  //      case Right(Tuple2(psaId, emailAddress)) =>
+  //        request.body.validate[EmailEvents].fold(
+  //          _ => BadRequest("Bad request received for email call back event"),
+  //          valid => {
+  //            valid.events.filterNot(
+  //              _.event == Opened
+  //            ).foreach { event =>
+  //              Logger.debug(s"Email Audit event coming from $journeyType is $event")
+  //              auditService.sendEvent(EmailAuditEvent(psaId, emailAddress, event.event, journeyType, requestId))
+  //            }
+  //            Ok
+  //          }
+  //        )
+  //
+  //      case Left(result) => result
+  //    }
+  //}
 
-  private def sendAuditEvents(
+
+  def sendAuditEvents(
     requestId: String,
     encryptedPsaOrPspId:String,
-    submittedBy:String,
+    submittedBy:SubmitterType,
     email:String,
-    journeyType:JourneyType.Name)(implicit request: Request[JsValue]):Result = {
+    journeyType:JourneyType.Name)(implicit request: Request[JsValue]):Action[JsValue] = Action(parser.tolerantJson) {
+    implicit request =>
     decryptPsaOrPspIdAndEmail(encryptedPsaOrPspId, email) match {
       case Right(Tuple2(psaOrPspId, emailAddress)) =>
         request.body.validate[EmailEvents].fold(

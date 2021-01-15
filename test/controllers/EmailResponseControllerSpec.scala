@@ -68,7 +68,9 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
   "EmailResponseController" must {
 
     "respond OK when given EmailEvents" in {
-      val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, requestId, encryptedEmail, encryptedPsaId)(fakeRequest.withBody(Json.toJson(emailEvents)))
+      val result = controller.sendAuditEvents(
+        requestId, encryptedPsaId, SubmitterType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
+      //val result = controller.retrieveStatus(AFT_SUBMIT_RETURN, requestId, encryptedEmail, encryptedPsaId)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       status(result) mustBe OK
       verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
