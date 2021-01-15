@@ -26,4 +26,4 @@ DELETE        /cache/financialInfo                                              
 GET           /psa-financial-statement                                              controllers.FinancialStatementController.psaStatement
 GET           /scheme-financial-statement                                           controllers.FinancialStatementController.schemeStatement
 
-POST          /email-response/:journeyType/:requestId/:email/:psaId/:submittedBy    controllers.EmailResponseController.sendAuditEvents(requestId:String, psaId:String, submittedBy:SubmitterType.SubmitterType, email:String, journeyType:JourneyType.Name)
+POST          /email-response/:submittedBy/:journeyType/:requestId/:email/:psaId    controllers.EmailResponseController.sendAuditEvents(requestId:String, psaId:String, submittedBy:SubmitterType.SubmitterType, email:String, journeyType:JourneyType.Name)

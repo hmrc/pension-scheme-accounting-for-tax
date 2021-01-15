@@ -37,9 +37,6 @@ class EmailResponseController @Inject()(
                                          parser: PlayBodyParsers,
                                          val authConnector: AuthConnector
                                        ) extends BackendController(cc) with AuthorisedFunctions {
-
-
-
   def sendAuditEvents(
     requestId: String,
     encryptedPsaOrPspId:String,
