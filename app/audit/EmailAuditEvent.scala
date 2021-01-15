@@ -16,19 +16,19 @@
 
 package audit
 
-import models.enumeration.SubmitterType.SubmitterType
+import models.enumeration.SchemeAdministratorType.SchemeAdministratorType
 import models.Event
-import models.enumeration.{JourneyType, SubmitterType}
+import models.enumeration.{JourneyType, SchemeAdministratorType}
 import play.api.libs.json.{Json, JsObject}
 
-case class EmailAuditEvent(psaOrPspId: String, submittedBy: SubmitterType, emailAddress: String, event: Event,
+case class EmailAuditEvent(psaOrPspId: String, submittedBy: SchemeAdministratorType, emailAddress: String, event: Event,
   journeyType: JourneyType.Name, requestId: String) extends AuditEvent {
 
   override def auditType: String = s"${journeyType.toString}EmailEvent"
 
   override def details: JsObject = {
     val psaOrPspIdJson = submittedBy match {
-      case SubmitterType.PSA => Json.obj("psaId" -> psaOrPspId)
+      case SchemeAdministratorType.PSA => Json.obj("psaId" -> psaOrPspId)
       case _ => Json.obj("pspId" -> psaOrPspId)
     }
     Json.obj(fields = "email-initiation-request-id" -> requestId, "emailAddress" -> emailAddress,

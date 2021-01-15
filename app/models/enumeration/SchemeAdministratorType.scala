@@ -19,10 +19,10 @@ package models.enumeration
 import play.api.mvc.PathBindable
 import models.enumeration.binders.EnumPathBinder
 
-object SubmitterType extends Enumeration {
-  type SubmitterType = Value
+object SchemeAdministratorType extends Enumeration {
+  type SchemeAdministratorType = Value
   val PSA = Value("PSA")
   val PSP = Value("PSP")
 
-  implicit val submitterTypePathBinder: PathBindable[SubmitterType] = EnumPathBinder.pathBinder(this)
+  implicit val submitterTypePathBinder: PathBindable[SchemeAdministratorType] = EnumPathBinder.pathBinder(this)
 }

@@ -18,7 +18,7 @@ package controllers
 
 import audit.{AuditService, EmailAuditEvent}
 import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
-import models.enumeration.SubmitterType
+import models.enumeration.SchemeAdministratorType
 import models.{Sent, _}
 import org.joda.time.DateTime
 import org.mockito.Matchers.any
@@ -70,25 +70,25 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
 
     "respond OK when given EmailEvents for PSA" in {
       val result = controller
-        .sendAuditEvents(requestId, encryptedPsaId, SubmitterType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
+        .sendAuditEvents(requestId, encryptedPsaId, SchemeAdministratorType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       status(result) mustBe OK
       verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
-      eventCaptor.getValue mustEqual EmailAuditEvent(psa, SubmitterType.PSA, email, Complained, AFT_SUBMIT_RETURN, requestId)
+      eventCaptor.getValue mustEqual EmailAuditEvent(psa, SchemeAdministratorType.PSA, email, Complained, AFT_SUBMIT_RETURN, requestId)
     }
 
     "respond OK when given EmailEvents for PSP" in {
       val result = controller
-        .sendAuditEvents(requestId, encryptedPspId, SubmitterType.PSP, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
+        .sendAuditEvents(requestId, encryptedPspId, SchemeAdministratorType.PSP, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
       status(result) mustBe OK
       verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
-      eventCaptor.getValue mustEqual EmailAuditEvent(psp, SubmitterType.PSP, email, Complained, AFT_SUBMIT_RETURN, requestId)
+      eventCaptor.getValue mustEqual EmailAuditEvent(psp, SchemeAdministratorType.PSP, email, Complained, AFT_SUBMIT_RETURN, requestId)
     }
 
     "respond with BAD_REQUEST when not given EmailEvents" in {
       val result = controller
-        .sendAuditEvents(requestId, encryptedPsaId, SubmitterType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
+        .sendAuditEvents(requestId, encryptedPsaId, SchemeAdministratorType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
 
       verify(mockAuditService, never()).sendEvent(any())(any(), any())
       status(result) mustBe BAD_REQUEST

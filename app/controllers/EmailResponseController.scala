@@ -19,7 +19,7 @@ package controllers
 import audit.{AuditService, EmailAuditEvent}
 import com.google.inject.Inject
 import models.enumeration.JourneyType
-import models.enumeration.SubmitterType
+import models.enumeration.SchemeAdministratorType
 import models.{EmailEvents, Opened}
 import play.api.Logger
 import play.api.libs.json.JsValue
@@ -40,7 +40,7 @@ class EmailResponseController @Inject()(
   def sendAuditEvents(
     requestId: String,
     encryptedPsaOrPspId:String,
-    submittedBy:SubmitterType.SubmitterType,
+    submittedBy:SchemeAdministratorType.SchemeAdministratorType,
     email:String,
     journeyType:JourneyType.Name):Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
