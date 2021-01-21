@@ -16,14 +16,16 @@
 
 package connectors
 
-import java.util.UUID.randomUUID
-
 import com.google.inject.Inject
 import config.AppConfig
-import play.Logger
+import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.util.UUID.randomUUID
+
 class HeaderUtils @Inject()(config: AppConfig) {
+
+  private val logger = Logger(classOf[HeaderUtils])
 
   def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
     val requestId = getCorrelationId(hc.requestId.map(_.value))
@@ -42,7 +44,7 @@ class HeaderUtils @Inject()(config: AppConfig) {
 
   def getCorrelationId(requestId: Option[String]): String = {
     requestId.getOrElse {
-      Logger.error("No Request Id found")
+      logger.error("No Request Id found")
       randomUUID.toString
     }.replaceAll("(govuk-tax-)", "").slice(0, 36)
   }

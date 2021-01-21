@@ -18,8 +18,9 @@ package repository
 
 import com.google.inject.Inject
 import org.joda.time.{DateTime, DateTimeZone}
+import org.slf4j.{Logger, LoggerFactory}
+import play.api.Configuration
 import play.api.libs.json._
-import play.api.{Configuration, Logger}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
@@ -30,13 +31,16 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialInfoCacheRepository @Inject()(
-                                     mongoComponent: ReactiveMongoComponent,
-                                     configuration: Configuration
-                                   )(implicit val ec: ExecutionContext) extends ReactiveRepository[JsValue, BSONObjectID](
-  configuration.get[String](path = "mongodb.aft-cache.financial-info-cache.name"),
-  mongoComponent.mongoConnector.db,
-  implicitly
-) {
+                                              mongoComponent: ReactiveMongoComponent,
+                                              configuration: Configuration
+                                            )(implicit val ec: ExecutionContext)
+  extends ReactiveRepository[JsValue, BSONObjectID](
+    configuration.get[String](path = "mongodb.aft-cache.financial-info-cache.name"),
+    mongoComponent.mongoConnector.db,
+    implicitly
+  ) {
+
+  override val logger: Logger = LoggerFactory.getLogger("FinancialInfoCacheRepository")
 
   private def getExpireAt: DateTime = DateTime.now(DateTimeZone.UTC)
     .plusSeconds(configuration.get[Int]("mongodb.aft-cache.financial-info-cache.timeToLiveInSeconds"))
@@ -52,7 +56,7 @@ class FinancialInfoCacheRepository @Inject()(
   } yield {
     ()
   }) recoverWith {
-    case t: Throwable => Future.successful(Logger.error(s"Error creating indexes on collection ${collection.name}", t))
+    case t: Throwable => Future.successful(logger.error(s"Error creating indexes on collection ${collection.name}", t))
   } andThen {
     case _ => CollectionDiagnostics.logCollectionInfo(collection)
   }
@@ -62,10 +66,10 @@ class FinancialInfoCacheRepository @Inject()(
     Future.sequence(
       indexes.map { index =>
         collection.indexesManager.ensure(index) map { result =>
-          Logger.debug(message = s"Index $index was created successfully and result is: $result")
+          logger.debug(s"Index $index was created successfully and result is: $result")
           result
         } recover {
-          case e: Exception => Logger.error(message = s"Failed to create index $index", e)
+          case e: Exception => logger.error(s"Failed to create index $index", e)
             false
         }
       }
@@ -73,7 +77,7 @@ class FinancialInfoCacheRepository @Inject()(
   }
 
   def save(id: String, userData: JsValue)(implicit ec: ExecutionContext): Future[Boolean] = {
-    Logger.debug("Calling save in financial-info Cache")
+    logger.debug("Calling save in financial-info Cache")
     val document: JsValue = Json.toJson(DataCache.applyDataCache(
       id = id, data = userData, expireAt = getExpireAt))
     val selector = BSONDocument("id" -> id)
@@ -82,7 +86,7 @@ class FinancialInfoCacheRepository @Inject()(
   }
 
   def get(id: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
-    Logger.debug("Calling get in financial-info Cache")
+    logger.debug("Calling get in financial-info Cache")
     collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).one[DataCache].map {
       _.map {
         dataEntry =>
@@ -92,15 +96,17 @@ class FinancialInfoCacheRepository @Inject()(
   }
 
   def remove(id: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    Logger.warn(message = s"Removing row from collection ${collection.name} id:$id")
+    logger.warn(s"Removing row from collection ${collection.name} id:$id")
     val selector = BSONDocument("id" -> id)
     collection.delete.one(selector).map(_.ok)
   }
 
   private case class DataCache(id: String, data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
+
   private object DataCache {
     implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
     implicit val format: Format[DataCache] = Json.format[DataCache]
+
     def applyDataCache(id: String,
                        data: JsValue,
                        lastUpdated: DateTime = DateTime.now(DateTimeZone.UTC),
@@ -108,4 +114,5 @@ class FinancialInfoCacheRepository @Inject()(
       DataCache(id, data, lastUpdated, expireAt)
     }
   }
+
 }

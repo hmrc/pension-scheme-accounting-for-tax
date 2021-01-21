@@ -24,11 +24,11 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import repository.AftDataCacheRepository
 import repository.model.SessionData._
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -40,6 +40,8 @@ class AftDataCacheController @Inject()(
                                       ) extends BackendController(cc) with AuthorisedFunctions {
 
   import AftDataCacheController._
+
+  private val logger = Logger(classOf[AftDataCacheController])
 
   def save: Action[AnyContent] = Action.async {
     implicit request =>
@@ -84,7 +86,7 @@ class AftDataCacheController @Inject()(
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
         repository.lockedBy(sessionId, id).map { response =>
-          Logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
+          logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
           response match {
             case None => NotFound
             case Some(lockDetail) => Ok(Json.toJson(lockDetail))
@@ -97,7 +99,7 @@ class AftDataCacheController @Inject()(
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
         repository.getSessionData(sessionId, id).map { response =>
-          Logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
+          logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
           response match {
             case None => NotFound
             case Some(sd) => Ok(Json.toJson(sd))
@@ -110,7 +112,7 @@ class AftDataCacheController @Inject()(
     implicit request =>
       getIdWithName { (sessionId, id, _) =>
         repository.get(id, sessionId).map { response =>
-          Logger.debug(message = s"DataCacheController.get: Response for request Id $id is $response")
+          logger.debug(message = s"DataCacheController.get: Response for request Id $id is $response")
           response.map {
             Ok(_)
           } getOrElse NotFound

@@ -28,7 +28,7 @@ import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -41,16 +41,21 @@ class AFTController @Inject()(
                                aftDetailsTransformer: AFTDetailsTransformer,
                                aftService: AFTService
                              )(implicit ec: ExecutionContext)
-  extends BackendController(cc) with HttpErrorFunctions with Results with AuthorisedFunctions {
+  extends BackendController(cc)
+    with HttpErrorFunctions
+    with Results
+    with AuthorisedFunctions {
+
+  private val logger = Logger(classOf[AFTController])
 
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
 
       post { (pstr, userAnswersJson) =>
-        Logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
+        logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
         userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
           case JsSuccess(dataToBeSendToETMP, _) =>
-            Logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+            logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
             desConnector.fileAFTReturn(
               pstr,
               journeyType.toString,
@@ -105,7 +110,6 @@ class AFTController @Inject()(
       }
   }
 
-
   def getOverview: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
@@ -133,7 +137,7 @@ class AFTController @Inject()(
   private def post(block: (String, JsValue) => Future[Result])
                   (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
 
-    Logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
+    logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
 
     authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
       case Some(_) =>

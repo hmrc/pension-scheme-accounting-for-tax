@@ -23,16 +23,17 @@ import models.{PsaFS, SchemeFS}
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class FinancialStatementConnector @Inject()(http: HttpClient,
-                                            config: AppConfig,
-                                            headerUtils: HeaderUtils,
-                                            financialInfoAuditService: FinancialInfoAuditService)
+class FinancialStatementConnector @Inject()(
+                                             http: HttpClient,
+                                             config: AppConfig,
+                                             headerUtils: HeaderUtils,
+                                             financialInfoAuditService: FinancialInfoAuditService
+                                           )
   extends HttpErrorFunctions with HttpResponseHelper {
 
   def getPsaFS(psaId: String)
