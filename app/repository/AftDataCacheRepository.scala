@@ -18,42 +18,53 @@ package repository
 
 import com.google.inject.Inject
 import models.LockDetail
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone
-import play.api.libs.json._
+import org.joda.time.{DateTime, DateTimeZone}
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
-import play.api.Logger
+import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.Cursor
-import reactivemongo.api.ReadPreference
-import reactivemongo.api.indexes.Index
-import reactivemongo.api.indexes.IndexType
-import reactivemongo.bson.BSONDocument
-import reactivemongo.bson.BSONObjectID
+import reactivemongo.api.{Cursor, ReadPreference}
+import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import repository.model.AftDataCache
-import repository.model.SessionData
+import repository.model.{AftDataCache, SessionData}
 import uk.gov.hmrc.mongo.ReactiveRepository
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class AftDataCacheRepository @Inject()(
-                                     mongoComponent: ReactiveMongoComponent,
-                                     configuration: Configuration
-                                   )(implicit val ec: ExecutionContext) extends ReactiveRepository[JsValue, BSONObjectID](
-  configuration.get[String](path = "mongodb.aft-cache.aft-journey.name"),
-  mongoComponent.mongoConnector.db,
-  implicitly
-) {
+                                        mongoComponent: ReactiveMongoComponent,
+                                        configuration: Configuration
+                                      )(implicit val ec: ExecutionContext)
+  extends ReactiveRepository[JsValue, BSONObjectID](
+    configuration.get[String](path = "mongodb.aft-cache.aft-journey.name"),
+    mongoComponent.mongoConnector.db,
+    implicitly
+  ) {
+
+  override val logger: Logger = LoggerFactory.getLogger("AftDataCacheRepository")
+
   private def expireInSeconds: DateTime = DateTime.now(DateTimeZone.UTC).
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"))
 
   val collectionIndexes = Seq(
-    Index(key = Seq(("uniqueAftId", IndexType.Ascending)), name = Some("unique_Aft_Id"), background = true, unique = true),
-    Index(key = Seq(("id", IndexType.Ascending)), name = Some("srn_startDt_key"), background = true),
-    Index(key = Seq(("expireAt", IndexType.Ascending)), name = Some("dataExpiry"), background = true
-      , options = BSONDocument("expireAfterSeconds" -> 0))
+    Index(
+      key = Seq(("uniqueAftId", IndexType.Ascending)),
+      name = Some("unique_Aft_Id"),
+      background = true,
+      unique = true
+    ),
+    Index(
+      key = Seq(("id", IndexType.Ascending)),
+      name = Some("srn_startDt_key"),
+      background = true
+    ),
+    Index(
+      key = Seq(("expireAt", IndexType.Ascending)),
+      name = Some("dataExpiry"),
+      background = true,
+      options = BSONDocument("expireAfterSeconds" -> 0)
+    )
   )
 
   (for {
@@ -61,7 +72,7 @@ class AftDataCacheRepository @Inject()(
   } yield {
     ()
   }) recoverWith {
-    case t: Throwable => Future.successful(Logger.error(s"Error creating indexes on collection ${collection.name}", t))
+    case t: Throwable => Future.successful(logger.error(s"Error creating indexes on collection ${collection.name}", t))
   } andThen {
     case _ => CollectionDiagnostics.logCollectionInfo(collection)
   }
@@ -71,10 +82,10 @@ class AftDataCacheRepository @Inject()(
     Future.sequence(
       indexes.map { index =>
         collection.indexesManager.ensure(index) map { result =>
-          Logger.debug(message = s"Index $index was created successfully and result is: $result")
+          logger.debug(s"Index $index was created successfully and result is: $result")
           result
         } recover {
-          case e: Exception => Logger.error(message = s"Failed to create index $index", e)
+          case e: Exception => logger.error(s"Failed to create index $index", e)
             false
         }
       }
@@ -82,7 +93,7 @@ class AftDataCacheRepository @Inject()(
   }
 
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    Logger.debug("Calling Save in AFT Cache")
+    logger.debug("Calling Save in AFT Cache")
     val document: JsValue = Json.toJson(AftDataCache.applyDataCache(
       id = id, None, data = userData, expireAt = expireInSeconds))
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
@@ -91,15 +102,15 @@ class AftDataCacheRepository @Inject()(
   }
 
   def setSessionData(
-    id: String,
-    lockDetail: Option[LockDetail],
-    userData: JsValue,
-    sessionId: String,
-    version: Int,
-    accessMode: String,
-    areSubmittedVersionsAvailable: Boolean
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
-    Logger.debug("Calling setSessionData in AFT Cache")
+                      id: String,
+                      lockDetail: Option[LockDetail],
+                      userData: JsValue,
+                      sessionId: String,
+                      version: Int,
+                      accessMode: String,
+                      areSubmittedVersionsAvailable: Boolean
+                    )(implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.debug("Calling setSessionData in AFT Cache")
     val document: JsValue = Json.toJson(
       AftDataCache.applyDataCache(
         id = id,
@@ -113,13 +124,13 @@ class AftDataCacheRepository @Inject()(
   }
 
   def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
-    Logger.debug("Calling getSessionData in AFT Cache")
+    logger.debug("Calling getSessionData in AFT Cache")
     collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[AftDataCache]
       .flatMap {
         case None => Future.successful(None)
         case Some(dc) =>
           lockedBy(sessionId, id).map { lockDetail =>
-            dc.sessionData.map{oo =>
+            dc.sessionData.map { oo =>
               oo copy (lockDetail = lockDetail)
             }
           }
@@ -127,7 +138,7 @@ class AftDataCacheRepository @Inject()(
   }
 
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[LockDetail]] = {
-    Logger.debug("Calling lockedBy in AFT Cache")
+    logger.debug("Calling lockedBy in AFT Cache")
     val documentsForReturnAndQuarter = collection
       .find(BSONDocument("id" -> id), projection = Option.empty[JsObject])
       .cursor[AftDataCache](ReadPreference.primary)
@@ -142,7 +153,7 @@ class AftDataCacheRepository @Inject()(
   }
 
   def get(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
-    Logger.debug("Calling get in AFT Cache")
+    logger.debug("Calling get in AFT Cache")
     collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[AftDataCache].map {
       _.map {
         dataEntry =>
@@ -152,13 +163,13 @@ class AftDataCacheRepository @Inject()(
   }
 
   def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    Logger.warn(message = s"Removing row from collection ${collection.name} id:$id")
+    logger.warn(s"Removing row from collection ${collection.name} id:$id")
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     collection.delete.one(selector).map(_.ok)
   }
 
   def removeWithSessionId(sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    Logger.warn(message = s"Removing all rows with session id:$sessionId")
+    logger.warn(s"Removing all rows with session id:$sessionId")
     val selector = BSONDocument("lockedBy.sessionId" -> sessionId)
     collection.delete.one(selector).map(_.ok)
   }
