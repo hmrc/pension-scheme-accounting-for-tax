@@ -16,7 +16,7 @@
 
 package repository
 
-import play.api.Logger
+import org.slf4j.{Logger, LoggerFactory}
 import reactivemongo.api.ReadConcern
 import reactivemongo.play.json.collection.JSONCollection
 
@@ -27,12 +27,14 @@ case class IndexDef(name: String, fields: Seq[String], unique: Boolean, ttl: Opt
 
 object CollectionDiagnostics {
 
+   val logger: Logger = LoggerFactory.getLogger("CollectionDiagnostics")
+
   def logCollectionInfo(collection: JSONCollection): Unit = {
 
     indexInfo(collection) map {
       indexes =>
-        Logger.warn(
-          message = s"Diagnostic information for collection ${collection.name}\n\n" +
+        logger.warn(
+          s"Diagnostic information for collection ${collection.name}\n\n" +
             s"Index definitions\n\n" +
             (indexes.map {
               index =>
@@ -45,9 +47,7 @@ object CollectionDiagnostics {
     }
 
     collection.count(None, None, skip = 0, None, ReadConcern.Local).foreach { count =>
-      Logger.warn(
-        message = s"\nRow count for collection ${collection.name} : $count\n\n"
-      )
+      logger.warn(s"\nRow count for collection ${collection.name} : $count\n\n")
     }
   }
 

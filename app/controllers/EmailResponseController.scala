@@ -18,15 +18,14 @@ package controllers
 
 import audit.{AuditService, EmailAuditEvent}
 import com.google.inject.Inject
-import models.enumeration.JourneyType
-import models.enumeration.SchemeAdministratorType
+import models.enumeration.{JourneyType, SchemeAdministratorType}
 import models.{EmailEvents, Opened}
 import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.mvc._
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Crypted}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -36,7 +35,11 @@ class EmailResponseController @Inject()(
                                          crypto: ApplicationCrypto,
                                          parser: PlayBodyParsers,
                                          val authConnector: AuthConnector
+
+
                                        ) extends BackendController(cc) with AuthorisedFunctions {
+  private val logger = Logger(classOf[EmailResponseController])
+
   def sendAuditEvents(
     requestId: String,
     encryptedPsaOrPspId:String,
@@ -53,7 +56,7 @@ class EmailResponseController @Inject()(
             valid.events.filterNot(
               _.event == Opened
             ).foreach { event =>
-              Logger.debug(s"Email Audit event coming from $journeyType is $event")
+              logger.debug(s"Email Audit event coming from $journeyType is $event")
               auditService.sendEvent(EmailAuditEvent(psaOrPspId, submittedBy, emailAddress, event.event, journeyType, requestId))(request, implicitly)
             }
             Ok

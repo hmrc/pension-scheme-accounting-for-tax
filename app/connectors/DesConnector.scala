@@ -16,32 +16,35 @@
 
 package connectors
 
-import java.util.UUID.randomUUID
-
 import audit._
 import com.google.inject.Inject
 import config.AppConfig
-import models.AFTVersion
-import models.AFTOverview
-import play.Logger
+import models.{AFTOverview, AFTVersion}
+import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.{JsError, JsResultException, JsSuccess, JsValue, Json, Reads}
+import play.api.http.Status._
+import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import services.AFTService
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import play.api.http.Status._
+import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
+import java.util.UUID.randomUUID
 import scala.concurrent.{ExecutionContext, Future}
 
-class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: AuditService,
-                             fileAFTReturnAuditService: FileAFTReturnAuditService,
-                             aftVersionsAuditEventService: GetAFTVersionsAuditService,
-                             aftDetailsAuditEventService: GetAFTDetailsAuditService,
-                             aftService: AFTService)
+class DesConnector @Inject()(
+                              http: HttpClient,
+                              config: AppConfig,
+                              auditService: AuditService,
+                              fileAFTReturnAuditService: FileAFTReturnAuditService,
+                              aftVersionsAuditEventService: GetAFTVersionsAuditService,
+                              aftDetailsAuditEventService: GetAFTDetailsAuditService,
+                              aftService: AFTService
+                            )
   extends HttpErrorFunctions
     with HttpResponseHelper {
+
+  private val logger = Logger(classOf[DesConnector])
 
   def fileAFTReturn(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
@@ -122,7 +125,7 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
             case JsError(errors) => throw JsResultException(errors)
           }
         case NOT_FOUND if (Json.parse(response.body) \ "code").as[String].equals("NO_REPORT_FOUND") =>
-          Logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
+          logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
           Seq.empty[AFTOverview]
         case _ =>
           handleErrorResponse("GET", getAftVersionUrl)(response)
@@ -133,13 +136,17 @@ class DesConnector @Inject()(http: HttpClient, config: AppConfig, auditService: 
   private def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
     val requestId = getCorrelationId(hc.requestId.map(_.value))
 
-    Seq("Environment" -> config.desEnvironment, "Authorization" -> config.authorization,
-      "Content-Type" -> "application/json", "CorrelationId" -> requestId)
+    Seq(
+      "Environment" -> config.desEnvironment,
+      "Authorization" -> config.authorization,
+      "Content-Type" -> "application/json",
+      "CorrelationId" -> requestId
+    )
   }
 
   def getCorrelationId(requestId: Option[String]): String = {
     requestId.getOrElse {
-      Logger.error("No Request Id found")
+      logger.error("No Request Id found")
       randomUUID.toString
     }.replaceAll("(govuk-tax-)", "").slice(0, 36)
   }

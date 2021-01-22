@@ -23,7 +23,7 @@ import repository.FinancialInfoCacheRepository
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{HeaderCarrier, UnauthorizedException}
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -32,9 +32,11 @@ class FinancialInfoCacheController @Inject()(
                                               repository: FinancialInfoCacheRepository,
                                               val authConnector: AuthConnector,
                                               cc: ControllerComponents
-                                   ) extends BackendController(cc) with AuthorisedFunctions {
+                                            ) extends BackendController(cc) with AuthorisedFunctions {
 
   import FinancialInfoCacheController._
+
+  private val logger = Logger(classOf[FinancialInfoCacheController])
 
   def save: Action[AnyContent] = Action.async {
     implicit request =>
@@ -51,7 +53,7 @@ class FinancialInfoCacheController @Inject()(
     implicit request =>
       getId { id =>
         repository.get(id).map { response =>
-          Logger.debug(message = s"FinancialInfoCacheController.get: Response for request Id $id is $response")
+          logger.debug(message = s"FinancialInfoCacheController.get: Response for request Id $id is $response")
           response.map {
             Ok(_)
           } getOrElse NotFound
@@ -67,7 +69,7 @@ class FinancialInfoCacheController @Inject()(
   }
 
   private def getId(block: String => Future[Result])
-                           (implicit hc: HeaderCarrier): Future[Result] = {
+                   (implicit hc: HeaderCarrier): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG")).retrieve(Retrievals.externalId) {
       case Some(id) => block(id)
       case _ => Future.failed(IdNotFoundFromAuth())
