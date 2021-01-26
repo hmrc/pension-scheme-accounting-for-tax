@@ -1,30 +1,29 @@
 # microservice specific routes
 
-POST          /aft-file-return/:journeyType                                controllers.AFTController.fileReturn(journeyType: JourneyType.Name)
+POST          /aft-file-return/:journeyType                                         controllers.AFTController.fileReturn(journeyType: JourneyType.Name)
 
-GET           /get-aft-details                                             controllers.AFTController.getDetails
-GET           /get-is-aft-non-zero                                         controllers.AFTController.getIsChargeNonZero
+GET           /get-aft-details                                                      controllers.AFTController.getDetails
+GET           /get-is-aft-non-zero                                                  controllers.AFTController.getIsChargeNonZero
 
-GET           /get-aft-versions                                            controllers.AFTController.getVersions
+GET           /get-aft-versions                                                     controllers.AFTController.getVersions
 
-GET           /get-aft-overview                                            controllers.AFTController.getOverview
+GET           /get-aft-overview                                                     controllers.AFTController.getOverview
 
-GET           /journey-cache/aft/session-data                              controllers.cache.AftDataCacheController.getSessionData
-POST          /journey-cache/aft/session-data                              controllers.cache.AftDataCacheController.setSessionData(lock:Boolean=false)
-POST          /journey-cache/aft/session-data-lock                         controllers.cache.AftDataCacheController.setSessionData(lock:Boolean=true)
-GET           /journey-cache/aft/lock                                      controllers.cache.AftDataCacheController.lockedBy
-DELETE        /journey-cache/aft/lock                                      controllers.cache.AftDataCacheController.releaseLockWithSessionId
+GET           /journey-cache/aft/session-data                                       controllers.cache.AftDataCacheController.getSessionData
+POST          /journey-cache/aft/session-data                                       controllers.cache.AftDataCacheController.setSessionData(lock:Boolean=false)
+POST          /journey-cache/aft/session-data-lock                                  controllers.cache.AftDataCacheController.setSessionData(lock:Boolean=true)
+GET           /journey-cache/aft/lock                                               controllers.cache.AftDataCacheController.lockedBy
+DELETE        /journey-cache/aft/lock                                               controllers.cache.AftDataCacheController.releaseLockWithSessionId
 
-GET           /journey-cache/aft                                           controllers.cache.AftDataCacheController.get
-POST          /journey-cache/aft                                           controllers.cache.AftDataCacheController.save
-DELETE        /journey-cache/aft                                           controllers.cache.AftDataCacheController.remove
+GET           /journey-cache/aft                                                    controllers.cache.AftDataCacheController.get
+POST          /journey-cache/aft                                                    controllers.cache.AftDataCacheController.save
+DELETE        /journey-cache/aft                                                    controllers.cache.AftDataCacheController.remove
 
-GET           /cache/financialInfo                                         controllers.cache.FinancialInfoCacheController.get
-POST          /cache/financialInfo                                         controllers.cache.FinancialInfoCacheController.save
-DELETE        /cache/financialInfo                                         controllers.cache.FinancialInfoCacheController.remove
+GET           /cache/financialInfo                                                  controllers.cache.FinancialInfoCacheController.get
+POST          /cache/financialInfo                                                  controllers.cache.FinancialInfoCacheController.save
+DELETE        /cache/financialInfo                                                  controllers.cache.FinancialInfoCacheController.remove
 
-GET           /psa-financial-statement                                     controllers.FinancialStatementController.psaStatement
-GET           /scheme-financial-statement                                  controllers.FinancialStatementController.schemeStatement
+GET           /psa-financial-statement                                              controllers.FinancialStatementController.psaStatement
+GET           /scheme-financial-statement                                           controllers.FinancialStatementController.schemeStatement
 
-POST          /email-response/:journeyType/:requestId/:email/:psaId        controllers.EmailResponseController.retrieveStatus(journeyType: JourneyType.Name, requestId: String, email: String, psaId: String)
-
+POST          /email-response/:submittedBy/:journeyType/:requestId/:email/:psaId    controllers.EmailResponseController.sendAuditEvents(requestId:String, psaId:String, submittedBy:SchemeAdministratorType.SchemeAdministratorType, email:String, journeyType:JourneyType.Name)

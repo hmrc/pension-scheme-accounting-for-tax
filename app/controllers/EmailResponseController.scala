@@ -18,14 +18,13 @@ package controllers
 
 import audit.{AuditService, EmailAuditEvent}
 import com.google.inject.Inject
-import models.enumeration.JourneyType
+import models.enumeration.{JourneyType, SchemeAdministratorType}
 import models.{EmailEvents, Opened}
 import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.mvc._
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Crypted}
-import uk.gov.hmrc.domain.PsaId
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,40 +35,40 @@ class EmailResponseController @Inject()(
                                          crypto: ApplicationCrypto,
                                          parser: PlayBodyParsers,
                                          val authConnector: AuthConnector
-                                       )
-  extends BackendController(cc)
-    with AuthorisedFunctions {
 
+
+                                       ) extends BackendController(cc) with AuthorisedFunctions {
   private val logger = Logger(classOf[EmailResponseController])
 
-  def retrieveStatus(
-                      journeyType: JourneyType.Name,
-                      requestId: String,
-                      email: String,
-                      encryptedPsaId: String
-                    ): Action[JsValue] = Action(parser.tolerantJson) {
+  def sendAuditEvents(
+    requestId: String,
+    encryptedPsaOrPspId:String,
+    submittedBy:SchemeAdministratorType.SchemeAdministratorType,
+    email:String,
+    journeyType:JourneyType.Name):Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
-      validatePsaIdEmail(encryptedPsaId, email) match {
-        case Right(Tuple2(psaId, emailAddress)) =>
-          request.body.validate[EmailEvents].fold(
-            _ => BadRequest("Bad request received for email call back event"),
-            valid => {
-              valid.events.filterNot(
-                _.event == Opened
-              ).foreach { event =>
-                logger.debug(s"Email Audit event coming from $journeyType is $event")
-                auditService.sendEvent(EmailAuditEvent(psaId, emailAddress, event.event, journeyType, requestId))
-              }
-              Ok
-            }
-          )
 
-        case Left(result) => result
-      }
+    decryptPsaOrPspIdAndEmail(encryptedPsaOrPspId, email) match {
+      case Right(Tuple2(psaOrPspId, emailAddress)) =>
+        request.body.validate[EmailEvents].fold(
+          _ => BadRequest("Bad request received for email call back event"),
+          valid => {
+            valid.events.filterNot(
+              _.event == Opened
+            ).foreach { event =>
+              logger.debug(s"Email Audit event coming from $journeyType is $event")
+              auditService.sendEvent(EmailAuditEvent(psaOrPspId, submittedBy, emailAddress, event.event, journeyType, requestId))(request, implicitly)
+            }
+            Ok
+          }
+        )
+
+      case Left(result) => result
+    }
   }
 
-  private def validatePsaIdEmail(encryptedPsaId: String, email: String): Either[Result, (PsaId, String)] = {
-    val psaId = crypto.QueryParameterCrypto.decrypt(Crypted(encryptedPsaId)).value
+  private def decryptPsaOrPspIdAndEmail(encryptedPsaOrPspId: String, email: String): Either[Result, (String, String)] = {
+    val psaOrPspId = crypto.QueryParameterCrypto.decrypt(Crypted(encryptedPsaOrPspId)).value
     val emailAddress = crypto.QueryParameterCrypto.decrypt(Crypted(email)).value
     val emailRegex: String = "^(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"" +
       "(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")" +
@@ -79,9 +78,9 @@ class EmailResponseController @Inject()(
 
     try {
       require(emailAddress.matches(emailRegex))
-      Right(Tuple2(PsaId(psaId), emailAddress))
+      Right(Tuple2(psaOrPspId, emailAddress))
     } catch {
-      case _: IllegalArgumentException => Left(Forbidden(s"Malformed PSAID : $psaId or Email : $emailAddress"))
+      case _: IllegalArgumentException => Left(Forbidden(s"Malformed email : $emailAddress"))
     }
   }
 }
