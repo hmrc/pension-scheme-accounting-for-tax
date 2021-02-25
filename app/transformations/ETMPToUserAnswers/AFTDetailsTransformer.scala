@@ -19,7 +19,9 @@ package transformations.ETMPToUserAnswers
 import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{JsObject, Reads, __}
+import play.api.libs.json.{JsError, JsObject, JsPath, JsResultException, JsString, JsSuccess, JsValue, Reads, __}
+
+import java.time.LocalDate
 
 class AFTDetailsTransformer @Inject()(
                                        chargeATransformer: ChargeATransformer,
@@ -29,12 +31,13 @@ class AFTDetailsTransformer @Inject()(
                                        chargeETransformer: ChargeETransformer,
                                        chargeFTransformer: ChargeFTransformer,
                                        chargeGTransformer: ChargeGTransformer
-                                     ) {
+                                     ) extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] = (
     transformAFTDetails and
       transformSchemeDetails and
-      transformChargeDetails
+      transformChargeDetails and
+      transformAftDeclarationDetails
     ).reduce
 
   private def transformAFTDetails: Reads[JsObject] =
@@ -56,4 +59,27 @@ class AFTDetailsTransformer @Inject()(
         chargeFTransformer.transformToUserAnswers and
         chargeGTransformer.transformToUserAnswers).reduce
     )
+
+  private def transformAftDeclarationDetails: Reads[JsObject] = (
+    receiptDateReads and
+      (__ \ 'aftDeclarationDetails).read(
+        ((__ \ 'submitterDetails \ 'submitterType).json.copyFrom((__ \ 'submittedBy).json.pick) and
+          (__ \ 'submitterDetails \ 'submitterName).json.copyFrom((__ \ 'submitterName).json.pick) and
+          (__ \ 'submitterDetails \ 'submitterID).json.copyFrom((__ \ 'submitterID).json.pick) and
+
+          (__ \ 'submittedBy).read[String].flatMap {
+            case "PSP" =>
+              (__ \ 'submitterDetails \ 'authorisingPsaId).json.copyFrom((__ \ 'psaId).json.pick)
+            case _ => doNothing
+          }).reduce
+      )
+    ).reduce
+
+  private def receiptDateReads: Reads[JsObject] =
+    (__ \ "aftDetails" \ "receiptDate").read[String].flatMap { date =>
+      (__ \ 'submitterDetails \ 'receiptDate).json.put(
+        JsString(date.split("T").headOption.fold(throw ReceiptDateNotInExpectedFormat)(date => LocalDate.parse(date)).toString))
+    }
 }
+
+case object ReceiptDateNotInExpectedFormat extends Exception("Get AFT details returned a receipt date which was not in expected format")

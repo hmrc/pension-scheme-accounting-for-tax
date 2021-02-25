@@ -163,7 +163,14 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |    ],
       |    "totalChargeAmount": 1230.02,
       |    "amendedVersion": 1
-      |  }
+      |  },
+      |    "submitterDetails": {
+      |      "submitterType": "PSP",
+      |      "submitterID": "10000240",
+      |      "authorisingPsaId": "A0003450",
+      |      "submitterName": "Martin Brookes",
+      |      "receiptDate": "2016-12-17"
+      |    }
       |}""".stripMargin)
 
   private val etmpResponseJson = Json.parse(
@@ -171,7 +178,8 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |  "aftDetails": {
       |    "aftStatus": "Compiled",
       |    "quarterStartDate": "2019-01-01",
-      |    "quarterEndDate": "2019-03-31"
+      |    "quarterEndDate": "2019-03-31",
+      |    "receiptDate": "2016-12-17T09:30:47Z"
       |  },
       |  "schemeDetails": {
       |    "schemeName": "Test Scheme",
@@ -285,7 +293,17 @@ class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators 
       |        }
       |      ]
       |    }
-      |  }
+      |  },
+      |    "aftDeclarationDetails":  {
+      |      "submittedBy": "PSP",
+      |      "submitterID": "10000240",
+      |      "psaId": "A0003450",
+      |      "submitterName": "Martin Brookes",
+      |      "pspDeclarationDetails": {
+      |        "pspDeclaration1": "true",
+      |        "pspDeclaration2": "true"
+      |      }
+      |    }
       |}
       |""".stripMargin)
 }
