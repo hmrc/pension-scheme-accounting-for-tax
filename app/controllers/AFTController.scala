@@ -17,6 +17,8 @@
 package controllers
 
 import connectors.DesConnector
+import models.{AFTSubmitterDetails, VersionsWithSubmitter}
+
 import javax.inject.{Inject, Singleton}
 import models.enumeration.JourneyType
 import play.api.Logger
@@ -94,6 +96,29 @@ class AFTController @Inject()(
     implicit request =>
       get { (pstr, startDate) =>
         desConnector.getAftVersions(pstr, startDate).map(v => Ok(Json.toJson(v)))
+      }
+  }
+
+  def getVersionsWithSubmitter: Action[AnyContent] = Action.async {
+    implicit request =>
+      get { (pstr, startDate) =>
+        desConnector.getAftVersions(pstr, startDate).flatMap { aftVersions =>
+          Future.sequence(aftVersions.map { version =>
+            desConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map { detailsJs =>
+
+              detailsJs.transform(aftDetailsTransformer.transformToUserAnswers) match {
+                case JsSuccess(userAnswersJson, _) =>
+
+                  (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
+                    case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, subDetails)
+                    case JsError(errors) => throw JsResultException(errors)
+                  }
+                case JsError(errors) =>
+                  throw JsResultException(errors)
+              }
+            }
+          })
+        }.map(v => Ok(Json.toJson(v)))
       }
   }
 

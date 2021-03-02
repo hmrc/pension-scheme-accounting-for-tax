@@ -382,7 +382,7 @@ object AFTControllerSpec {
     ),
     "aftDeclarationDetails" ->  Json.obj(
       "submittedBy" -> "PSP",
-      "submitterID" -> "10000240",
+      "submitterId" -> "10000240",
       "psaId" -> "A0003450",
       "submitterName" -> "Martin Brookes",
       "pspDeclarationDetails" -> Json.obj(

@@ -21,7 +21,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{JsError, JsObject, JsPath, JsResultException, JsString, JsSuccess, JsValue, Reads, __}
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 class AFTDetailsTransformer @Inject()(
                                        chargeATransformer: ChargeATransformer,
@@ -65,20 +65,19 @@ class AFTDetailsTransformer @Inject()(
       (__ \ 'aftDeclarationDetails).read(
         ((__ \ 'submitterDetails \ 'submitterType).json.copyFrom((__ \ 'submittedBy).json.pick) and
           (__ \ 'submitterDetails \ 'submitterName).json.copyFrom((__ \ 'submitterName).json.pick) and
-          (__ \ 'submitterDetails \ 'submitterID).json.copyFrom((__ \ 'submitterID).json.pick) and
 
           (__ \ 'submittedBy).read[String].flatMap {
             case "PSP" =>
-              (__ \ 'submitterDetails \ 'authorisingPsaId).json.copyFrom((__ \ 'psaId).json.pick)
-            case _ => doNothing
+              ((__ \ 'submitterDetails \ 'submitterID).json.copyFrom((__ \ 'submitterId).json.pick) and
+              (__ \ 'submitterDetails \ 'authorisingPsaId).json.copyFrom((__ \ 'psaId).json.pick)).reduce
+            case _ => (__ \ 'submitterDetails \ 'submitterID).json.copyFrom((__ \ 'submitterID).json.pick)
           }).reduce
       )
     ).reduce
 
   private def receiptDateReads: Reads[JsObject] =
-    (__ \ "aftDetails" \ "receiptDate").read[String].flatMap { date =>
-      (__ \ 'submitterDetails \ 'receiptDate).json.put(
-        JsString(date.split("T").headOption.fold(throw ReceiptDateNotInExpectedFormat)(date => LocalDate.parse(date)).toString))
+    (__ \ "aftDetails" \ "receiptDate").read[String].flatMap { dateTime =>
+      (__ \ 'submitterDetails \ 'receiptDate).json.put(JsString(LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate.toString))
     }
 }
 

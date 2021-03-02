@@ -6,6 +6,7 @@ GET           /get-aft-details                                                  
 GET           /get-is-aft-non-zero                                                  controllers.AFTController.getIsChargeNonZero
 
 GET           /get-aft-versions                                                     controllers.AFTController.getVersions
+GET           /get-versions-with-submitter                                      controllers.AFTController.getVersionsWithSubmitter
 
 GET           /get-aft-overview                                                     controllers.AFTController.getOverview
 
