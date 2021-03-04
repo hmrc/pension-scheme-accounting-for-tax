@@ -19,7 +19,7 @@ package connectors
 import audit._
 import com.google.inject.Inject
 import config.AppConfig
-import models.{AFTOverview, AFTVersion}
+import models.{AFTOverview, AFTSubmitterDetails, AFTVersion, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.http.Status
 import play.api.http.Status._

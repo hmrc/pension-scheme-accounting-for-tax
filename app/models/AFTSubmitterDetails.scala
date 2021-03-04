@@ -21,17 +21,14 @@ import java.time.{LocalDate, LocalDateTime}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, JsPath, Json, Reads}
 
-case class AFTVersion(reportVersion: Int, date: LocalDate, reportStatus: String)
+case class AFTSubmitterDetails(submitterType: String, submitterName: String, submitterID: String, authorisingPsaId: Option[String], receiptDate: LocalDate)
 
-object AFTVersion {
-
-  implicit val rds: Reads[AFTVersion] = (
-    (JsPath \ "reportVersion").read[Int] and
-      (JsPath \ "compilationOrSubmissionDate").read[String] and
-      (JsPath \ "reportStatus").read[String]
-    ) ((version, dateTime, reportStatus) => AFTVersion(version, LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate, reportStatus)
-  )
-
-  implicit val formats: Format[AFTVersion] = Json.format[AFTVersion]
+object AFTSubmitterDetails {
+  implicit val formats: Format[AFTSubmitterDetails] = Json.format[AFTSubmitterDetails]
 }
 
+case class VersionsWithSubmitter(versionDetails: AFTVersion, submitterDetails: AFTSubmitterDetails)
+
+object VersionsWithSubmitter {
+  implicit val formats: Format[VersionsWithSubmitter] = Json.format[VersionsWithSubmitter]
+}

@@ -370,13 +370,24 @@ object AFTControllerSpec {
     "aftDetails" -> Json.obj(
       "aftStatus" -> "Compiled",
       "quarterStartDate" -> "2020-02-29",
-      "quarterEndDate" -> "2020-05-29"
+      "quarterEndDate" -> "2020-05-29",
+      "receiptDate" -> "2016-12-17T09:30:47Z",
     ),
     "chargeDetails" -> Json.obj(
       "chargeTypeFDetails" -> Json.obj(
         "amendedVersion" -> 1,
         "totalAmount" -> 200.02,
         "dateRegiWithdrawn" -> "1980-02-29"
+      )
+    ),
+    "aftDeclarationDetails" ->  Json.obj(
+      "submittedBy" -> "PSP",
+      "submitterId" -> "10000240",
+      "psaId" -> "A0003450",
+      "submitterName" -> "Martin Brookes",
+      "pspDeclarationDetails" -> Json.obj(
+        "pspDeclaration1" ->true,
+        "pspDeclaration2" ->true
       )
     )
   )
@@ -395,6 +406,13 @@ object AFTControllerSpec {
       "deRegistrationDate" -> "1980-02-29"
       ),
       "amendedVersion" -> 1
+    ),
+    "submitterDetails" -> Json.obj(
+      "submitterType" -> "PSP",
+      "submitterID" -> "10000240",
+      "authorisingPsaId" -> "A0003450",
+      "submitterName" -> "Martin Brookes",
+      "receiptDate" -> "2016-12-17"
     )
   )
 
