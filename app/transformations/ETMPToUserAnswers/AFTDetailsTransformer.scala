@@ -19,9 +19,9 @@ package transformations.ETMPToUserAnswers
 import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{JsError, JsObject, JsPath, JsResultException, JsString, JsSuccess, JsValue, Reads, __}
+import play.api.libs.json.{JsObject, JsString, Reads, __, _}
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDateTime
 
 class AFTDetailsTransformer @Inject()(
                                        chargeATransformer: ChargeATransformer,
@@ -62,7 +62,7 @@ class AFTDetailsTransformer @Inject()(
 
   private def transformAftDeclarationDetails: Reads[JsObject] = (
     receiptDateReads and
-      (__ \ 'aftDeclarationDetails).read(
+      (__ \ 'aftDeclarationDetails).readNullable(
         ((__ \ 'submitterDetails \ 'submitterType).json.copyFrom((__ \ 'submittedBy).json.pick) and
           (__ \ 'submitterDetails \ 'submitterName).json.copyFrom((__ \ 'submitterName).json.pick) and
 
@@ -72,7 +72,9 @@ class AFTDetailsTransformer @Inject()(
               (__ \ 'submitterDetails \ 'authorisingPsaId).json.copyFrom((__ \ 'psaId).json.pick)).reduce
             case _ => (__ \ 'submitterDetails \ 'submitterID).json.copyFrom((__ \ 'submitterID).json.pick)
           }).reduce
-      )
+      ).map {
+        _.getOrElse(Json.obj())
+      }
     ).reduce
 
   private def receiptDateReads: Reads[JsObject] =
