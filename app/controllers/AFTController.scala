@@ -110,8 +110,8 @@ class AFTController @Inject()(
                 case JsSuccess(userAnswersJson, _) =>
 
                   (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
-                    case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, subDetails)
-                    case JsError(errors) => throw JsResultException(errors)
+                    case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
+                    case JsError(errors) => VersionsWithSubmitter(version, None)
                   }
                 case JsError(errors) =>
                   throw JsResultException(errors)
