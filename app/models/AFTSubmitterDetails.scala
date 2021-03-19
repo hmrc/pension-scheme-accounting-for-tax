@@ -16,10 +16,9 @@
 
 package models
 
-import java.time.{LocalDate, LocalDateTime}
+import play.api.libs.json.{Format, Json}
 
-import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, JsPath, Json, Reads}
+import java.time.LocalDate
 
 case class AFTSubmitterDetails(submitterType: String, submitterName: String, submitterID: String, authorisingPsaId: Option[String], receiptDate: LocalDate)
 
@@ -27,7 +26,7 @@ object AFTSubmitterDetails {
   implicit val formats: Format[AFTSubmitterDetails] = Json.format[AFTSubmitterDetails]
 }
 
-case class VersionsWithSubmitter(versionDetails: AFTVersion, submitterDetails: AFTSubmitterDetails)
+case class VersionsWithSubmitter(versionDetails: AFTVersion, submitterDetails: Option[AFTSubmitterDetails])
 
 object VersionsWithSubmitter {
   implicit val formats: Format[VersionsWithSubmitter] = Json.format[VersionsWithSubmitter]
