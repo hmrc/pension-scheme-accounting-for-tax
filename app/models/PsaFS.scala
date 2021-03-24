@@ -36,6 +36,7 @@ object PsaFS {
       (JsPath \ "amountDue").read[BigDecimal] and
       (JsPath \ "outstandingAmount").read[BigDecimal] and
       (JsPath \ "stoodOverAmount").read[BigDecimal] and
+      //The following fields are optional in API but mandatory here based on comment added on PODS-5109
       (JsPath \ "periodStartDate").read[String] and
       (JsPath \ "periodEndDate").read[String] and
       (JsPath \ "pstr").read[String]
