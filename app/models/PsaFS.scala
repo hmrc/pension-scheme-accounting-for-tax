@@ -36,6 +36,7 @@ object PsaFS {
       (JsPath \ "amountDue").read[BigDecimal] and
       (JsPath \ "outstandingAmount").read[BigDecimal] and
       (JsPath \ "stoodOverAmount").read[BigDecimal] and
+      //The following fields are optional in API but mandatory here based on comment added on PODS-5109
       (JsPath \ "periodStartDate").read[String] and
       (JsPath \ "periodEndDate").read[String] and
       (JsPath \ "pstr").read[String]
@@ -64,15 +65,20 @@ object PsaChargeType extends Enumeration {
 
   sealed case class TypeValue(name: String, value: String) extends Val(name)
 
-  val aftInitialLFP = TypeValue("57001080", "Accounting for Tax late filing penalty")
-  val aftDailyLFP = TypeValue("57001091", "Accounting for Tax further late filing penalty")
-  val aft30DayLPP = TypeValue("57301080", "Accounting for Tax late payment penalty (30 days)")
-  val aft6MonthLPP = TypeValue("57301091", "Accounting for Tax late payment penalty (6 months)")
-  val aft12MonthLPP = TypeValue("57301092", "Accounting for Tax late payment penalty (12 months)")
-  val otc30DayLPP = TypeValue("57401080", "Overseas transfer charge late payment penalty (30 days)")
-  val otc6MonthLPP = TypeValue("57401091", "Overseas transfer charge late payment penalty (6 months)")
-  val otc12MonthLPP = TypeValue("57401092", "Overseas transfer charge late payment penalty (12 months)")
-  val paymentOnAccount = TypeValue("00600100", "Payment on account")
+  val aftInitialLFP: TypeValue = TypeValue("57001080", "Accounting for Tax late filing penalty")
+  val aftDailyLFP: TypeValue = TypeValue("57001091", "Accounting for Tax further late filing penalty")
+  val aft30DayLPP: TypeValue = TypeValue("57301080", "Accounting for Tax late payment penalty (30 days)")
+  val aft6MonthLPP: TypeValue = TypeValue("57301091", "Accounting for Tax late payment penalty (6 months)")
+  val aft12MonthLPP: TypeValue = TypeValue("57301092", "Accounting for Tax late payment penalty (12 months)")
+  val otc30DayLPP: TypeValue = TypeValue("57401080", "Overseas transfer charge late payment penalty (30 days)")
+  val otc6MonthLPP: TypeValue = TypeValue("57401091", "Overseas transfer charge late payment penalty (6 months)")
+  val otc12MonthLPP: TypeValue = TypeValue("57401092", "Overseas transfer charge late payment penalty (12 months)")
+  val pssPenalty: TypeValue = TypeValue("56801090", "Pensions Penalty")
+  val pssInfoNotice: TypeValue = TypeValue("57601090", "Information Notice Penalty")
+  val contractSettlement: TypeValue = TypeValue("58001000", "Contract settlement")
+  val contractSettlementInterest: TypeValue = TypeValue("58052000", "Contract settlement interest")
+  val repaymentInterest: TypeValue = TypeValue("57962925", "Repayment Interest")
+  val paymentOnAccount: TypeValue = TypeValue("00600100", "Payment on account")
 
   def valueWithName(name: String): String = {
     withName(name).asInstanceOf[TypeValue].value

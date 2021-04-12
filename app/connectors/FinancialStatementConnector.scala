@@ -46,10 +46,9 @@ class FinancialStatementConnector @Inject()(
 
     lazy val financialStatementsTransformer: Reads[JsArray] =
       __.read[JsArray].map {
-        case JsArray(values) =>
-          JsArray(values.filterNot(v =>
-            (v \ "chargeType").as[String].equals("00600100"))
-          )
+        case JsArray(values) => JsArray(values.filterNot(charge =>
+          (charge \ "chargeType").as[String].equals("00600100") || (charge \ "chargeType").as[String].equals("57962925")
+        ))
       }
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
