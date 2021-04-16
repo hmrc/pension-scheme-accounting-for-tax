@@ -82,13 +82,27 @@ class FinancialStatementConnector @Inject()(
     implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders =
       headerUtils.integrationFrameworkHeader(implicitly[HeaderCarrier](headerCarrier)))
 
+    lazy val financialStatementsTransformer: Reads[JsArray] =
+      __.read[JsArray].map {
+        case JsArray(values) => JsArray(values.filterNot(charge =>
+          (charge \ "chargeType").as[String].equals("00600100") || (charge \ "chargeType").as[String].equals("56962925")
+        ))
+      }
+
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
 
       response.status match {
         case OK =>
-          Json.parse(response.body).validate[Seq[SchemeFS]](Reads.seq(SchemeFS.rds)) match {
-            case JsSuccess(statements, _) => statements
-            case JsError(errors) => throw JsResultException(errors)
+          Json.parse(response.body).transform(financialStatementsTransformer) match {
+            case JsSuccess(statements, _) =>
+              statements.validate[Seq[SchemeFS]](Reads.seq(SchemeFS.rds)) match {
+                case JsSuccess(values, _) =>
+                  values
+                case JsError(errors) =>
+                  throw JsResultException(errors)
+              }
+            case JsError(errors) =>
+              throw JsResultException(errors)
           }
         case NOT_FOUND =>
           Seq.empty[SchemeFS]
