@@ -17,13 +17,13 @@
 package models
 
 import java.time.LocalDate
-
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, JsPath, Json, Reads}
+import play.api.libs.json.{Format, Json, JsPath, Reads}
 
 case class PsaFS(chargeReference: String, chargeType: String, dueDate: Option[LocalDate],
                  totalAmount: BigDecimal, amountDue: BigDecimal, outstandingAmount: BigDecimal,
-                 stoodOverAmount: BigDecimal, periodStartDate: LocalDate, periodEndDate: LocalDate,
+                 stoodOverAmount: BigDecimal, accruedInterestTotal: BigDecimal,
+                 periodStartDate: LocalDate, periodEndDate: LocalDate,
                  pstr: String)
 
 object PsaFS {
@@ -36,13 +36,14 @@ object PsaFS {
       (JsPath \ "amountDue").read[BigDecimal] and
       (JsPath \ "outstandingAmount").read[BigDecimal] and
       (JsPath \ "stoodOverAmount").read[BigDecimal] and
+      (JsPath \ "accruedInterestTotal").read[BigDecimal] and
       //The following fields are optional in API but mandatory here based on comment added on PODS-5109
       (JsPath \ "periodStartDate").read[String] and
       (JsPath \ "periodEndDate").read[String] and
       (JsPath \ "pstr").read[String]
     ) (
     (chargeReference, chargeType, dueDateOpt,
-     totalAmount, amountDue, outstandingAmount, stoodOverAmount,
+     totalAmount, amountDue, outstandingAmount, stoodOverAmount, accruedInterestTotal,
      periodStartDate, periodEndDate, pstr) =>
       PsaFS(
         chargeReference,
@@ -52,6 +53,7 @@ object PsaFS {
         amountDue,
         outstandingAmount,
         stoodOverAmount,
+        accruedInterestTotal,
         LocalDate.parse(periodStartDate),
         LocalDate.parse(periodEndDate),
         pstr
