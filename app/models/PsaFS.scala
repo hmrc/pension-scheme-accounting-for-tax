@@ -77,7 +77,7 @@ object PsaChargeType extends Enumeration {
   val otc12MonthLPP: TypeValue = TypeValue("57401092", "Overseas transfer charge late payment penalty (12 months)")
   val pssPenalty: TypeValue = TypeValue("56801090", "Pensions Penalty")
   val pssInfoNotice: TypeValue = TypeValue("57601090", "Information Notice Penalty")
-  val contractSettlement: TypeValue = TypeValue("58001000", "Contract settlement")
+  val contractSettlement: TypeValue = TypeValue("58001000", "Contract settlement charge")
   val contractSettlementInterest: TypeValue = TypeValue("58052000", "Contract settlement interest")
   val repaymentInterest: TypeValue = TypeValue("57962925", "Repayment Interest")
   val paymentOnAccount: TypeValue = TypeValue("00600100", "Payment on account")
