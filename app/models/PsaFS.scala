@@ -17,13 +17,13 @@
 package models
 
 import java.time.LocalDate
-
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, JsPath, Json, Reads}
+import play.api.libs.json.{Format, Json, JsPath, Reads}
 
 case class PsaFS(chargeReference: String, chargeType: String, dueDate: Option[LocalDate],
                  totalAmount: BigDecimal, amountDue: BigDecimal, outstandingAmount: BigDecimal,
-                 stoodOverAmount: BigDecimal, periodStartDate: LocalDate, periodEndDate: LocalDate,
+                 stoodOverAmount: BigDecimal, accruedInterestTotal: BigDecimal,
+                 periodStartDate: LocalDate, periodEndDate: LocalDate,
                  pstr: String)
 
 object PsaFS {
@@ -36,13 +36,14 @@ object PsaFS {
       (JsPath \ "amountDue").read[BigDecimal] and
       (JsPath \ "outstandingAmount").read[BigDecimal] and
       (JsPath \ "stoodOverAmount").read[BigDecimal] and
+      (JsPath \ "accruedInterestTotal").read[BigDecimal] and
       //The following fields are optional in API but mandatory here based on comment added on PODS-5109
       (JsPath \ "periodStartDate").read[String] and
       (JsPath \ "periodEndDate").read[String] and
       (JsPath \ "pstr").read[String]
     ) (
     (chargeReference, chargeType, dueDateOpt,
-     totalAmount, amountDue, outstandingAmount, stoodOverAmount,
+     totalAmount, amountDue, outstandingAmount, stoodOverAmount, accruedInterestTotal,
      periodStartDate, periodEndDate, pstr) =>
       PsaFS(
         chargeReference,
@@ -52,6 +53,7 @@ object PsaFS {
         amountDue,
         outstandingAmount,
         stoodOverAmount,
+        accruedInterestTotal,
         LocalDate.parse(periodStartDate),
         LocalDate.parse(periodEndDate),
         pstr
@@ -75,7 +77,7 @@ object PsaChargeType extends Enumeration {
   val otc12MonthLPP: TypeValue = TypeValue("57401092", "Overseas transfer charge late payment penalty (12 months)")
   val pssPenalty: TypeValue = TypeValue("56801090", "Pensions Penalty")
   val pssInfoNotice: TypeValue = TypeValue("57601090", "Information Notice Penalty")
-  val contractSettlement: TypeValue = TypeValue("58001000", "Contract settlement")
+  val contractSettlement: TypeValue = TypeValue("58001000", "Contract settlement charge")
   val contractSettlementInterest: TypeValue = TypeValue("58052000", "Contract settlement interest")
   val repaymentInterest: TypeValue = TypeValue("57962925", "Repayment Interest")
   val paymentOnAccount: TypeValue = TypeValue("00600100", "Payment on account")
