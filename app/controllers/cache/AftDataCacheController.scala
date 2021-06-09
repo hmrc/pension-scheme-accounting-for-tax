@@ -16,18 +16,19 @@
 
 package controllers.cache
 
+import audit.{AuditEvent, AuditService}
 import com.google.inject.Inject
 import models.LockDetail
 import models.LockDetail.formats
 import play.api.Logger
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
 import repository.AftDataCacheRepository
 import repository.model.SessionData._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}
+import uk.gov.hmrc.auth.core.{AuthorisedFunctions, Enrolment, AuthConnector}
+import uk.gov.hmrc.http.{UnauthorizedException, BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,7 +37,8 @@ import scala.concurrent.Future
 class AftDataCacheController @Inject()(
                                         repository: AftDataCacheRepository,
                                         val authConnector: AuthConnector,
-                                        cc: ControllerComponents
+                                        cc: ControllerComponents,
+                                        auditService: AuditService
                                       ) extends BackendController(cc) with AuthorisedFunctions {
 
   import AftDataCacheController._
@@ -53,6 +55,17 @@ class AftDataCacheController @Inject()(
               .map(_ => Created)
         } getOrElse Future.successful(BadRequest)
       }
+  }
+
+  private case class RequestBodyAuditEvent(psaOrPspId: String, body: Option[String]) extends AuditEvent {
+
+    override def auditType: String = "RequestBodyAuditEvent"
+
+    override def details: JsObject =
+      Json.obj(
+        "psaOrPspId" -> psaOrPspId,
+        "body" -> body
+      )
   }
 
   def setSessionData(lock: Boolean): Action[AnyContent] = Action.async {
@@ -74,10 +87,20 @@ class AftDataCacheController @Inject()(
                   accessMode,
                   areSubmittedVersionsAvailable.equals("true")
                 ).map(_ => Created)
-              case _ => Future.successful(BadRequest("Version and/or access mode not present in request header"))
+              case (v, am, asva) =>
+                logger.warn("BAD Request returned when setting session data " +
+                  s"due to absence of version and/or access mode in request header. Version " +
+                  s"is $v, access mode is $am and submitted versions available is $asva.")
+                auditService.sendEvent(RequestBodyAuditEvent(psaOrPspId, Some(Json.stringify(jsValue))))
+                Future.successful(BadRequest("Version and/or access mode not present in request header"))
             }
           }
-        } getOrElse Future.successful(BadRequest)
+        } getOrElse {
+          logger.warn("BAD Request returned when setting session data for session due to invalid JSON body: " +
+            s"ID $sessionId, id $id, name $name and psaOrPspId $psaOrPspId.")
+          auditService.sendEvent(RequestBodyAuditEvent(psaOrPspId, request.body.asText))
+          Future.successful(BadRequest)
+        }
       }
 
   }
