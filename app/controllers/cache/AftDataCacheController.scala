@@ -74,10 +74,18 @@ class AftDataCacheController @Inject()(
                   accessMode,
                   areSubmittedVersionsAvailable.equals("true")
                 ).map(_ => Created)
-              case _ => Future.successful(BadRequest("Version and/or access mode not present in request header"))
+              case (v, am, asva) =>
+              logger.warn("BAD Request returned when setting session data " +
+                s"due to absence of version and/or access mode in request header. Version " +
+                s"is $v, access mode is $am and submitted versions available is $asva.")
+                Future.successful(BadRequest("Version and/or access mode not present in request header"))
             }
           }
-        } getOrElse Future.successful(BadRequest)
+        } getOrElse {
+          logger.warn("BAD Request returned when setting session data for session " +
+            s"ID $sessionId, id $id, name $name and psaOrPspId $psaOrPspId.")
+          Future.successful(BadRequest)
+        }
       }
 
   }
