@@ -20,6 +20,7 @@ import audit.FinancialInfoAuditService
 import com.google.inject.Inject
 import config.AppConfig
 import models.{PsaFS, SchemeFS}
+import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
@@ -35,6 +36,8 @@ class FinancialStatementConnector @Inject()(
                                              financialInfoAuditService: FinancialInfoAuditService
                                            )
   extends HttpErrorFunctions with HttpResponseHelper {
+
+  private val logger = Logger(classOf[FinancialStatementConnector])
 
   def getPsaFS(psaId: String)
               (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
@@ -55,10 +58,12 @@ class FinancialStatementConnector @Inject()(
 
       response.status match {
         case OK =>
+          logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
           Json.parse(response.body).transform(financialStatementsTransformer) match {
             case JsSuccess(statements, _) =>
               statements.validate[Seq[PsaFS]](Reads.seq(PsaFS.rds)) match {
                 case JsSuccess(values, _) =>
+                  logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
                   values
                 case JsError(errors) =>
                   throw JsResultException(errors)
@@ -93,10 +98,12 @@ class FinancialStatementConnector @Inject()(
 
       response.status match {
         case OK =>
+          logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
           Json.parse(response.body).transform(financialStatementsTransformer) match {
             case JsSuccess(statements, _) =>
               statements.validate[Seq[SchemeFS]](Reads.seq(SchemeFS.rds)) match {
                 case JsSuccess(values, _) =>
+                  logger.debug(s"Response received from schemeFinInfo api transformed successfully to $values")
                   values
                 case JsError(errors) =>
                   throw JsResultException(errors)
