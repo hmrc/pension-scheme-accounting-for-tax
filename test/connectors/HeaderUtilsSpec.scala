@@ -20,8 +20,7 @@ import config.AppConfig
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.RequestId
+import uk.gov.hmrc.http.{HeaderCarrier, RequestId}
 
 class HeaderUtilsSpec extends WordSpec with MockitoSugar with MustMatchers with BeforeAndAfterEach {
   private val mockConfig = mock[AppConfig]
