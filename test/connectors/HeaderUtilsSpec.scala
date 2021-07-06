@@ -40,7 +40,7 @@ class HeaderUtilsSpec extends WordSpec with MockitoSugar with MustMatchers with 
   "desHeader" must {
 
     "return the correct headers" in {
-      val hc: HeaderCarrier = HeaderCarrier.apply(requestId = Some(RequestId("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2df")))
+      val hc: HeaderCarrier = HeaderCarrier(requestId = Some(RequestId("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2df")))
       val result = headerUtils.desHeader(hc)
       result mustBe Seq("Environment" -> desEnv, "Authorization" -> desAuth,
         "Content-Type" -> "application/json", "CorrelationId" -> "4725c811-9251-4c06-9b8f-f1d84659b2df")
