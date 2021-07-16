@@ -110,7 +110,8 @@ class AftDataCacheRepository @Inject()(
                       accessMode: String,
                       areSubmittedVersionsAvailable: Boolean
                     )(implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.debug("Calling setSessionData in AFT Cache")
+    logger.debug(s"Calling setSessionData in AFT Cache")
+    logger.warn(s"Calling setSessionData in AFT Cache: request body length is ${userData.toString.length}")
     val document: JsValue = Json.toJson(
       AftDataCache.applyDataCache(
         id = id,
