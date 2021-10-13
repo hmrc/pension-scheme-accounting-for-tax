@@ -20,7 +20,7 @@ import config.AppConfig
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.http.{HeaderCarrier, RequestId}
+import uk.gov.hmrc.http.{RequestId, HeaderCarrier}
 
 class HeaderUtilsSpec extends WordSpec with MockitoSugar with MustMatchers with BeforeAndAfterEach {
   private val mockConfig = mock[AppConfig]
@@ -42,7 +42,7 @@ class HeaderUtilsSpec extends WordSpec with MockitoSugar with MustMatchers with 
     "return the correct headers" in {
       val hc: HeaderCarrier = HeaderCarrier(requestId = Some(RequestId("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2df")))
       val result = headerUtils.desHeader(hc)
-      result(0) mustBe "Environment" -> desEnv
+      result.head mustBe "Environment" -> desEnv
       result(1) mustBe "Authorization" -> desAuth
       result(2) mustBe "Content-Type" -> "application/json"
     }
@@ -53,30 +53,16 @@ class HeaderUtilsSpec extends WordSpec with MockitoSugar with MustMatchers with 
     "return the correct headers" in {
       val hc: HeaderCarrier = HeaderCarrier(requestId = Some(RequestId("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2df")))
       val result = headerUtils.integrationFrameworkHeader(hc)
-      result(0) mustBe "Environment" -> ifEnv
+      result.head mustBe "Environment" -> ifEnv
       result(1) mustBe "Authorization" -> ifAuth
       result(2) mustBe "Content-Type" -> "application/json"
     }
   }
 
-  "getCorrelationId" must {
-    "return the correct CorrelationId when the request Id is more than 32 characters" in {
-      val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2dfe")
-      val result = headerUtils.getCorrelationId(requestId)
-      result mustBe "4725c811-9251-4c06-9b8f-f1d84659b2df"
-    }
-
-
-    "return the correct CorrelationId when the request Id is less than 32 characters" in {
-      val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1")
-      val result = headerUtils.getCorrelationId(requestId)
-      result mustBe "4725c811-9251-4c06-9b8f-f1"
-    }
-
-    "return the correct CorrelationId when the request Id does not have gov-uk-tax or -" in {
-      val requestId = Some("4725c81192514c069b8ff1")
-      val result = headerUtils.getCorrelationId(requestId)
-      result mustBe "4725c81192514c069b8ff1"
+  "call getCorrelationId" must {
+    "return a CorrelationId of the correct size" in {
+      val result = headerUtils.getCorrelationId
+      result.length mustEqual headerUtils.maxLengthCorrelationIdIF
     }
   }
 }

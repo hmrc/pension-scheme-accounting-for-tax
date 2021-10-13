@@ -19,7 +19,7 @@ package connectors
 import audit._
 import com.google.inject.Inject
 import config.AppConfig
-import models.{AFTOverview, AFTVersion}
+import models.{AFTVersion, AFTOverview}
 import play.api.Logger
 import play.api.http.Status
 import play.api.http.Status._
@@ -29,7 +29,6 @@ import services.AFTService
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
-import java.util.UUID.randomUUID
 import scala.concurrent.{ExecutionContext, Future}
 
 class DesConnector @Inject()(
@@ -39,7 +38,8 @@ class DesConnector @Inject()(
                               fileAFTReturnAuditService: FileAFTReturnAuditService,
                               aftVersionsAuditEventService: GetAFTVersionsAuditService,
                               aftDetailsAuditEventService: GetAFTDetailsAuditService,
-                              aftService: AFTService
+                              aftService: AFTService,
+                              headerUtils:HeaderUtils
                             )
   extends HttpErrorFunctions
     with HttpResponseHelper {
@@ -134,20 +134,12 @@ class DesConnector @Inject()(
   }
 
   private def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
-    val requestId = getCorrelationId(hc.requestId.map(_.value))
-
     Seq(
       "Environment" -> config.desEnvironment,
       "Authorization" -> config.authorization,
       "Content-Type" -> "application/json",
-      "CorrelationId" -> requestId
+      "CorrelationId" -> headerUtils.getCorrelationId
     )
   }
 
-  def getCorrelationId(requestId: Option[String]): String = {
-    requestId.getOrElse {
-      logger.error("No Request Id found")
-      randomUUID.toString
-    }.replaceAll("(govuk-tax-)", "").slice(0, 36)
-  }
 }
