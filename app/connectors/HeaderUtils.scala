@@ -28,14 +28,14 @@ class HeaderUtils @Inject()(config: AppConfig) {
   private val logger = Logger(classOf[HeaderUtils])
 
   def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
-    val requestId = getCorrelationId(hc.requestId.map(_.value))
+    val requestId = getCorrelationId(None)
 
     Seq("Environment" -> config.desEnvironment, "Authorization" -> config.authorization,
       "Content-Type" -> "application/json", "CorrelationId" -> requestId)
   }
 
   def integrationFrameworkHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
-    val requestId = getCorrelationId(hc.requestId.map(_.value))
+    val requestId = getCorrelationId(None)
 
     Seq("Environment" -> config.integrationframeworkEnvironment,
       "Authorization" -> config.integrationframeworkAuthorization,
