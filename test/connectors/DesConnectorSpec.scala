@@ -17,27 +17,26 @@
 package connectors
 
 import java.time.LocalDate
-
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.enumeration.JourneyType
-import models.{AFTOverview, AFTVersion}
+import models.{AFTVersion, AFTOverview}
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
-import org.scalatest.{AsyncWordSpec, EitherValues, MustMatchers}
+import org.scalatest.{AsyncWordSpec, MustMatchers, EitherValues}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{Json, JsValue}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import repository.AftDataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
-import utils.{JsonFileReader, WireMockHelper}
+import utils.{WireMockHelper, JsonFileReader}
 
 class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with JsonFileReader
   with EitherValues with MockitoSugar {
@@ -52,6 +51,7 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
   private val mockDataCacheRepository = mock[AftDataCacheRepository]
+  private val mockHeaderUtils = mock[HeaderUtils]
 
   private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
 
@@ -59,7 +59,8 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AftDataCacheRepository].toInstance(mockDataCacheRepository),
-      bind[AFTService].toInstance(mockAftService)
+      bind[AFTService].toInstance(mockAftService),
+      bind[HeaderUtils].toInstance(mockHeaderUtils)
     )
 
   private val pstr = "test-pstr"
@@ -70,11 +71,16 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
   private val getAftUrl = s"/pension-online/aft-return/$pstr?startDate=$startDt&aftVersion=$aftVersion"
   private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions?startDate=$startDt"
   private val getAftOverviewUrl = s"/pension-online/reports/overview/$pstr/AFT?fromDate=$startDt&toDate=$endDate"
-
+  private val testCorrelationId = "testCorrelationId"
   private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30), 3, false, true)
   private val overview2 = AFTOverview(LocalDate.of(2020, 7, 1), LocalDate.of(2020, 10, 31), 2, true, true)
   private val aftOverview = Seq(overview1, overview2)
   private val journeyType = JourneyType.AFT_SUBMIT_RETURN.toString
+
+  override def beforeEach(): Unit = {
+    when(mockHeaderUtils.getCorrelationId).thenReturn(testCorrelationId)
+    super.beforeEach()
+  }
 
   "fileAFTReturn" must {
 
@@ -625,27 +631,6 @@ class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelp
           ex.statusCode mustBe INTERNAL_SERVER_ERROR
           ex.message must include("SERVER_ERROR")
       }
-    }
-  }
-
-  "getCorrelationId" must {
-    "return the correct CorrelationId when the request Id is more than 32 characters" in {
-      val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2dfe")
-      val result = connector.getCorrelationId(requestId)
-      result mustBe "4725c811-9251-4c06-9b8f-f1d84659b2df"
-    }
-
-
-    "return the correct CorrelationId when the request Id is less than 32 characters" in {
-      val requestId = Some("govuk-tax-4725c811-9251-4c06-9b8f-f1")
-      val result = connector.getCorrelationId(requestId)
-      result mustBe "4725c811-9251-4c06-9b8f-f1"
-    }
-
-    "return the correct CorrelationId when the request Id does not have gov-uk-tax or -" in {
-      val requestId = Some("4725c81192514c069b8ff1")
-      val result = connector.getCorrelationId(requestId)
-      result mustBe "4725c81192514c069b8ff1"
     }
   }
 
