@@ -21,11 +21,9 @@ import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.enumeration.JourneyType
 import models.{AFTVersion, AFTOverview}
-import org.mockito.Matchers.any
-import org.mockito.Mockito.{times, verify, when}
+import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentCaptor, Mockito}
-import org.scalatest.{AsyncWordSpec, MustMatchers, EitherValues}
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -37,9 +35,10 @@ import repository.AftDataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
 import utils.{WireMockHelper, JsonFileReader}
+import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatest.matchers.must.Matchers
 
-class DesConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with JsonFileReader
-  with EitherValues with MockitoSugar {
+class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with JsonFileReader with MockitoSugar {
 
   import DesConnectorSpec._
 

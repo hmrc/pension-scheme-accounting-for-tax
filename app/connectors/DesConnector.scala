@@ -50,7 +50,7 @@ class DesConnector @Inject()(
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
 
-    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
 
     if (aftService.isChargeZeroedOut(data)) {
       http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) map {
@@ -78,7 +78,7 @@ class DesConnector @Inject()(
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[JsValue] = {
 
     val getAftUrl: String = config.getAftDetailsUrl.format(pstr, startDate, aftVersion)
-    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
 
     http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
       response =>
@@ -93,7 +93,7 @@ class DesConnector @Inject()(
                     (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[AFTVersion]] = {
 
     val getAftVersionUrl: String = config.getAftVersionUrl.format(pstr, startDate)
-    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
 
     http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map {
       response =>
@@ -115,7 +115,7 @@ class DesConnector @Inject()(
                     (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
 
     val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
-    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders = desHeader(implicitly[HeaderCarrier](headerCarrier)))
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
 
     http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
       response.status match {
@@ -133,7 +133,7 @@ class DesConnector @Inject()(
     }
   }
 
-  private def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
+  private def desHeader: Seq[(String, String)] = {
     Seq(
       "Environment" -> config.desEnvironment,
       "Authorization" -> config.authorization,

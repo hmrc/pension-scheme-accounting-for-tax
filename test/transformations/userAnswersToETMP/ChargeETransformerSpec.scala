@@ -17,11 +17,13 @@
 package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
+import org.scalatest.OptionValues
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 
-class ChargeETransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
   private def etmpMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ i
 
   private def uaMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeEDetails" \ "members" \ i

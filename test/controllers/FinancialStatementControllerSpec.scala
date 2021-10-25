@@ -16,15 +16,13 @@
 
 package controllers
 
-import java.time.LocalDate
-
 import connectors.FinancialStatementConnector
 import models.{PsaFS, SchemeFS}
-import org.mockito.Matchers
-import org.mockito.Matchers.any
-import org.mockito.Mockito._
-import org.scalatest.{AsyncWordSpec, BeforeAndAfter, MustMatchers}
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.ArgumentMatchers.any
+import org.mockito.{ArgumentMatchers, MockitoSugar}
+import org.scalatest.BeforeAndAfter
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
@@ -36,9 +34,10 @@ import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
-class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSugar with BeforeAndAfter with JsonFileReader {
+class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar with BeforeAndAfter with JsonFileReader {
 
   import FinancialStatementControllerSpec._
 
@@ -71,7 +70,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
 
       val controller = application.injector.instanceOf[FinancialStatementController]
 
-      when(mockFSConnector.getPsaFS(Matchers.eq(psaId))(any(), any(), any())).thenReturn(
+      when(mockFSConnector.getPsaFS(ArgumentMatchers.eq(psaId))(any(), any(), any())).thenReturn(
         Future.successful(psaFSResponse))
 
       val result = controller.psaStatement()(fakeRequestWithPsaId)
@@ -96,7 +95,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
 
       val controller = application.injector.instanceOf[FinancialStatementController]
 
-      when(mockFSConnector.getPsaFS(Matchers.eq(psaId))(any(), any(), any())).thenReturn(
+      when(mockFSConnector.getPsaFS(ArgumentMatchers.eq(psaId))(any(), any(), any())).thenReturn(
         Future.failed(new Exception("Generic Exception")))
 
       recoverToExceptionIf[Exception] {
@@ -113,7 +112,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
 
       val controller = application.injector.instanceOf[FinancialStatementController]
 
-      when(mockFSConnector.getSchemeFS(Matchers.eq(pstr))(any(), any(), any())).thenReturn(
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModel))
 
       val result = controller.schemeStatement()(fakeRequestWithPstr)
@@ -138,7 +137,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
 
       val controller = application.injector.instanceOf[FinancialStatementController]
 
-      when(mockFSConnector.getSchemeFS(Matchers.eq(pstr))(any(), any(), any())).thenReturn(
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.failed(new Exception("Generic Exception")))
 
       recoverToExceptionIf[Exception] {
@@ -152,7 +151,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with MustMatchers w
       when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
       val controller = application.injector.instanceOf[FinancialStatementController]
 
-      when(mockFSConnector.getSchemeFS(Matchers.eq(pstr))(any(), any(), any())).thenReturn(
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModel))
 
       recoverToExceptionIf[UnauthorizedException] {

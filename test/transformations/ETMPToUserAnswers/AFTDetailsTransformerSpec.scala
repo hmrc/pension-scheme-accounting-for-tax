@@ -16,11 +16,12 @@
 
 package transformations.ETMPToUserAnswers
 
-import org.scalatest.FreeSpec
+import org.scalatest.OptionValues
+import org.scalatest.freespec.AnyFreeSpec
 import play.api.libs.json.Json
 import transformations.generators.AFTETMPResponseGenerators
 
-class AFTDetailsTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
+class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
   private val chargeATransformer = new ChargeATransformer
   private val chargeBTransformer = new ChargeBTransformer

@@ -17,14 +17,13 @@
 package transformations.generators
 
 import java.time.{LocalDate, Year}
-
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-import org.scalatest.{MustMatchers, OptionValues}
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+import org.scalatest.OptionValues
+import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsObject, Json}
 
-trait AFTETMPResponseGenerators extends MustMatchers with ScalaCheckDrivenPropertyChecks with OptionValues {
+trait AFTETMPResponseGenerators extends Matchers with OptionValues {
   val ninoGen: Gen[String] = Gen.oneOf(Seq("AB123456C", "CD123456E"))
 
   val dateGenerator: Gen[LocalDate] = for {

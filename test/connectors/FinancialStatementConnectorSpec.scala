@@ -21,11 +21,11 @@ import java.time.LocalDate
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.{PsaFS, SchemeFS}
-import org.mockito.Matchers.any
-import org.mockito.Mockito.{times, verify}
+import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentCaptor, Mockito}
-import org.scalatest.{AsyncWordSpec, MustMatchers}
-import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
+import org.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -38,7 +38,7 @@ import services.AFTService
 import uk.gov.hmrc.http._
 import utils.WireMockHelper
 
-class FinancialStatementConnectorSpec extends AsyncWordSpec with MustMatchers with WireMockHelper with MockitoSugar {
+class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with MockitoSugar {
 
   import FinancialStatementConnectorSpec._
 

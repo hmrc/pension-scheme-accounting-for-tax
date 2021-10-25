@@ -18,11 +18,12 @@ package models
 
 import java.time.LocalDate
 import java.util.NoSuchElementException
-
-import org.scalatest.{MustMatchers, OptionValues, WordSpec}
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.OptionValues
 import play.api.libs.json.{JsValue, Json}
 
-class SchemeFSReadsSpec extends WordSpec with OptionValues with MustMatchers {
+class SchemeFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
   import SchemeFSReadsSpec._
 

@@ -19,15 +19,13 @@ package controllers.cache
 import akka.util.ByteString
 import models.LockDetail
 import org.apache.commons.lang3.RandomUtils
-import org.mockito.Matchers
-import org.mockito.Matchers.{eq => eqTo}
-import org.mockito.Matchers._
-import org.mockito.Mockito.reset
-import org.mockito.Mockito.when
+import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.{eq => eqTo}
+import org.mockito.ArgumentMatchers._
 import org.scalatest.BeforeAndAfter
-import org.scalatest.MustMatchers
-import org.scalatest.WordSpec
-import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.guice.GuiceableModule
@@ -47,7 +45,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
-class AftDataCacheControllerSpec extends WordSpec with MustMatchers with MockitoSugar with BeforeAndAfter {
+class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfter {
 
   import AftDataCacheController._
 
@@ -243,11 +241,11 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[AftDataCacheController]
       when(repo.setSessionData(
-        Matchers.eq(id),
-        Matchers.eq(Some(LockDetail("test name", psaId))), any(), any(),
-        Matchers.eq(version),
-        Matchers.eq(accessMode),
-        Matchers.eq(true)
+        ArgumentMatchers.eq(id),
+        ArgumentMatchers.eq(Some(LockDetail("test name", psaId))), any(), any(),
+        ArgumentMatchers.eq(version),
+        ArgumentMatchers.eq(accessMode),
+        ArgumentMatchers.eq(true)
       )(any())) thenReturn Future.successful(true)
 
       when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
@@ -272,11 +270,11 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[AftDataCacheController]
       when(repo.setSessionData(
-        Matchers.eq(id),
-        Matchers.eq(Some(LockDetail("test name", pspId))), any(), any(),
-        Matchers.eq(version),
-        Matchers.eq(accessMode),
-        Matchers.eq(true)
+        ArgumentMatchers.eq(id),
+        ArgumentMatchers.eq(Some(LockDetail("test name", pspId))), any(), any(),
+        ArgumentMatchers.eq(version),
+        ArgumentMatchers.eq(accessMode),
+        ArgumentMatchers.eq(true)
       )(any())) thenReturn Future.successful(true)
 
       when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
@@ -300,9 +298,9 @@ class AftDataCacheControllerSpec extends WordSpec with MustMatchers with Mockito
         .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
         .overrides(modules: _*).build()
       val controller = app.injector.instanceOf[AftDataCacheController]
-      when(repo.setSessionData(Matchers.eq(id),
-        Matchers.eq(Some(LockDetail("test name", psaId))), any(), any(),
-        Matchers.eq(version), Matchers.eq(accessMode), any())(any())) thenReturn Future.successful(true)
+      when(repo.setSessionData(ArgumentMatchers.eq(id),
+        ArgumentMatchers.eq(Some(LockDetail("test name", psaId))), any(), any(),
+        ArgumentMatchers.eq(version), ArgumentMatchers.eq(accessMode), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(Future.successful(expectedAuthorisations(psaId)))
       val result = controller.setSessionData(true)(fakePostRequest

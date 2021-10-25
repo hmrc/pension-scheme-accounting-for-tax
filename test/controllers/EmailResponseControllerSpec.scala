@@ -19,13 +19,13 @@ package controllers
 import audit.{AuditService, EmailAuditEvent}
 import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
 import models.enumeration.SchemeAdministratorType
-import models.{Sent, _}
+import models._
 import org.joda.time.DateTime
-import org.mockito.Matchers.any
-import org.mockito.Mockito.{times, never, when, verify}
-import org.mockito.{ArgumentCaptor, Mockito}
-import org.scalatest.{AsyncWordSpec, MustMatchers, BeforeAndAfterEach}
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.ArgumentMatchers.any
+import org.mockito.{ArgumentCaptor, Mockito, MockitoSugar}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -38,7 +38,7 @@ import uk.gov.hmrc.crypto.{ApplicationCrypto, PlainText}
 
 import scala.concurrent.Future
 
-class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSugar with BeforeAndAfterEach {
+class EmailResponseControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
 
   import EmailResponseControllerSpec._
 
@@ -90,7 +90,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with MustMatchers with M
       val result = controller
         .sendAuditEvents(requestId, encryptedPsaId, SchemeAdministratorType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
 
-      verify(mockAuditService, never()).sendEvent(any())(any(), any())
+      verify(mockAuditService, never).sendEvent(any())(any(), any())
       status(result) mustBe BAD_REQUEST
     }
   }

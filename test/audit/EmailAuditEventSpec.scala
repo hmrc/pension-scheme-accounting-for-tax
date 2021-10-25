@@ -17,12 +17,13 @@
 package audit
 
 import models.Sent
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
 import models.enumeration.SchemeAdministratorType
 import play.api.libs.json.{Json, JsObject}
 
-class EmailAuditEventSpec extends FlatSpec with Matchers {
+class EmailAuditEventSpec extends AnyFlatSpec with Matchers {
 
   "EmailAuditEvent" should "output the correct map of data" in {
 

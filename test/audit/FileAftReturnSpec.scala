@@ -17,10 +17,11 @@
 package audit
 
 import models.enumeration.JourneyType
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 import play.api.libs.json.{JsObject, Json}
 
-class FileAftReturnSpec extends FlatSpec with Matchers {
+class FileAftReturnSpec extends AnyFlatSpec with Matchers {
 
   "FileAftReturn.details" should "output the correct map of data" in {
 
