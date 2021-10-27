@@ -16,11 +16,11 @@
 
 package audit
 
-import org.mockito.ArgumentCaptor
-import org.mockito.Matchers.any
-import org.mockito.Mockito._
-import org.scalatest.{Inside, MustMatchers, WordSpec}
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.ArgumentMatchers.any
+import org.mockito.{ArgumentCaptor, MockitoSugar}
+import org.scalatest.Inside
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
@@ -34,7 +34,7 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class AuditServiceSpec extends WordSpec with MustMatchers with Inside {
+class AuditServiceSpec extends AnyWordSpec with Matchers with Inside {
 
   import AuditServiceSpec._
 
@@ -50,7 +50,7 @@ class AuditServiceSpec extends WordSpec with MustMatchers with Inside {
         .thenReturn(Future.successful(Success))
       auditService().sendEvent(event)
 
-      verify(mockAuditConnector, times(1)).sendExtendedEvent(templateCaptor.capture())
+      verify(mockAuditConnector, times(1)).sendExtendedEvent(templateCaptor.capture())(any(), any())
       inside(templateCaptor.getValue) {
         case ExtendedDataEvent(auditSource, auditType, _, _, detail, _) =>
           auditSource mustBe appName

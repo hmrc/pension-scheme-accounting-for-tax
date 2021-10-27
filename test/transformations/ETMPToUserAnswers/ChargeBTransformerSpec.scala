@@ -16,10 +16,12 @@
 
 package transformations.ETMPToUserAnswers
 
-import org.scalatest.FreeSpec
+import org.scalatest.OptionValues
+import org.scalatest.freespec.AnyFreeSpec
 import transformations.generators.AFTETMPResponseGenerators
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 
-class ChargeBTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
+class ChargeBTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
   "A Charge B Transformer" - {
     "must transform ChargeBDetails from ETMP ChargeTypeBDetails to UserAnswers" in {

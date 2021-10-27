@@ -18,10 +18,12 @@ package transformations.ETMPToUserAnswers
 
 import java.time.LocalDate
 
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 import transformations.generators.AFTETMPResponseGenerators
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
+import org.scalatest.OptionValues
 
-class ChargeFTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
+class ChargeFTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
   "A Charge F Transformer" - {
     "must transform ChargeFDetails from ETMP ChargeTypeFDetails to UserAnswers" in {

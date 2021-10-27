@@ -23,20 +23,17 @@ import uk.gov.hmrc.http.HeaderCarrier
 import java.util.UUID.randomUUID
 
 class HeaderUtils @Inject()(config: AppConfig) {
+
   val maxLengthCorrelationIdIF = 36
-  def desHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
-    val requestId = getCorrelationId
 
+  def desHeader: Seq[(String, String)] =
     Seq("Environment" -> config.desEnvironment, "Authorization" -> config.authorization,
-      "Content-Type" -> "application/json", "CorrelationId" -> requestId)
-  }
+      "Content-Type" -> "application/json", "CorrelationId" -> getCorrelationId)
 
-  def integrationFrameworkHeader(implicit hc: HeaderCarrier): Seq[(String, String)] = {
-
+  def integrationFrameworkHeader: Seq[(String, String)] =
     Seq("Environment" -> config.integrationframeworkEnvironment,
       "Authorization" -> config.integrationframeworkAuthorization,
       "Content-Type" -> "application/json", "CorrelationId" -> getCorrelationId)
-  }
 
   def getCorrelationId: String = randomUUID.toString.slice(0, maxLengthCorrelationIdIF)
 }

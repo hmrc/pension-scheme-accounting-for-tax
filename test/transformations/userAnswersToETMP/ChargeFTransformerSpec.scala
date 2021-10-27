@@ -17,11 +17,13 @@
 package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalatest.FreeSpec
 import play.api.libs.json.{JsObject, Json, __}
 import transformations.generators.AFTUserAnswersGenerators
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
+import org.scalatest.OptionValues
 
-class ChargeFTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+class ChargeFTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
   private val transformer = new ChargeFTransformer
 
   "A Charge F Transformer" - {

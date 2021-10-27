@@ -21,11 +21,12 @@ import java.time.LocalDate
 import connectors.DesConnector
 import models.enumeration.JourneyType
 import models.{AFTOverview, AFTVersion}
-import org.mockito.Matchers
-import org.mockito.Matchers.any
-import org.mockito.Mockito._
-import org.scalatest.{AsyncWordSpec, BeforeAndAfter, MustMatchers}
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatest.BeforeAndAfter
+import org.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
@@ -40,7 +41,7 @@ import utils.JsonFileReader
 
 import scala.concurrent.Future
 
-class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSugar with BeforeAndAfter with JsonFileReader {
+class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar with BeforeAndAfter with JsonFileReader {
 
   import AFTControllerSpec._
 
@@ -74,7 +75,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
   private def controllerForGetAftVersions: AFTController = {
 
     val controller = application.injector.instanceOf[AFTController]
-    when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
+    when(mockDesConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
       Future.successful(versions))
     controller
   }
@@ -131,9 +132,9 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.successful(Seq(AFTVersion(1, LocalDate.now(), "submitted"))))
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq("1"))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue(nonZeroCurrencyValue)))
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
@@ -171,7 +172,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
@@ -190,7 +191,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.successful(etmpAFTDetailsResponse))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -215,7 +216,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
 
       recoverToExceptionIf[BadRequestException] {
@@ -230,7 +231,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(UpstreamErrorResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
@@ -245,7 +246,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
@@ -260,7 +261,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.failed(new Exception("Generic Exception")))
 
       recoverToExceptionIf[Exception] {
@@ -277,7 +278,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.successful(etmpAFTDetailsResponse))
 
       val result = controller.getIsChargeNonZero()(fakeRequestForGetDetails)
@@ -290,7 +291,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(aftVer))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
         Future.successful(etmpAFTDetailsResponse))
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
 
@@ -308,7 +309,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftOverview(Matchers.eq(pstr), Matchers.eq(startDt), Matchers.eq(endDate))(any(), any()))
+      when(mockDesConnector.getAftOverview(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(endDate))(any(), any()))
         .thenReturn(Future.successful(aftOverview))
 
       val result = controller.getOverview()(fakeRequest
@@ -334,7 +335,7 @@ class AFTControllerSpec extends AsyncWordSpec with MustMatchers with MockitoSuga
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftVersions(Matchers.eq(pstr), Matchers.eq(startDt))(any(), any(), any())).thenReturn(
+      when(mockDesConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {

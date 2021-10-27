@@ -16,10 +16,11 @@
 
 package audit
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 import play.api.libs.json.{JsObject, Json}
 
-class FinancialInfoAuditServiceSpec extends FlatSpec with Matchers {
+class FinancialInfoAuditServiceSpec extends AnyFlatSpec with Matchers {
 
   val status: Int = 200
   val response: JsObject = Json.obj("name" -> "response")

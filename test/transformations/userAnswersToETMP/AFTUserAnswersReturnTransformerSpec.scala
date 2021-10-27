@@ -16,11 +16,12 @@
 
 package transformations.userAnswersToETMP
 
-import org.scalatest.FreeSpec
+import org.scalatest.OptionValues
+import org.scalatest.freespec.AnyFreeSpec
 import play.api.libs.json.Json
 import transformations.generators.AFTUserAnswersGenerators
 
-class AFTUserAnswersReturnTransformerSpec extends FreeSpec with AFTUserAnswersGenerators {
+class AFTUserAnswersReturnTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
 
   import AFTUserAnswersReturnTransformerSpec._
 

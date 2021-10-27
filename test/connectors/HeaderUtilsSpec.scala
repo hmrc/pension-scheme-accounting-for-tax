@@ -17,12 +17,13 @@
 package connectors
 
 import config.AppConfig
-import org.mockito.Mockito.when
-import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
-import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.http.{RequestId, HeaderCarrier}
+import org.mockito.MockitoSugar
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import uk.gov.hmrc.http.{HeaderCarrier, RequestId}
 
-class HeaderUtilsSpec extends WordSpec with MockitoSugar with MustMatchers with BeforeAndAfterEach {
+class HeaderUtilsSpec extends AnyWordSpec with MockitoSugar with Matchers with BeforeAndAfterEach {
   private val mockConfig = mock[AppConfig]
   private val headerUtils = new HeaderUtils(mockConfig)
   private val desEnv = "test-env-des"
@@ -41,7 +42,7 @@ class HeaderUtilsSpec extends WordSpec with MockitoSugar with MustMatchers with 
 
     "return the correct headers" in {
       val hc: HeaderCarrier = HeaderCarrier(requestId = Some(RequestId("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2df")))
-      val result = headerUtils.desHeader(hc)
+      val result = headerUtils.desHeader
       result.head mustBe "Environment" -> desEnv
       result(1) mustBe "Authorization" -> desAuth
       result(2) mustBe "Content-Type" -> "application/json"
@@ -52,7 +53,7 @@ class HeaderUtilsSpec extends WordSpec with MockitoSugar with MustMatchers with 
 
     "return the correct headers" in {
       val hc: HeaderCarrier = HeaderCarrier(requestId = Some(RequestId("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2df")))
-      val result = headerUtils.integrationFrameworkHeader(hc)
+      val result = headerUtils.integrationFrameworkHeader
       result.head mustBe "Environment" -> ifEnv
       result(1) mustBe "Authorization" -> ifAuth
       result(2) mustBe "Content-Type" -> "application/json"

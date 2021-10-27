@@ -16,11 +16,13 @@
 
 package transformations.ETMPToUserAnswers
 
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 import play.api.libs.json.{JsLookupResult, JsObject}
 import transformations.generators.AFTETMPResponseGenerators
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
+import org.scalatest.OptionValues
 
-class ChargeGTransformerSpec extends FreeSpec with AFTETMPResponseGenerators {
+class ChargeGTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
   "A Charge G Transformer" - {
     "must transform ChargeGDetails from ETMP ChargeGDetails to UserAnswers" in {

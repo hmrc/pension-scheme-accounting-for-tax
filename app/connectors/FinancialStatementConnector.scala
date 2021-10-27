@@ -44,8 +44,7 @@ class FinancialStatementConnector @Inject()(
 
     val url: String = config.psaFinancialStatementUrl.format(psaId)
 
-    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders =
-      headerUtils.integrationFrameworkHeader(implicitly[HeaderCarrier](headerCarrier)))
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
 
     lazy val financialStatementsTransformer: Reads[JsArray] =
       __.read[JsArray].map {
@@ -84,8 +83,7 @@ class FinancialStatementConnector @Inject()(
 
     val url: String = config.schemeFinancialStatementUrl.format(pstr)
 
-    implicit val hc: HeaderCarrier = HeaderCarrier(extraHeaders =
-      headerUtils.integrationFrameworkHeader(implicitly[HeaderCarrier](headerCarrier)))
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
 
     lazy val financialStatementsTransformer: Reads[JsArray] =
       __.read[JsArray].map {
