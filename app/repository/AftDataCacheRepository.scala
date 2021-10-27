@@ -48,23 +48,9 @@ class AftDataCacheRepository @Inject()(
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"))
 
   val collectionIndexes = Seq(
-    Index(
-      key = Seq(("uniqueAftId", IndexType.Ascending)),
-      name = Some("unique_Aft_Id"),
-      background = true,
-      unique = true
-    ),
-    Index(
-      key = Seq(("id", IndexType.Ascending)),
-      name = Some("srn_startDt_key"),
-      background = true
-    ),
-    Index(
-      key = Seq(("expireAt", IndexType.Ascending)),
-      name = Some("dataExpiry"),
-      background = true,
-      options = BSONDocument("expireAfterSeconds" -> 0)
-    )
+    Index(Seq(("uniqueAftId", IndexType.Ascending)), Some("unique_Aft_Id"), unique = true, background = true),
+    Index(Seq(("id", IndexType.Ascending)), Some("srn_startDt_key"), background = true),
+    Index(Seq(("expireAt", IndexType.Ascending)), Some("dataExpiry"), unique = true, options = BSONDocument("expireAfterSeconds" -> 0))
   )
 
   (for {

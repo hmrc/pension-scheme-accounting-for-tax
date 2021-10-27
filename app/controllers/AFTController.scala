@@ -54,18 +54,16 @@ class AFTController @Inject()(
     implicit request =>
 
       post { (pstr, userAnswersJson) =>
+
         logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
         userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
+
           case JsSuccess(dataToBeSendToETMP, _) =>
             logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-            desConnector.fileAFTReturn(
-              pstr,
-              journeyType.toString,
-              dataToBeSendToETMP
-            ).map {
-              response =>
+            desConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                 Ok(response.body)
             }
+
           case JsError(errors) =>
             throw JsResultException(errors)
         }
@@ -80,10 +78,9 @@ class AFTController @Inject()(
             desConnector.getAftDetails(pstr, startDate, aftVer).map {
               etmpJson =>
                 etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
-                  case JsSuccess(userAnswersJson, _) =>
-                    Ok(userAnswersJson)
-                  case JsError(errors) =>
-                    throw JsResultException(errors)
+
+                  case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
+                  case JsError(errors) => throw JsResultException(errors)
                 }
             }
           case _ =>
@@ -107,14 +104,15 @@ class AFTController @Inject()(
             desConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map { detailsJs =>
 
               detailsJs.transform(aftDetailsTransformer.transformToUserAnswers) match {
+
                 case JsSuccess(userAnswersJson, _) =>
 
                   (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
                     case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
                     case JsError(errors) => VersionsWithSubmitter(version, None)
                   }
-                case JsError(errors) =>
-                  throw JsResultException(errors)
+
+                case JsError(errors) => throw JsResultException(errors)
               }
             }
           })
