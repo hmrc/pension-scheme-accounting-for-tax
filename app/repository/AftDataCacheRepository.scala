@@ -18,18 +18,20 @@ package repository
 
 import com.google.inject.Inject
 import models.LockDetail
-import org.joda.time.{DateTime, DateTimeZone}
+import org.joda.time.{DateTimeZone, DateTime}
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.{Cursor, ReadPreference}
+import reactivemongo.api.{ReadPreference, Cursor}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import repository.model.{AftDataCache, SessionData}
+import repository.model.{SessionData, AftDataCache}
 import uk.gov.hmrc.mongo.ReactiveRepository
 
+import java.time.LocalDateTime
+import java.time.format.{FormatStyle, DateTimeFormatter}
 import scala.concurrent.{ExecutionContext, Future}
 
 class AftDataCacheRepository @Inject()(
@@ -106,9 +108,17 @@ class AftDataCacheRepository @Inject()(
       )
     )
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
+    logger.warn(s"SET SESSION DATA - before creation of modifier. Time = $now")
     val modifier = BSONDocument("$set" -> document)
-    collection.update.one(selector, modifier, upsert = true).map(_.ok)
+    logger.warn(s"SET SESSION DATA - before update of Mongo collection. Time = $now")
+    collection.update.one(selector, modifier, upsert = true).map{ result =>
+      logger.warn(s"SET SESSION DATA - after update of Mongo collection. Time = $now and result = ${result.ok}")
+      result.ok
+    }
   }
+
+  private def now: String =
+    LocalDateTime.now.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM))
 
   def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
     logger.debug("Calling getSessionData in AFT Cache")
