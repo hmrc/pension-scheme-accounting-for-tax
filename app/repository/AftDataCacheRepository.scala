@@ -108,11 +108,11 @@ class AftDataCacheRepository @Inject()(
       )
     )
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
-    logger.warn(s"SET SESSION DATA - before creation of modifier. Time = $now")
+    println(s"\nSET SESSION DATA - before creation of modifier. Time = $now")
     val modifier = BSONDocument("$set" -> document)
-    logger.warn(s"SET SESSION DATA - before update of Mongo collection. Time = $now")
+    println(s"\nSET SESSION DATA - before update of Mongo collection. Time = $now")
     collection.update.one(selector, modifier, upsert = true).map{ result =>
-      logger.warn(s"SET SESSION DATA - after update of Mongo collection. Time = $now and result = ${result.ok}")
+      println(s"\nSET SESSION DATA - after update of Mongo collection. Time = $now and result = ${result.ok}")
       result.ok
     }
   }
