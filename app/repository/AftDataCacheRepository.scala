@@ -107,6 +107,9 @@ class AftDataCacheRepository @Inject()(
         data = userData, expireAt = expireInSeconds
       )
     )
+
+    //waitAWhile
+
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     println(s"\nSET SESSION DATA - before creation of modifier. Time = $now")
     val modifier = BSONDocument("$set" -> document)
@@ -116,7 +119,11 @@ class AftDataCacheRepository @Inject()(
       result.ok
     }
   }
-
+  private def waitAWhile:Unit = {
+      println(s"\nWaiting a while. Going to sleep at $now")
+      Thread.sleep(45000)
+      println(s"\nWoken up at $now")
+  }
   private def now: String =
     LocalDateTime.now.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM))
 
