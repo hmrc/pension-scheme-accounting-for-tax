@@ -108,22 +108,16 @@ class AftDataCacheRepository @Inject()(
       )
     )
 
-    //waitAWhile
-
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
-    println(s"\nSET SESSION DATA - before creation of modifier. Time = $now")
+    logger.warn(s"SET SESSION DATA - before creation of modifier. Time = $now")
     val modifier = BSONDocument("$set" -> document)
-    println(s"\nSET SESSION DATA - before update of Mongo collection. Time = $now")
+    logger.warn(s"SET SESSION DATA - before update of Mongo collection. Time = $now")
     collection.update.one(selector, modifier, upsert = true).map{ result =>
-      println(s"\nSET SESSION DATA - after update of Mongo collection. Time = $now and result = ${result.ok}")
+      logger.warn(s"SET SESSION DATA - after update of Mongo collection. Time = $now and result = ${result.ok}")
       result.ok
     }
   }
-  private def waitAWhile:Unit = {
-      println(s"\nWaiting a while. Going to sleep at $now")
-      Thread.sleep(45000)
-      println(s"\nWoken up at $now")
-  }
+
   private def now: String =
     LocalDateTime.now.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM))
 
