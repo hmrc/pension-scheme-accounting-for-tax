@@ -54,9 +54,6 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="scala.Predef$" level="OFF"/>
-    <logger name="uk.gov.hmrc.audit" level="OFF"/>
-
     <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
