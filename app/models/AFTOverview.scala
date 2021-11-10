@@ -16,35 +16,64 @@
 
 package models
 
-import java.time.LocalDate
 import play.api.libs.functional.syntax._
+import play.api.libs.json._
 
-import play.api.libs.json.{Format, JsPath, Json, Reads}
+import java.time.LocalDate
+
+case class AFTOverviewVersion(
+                               numberOfVersions: Int,
+                               submittedVersionAvailable: Boolean,
+                               compiledVersionAvailable: Boolean
+                             )
+
+object AFTOverviewVersion {
+  implicit val rds: Reads[Option[AFTOverviewVersion]] =
+    (JsPath \ "tpssReportPresent").readNullable[String].flatMap {
+      case Some("Yes") => Reads(_ => JsSuccess(None))
+      case _ => (
+        (JsPath \ "numberOfVersions").read[Int] and
+          (JsPath \ "submittedVersionAvailable").read[String] and
+          (JsPath \ "compiledVersionAvailable").read[String]
+        ) (
+        (noOfVersions, isSubmitted, isCompiled) =>
+          Some(AFTOverviewVersion(
+            noOfVersions,
+            isSubmitted.equals("Yes"),
+            isCompiled.equals("Yes")
+          )))
+
+    }
+
+  implicit val formats: Format[AFTOverviewVersion] = Json.format[AFTOverviewVersion]
+}
 
 case class AFTOverview(
-                            periodStartDate: LocalDate,
-                            periodEndDate: LocalDate,
-                            numberOfVersions: Int,
-                            submittedVersionAvailable: Boolean,
-                            compiledVersionAvailable: Boolean
-                          )
+                        periodStartDate: LocalDate,
+                        periodEndDate: LocalDate,
+                        tpssReportPresent: Boolean,
+                        versionDetails: Option[AFTOverviewVersion]
+                      )
+
+
 
 object AFTOverview {
 
   implicit val rds: Reads[AFTOverview] = (
     (JsPath \ "periodStartDate").read[String] and
     (JsPath \ "periodEndDate").read[String] and
-    (JsPath \ "numberOfVersions").read[Int] and
-    (JsPath \ "submittedVersionAvailable").read[String] and
-    (JsPath \ "compiledVersionAvailable").read[String]
+      (JsPath \ "tpssReportPresent").readNullable[String].flatMap {
+        case Some("Yes") => Reads(_ => JsSuccess(true))
+        case _ => Reads(_ => JsSuccess(false))
+      } and
+      AFTOverviewVersion.rds
     ) (
-    (startDate, endDate, noOfVersions, isSubmitted, isCompiled) =>
+    (startDate, endDate, tpssReport, versionDetails) =>
     AFTOverview(
       LocalDate.parse(startDate),
       LocalDate.parse(endDate),
-      noOfVersions,
-      isSubmitted.equals("Yes"),
-      isCompiled.equals("Yes")
+      tpssReport,
+      versionDetails
     )
   )
 
