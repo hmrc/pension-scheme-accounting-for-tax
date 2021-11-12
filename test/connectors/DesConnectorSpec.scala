@@ -20,7 +20,7 @@ import java.time.LocalDate
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.enumeration.JourneyType
-import models.{AFTVersion, AFTOverview}
+import models.{AFTOverview, AFTOverviewVersion, AFTVersion}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.MockitoSugar
@@ -28,13 +28,13 @@ import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
-import play.api.libs.json.{Json, JsValue}
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import repository.AftDataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
-import utils.{WireMockHelper, JsonFileReader}
+import utils.{JsonFileReader, WireMockHelper}
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatest.matchers.must.Matchers
 
@@ -71,8 +71,12 @@ class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
   private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions?startDate=$startDt"
   private val getAftOverviewUrl = s"/pension-online/reports/overview/$pstr/AFT?fromDate=$startDt&toDate=$endDate"
   private val testCorrelationId = "testCorrelationId"
-  private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30), 3, false, true)
-  private val overview2 = AFTOverview(LocalDate.of(2020, 7, 1), LocalDate.of(2020, 10, 31), 2, true, true)
+  private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30),
+    tpssReportPresent = false,
+    Some(AFTOverviewVersion(3, false, true)))
+  private val overview2 = AFTOverview(LocalDate.of(2020, 7, 1), LocalDate.of(2020, 10, 31),
+    tpssReportPresent = false,
+    Some(AFTOverviewVersion(2, true, true)))
   private val aftOverview = Seq(overview1, overview2)
   private val journeyType = JourneyType.AFT_SUBMIT_RETURN.toString
 
@@ -577,9 +581,9 @@ class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
           )
       )
 
-        connector.getAftOverview(pstr, startDt, endDate) map { response =>
-          response mustEqual Seq.empty
-        }
+      connector.getAftOverview(pstr, startDt, endDate) map { response =>
+        response mustEqual Seq.empty
+      }
     }
 
     "return a NotFoundException for NOT FOUND - 404" in {

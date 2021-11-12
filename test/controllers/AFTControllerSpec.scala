@@ -17,10 +17,9 @@
 package controllers
 
 import java.time.LocalDate
-
 import connectors.DesConnector
 import models.enumeration.JourneyType
-import models.{AFTOverview, AFTVersion}
+import models.{AFTOverview, AFTOverviewVersion, AFTVersion}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.scalatest.matchers.must.Matchers
@@ -381,14 +380,14 @@ object AFTControllerSpec {
         "dateRegiWithdrawn" -> "1980-02-29"
       )
     ),
-    "aftDeclarationDetails" ->  Json.obj(
+    "aftDeclarationDetails" -> Json.obj(
       "submittedBy" -> "PSP",
       "submitterId" -> "10000240",
       "psaId" -> "A0003450",
       "submitterName" -> "Martin Brookes",
       "pspDeclarationDetails" -> Json.obj(
-        "pspDeclaration1" ->true,
-        "pspDeclaration2" ->true
+        "pspDeclaration1" -> true,
+        "pspDeclaration2" -> true
       )
     )
   )
@@ -403,8 +402,8 @@ object AFTControllerSpec {
     "schemeName" -> "PSTR Scheme",
     "chargeFDetails" -> Json.obj(
       "chargeDetails" -> Json.obj(
-      "totalAmount" -> 200.02,
-      "deRegistrationDate" -> "1980-02-29"
+        "totalAmount" -> 200.02,
+        "deRegistrationDate" -> "1980-02-29"
       ),
       "amendedVersion" -> 1
     ),
@@ -432,34 +431,42 @@ object AFTControllerSpec {
 
   val aftOverviewResponseJson: JsArray = Json.arr(
     Json.obj(
-      "periodStartDate"-> "2020-04-01",
-      "periodEndDate"-> "2020-06-30",
-      "numberOfVersions"-> 3,
-      "submittedVersionAvailable"-> false,
-      "compiledVersionAvailable"-> true
-    ),
+      "periodStartDate" -> "2020-04-01",
+      "periodEndDate" -> "2020-06-30",
+      "tpssReportPresent" -> false,
+      "versionDetails" -> Json.obj(
+      "numberOfVersions" -> 3,
+      "submittedVersionAvailable" -> false,
+      "compiledVersionAvailable" -> true
+    )),
     Json.obj(
-      "periodStartDate"-> "2020-07-01",
-      "periodEndDate"-> "2020-10-31",
-      "numberOfVersions"-> 2,
-      "submittedVersionAvailable"-> true,
-      "compiledVersionAvailable"-> true
-    )
+      "periodStartDate" -> "2020-07-01",
+      "periodEndDate" -> "2020-10-31",
+      "tpssReportPresent" -> false,
+      "versionDetails" -> Json.obj(
+      "numberOfVersions" -> 2,
+      "submittedVersionAvailable" -> true,
+      "compiledVersionAvailable" -> true
+    ))
   )
 
   private val overview1 = AFTOverview(
-      LocalDate.of(2020, 4, 1),
-      LocalDate.of(2020, 6, 30),
+    LocalDate.of(2020, 4, 1),
+    LocalDate.of(2020, 6, 30),
+    tpssReportPresent = false,
+    Some(AFTOverviewVersion(
       3,
       submittedVersionAvailable = false,
-      compiledVersionAvailable = true)
+      compiledVersionAvailable = true)))
 
   private val overview2 = AFTOverview(
-      LocalDate.of(2020, 7, 1),
-      LocalDate.of(2020, 10, 31),
+    LocalDate.of(2020, 7, 1),
+    LocalDate.of(2020, 10, 31),
+    tpssReportPresent = false,
+    Some(AFTOverviewVersion(
       2,
       submittedVersionAvailable = true,
-      compiledVersionAvailable = true)
+      compiledVersionAvailable = true)))
 
   private val aftOverview = Seq(overview1, overview2)
 
