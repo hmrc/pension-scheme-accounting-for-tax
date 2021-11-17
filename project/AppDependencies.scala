@@ -1,4 +1,5 @@
 import play.core.PlayVersion.current
+import play.sbt.PlayImport.ehcache
 import sbt._
 
 object AppDependencies {
@@ -7,7 +8,8 @@ object AppDependencies {
 
     "uk.gov.hmrc"             %% "simple-reactivemongo"       % "8.0.0-play-28",
     "uk.gov.hmrc"             %% "bootstrap-backend-play-28"  % "5.14.0",
-    "uk.gov.hmrc"             %% "domain"                     % "6.2.0-play-28"
+    "uk.gov.hmrc"             %% "domain"                     % "6.2.0-play-28",
+    ehcache
   )
 
   val test = Seq(
