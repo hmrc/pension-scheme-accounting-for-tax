@@ -18,7 +18,7 @@ package services
 
 import models.enumeration.{WithName, Enumerable}
 import play.api.libs.json._
-import services.BatchService.BatchType.{ChargeE, Header, ChargeC, ChargeG, ChargeD}
+import services.BatchService.BatchType.{ChargeE, Other, ChargeC, ChargeG, ChargeD}
 import helpers.JsonHelper._
 
 class BatchService {
@@ -26,7 +26,7 @@ class BatchService {
 
   def split(payload: JsObject, batchSize: Int): Seq[BatchInfo] = {
     val batchesHeader = Seq(
-      BatchInfo(Header, 1, getHeaderJsObject(payload))
+      BatchInfo(Other, 1, getHeaderJsObject(payload))
     )
     val batchesChargeC = getChargeJsArray(payload, nodeNameChargeC, nodeNameEmployers) match {
       case None => Nil
@@ -62,19 +62,17 @@ class BatchService {
     removeChargeNodes( payload, chargeNodes)
   }
 
-  private def removeChargeNodes(payload: JsObject, s: Seq[(String, String)]):JsObject = {
-    s.foldLeft[JsObject](payload){ (p, b) =>
-      (p \ b._1).toOption match {
-        case None => p
-        case _ => p.removeObject( JsPath \ b._1 \ b._2 ).getOrElse(p)
+  private def removeChargeNodes(payload: JsObject, nodeInfo: Seq[(String, String)]):JsObject = {
+    nodeInfo.foldLeft[JsObject](payload){ case (acc, Tuple2(nodeNameCharge, nodeNameJsArray)) =>
+      (acc \ nodeNameCharge).toOption match {
+        case None => acc
+        case _ => acc.removeObject( JsPath \ nodeNameCharge \ nodeNameJsArray ).getOrElse(acc)
       }
     }
   }
 
   private def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] = {
-    (payload \ node).toOption.flatMap{ xx =>
-      (xx.as[JsObject] \ arrayNode).asOpt[JsArray]
-    }
+    (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
   }
 
   def join(batches: Seq[BatchInfo], nonMemberJson: JsObject): JsObject = Json.obj()
@@ -93,12 +91,12 @@ object BatchService {
 
   sealed trait BatchType
   object BatchType extends Enumerable.Implicits {
-    case object Header extends WithName("header") with BatchType
+    case object Other extends WithName("other") with BatchType
     case object ChargeC extends WithName("chargeC") with BatchType
     case object ChargeD extends WithName("chargeD") with BatchType
     case object ChargeE extends WithName("chargeE") with BatchType
     case object ChargeG extends WithName("chargeG") with BatchType
   }
-JsArray
+
   case class BatchInfo(batchType: BatchType, batchNo: Int, jsValue: JsValue)
 }

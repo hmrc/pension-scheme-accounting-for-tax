@@ -37,7 +37,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     "return correct batch info with no member-based charges" in {
       val payload = payloadHeader ++ payloadChargeTypeA
       batchService.split(payload, batchSize) mustBe Seq(
-        BatchInfo(BatchType.Header, 1, payload)
+        BatchInfo(BatchType.Other, 1, payload)
       )
     }
 
@@ -45,7 +45,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payloadChargeC = payloadChargeTypeC(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeC
       batchService.split(payload, batchSize) mustBe Seq(
-        BatchInfo(BatchType.Header, 1,
+        BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeA ++
             concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC)
@@ -58,7 +58,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payloadChargeD = payloadChargeTypeD(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeB ++ payloadChargeD
       batchService.split(payload, batchSize) mustBe Seq(
-        BatchInfo(BatchType.Header, 1,
+        BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeB ++
             concatenateNodes(Seq(payloadChargeTypeDMinusMembers(numberOfItems = 1)), nodeNameChargeD)
@@ -71,7 +71,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payloadChargeE = payloadChargeTypeE(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeF ++ payloadChargeE
       batchService.split(payload, batchSize) mustBe Seq(
-        BatchInfo(BatchType.Header, 1,
+        BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeF ++
             concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 1)), nodeNameChargeE)
@@ -84,7 +84,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payloadChargeG = payloadChargeTypeG(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeG
       batchService.split(payload, batchSize) mustBe Seq(
-        BatchInfo(BatchType.Header, 1,
+        BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeA ++
             concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems = 1)), nodeNameChargeG)
@@ -102,7 +102,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
         payloadChargeC ++ payloadChargeD ++ payloadChargeE ++ payloadChargeG
       batchService.split(payload, batchSize) mustBe Seq(
-        BatchInfo(BatchType.Header, 1,
+        BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
             concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC) ++

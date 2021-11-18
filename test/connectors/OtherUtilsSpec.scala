@@ -23,7 +23,7 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import uk.gov.hmrc.http.{HeaderCarrier, RequestId}
 
-class HeaderUtilsSpec extends AnyWordSpec with MockitoSugar with Matchers with BeforeAndAfterEach {
+class OtherUtilsSpec extends AnyWordSpec with MockitoSugar with Matchers with BeforeAndAfterEach {
   private val mockConfig = mock[AppConfig]
   private val headerUtils = new HeaderUtils(mockConfig)
   private val desEnv = "test-env-des"
