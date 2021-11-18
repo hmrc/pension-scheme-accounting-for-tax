@@ -17,8 +17,8 @@
 package services
 
 import models.enumeration.{WithName, Enumerable}
-import play.api.libs.json.{JsObject, JsArray, JsValue, Json, JsPath}
-import services.BatchService.BatchType.{Header, ChargeC, ChargeD}
+import play.api.libs.json._
+import services.BatchService.BatchType.{ChargeE, Header, ChargeC, ChargeG, ChargeD}
 import helpers.JsonHelper._
 
 class BatchService {
@@ -38,7 +38,17 @@ class BatchService {
       case Some(jsArray) => Seq(BatchInfo(ChargeD, 1, jsArray))
     }
 
-    batchesHeader ++ batchesChargeC ++ batchesChargeD
+    val batchesChargeE = getChargeJsArray(payload, nodeNameChargeE, nodeNameMembers) match {
+      case None => Nil
+      case Some(jsArray) => Seq(BatchInfo(ChargeE, 1, jsArray))
+    }
+
+    val batchesChargeG = getChargeJsArray(payload, nodeNameChargeG, nodeNameMembers) match {
+      case None => Nil
+      case Some(jsArray) => Seq(BatchInfo(ChargeG, 1, jsArray))
+    }
+
+    batchesHeader ++ batchesChargeC ++ batchesChargeD ++ batchesChargeE ++ batchesChargeG
   }
 
   private val chargeNodes: Seq[(String, String)] = Seq(

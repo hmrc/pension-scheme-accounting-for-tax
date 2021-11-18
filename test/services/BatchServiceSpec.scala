@@ -66,6 +66,32 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         BatchInfo(BatchType.ChargeD, 1, payloadChargeTypeDMember(numberOfItems = 1))
       )
     }
+
+    "return correct value for payload with one scheme-based charge and one member-based charge: E" in {
+      val payloadChargeE = payloadChargeTypeE(numberOfItems = 1)
+      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeE
+      batchService.split(payload, batchSize) mustBe Seq(
+        BatchInfo(BatchType.Header, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++
+            concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 1)), nodeNameChargeE)
+        ),
+        BatchInfo(BatchType.ChargeE, 1, payloadChargeTypeEMember(numberOfItems = 1))
+      )
+    }
+
+    "return correct value for payload with one scheme-based charge and one member-based charge: G" in {
+      val payloadChargeG = payloadChargeTypeG(numberOfItems = 1)
+      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeG
+      batchService.split(payload, batchSize) mustBe Seq(
+        BatchInfo(BatchType.Header, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++
+            concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems = 1)), nodeNameChargeG)
+        ),
+        BatchInfo(BatchType.ChargeG, 1, payloadChargeTypeGMember(numberOfItems = 1))
+      )
+    }
   }
 }
 
@@ -250,12 +276,13 @@ object BatchServiceSpec {
     } else {
       Json.obj()
     }
-    val chargeNode = Json.obj(
+    concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems), membersNode), nodeNameChargeE)
+  }
+
+  private def payloadChargeTypeEMinusMembers(numberOfItems:Int):JsObject = {
+    Json.obj(
       "totalChargeAmount" -> 100 * numberOfItems,
       "addMembers" -> false
-    )
-    Json.obj(
-      "chargeEDetails" -> (chargeNode ++ membersNode)
     )
   }
 
@@ -303,12 +330,13 @@ object BatchServiceSpec {
     } else {
       Json.obj()
     }
-    val chargeNode = Json.obj(
+    concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems), membersNode), nodeNameChargeG)
+  }
+
+  private def payloadChargeTypeGMinusMembers(numberOfItems:Int):JsObject = {
+    Json.obj(
       "totalChargeAmount" -> 90 * numberOfItems,
       "addMembers" -> false
-    )
-    Json.obj(
-      "chargeGDetails" -> (chargeNode ++ membersNode)
     )
   }
 
