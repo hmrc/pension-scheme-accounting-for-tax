@@ -20,13 +20,23 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsObject, Json, JsArray}
 
+/*
+chargeA = Short service refund lump sum charge
+chargeB = Special lump sum death benefits charge
+chargeC = Auth surplus
+chargeD = Lifetime allowance charge
+chargeE = Annual allowance charge
+chargeF = De-registration charge
+chargeG = Overseas transfer charge
+ */
+
 class BatchServiceSpec extends AnyWordSpec with Matchers {
   import BatchServiceSpec._
   "a" must {
     "a" in {
 
       val xx = payloadHeader ++ payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeC(2) ++
-        payloadChargeTypeE(2) ++ payloadChargeTypeF ++ payloadChargeTypeG(2)
+        payloadChargeTypeD(2) ++ payloadChargeTypeE(2) ++ payloadChargeTypeF ++ payloadChargeTypeG(2)
 
       println( "\n>>" + xx)
       true mustBe true
@@ -179,6 +189,7 @@ object BatchServiceSpec {
                      |   "lastName" : "Spratt",
                      |   "nino" : "CS121212C"
                      |  },
+                     |  "annualAllowanceYear" : "2020",
                      |  "chargeDetails" : {
                      |   "chargeAmount" : 100.25,
                      |   "dateNoticeReceived" : "2020-01-01",
@@ -203,7 +214,7 @@ object BatchServiceSpec {
       "addMembers" -> false
     )
     Json.obj(
-      "chargeDDetails" -> (chargeNode ++ membersNode)
+      "chargeEDetails" -> (chargeNode ++ membersNode)
     )
   }
 
