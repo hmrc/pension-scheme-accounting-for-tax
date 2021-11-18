@@ -36,7 +36,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
   "split" must {
     "return correct batch info with no member-based charges" in {
       val payload = payloadHeader ++ payloadChargeTypeA
-      batchService.split(payload, batchSize) mustBe Seq(
+      batchService.split(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1, payload)
       )
     }
@@ -44,7 +44,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     "return correct batch info with one scheme-based charge (A) and one member-based charge (C)" in {
       val payloadChargeC = payloadChargeTypeC(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeC
-      batchService.split(payload, batchSize) mustBe Seq(
+      batchService.split(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeA ++
@@ -57,7 +57,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     "return correct batch info with one scheme-based charge (B) and one member-based charge (D)" in {
       val payloadChargeD = payloadChargeTypeD(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeB ++ payloadChargeD
-      batchService.split(payload, batchSize) mustBe Seq(
+      batchService.split(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeB ++
@@ -70,7 +70,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     "return correct batch info with one scheme-based charge (F) and one member-based charge (E)" in {
       val payloadChargeE = payloadChargeTypeE(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeF ++ payloadChargeE
-      batchService.split(payload, batchSize) mustBe Seq(
+      batchService.split(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeF ++
@@ -83,7 +83,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     "return correct batch info with one scheme-based charge (A) and one member-based charge (G)" in {
       val payloadChargeG = payloadChargeTypeG(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeG
-      batchService.split(payload, batchSize) mustBe Seq(
+      batchService.split(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeA ++
@@ -101,7 +101,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payload = payloadHeader ++
         payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
         payloadChargeC ++ payloadChargeD ++ payloadChargeE ++ payloadChargeG
-      batchService.split(payload, batchSize) mustBe Seq(
+      batchService.split(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadHeader ++
             payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++

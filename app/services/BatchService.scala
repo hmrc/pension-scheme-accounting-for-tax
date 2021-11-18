@@ -24,28 +24,28 @@ import helpers.JsonHelper._
 class BatchService {
   import BatchService._
 
-  def split(payload: JsObject, batchSize: Int): Seq[BatchInfo] = {
-    val batchesHeader = Seq(
+  def split(payload: JsObject, batchSize: Int): Set[BatchInfo] = {
+    val batchesHeader = Set(
       BatchInfo(Other, 1, getHeaderJsObject(payload))
     )
     val batchesChargeC = getChargeJsArray(payload, nodeNameChargeC, nodeNameEmployers) match {
       case None => Nil
-      case Some(jsArray) => Seq(BatchInfo(ChargeC, 1, jsArray))
+      case Some(jsArray) => Set(BatchInfo(ChargeC, 1, jsArray))
     }
 
     val batchesChargeD = getChargeJsArray(payload, nodeNameChargeD, nodeNameMembers) match {
       case None => Nil
-      case Some(jsArray) => Seq(BatchInfo(ChargeD, 1, jsArray))
+      case Some(jsArray) => Set(BatchInfo(ChargeD, 1, jsArray))
     }
 
     val batchesChargeE = getChargeJsArray(payload, nodeNameChargeE, nodeNameMembers) match {
       case None => Nil
-      case Some(jsArray) => Seq(BatchInfo(ChargeE, 1, jsArray))
+      case Some(jsArray) => Set(BatchInfo(ChargeE, 1, jsArray))
     }
 
     val batchesChargeG = getChargeJsArray(payload, nodeNameChargeG, nodeNameMembers) match {
       case None => Nil
-      case Some(jsArray) => Seq(BatchInfo(ChargeG, 1, jsArray))
+      case Some(jsArray) => Set(BatchInfo(ChargeG, 1, jsArray))
     }
 
     batchesHeader ++ batchesChargeC ++ batchesChargeD ++ batchesChargeE ++ batchesChargeG
