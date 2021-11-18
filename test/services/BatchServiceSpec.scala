@@ -116,7 +116,7 @@ object BatchServiceSpec {
                      |  },
                      |  "chargeDetails" : {
                      |   "paymentDate" : "2020-04-01",
-                     |   "amountTaxDue" : 50.45
+                     |   "amountTaxDue" : 33.00
                      |  }
                      | }
                      |""".stripMargin).as[JsObject]
@@ -133,7 +133,7 @@ object BatchServiceSpec {
       Json.obj()
     }
     val chargeNode = Json.obj(
-      "totalChargeAmount" -> 50.45,
+      "totalChargeAmount" -> 33 * numberOfItems,
       "addEmployers" -> false
     )
     Json.obj(
@@ -154,7 +154,7 @@ object BatchServiceSpec {
                      |  "chargeDetails" : {
                      |   "dateOfEvent" : "2020-04-01",
                      |   "taxAt25Percent" : 36.55,
-                     |   "taxAt55Percent" : 12.2
+                     |   "taxAt55Percent" : 13.45
                      |  }
                      | }
                      |""".stripMargin).as[JsObject]
@@ -171,7 +171,7 @@ object BatchServiceSpec {
       Json.obj()
     }
     val chargeNode = Json.obj(
-      "totalChargeAmount" -> 48.75,
+      "totalChargeAmount" -> 50 * numberOfItems,
       "addMembers" -> false
     )
     Json.obj(
@@ -191,7 +191,7 @@ object BatchServiceSpec {
                      |  },
                      |  "annualAllowanceYear" : "2020",
                      |  "chargeDetails" : {
-                     |   "chargeAmount" : 100.25,
+                     |   "chargeAmount" : 100.00,
                      |   "dateNoticeReceived" : "2020-01-01",
                      |   "isPaymentMandatory" : true
                      |  }
@@ -210,7 +210,7 @@ object BatchServiceSpec {
       Json.obj()
     }
     val chargeNode = Json.obj(
-      "totalChargeAmount" -> 100.25,
+      "totalChargeAmount" -> 100 * numberOfItems,
       "addMembers" -> false
     )
     Json.obj(
@@ -246,7 +246,7 @@ object BatchServiceSpec {
                      |  },
                      |  "chargeAmounts" : {
                      |   "amountTransferred" : 12.56,
-                     |   "amountTaxDue" : 89.34
+                     |   "amountTaxDue" : 90.00
                      |  }
                      | }
                      |""".stripMargin).as[JsObject]
@@ -263,7 +263,7 @@ object BatchServiceSpec {
       Json.obj()
     }
     val chargeNode = Json.obj(
-      "totalChargeAmount" -> 89.34,
+      "totalChargeAmount" -> 90 * numberOfItems,
       "addMembers" -> false
     )
     Json.obj(
