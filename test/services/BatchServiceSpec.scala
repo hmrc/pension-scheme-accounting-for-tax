@@ -34,6 +34,21 @@ chargeG = Overseas transfer charge
 class BatchServiceSpec extends AnyWordSpec with Matchers {
   import BatchServiceSpec._
   "split" must {
+
+    "return correct batch info with empty payload" in {
+      val payload = Json.obj()
+      batchService.split(payload, batchSize) mustBe Set(
+        BatchInfo(BatchType.Other, 1, payload)
+      )
+    }
+
+    "return correct batch info with no charges at all" in {
+      val payload = payloadHeader
+      batchService.split(payload, batchSize) mustBe Set(
+        BatchInfo(BatchType.Other, 1, payload)
+      )
+    }
+
     "return correct batch info with no member-based charges" in {
       val payload = payloadHeader ++ payloadChargeTypeA
       batchService.split(payload, batchSize) mustBe Set(
@@ -361,7 +376,4 @@ object BatchServiceSpec {
       "addMembers" -> false
     )
   }
-
-  private val fullPayload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeC(2) ++
-    payloadChargeTypeD(2) ++ payloadChargeTypeE(2) ++ payloadChargeTypeF ++ payloadChargeTypeG(2)
 }
