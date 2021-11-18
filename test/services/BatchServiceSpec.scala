@@ -34,14 +34,14 @@ chargeG = Overseas transfer charge
 class BatchServiceSpec extends AnyWordSpec with Matchers {
   import BatchServiceSpec._
   "split" must {
-    "return correct value for payload with no member-based charges" in {
+    "return correct batch info with no member-based charges" in {
       val payload = payloadHeader ++ payloadChargeTypeA
       batchService.split(payload, batchSize) mustBe Seq(
         BatchInfo(BatchType.Header, 1, payload)
       )
     }
 
-    "return correct value for payload with one scheme-based charge and one member-based charge: C" in {
+    "return correct batch info with one scheme-based charge (A) and one member-based charge (C)" in {
       val payloadChargeC = payloadChargeTypeC(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeC
       batchService.split(payload, batchSize) mustBe Seq(
@@ -54,33 +54,33 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       )
     }
 
-    "return correct value for payload with one scheme-based charge and one member-based charge: D" in {
+    "return correct batch info with one scheme-based charge (B) and one member-based charge (D)" in {
       val payloadChargeD = payloadChargeTypeD(numberOfItems = 1)
-      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeD
+      val payload = payloadHeader ++ payloadChargeTypeB ++ payloadChargeD
       batchService.split(payload, batchSize) mustBe Seq(
         BatchInfo(BatchType.Header, 1,
           payloadHeader ++
-            payloadChargeTypeA ++
+            payloadChargeTypeB ++
             concatenateNodes(Seq(payloadChargeTypeDMinusMembers(numberOfItems = 1)), nodeNameChargeD)
         ),
         BatchInfo(BatchType.ChargeD, 1, payloadChargeTypeDMember(numberOfItems = 1))
       )
     }
 
-    "return correct value for payload with one scheme-based charge and one member-based charge: E" in {
+    "return correct batch info with one scheme-based charge (F) and one member-based charge (E)" in {
       val payloadChargeE = payloadChargeTypeE(numberOfItems = 1)
-      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeE
+      val payload = payloadHeader ++ payloadChargeTypeF ++ payloadChargeE
       batchService.split(payload, batchSize) mustBe Seq(
         BatchInfo(BatchType.Header, 1,
           payloadHeader ++
-            payloadChargeTypeA ++
+            payloadChargeTypeF ++
             concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 1)), nodeNameChargeE)
         ),
         BatchInfo(BatchType.ChargeE, 1, payloadChargeTypeEMember(numberOfItems = 1))
       )
     }
 
-    "return correct value for payload with one scheme-based charge and one member-based charge: G" in {
+    "return correct batch info with one scheme-based charge (A) and one member-based charge (G)" in {
       val payloadChargeG = payloadChargeTypeG(numberOfItems = 1)
       val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeG
       batchService.split(payload, batchSize) mustBe Seq(
@@ -89,6 +89,30 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
             payloadChargeTypeA ++
             concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems = 1)), nodeNameChargeG)
         ),
+        BatchInfo(BatchType.ChargeG, 1, payloadChargeTypeGMember(numberOfItems = 1))
+      )
+    }
+
+    "return correct batch info with all three scheme-based charges and all four member-based charges" in {
+      val payloadChargeC = payloadChargeTypeC(numberOfItems = 1)
+      val payloadChargeD = payloadChargeTypeD(numberOfItems = 1)
+      val payloadChargeE = payloadChargeTypeE(numberOfItems = 1)
+      val payloadChargeG = payloadChargeTypeG(numberOfItems = 1)
+      val payload = payloadHeader ++
+        payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
+        payloadChargeC ++ payloadChargeD ++ payloadChargeE ++ payloadChargeG
+      batchService.split(payload, batchSize) mustBe Seq(
+        BatchInfo(BatchType.Header, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
+            concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC) ++
+            concatenateNodes(Seq(payloadChargeTypeDMinusMembers(numberOfItems = 1)), nodeNameChargeD) ++
+            concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 1)), nodeNameChargeE) ++
+            concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems = 1)), nodeNameChargeG)
+        ),
+        BatchInfo(BatchType.ChargeC, 1, payloadChargeTypeCEmployer(numberOfItems = 1)),
+        BatchInfo(BatchType.ChargeD, 1, payloadChargeTypeDMember(numberOfItems = 1)),
+        BatchInfo(BatchType.ChargeE, 1, payloadChargeTypeEMember(numberOfItems = 1)),
         BatchInfo(BatchType.ChargeG, 1, payloadChargeTypeGMember(numberOfItems = 1))
       )
     }
@@ -103,9 +127,7 @@ object BatchServiceSpec {
   private def intToString(c:Int):String = ('A' + c - 1).toChar.toString
 
   private def concatenateNodes(nodes: Seq[JsObject], nodeName:String): JsObject = {
-    val allNodes = nodes.foldLeft(Json.obj()) { (a,b) =>
-      a ++ b
-    }
+    val allNodes = nodes.foldLeft(Json.obj()) { (a,b) => a ++ b }
     Json.obj(
       nodeName -> allNodes
     )
