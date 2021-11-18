@@ -228,7 +228,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         BatchInfo(BatchType.ChargeG, 1, JsArray( Seq(jsArrayChargeG(0), jsArrayChargeG(1)))),
         BatchInfo(BatchType.ChargeG, 2, JsArray( Seq(jsArrayChargeG(2), jsArrayChargeG(3)))),
         BatchInfo(BatchType.ChargeG, 3, JsArray( Seq(jsArrayChargeG(Four), jsArrayChargeG(Five)))),
-        BatchInfo(BatchType.ChargeG, 4, JsArray( Seq(jsArrayChargeG(Six))))
+        BatchInfo(BatchType.ChargeG, Four, JsArray( Seq(jsArrayChargeG(Six))))
       )
     }
   }
