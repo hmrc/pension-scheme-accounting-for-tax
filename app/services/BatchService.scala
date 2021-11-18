@@ -16,23 +16,79 @@
 
 package services
 
-import play.api.libs.json.{JsObject, JsArray, Json}
+import models.enumeration.{WithName, Enumerable}
+import play.api.libs.json.{JsObject, JsArray, JsValue, Json, JsPath}
+import services.BatchService.BatchType.{Header, ChargeC, ChargeD}
+import helpers.JsonHelper._
 
 class BatchService {
   import BatchService._
 
-  def split(payload: JsObject, batchSize: Int): Seq[BatchInfo] = Nil
+  def split(payload: JsObject, batchSize: Int): Seq[BatchInfo] = {
+    val batchesHeader = Seq(
+      BatchInfo(Header, 1, getHeaderJsObject(payload))
+    )
+    val batchesChargeC = getChargeJsArray(payload, nodeNameChargeC, nodeNameEmployers) match {
+      case None => Nil
+      case Some(jsArray) => Seq(BatchInfo(ChargeC, 1, jsArray))
+    }
 
-  def extractNonMemberJson(payload: JsObject): JsObject = Json.obj()
+    val batchesChargeD = getChargeJsArray(payload, nodeNameChargeD, nodeNameMembers) match {
+      case None => Nil
+      case Some(jsArray) => Seq(BatchInfo(ChargeD, 1, jsArray))
+    }
+
+    batchesHeader ++ batchesChargeC ++ batchesChargeD
+  }
+
+  private val chargeNodes: Seq[(String, String)] = Seq(
+    (nodeNameChargeC, nodeNameEmployers),
+    (nodeNameChargeD, nodeNameMembers),
+    (nodeNameChargeE, nodeNameMembers),
+    (nodeNameChargeG, nodeNameMembers),
+  )
+
+  private def getHeaderJsObject(payload: JsObject): JsObject = {
+    removeChargeNodes( payload, chargeNodes)
+  }
+
+  private def removeChargeNodes(payload: JsObject, s: Seq[(String, String)]):JsObject = {
+    s.foldLeft[JsObject](payload){ (p, b) =>
+      (p \ b._1).toOption match {
+        case None => p
+        case _ => p.removeObject( JsPath \ b._1 \ b._2 ).getOrElse(p)
+      }
+    }
+  }
+
+  private def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] = {
+    (payload \ node).toOption.flatMap{ xx =>
+      (xx.as[JsObject] \ arrayNode).asOpt[JsArray]
+    }
+  }
 
   def join(batches: Seq[BatchInfo], nonMemberJson: JsObject): JsObject = Json.obj()
 }
 
 object BatchService {
-  object ChargeType extends Enumeration {
-    type ChargeType = Value
-    val ChargeTypeA, ChargeTypeB, ChargeTypeC, ChargeTypeD, ChargeTypeE, ChargeTypeF, ChargeTypeG = Value
-  }
+  // scalastyle.off: magic.number
 
-  case class BatchInfo(chargeType: ChargeType.ChargeType, batchNo: Int, jsArray: JsArray)
+  private val nodeNameChargeC = "chargeCDetails"
+  private val nodeNameChargeD = "chargeDDetails"
+  private val nodeNameChargeE = "chargeEDetails"
+  private val nodeNameChargeG = "chargeGDetails"
+
+  private val nodeNameEmployers = "employers"
+  private val nodeNameMembers = "members"
+
+  sealed trait BatchType
+  object BatchType extends Enumerable.Implicits {
+    case object Header extends WithName("header") with BatchType
+    case object ChargeC extends WithName("chargeC") with BatchType
+    case object ChargeD extends WithName("chargeD") with BatchType
+    case object ChargeE extends WithName("chargeE") with BatchType
+    case object ChargeG extends WithName("chargeG") with BatchType
+  }
+JsArray
+  case class BatchInfo(batchType: BatchType, batchNo: Int, jsValue: JsValue)
 }

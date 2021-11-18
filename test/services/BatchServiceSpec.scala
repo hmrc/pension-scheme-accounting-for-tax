@@ -18,7 +18,8 @@ package services
 
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.must.Matchers
-import play.api.libs.json.{JsObject, Json, JsArray}
+import play.api.libs.json.{JsObject, JsArray, Json}
+import services.BatchService.{BatchInfo, BatchType}
 
 /*
 chargeA = Short service refund lump sum charge
@@ -32,22 +33,62 @@ chargeG = Overseas transfer charge
 
 class BatchServiceSpec extends AnyWordSpec with Matchers {
   import BatchServiceSpec._
-  "a" must {
-    "a" in {
+  "split" must {
+    "return correct value for payload with no member-based charges" in {
+      val payload = payloadHeader ++ payloadChargeTypeA
+      batchService.split(payload, batchSize) mustBe Seq(
+        BatchInfo(BatchType.Header, 1, payload)
+      )
+    }
 
-      val xx = payloadHeader ++ payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeC(2) ++
-        payloadChargeTypeD(2) ++ payloadChargeTypeE(2) ++ payloadChargeTypeF ++ payloadChargeTypeG(2)
+    "return correct value for payload with one scheme-based charge and one member-based charge: C" in {
+      val payloadChargeC = payloadChargeTypeC(numberOfItems = 1)
+      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeC
+      batchService.split(payload, batchSize) mustBe Seq(
+        BatchInfo(BatchType.Header, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++
+            concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC)
+        ),
+        BatchInfo(BatchType.ChargeC, 1, payloadChargeTypeCEmployer(numberOfItems = 1))
+      )
+    }
 
-      println( "\n>>" + xx)
-      true mustBe true
+    "return correct value for payload with one scheme-based charge and one member-based charge: D" in {
+      val payloadChargeD = payloadChargeTypeD(numberOfItems = 1)
+      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeD
+      batchService.split(payload, batchSize) mustBe Seq(
+        BatchInfo(BatchType.Header, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++
+            concatenateNodes(Seq(payloadChargeTypeDMinusMembers(numberOfItems = 1)), nodeNameChargeD)
+        ),
+        BatchInfo(BatchType.ChargeD, 1, payloadChargeTypeDMember(numberOfItems = 1))
+      )
     }
   }
-
 }
 
 object BatchServiceSpec {
 
+  private val batchSize = 2
+  private val batchService = new BatchService
+
   private def intToString(c:Int):String = ('A' + c - 1).toChar.toString
+
+  private def concatenateNodes(nodes: Seq[JsObject], nodeName:String): JsObject = {
+    val allNodes = nodes.foldLeft(Json.obj()) { (a,b) =>
+      a ++ b
+    }
+    Json.obj(
+      nodeName -> allNodes
+    )
+  }
+
+  private val nodeNameChargeC = "chargeCDetails"
+  private val nodeNameChargeD = "chargeDDetails"
+  private val nodeNameChargeE = "chargeEDetails"
+  private val nodeNameChargeG = "chargeGDetails"
 
   private val payloadHeader = {
     Json.obj(
@@ -95,8 +136,6 @@ object BatchServiceSpec {
                 | }
                 |""".stripMargin).as[JsObject]
 
-
-
   private def payloadChargeTypeCEmployer(numberOfItems:Int):JsArray = {
     JsArray(
       (1 to numberOfItems) map { item =>
@@ -132,12 +171,13 @@ object BatchServiceSpec {
     } else {
       Json.obj()
     }
-    val chargeNode = Json.obj(
+    concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems), employersNode), nodeNameChargeC)
+  }
+
+  private def payloadChargeTypeCMinusEmployers(numberOfItems:Int):JsObject = {
+    Json.obj(
       "totalChargeAmount" -> 33 * numberOfItems,
       "addEmployers" -> false
-    )
-    Json.obj(
-      "chargeCDetails" -> (chargeNode ++ employersNode)
     )
   }
 
@@ -170,12 +210,13 @@ object BatchServiceSpec {
     } else {
       Json.obj()
     }
-    val chargeNode = Json.obj(
+    concatenateNodes(Seq(payloadChargeTypeDMinusMembers(numberOfItems), membersNode), nodeNameChargeD)
+  }
+
+  private def payloadChargeTypeDMinusMembers(numberOfItems:Int):JsObject = {
+    Json.obj(
       "totalChargeAmount" -> 50 * numberOfItems,
       "addMembers" -> false
-    )
-    Json.obj(
-      "chargeDDetails" -> (chargeNode ++ membersNode)
     )
   }
 
@@ -270,4 +311,7 @@ object BatchServiceSpec {
       "chargeGDetails" -> (chargeNode ++ membersNode)
     )
   }
+
+  private val fullPayload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeC(2) ++
+    payloadChargeTypeD(2) ++ payloadChargeTypeE(2) ++ payloadChargeTypeF ++ payloadChargeTypeG(2)
 }
