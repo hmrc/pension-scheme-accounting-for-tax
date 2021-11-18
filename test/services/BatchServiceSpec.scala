@@ -32,8 +32,9 @@ chargeG = Overseas transfer charge
  */
 
 class BatchServiceSpec extends AnyWordSpec with Matchers {
+  // scalastyle.off: magic.number
   import BatchServiceSpec._
-  "split" must {
+  "split (with batch size set to 2)" must {
 
     "return correct batch info with empty payload" in {
       val payload = Json.obj()
@@ -131,13 +132,115 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         BatchInfo(BatchType.ChargeG, 1, payloadChargeTypeGMember(numberOfItems = 1))
       )
     }
+
+    "return correct batch info with one scheme-based charge (A) and three member-based charges (C)" in {
+      val payloadChargeC = payloadChargeTypeC(numberOfItems = 3)
+      val jsArray = payloadChargeTypeCEmployer(numberOfItems = 3)
+      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeC
+      batchService.split(payload, batchSize) mustBe Set(
+        BatchInfo(BatchType.Other, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++
+            concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 3)), nodeNameChargeC)
+        ),
+        BatchInfo(BatchType.ChargeC, 1, JsArray( Seq(jsArray(0), jsArray(1)))),
+        BatchInfo(BatchType.ChargeC, 2, JsArray( Seq(jsArray(2))))
+      )
+    }
+
+    "return correct batch info with one scheme-based charge (A) and three member-based charges (D)" in {
+      val payloadChargeD = payloadChargeTypeD(numberOfItems = 3)
+      val jsArray = payloadChargeTypeDMember(numberOfItems = 3)
+      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeD
+      batchService.split(payload, batchSize) mustBe Set(
+        BatchInfo(BatchType.Other, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++
+            concatenateNodes(Seq(payloadChargeTypeDMinusMembers(numberOfItems = 3)), nodeNameChargeD)
+        ),
+        BatchInfo(BatchType.ChargeD, 1, JsArray( Seq(jsArray(0), jsArray(1)))),
+        BatchInfo(BatchType.ChargeD, 2, JsArray( Seq(jsArray(2))))
+      )
+    }
+
+    "return correct batch info with one scheme-based charge (A) and three member-based charges (E)" in {
+      val payloadChargeE = payloadChargeTypeE(numberOfItems = 3)
+      val jsArray = payloadChargeTypeEMember(numberOfItems = 3)
+      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeE
+      batchService.split(payload, batchSize) mustBe Set(
+        BatchInfo(BatchType.Other, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++
+            concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 3)), nodeNameChargeE)
+        ),
+        BatchInfo(BatchType.ChargeE, 1, JsArray( Seq(jsArray(0), jsArray(1)))),
+        BatchInfo(BatchType.ChargeE, 2, JsArray( Seq(jsArray(2))))
+      )
+    }
+
+    "return correct batch info with one scheme-based charge (A) and three member-based charges (G)" in {
+      val payloadChargeG = payloadChargeTypeG(numberOfItems = 3)
+      val jsArray = payloadChargeTypeGMember(numberOfItems = 3)
+      val payload = payloadHeader ++ payloadChargeTypeA ++ payloadChargeG
+      batchService.split(payload, batchSize) mustBe Set(
+        BatchInfo(BatchType.Other, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++
+            concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems = 3)), nodeNameChargeG)
+        ),
+        BatchInfo(BatchType.ChargeG, 1, JsArray( Seq(jsArray(0), jsArray(1)))),
+        BatchInfo(BatchType.ChargeG, 2, JsArray( Seq(jsArray(2))))
+      )
+    }
+
+    "return correct batch info with all three scheme-based charges and various nos of items in all four member-based charges" in {
+      val payloadChargeC = payloadChargeTypeC(numberOfItems = Five)
+      val payloadChargeD = payloadChargeTypeD(numberOfItems = Four)
+      val payloadChargeE = payloadChargeTypeE(numberOfItems = 2)
+      val payloadChargeG = payloadChargeTypeG(numberOfItems = Seven)
+
+      val jsArrayChargeC = payloadChargeTypeCEmployer(numberOfItems = Five)
+      val jsArrayChargeD = payloadChargeTypeDMember(numberOfItems = Four)
+      val jsArrayChargeE = payloadChargeTypeEMember(numberOfItems = 2)
+      val jsArrayChargeG = payloadChargeTypeGMember(numberOfItems = Seven)
+
+      val payload = payloadHeader ++
+        payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
+        payloadChargeC ++ payloadChargeD ++ payloadChargeE ++ payloadChargeG
+      batchService.split(payload, batchSize) mustBe Set(
+        BatchInfo(BatchType.Other, 1,
+          payloadHeader ++
+            payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
+            concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = Five)), nodeNameChargeC) ++
+            concatenateNodes(Seq(payloadChargeTypeDMinusMembers(numberOfItems = Four)), nodeNameChargeD) ++
+            concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 2)), nodeNameChargeE) ++
+            concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems = Seven)), nodeNameChargeG)
+        ),
+        BatchInfo(BatchType.ChargeC, 1, JsArray( Seq(jsArrayChargeC(0), jsArrayChargeC(1)))),
+        BatchInfo(BatchType.ChargeC, 2, JsArray( Seq(jsArrayChargeC(2), jsArrayChargeC(3)))),
+        BatchInfo(BatchType.ChargeC, 3, JsArray( Seq(jsArrayChargeC(Four)))),
+
+        BatchInfo(BatchType.ChargeD, 1, JsArray( Seq(jsArrayChargeD(0), jsArrayChargeD(1)))),
+        BatchInfo(BatchType.ChargeD, 2, JsArray( Seq(jsArrayChargeD(2), jsArrayChargeD(3)))),
+
+        BatchInfo(BatchType.ChargeE, 1, JsArray( Seq(jsArrayChargeE(0), jsArrayChargeE(1)))),
+
+        BatchInfo(BatchType.ChargeG, 1, JsArray( Seq(jsArrayChargeG(0), jsArrayChargeG(1)))),
+        BatchInfo(BatchType.ChargeG, 2, JsArray( Seq(jsArrayChargeG(2), jsArrayChargeG(3)))),
+        BatchInfo(BatchType.ChargeG, 3, JsArray( Seq(jsArrayChargeG(Four), jsArrayChargeG(Five)))),
+        BatchInfo(BatchType.ChargeG, 4, JsArray( Seq(jsArrayChargeG(Six))))
+      )
+    }
   }
 }
 
 object BatchServiceSpec {
-
   private val batchSize = 2
   private val batchService = new BatchService
+  private val Four:Int = 4
+  private val Five:Int = 5
+  private val Six:Int = 6
+  private val Seven:Int = 7
 
   private def intToString(c:Int):String = ('A' + c - 1).toChar.toString
 

@@ -30,25 +30,35 @@ class BatchService {
     )
     val batchesChargeC = getChargeJsArray(payload, nodeNameChargeC, nodeNameEmployers) match {
       case None => Nil
-      case Some(jsArray) => Set(BatchInfo(ChargeC, 1, jsArray))
+      case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ChargeC)
     }
 
     val batchesChargeD = getChargeJsArray(payload, nodeNameChargeD, nodeNameMembers) match {
       case None => Nil
-      case Some(jsArray) => Set(BatchInfo(ChargeD, 1, jsArray))
+      case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ChargeD)
     }
 
     val batchesChargeE = getChargeJsArray(payload, nodeNameChargeE, nodeNameMembers) match {
       case None => Nil
-      case Some(jsArray) => Set(BatchInfo(ChargeE, 1, jsArray))
+      case Some(jsArray) =>  splitJsArrayIntoBatches(jsArray, batchSize, ChargeE)
     }
 
     val batchesChargeG = getChargeJsArray(payload, nodeNameChargeG, nodeNameMembers) match {
       case None => Nil
-      case Some(jsArray) => Set(BatchInfo(ChargeG, 1, jsArray))
+      case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ChargeG)
     }
 
     batchesHeader ++ batchesChargeC ++ batchesChargeD ++ batchesChargeE ++ batchesChargeG
+  }
+
+  private def splitJsArrayIntoBatches(jsArray:JsArray, batchSize: Int, batchType: BatchType):Set[BatchInfo] = {
+    val lastItem = jsArray.value.size - 1
+    val maxBatch = (jsArray.value.size.toFloat / batchSize).ceil.toInt - 1
+    (0 to maxBatch).map{ index =>
+      val start = index * batchSize
+      val end = Math.min(start + batchSize, lastItem + 1)
+      BatchInfo(batchType, index + 1, JsArray(jsArray.value.slice(start, end)))
+    }.toSet
   }
 
   private val chargeNodes: Seq[(String, String)] = Seq(
