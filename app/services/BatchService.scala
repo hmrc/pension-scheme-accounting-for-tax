@@ -18,7 +18,7 @@ package services
 
 import models.enumeration.{WithName, Enumerable}
 import play.api.libs.json._
-import services.BatchService.BatchType.{ChargeE, Other, ChargeC, ChargeG, ChargeD}
+import services.BatchService.BatchType.{ChargeE, Other, ChargeC, ChargeG, SessionData, ChargeD}
 import helpers.JsonHelper._
 
 class BatchService {
@@ -26,7 +26,7 @@ class BatchService {
 
   def createBatches(userDataPayload: JsObject, userDataBatchSize: Int, sessionDataPayload:Option[JsObject] = None): Set[BatchInfo] = {
     val batchInfoSessionDataSeq = sessionDataPayload match {
-      case Some(jsObject) => Seq(BatchInfo(BatchType.SessionData, 1, jsObject))
+      case Some(jsObject) => Seq(BatchInfo(SessionData, 1, jsObject))
       case _ => Nil
     }
     Set(BatchInfo(Other, 1, getOtherJsObject(userDataPayload))) ++
@@ -54,7 +54,7 @@ class BatchService {
   }
 
   def createSessionDataPayload(batches: Seq[BatchInfo]): Option[JsObject] =
-    batches.find(_.batchType == BatchType.SessionData).map(_.jsValue.as[JsObject])
+    batches.find(_.batchType == SessionData).map(_.jsValue.as[JsObject])
 
   private case class NodeInfo(nodeNameCharge:String, nodeNameMembers:String, batchType:BatchType)
 

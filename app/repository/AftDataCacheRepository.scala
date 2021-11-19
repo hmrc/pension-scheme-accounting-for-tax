@@ -80,6 +80,31 @@ class AftDataCacheRepository @Inject()(
       }
     )
   }
+  //
+  //private def saveToRepository(
+  //  id: String,
+  //  userData: JsValue,
+  //  sessionId: String,
+  //  sessionData: Option[SessionData]
+  //)(implicit ec: ExecutionContext): Future[Boolean] = {
+  //  logger.debug("Calling saveToRepository in AFT Data Cache Repository")
+  //  val document: JsValue = Json.toJson(
+  //    AftDataCache.applyDataCache(
+  //      id = id,
+  //      sessionData = sessionData,
+  //      data = userData,
+  //      expireAt = expireInSeconds
+  //    )
+  //  )
+  //  val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
+  //  val modifier = BSONDocument("$set" -> document)
+  //  collection.update.one(selector, modifier, upsert = true).map(_.ok)
+  //  // TODO: Add lock/session data to Other batch
+  //
+  //  // TODO: Change to retrieve and join batches
+  //
+  //  Future.successful(false)
+  //}
 
   private def saveToRepository(
     id: String,
@@ -88,59 +113,25 @@ class AftDataCacheRepository @Inject()(
     sessionData: Option[SessionData]
   )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug("Calling saveToRepository in AFT Data Cache Repository")
-    val document: JsValue = Json.toJson(
-      AftDataCache.applyDataCache(
-        id = id,
-        sessionData = sessionData,
-        data = userData,
-        expireAt = expireInSeconds
-      )
+
+    val batches = batchService.createBatches(
+      userDataPayload = userData.as[JsObject],
+      userDataBatchSize = 2,
+      sessionData.map(Json.toJson(_).as[JsObject])
     )
-    val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
-    val modifier = BSONDocument("$set" -> document)
-    collection.update.one(selector, modifier, upsert = true).map(_.ok)
-    // TODO: Add lock/session data to Other batch
 
-    // TODO: Change to retrieve and join batches
+    def selector(batchType: BatchType, batchNo: Int): BSONDocument = BSONDocument(
+      "uniqueAftId" -> (id + sessionId),
+      "batchType" -> batchType.toString,
+      "batchNo" -> batchNo
+    )
 
+    Future.traverse(batches) { bi =>
+      val modifier = BSONDocument("$set" -> bi.jsValue)
+      collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
+    }.map(_.forall(_.ok))
     Future.successful(false)
   }
-
-  //private def saveToRepository(
-  //  id: String,
-  //  userData: JsValue,
-  //  sessionId: String,
-  //  sessionData: Option[SessionData]
-  //)(implicit ec: ExecutionContext): Future[Boolean] = {
-  //  logger.debug("Calling saveToRepository in AFT Data Cache Repository")
-  //
-  //  // TODO: Add lock/session data to Other batch
-  //
-  //  // TODO: Change to retrieve and createUserDataPayload batches
-  //
-  //  val batches = batchService.createBatches(
-  //    userData.as[JsObject],
-  //    sessionData.map(Json.toJson(_).as[JsObject]),
-  //    2
-  //  )
-  //
-  //  def selector(batchType: BatchType, batchNo: Int): BSONDocument = BSONDocument(
-  //    "uniqueAftId" -> (id + sessionId),
-  //    "batchType" -> batchType.toString,
-  //    "batchNo" -> batchNo
-  //  )
-  //
-  //  Future.traverse(batches) { bi =>
-  //    val modifier = BSONDocument("$set" -> bi.jsValue)
-  //    collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
-  //  }.map(_.forall(_.ok))
-  //  Future.successful(false)
-  //}
-
-  /*
-  def setSessionData - used only in a couple of pages (aft summary page and charge type) to save the data and lock it
-  def save: used everywhere else - doesn't lock
- */
 
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] =
     saveToRepository(

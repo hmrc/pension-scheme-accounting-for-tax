@@ -22,16 +22,6 @@ import play.api.libs.json.{JsObject, JsArray, Json}
 import services.BatchService.BatchType.SessionData
 import services.BatchService.{BatchInfo, BatchType}
 
-/*
-chargeA = Short service refund lump sum charge
-chargeB = Special lump sum death benefits charge
-chargeC = Auth surplus
-chargeD = Lifetime allowance charge
-chargeE = Annual allowance charge
-chargeF = De-registration charge
-chargeG = Overseas transfer charge
- */
-
 class BatchServiceSpec extends AnyWordSpec with Matchers {
   // scalastyle.off: magic.number
   import BatchServiceSpec._
@@ -243,7 +233,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  "Join" must {
+  "createUserDataPayload" must {
     "return empty json if there are no batches" in {
       batchService.createUserDataPayload(Nil) mustBe Json.obj()
     }
@@ -347,7 +337,6 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
   }
 
   "createSessionDataPayload" must {
-
     "return none where no session data batch is present" in {
       batchService.createSessionDataPayload(Nil) mustBe None
     }
