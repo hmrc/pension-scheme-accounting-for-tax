@@ -25,31 +25,36 @@ class BatchService {
   import BatchService._
 
   def split(payload: JsObject, batchSize: Int): Set[BatchInfo] = {
-    val batchesHeader = Set(
-      BatchInfo(Other, 1, getHeaderJsObject(payload))
-    )
-    val batchesChargeC = getChargeJsArray(payload, nodeNameChargeC, nodeNameEmployers) match {
-      case None => Nil
-      case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ChargeC)
-    }
-
-    val batchesChargeD = getChargeJsArray(payload, nodeNameChargeD, nodeNameMembers) match {
-      case None => Nil
-      case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ChargeD)
-    }
-
-    val batchesChargeE = getChargeJsArray(payload, nodeNameChargeE, nodeNameMembers) match {
-      case None => Nil
-      case Some(jsArray) =>  splitJsArrayIntoBatches(jsArray, batchSize, ChargeE)
-    }
-
-    val batchesChargeG = getChargeJsArray(payload, nodeNameChargeG, nodeNameMembers) match {
-      case None => Nil
-      case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ChargeG)
-    }
-
-    batchesHeader ++ batchesChargeC ++ batchesChargeD ++ batchesChargeE ++ batchesChargeG
+      Set(BatchInfo(Other, 1, getOtherJsObject(payload))) ++ extractAndSplitMemberBasedCharges(payload, batchSize)
   }
+
+  def join(batches: Seq[BatchInfo]): JsObject = {
+    val payloadForOtherBatch = batches
+      .find(_.batchType == Other)
+      .map(_.jsValue.as[JsObject])
+      .getOrElse(Json.obj())
+
+    nodeInfoSet.foldLeft[JsObject](payloadForOtherBatch) { (acc, ni) =>
+      val allMembersForCharge = batches
+        .filter(_.batchType == ni.batchType)
+        .sortBy(_.batchNo)
+        .foldLeft[JsArray](JsArray()){ (a, bi) => a ++ bi.jsValue.as[JsArray] }
+      val payloadForChargePlusMembers = (acc \ ni.nodeNameCharge).asOpt[JsObject].map { jsObjForChargeNode =>
+        val jsObjForChargeNodePlusMembers = jsObjForChargeNode ++ Json.obj(ni.nodeNameMembers -> allMembersForCharge)
+        Json.obj(ni.nodeNameCharge -> jsObjForChargeNodePlusMembers)
+      }.getOrElse(Json.obj())
+      acc ++ payloadForChargePlusMembers
+    }
+  }
+
+  private case class NodeInfo(nodeNameCharge:String, nodeNameMembers:String, batchType:BatchType)
+
+  private val nodeInfoSet = Set(
+    NodeInfo(nodeNameChargeC, nodeNameEmployers, ChargeC),
+    NodeInfo(nodeNameChargeD, nodeNameMembers, ChargeD),
+    NodeInfo(nodeNameChargeE, nodeNameMembers, ChargeE),
+    NodeInfo(nodeNameChargeG, nodeNameMembers, ChargeG)
+  )
 
   private def splitJsArrayIntoBatches(jsArray:JsArray, batchSize: Int, batchType: BatchType):Set[BatchInfo] = {
     val lastItem = jsArray.value.size - 1
@@ -61,31 +66,26 @@ class BatchService {
     }.toSet
   }
 
-  private val chargeNodes: Seq[(String, String)] = Seq(
-    (nodeNameChargeC, nodeNameEmployers),
-    (nodeNameChargeD, nodeNameMembers),
-    (nodeNameChargeE, nodeNameMembers),
-    (nodeNameChargeG, nodeNameMembers),
-  )
-
-  private def getHeaderJsObject(payload: JsObject): JsObject = {
-    removeChargeNodes( payload, chargeNodes)
-  }
-
-  private def removeChargeNodes(payload: JsObject, nodeInfo: Seq[(String, String)]):JsObject = {
-    nodeInfo.foldLeft[JsObject](payload){ case (acc, Tuple2(nodeNameCharge, nodeNameJsArray)) =>
-      (acc \ nodeNameCharge).toOption match {
-        case None => acc
-        case _ => acc.removeObject( JsPath \ nodeNameCharge \ nodeNameJsArray ).getOrElse(acc)
+  private def extractAndSplitMemberBasedCharges(payload: JsObject, batchSize: Int):Set[BatchInfo] = {
+    nodeInfoSet.flatMap { ni =>
+      getChargeJsArray(payload, ni.nodeNameCharge, ni.nodeNameMembers) match {
+        case None => Nil
+        case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ni.batchType)
       }
     }
   }
 
-  private def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] = {
-    (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
+  private def getOtherJsObject(payload: JsObject): JsObject = {
+    nodeInfoSet.foldLeft[JsObject](payload){ case (acc, ni) =>
+      (acc \ ni.nodeNameCharge).toOption match {
+        case None => acc
+        case _ => acc.removeObject( JsPath \ ni.nodeNameCharge \ ni.nodeNameMembers ).getOrElse(acc)
+      }
+    }
   }
 
-  def join(batches: Seq[BatchInfo], nonMemberJson: JsObject): JsObject = Json.obj()
+  private def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] =
+    (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
 }
 
 object BatchService {
