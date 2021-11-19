@@ -43,7 +43,7 @@ class AuditServiceSpec extends AnyWordSpec with Matchers with Inside {
 
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = fakeRequest()
 
-      val event = TestAuditEvent("test-audit-payload")
+      val event = TestAuditEvent("test-audit-userDataPayload")
       val templateCaptor = ArgumentCaptor.forClass(classOf[ExtendedDataEvent])
 
       when(mockAuditConnector.sendExtendedEvent(any())(any(), any()))
@@ -56,7 +56,7 @@ class AuditServiceSpec extends AnyWordSpec with Matchers with Inside {
           auditSource mustBe appName
           auditType mustBe "TestAuditEvent"
           detail mustBe Json.obj(
-            "payload" -> "test-audit-payload"
+            "userDataPayload" -> "test-audit-userDataPayload"
           )
       }
     }
@@ -93,7 +93,7 @@ case class TestAuditEvent(payload: String) extends AuditEvent {
 
   override def details: JsObject =
     Json.obj(
-      "payload" -> payload
+      "userDataPayload" -> payload
     )
 
 }

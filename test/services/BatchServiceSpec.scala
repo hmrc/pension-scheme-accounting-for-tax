@@ -19,6 +19,7 @@ package services
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsObject, JsArray, Json}
+import services.BatchService.BatchType.SessionData
 import services.BatchService.{BatchInfo, BatchType}
 
 /*
@@ -34,33 +35,42 @@ chargeG = Overseas transfer charge
 class BatchServiceSpec extends AnyWordSpec with Matchers {
   // scalastyle.off: magic.number
   import BatchServiceSpec._
-  "split (with batch size set to 2)" must {
+  "createBatches (with batch size set to 2)" must {
 
-    "return correct batch info with empty payload" in {
+    "return correct batch info with empty userDataPayload" in {
       val payload = Json.obj()
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1, payload)
       )
     }
 
     "return correct batch info with no charges at all" in {
       val payload = payloadOther
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1, payload)
       )
     }
 
     "return correct batch info with no member-based charges" in {
       val payload = payloadOther ++ payloadChargeTypeA
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1, payload)
+      )
+    }
+
+    "return correct batch info with no member-based charges plus a session data payload" in {
+      val payload = payloadOther ++ payloadChargeTypeA
+      val sessionDataPayload = Json.obj("test" -> "test")
+      batchService.createBatches(payload, batchSize, Some(sessionDataPayload)) mustBe Set(
+        BatchInfo(BatchType.Other, 1, payload),
+        BatchInfo(BatchType.SessionData, 1, sessionDataPayload)
       )
     }
 
     "return correct batch info with one scheme-based charge (A) and one member-based charge (C)" in {
       val payloadChargeC = payloadChargeTypeC(numberOfItems = 1)
       val payload = payloadOther ++ payloadChargeTypeA ++ payloadChargeC
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeA ++
@@ -73,7 +83,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     "return correct batch info with one scheme-based charge (B) and one member-based charge (D)" in {
       val payloadChargeD = payloadChargeTypeD(numberOfItems = 1)
       val payload = payloadOther ++ payloadChargeTypeB ++ payloadChargeD
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeB ++
@@ -86,7 +96,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     "return correct batch info with one scheme-based charge (F) and one member-based charge (E)" in {
       val payloadChargeE = payloadChargeTypeE(numberOfItems = 1)
       val payload = payloadOther ++ payloadChargeTypeF ++ payloadChargeE
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeF ++
@@ -99,7 +109,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     "return correct batch info with one scheme-based charge (A) and one member-based charge (G)" in {
       val payloadChargeG = payloadChargeTypeG(numberOfItems = 1)
       val payload = payloadOther ++ payloadChargeTypeA ++ payloadChargeG
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeA ++
@@ -117,7 +127,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payload = payloadOther ++
         payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
         payloadChargeC ++ payloadChargeD ++ payloadChargeE ++ payloadChargeG
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
@@ -137,7 +147,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payloadChargeC = payloadChargeTypeC(numberOfItems = 3)
       val jsArray = payloadChargeTypeCEmployer(numberOfItems = 3)
       val payload = payloadOther ++ payloadChargeTypeA ++ payloadChargeC
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeA ++
@@ -152,7 +162,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payloadChargeD = payloadChargeTypeD(numberOfItems = 3)
       val jsArray = payloadChargeTypeDMember(numberOfItems = 3)
       val payload = payloadOther ++ payloadChargeTypeA ++ payloadChargeD
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeA ++
@@ -167,7 +177,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payloadChargeE = payloadChargeTypeE(numberOfItems = 3)
       val jsArray = payloadChargeTypeEMember(numberOfItems = 3)
       val payload = payloadOther ++ payloadChargeTypeA ++ payloadChargeE
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeA ++
@@ -182,7 +192,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payloadChargeG = payloadChargeTypeG(numberOfItems = 3)
       val jsArray = payloadChargeTypeGMember(numberOfItems = 3)
       val payload = payloadOther ++ payloadChargeTypeA ++ payloadChargeG
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeA ++
@@ -207,7 +217,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payload = payloadOther ++
         payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
         payloadChargeC ++ payloadChargeD ++ payloadChargeE ++ payloadChargeG
-      batchService.split(payload, batchSize) mustBe Set(
+      batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1,
           payloadOther ++
             payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++
@@ -235,17 +245,17 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
 
   "Join" must {
     "return empty json if there are no batches" in {
-      batchService.join(Nil) mustBe Json.obj()
+      batchService.createUserDataPayload(Nil) mustBe Json.obj()
     }
 
     "return empty json if there is only an empty 'other' batch" in {
       val batches = Seq(BatchInfo(BatchType.Other, 1, Json.obj()))
-      batchService.join(batches) mustBe Json.obj()
+      batchService.createUserDataPayload(batches) mustBe Json.obj()
     }
 
     "return correct json if there is only an 'other' batch with some values" in {
       val batches = Seq(BatchInfo(BatchType.Other, 1, payloadOther))
-      batchService.join(batches) mustBe payloadOther
+      batchService.createUserDataPayload(batches) mustBe payloadOther
     }
 
     "return correct json if there is an 'other' batch with some values and a scheme-based charge (A) and " +
@@ -259,7 +269,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         BatchInfo(BatchType.ChargeC, 2, JsArray(Seq(jsArray(2))))
       )
       val expectedPayload = payloadOther ++ payloadChargeTypeA ++ payloadChargeTypeC(numberOfItems = 3)
-      batchService.join(batches) mustBe expectedPayload
+      batchService.createUserDataPayload(batches) mustBe expectedPayload
     }
 
     "return correct json if there is an 'other' batch with some values and a scheme-based charge (A) and " +
@@ -273,7 +283,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         BatchInfo(BatchType.ChargeD, 2, JsArray(Seq(jsArray(2))))
       )
       val expectedPayload = payloadOther ++ payloadChargeTypeA ++ payloadChargeTypeD(numberOfItems = 3)
-      batchService.join(batches) mustBe expectedPayload
+      batchService.createUserDataPayload(batches) mustBe expectedPayload
     }
 
     "return correct json if there is an 'other' batch with some values and a scheme-based charge (A) and " +
@@ -287,7 +297,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         BatchInfo(BatchType.ChargeE, 2, JsArray(Seq(jsArray(2))))
       )
       val expectedPayload = payloadOther ++ payloadChargeTypeA ++ payloadChargeTypeE(numberOfItems = 3)
-      batchService.join(batches) mustBe expectedPayload
+      batchService.createUserDataPayload(batches) mustBe expectedPayload
     }
 
     "return correct json if there is an 'other' batch with some values and a scheme-based charge (A) and " +
@@ -301,7 +311,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         BatchInfo(BatchType.ChargeG, 2, JsArray(Seq(jsArray(2))))
       )
       val expectedPayload = payloadOther ++ payloadChargeTypeA ++ payloadChargeTypeG(numberOfItems = 3)
-      batchService.join(batches) mustBe expectedPayload
+      batchService.createUserDataPayload(batches) mustBe expectedPayload
     }
 
     "return correct json if there is an 'other' batch with some values and a scheme-based charge (A) and " +
@@ -332,7 +342,22 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         payloadChargeTypeD(numberOfItems = 3) ++
         payloadChargeTypeE(numberOfItems = 1) ++
         payloadChargeTypeG(numberOfItems = Five)
-      batchService.join(batches) mustBe expectedPayload
+      batchService.createUserDataPayload(batches) mustBe expectedPayload
+    }
+  }
+
+  "createSessionDataPayload" must {
+
+    "return none where no session data batch is present" in {
+      batchService.createSessionDataPayload(Nil) mustBe None
+    }
+
+    "return the session data payload where present" in {
+      val sessionDataJsobject = Json.obj("test" -> "test")
+      val batches = Seq(
+        BatchInfo(SessionData, 1, sessionDataJsobject)
+      )
+      batchService.createSessionDataPayload(batches) mustBe Some(sessionDataJsobject)
     }
   }
 }
