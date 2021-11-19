@@ -303,6 +303,37 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val expectedPayload = payloadOther ++ payloadChargeTypeA ++ payloadChargeTypeG(numberOfItems = 3)
       batchService.join(batches) mustBe expectedPayload
     }
+
+    "return correct json if there is an 'other' batch with some values and a scheme-based charge (A) and " +
+      "different numbers of batches of each member-based charge and one batch out of order" in {
+      val jsArrayC = payloadChargeTypeCEmployer(numberOfItems = 2)
+      val jsArrayD = payloadChargeTypeDMember(numberOfItems = 3)
+      val jsArrayE = payloadChargeTypeEMember(numberOfItems = 1)
+      val jsArrayG = payloadChargeTypeGMember(numberOfItems = 5)
+
+      val batches = Seq(
+        BatchInfo(BatchType.Other, 1,
+          payloadOther ++ payloadChargeTypeA ++
+            concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(2)), nodeNameChargeC) ++
+            concatenateNodes(Seq(payloadChargeTypeDMinusMembers(3)), nodeNameChargeD) ++
+            concatenateNodes(Seq(payloadChargeTypeEMinusMembers(1)), nodeNameChargeE) ++
+            concatenateNodes(Seq(payloadChargeTypeGMinusMembers(Five)), nodeNameChargeG)
+        ),
+        BatchInfo(BatchType.ChargeC, 1, JsArray(Seq(jsArrayC(0), jsArrayC(1)))),
+        BatchInfo(BatchType.ChargeD, 2, JsArray(Seq(jsArrayD(2)))),
+        BatchInfo(BatchType.ChargeD, 1, JsArray(Seq(jsArrayD(0), jsArrayD(1)))),
+        BatchInfo(BatchType.ChargeE, 1, JsArray(Seq(jsArrayE(0)))),
+        BatchInfo(BatchType.ChargeG, 1, JsArray(Seq(jsArrayG(0), jsArrayG(1)))),
+        BatchInfo(BatchType.ChargeG, 2, JsArray(Seq(jsArrayG(2), jsArrayG(3)))),
+        BatchInfo(BatchType.ChargeG, 3, JsArray(Seq(jsArrayG(Four))))
+      )
+      val expectedPayload = payloadOther ++ payloadChargeTypeA ++
+        payloadChargeTypeC(numberOfItems = 2) ++
+        payloadChargeTypeD(numberOfItems = 3) ++
+        payloadChargeTypeE(numberOfItems = 1) ++
+        payloadChargeTypeG(numberOfItems = Five)
+      batchService.join(batches) mustBe expectedPayload
+    }
   }
 }
 
