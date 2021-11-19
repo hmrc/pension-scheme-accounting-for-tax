@@ -309,7 +309,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val jsArrayC = payloadChargeTypeCEmployer(numberOfItems = 2)
       val jsArrayD = payloadChargeTypeDMember(numberOfItems = 3)
       val jsArrayE = payloadChargeTypeEMember(numberOfItems = 1)
-      val jsArrayG = payloadChargeTypeGMember(numberOfItems = 5)
+      val jsArrayG = payloadChargeTypeGMember(numberOfItems = Five)
 
       val batches = Seq(
         BatchInfo(BatchType.Other, 1,
