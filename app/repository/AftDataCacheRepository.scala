@@ -29,7 +29,7 @@ import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import repository.model.{SessionData, AftDataCache}
 import services.BatchService
-import services.BatchService.BatchType
+import services.BatchService.{BatchType, BatchInfo}
 import uk.gov.hmrc.mongo.ReactiveRepository
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,7 +51,7 @@ class AftDataCacheRepository @Inject()(
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"))
 
   val collectionIndexes = Seq(
-    Index(Seq(("uniqueAftId", IndexType.Ascending)), Some("unique_Aft_Id"), unique = true, background = true),
+    Index(Seq(("uniqueAftId", IndexType.Ascending)), Some("unique_Aft_Id"), unique = false, background = true),
     Index(Seq(("id", IndexType.Ascending)), Some("srn_startDt_key"), background = true),
     Index(Seq(("expireAt", IndexType.Ascending)), Some("dataExpiry"), unique = true, options = BSONDocument("expireAfterSeconds" -> 0))
   )
@@ -66,7 +66,6 @@ class AftDataCacheRepository @Inject()(
     case _ => CollectionDiagnostics.logCollectionInfo(collection)
   }
 
-
   private def createIndex(indexes: Seq[Index]): Future[Seq[Boolean]] = {
     Future.sequence(
       indexes.map { index =>
@@ -80,31 +79,6 @@ class AftDataCacheRepository @Inject()(
       }
     )
   }
-  //
-  //private def saveToRepository(
-  //  id: String,
-  //  userData: JsValue,
-  //  sessionId: String,
-  //  sessionData: Option[SessionData]
-  //)(implicit ec: ExecutionContext): Future[Boolean] = {
-  //  logger.debug("Calling saveToRepository in AFT Data Cache Repository")
-  //  val document: JsValue = Json.toJson(
-  //    AftDataCache.applyDataCache(
-  //      id = id,
-  //      sessionData = sessionData,
-  //      data = userData,
-  //      expireAt = expireInSeconds
-  //    )
-  //  )
-  //  val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
-  //  val modifier = BSONDocument("$set" -> document)
-  //  collection.update.one(selector, modifier, upsert = true).map(_.ok)
-  //  // TODO: Add lock/session data to Other batch
-  //
-  //  // TODO: Change to retrieve and join batches
-  //
-  //  Future.successful(false)
-  //}
 
   private def saveToRepository(
     id: String,
@@ -115,9 +89,11 @@ class AftDataCacheRepository @Inject()(
     logger.debug("Calling saveToRepository in AFT Data Cache Repository")
 
     val batches = batchService.createBatches(
-      userDataPayload = userData.as[JsObject],
+      userDataFullPayload = userData.as[JsObject],
       userDataBatchSize = 2,
-      sessionData.map(Json.toJson(_).as[JsObject])
+      sessionDataPayload = sessionData.map{ sd =>
+        Json.obj("data" -> Json.toJson(sd).as[JsObject])
+      }
     )
 
     def selector(batchType: BatchType, batchNo: Int): BSONDocument = BSONDocument(
@@ -126,11 +102,12 @@ class AftDataCacheRepository @Inject()(
       "batchNo" -> batchNo
     )
 
-    Future.traverse(batches) { bi =>
-      val modifier = BSONDocument("$set" -> bi.jsValue)
+    val setFutures = batches.map{ bi =>
+      val modifier = BSONDocument("$set" -> Json.obj("data" -> bi.jsValue))
       collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
-    }.map(_.forall(_.ok))
-    Future.successful(false)
+    }
+
+    Future.sequence(setFutures).map(_.forall(_.ok))
   }
 
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] =
@@ -160,59 +137,94 @@ class AftDataCacheRepository @Inject()(
     )
   }
 
-  // TODO: This will need to get the session/lock data from the Other batch
+  private def transformToBatchInfo(batchJsValue:JsValue):Option[BatchInfo] = {
+    val optBatchType = (batchJsValue \ "batchType").asOpt[String].flatMap(BatchType.getBatchType)
+    val optBatchNo = (batchJsValue \ "batchNo").asOpt[Int]
+    val optJsValue = (batchJsValue \ "data").asOpt[JsValue]
+    println(s"\nTransformToBatchInfo: batchJsValue = $batchJsValue")
+    println(s"  ... parsed as: $optBatchType, $optBatchNo, $optJsValue")
+    (optBatchType, optBatchNo, optJsValue) match {
+      case (Some(batchType), Some(batchNo), Some(jsValue)) =>
+        Some(BatchInfo(batchType, batchNo, jsValue))
+      case _ => None
+    }
+  }
+
+  private def getBatchesFromRepository(
+    id: String,
+    optSessionId: Option[String] = None,
+    batchTypeAndNo: Option[(BatchType, Int)] = None
+  )(implicit ec: ExecutionContext):Future[Option[Seq[BatchInfo]]] = {
+    val findResults = (optSessionId, batchTypeAndNo) match {
+      case (Some(sessionId), Some(Tuple2(bt, bn))) =>
+        println("\nGetBatchesFromRepository: searching with batch type")
+        find("uniqueAftId" -> (id + sessionId), "batchType" -> bt.toString, "batchNo" -> bn)
+      case (Some(sessionId), None) =>
+        println("\nGetBatchesFromRepository: searching without batch type")
+        find("uniqueAftId" -> (id + sessionId))
+      case (None, None) =>
+        find("id" -> id)
+    }
+    findResults.map {
+      case batches if batches.isEmpty =>
+        println("\nGetBatchesFromRepository: no batches found")
+        None
+      case batches =>
+        println("\nGetBatchesFromRepository: Batches found")
+        val transformedBatches = batches.map{ batchJsValue =>
+          transformToBatchInfo(batchJsValue).getOrElse(throw new RuntimeException(s"Unable to parse json:$batchJsValue")
+        }
+        println(s"  ... GetBatchesFromRepository: Batches found: $transformedBatches")
+        Some(transformedBatches)
+    }
+  }
+
   def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
     logger.debug("Calling getSessionData in AFT Cache")
-
-    collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[AftDataCache]
-      .flatMap {
-        case None => Future.successful(None)
-        case Some(dc) =>
-          lockedBy(sessionId, id).map { lockDetail =>
-            dc.sessionData.map { oo =>
-              oo copy (lockDetail = lockDetail)
-            }
-          }
-      }
+    // TODO: Could do this with only 1 retrieval from Mongo instead of 2
+    getBatchesFromRepository(id, Some(sessionId), Some(BatchType.SessionData, 1)).flatMap {
+      case Some(Seq(batchInfo)) =>
+        lockedBy(sessionId, id).map { lockDetail =>
+          val sessionData = batchInfo.jsValue.asOpt[SessionData]
+          sessionData.map{ _ copy(lockDetail = lockDetail)}
+        }
+      case _ => Future.successful(None)
+    }
   }
 
-  // TODO: This will need to get the data from the batches and join them back together
   def get(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
     logger.debug("Calling get in AFT Cache")
-    collection.find(BSONDocument("uniqueAftId" -> (id + sessionId)), projection = Option.empty[JsObject]).one[AftDataCache].map {
-      _.map {
-        dataEntry =>
-          dataEntry.data
-      }
+    getBatchesFromRepository(id, Some(sessionId)).map {
+      case None => None
+      case Some(seqBatchInfo) => Some(batchService.createUserDataFullPayload(seqBatchInfo))
     }
   }
 
-  // TODO: This will need to get the lock from the Other batch
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[LockDetail]] = {
     logger.debug("Calling lockedBy in AFT Cache")
-    val documentsForReturnAndQuarter = collection
-      .find(BSONDocument("id" -> id), projection = Option.empty[JsObject])
-      .cursor[AftDataCache](ReadPreference.primary)
-      .collect[List](-1, Cursor.FailOnError[List[AftDataCache]]())
 
-    documentsForReturnAndQuarter.map {
-      _.find(_.sessionData.exists(sd => sd.lockDetail.isDefined && sd.sessionId != sessionId))
-        .flatMap {
-          _.sessionData.flatMap(_.lockDetail)
-        }
+    getBatchesFromRepository(
+      id = id,
+      batchTypeAndNo = Some(Tuple2(BatchType.SessionData, 1))
+    ).map {
+      case None => None
+      case Some(seqBatchInfo) =>
+        seqBatchInfo
+          .flatMap(bi => (bi.jsValue \ "data").asOpt[SessionData].toSeq)
+          .find(sd => sd.lockDetail.isDefined && sd.sessionId != sessionId)
+          .flatMap(_.lockDetail)
     }
   }
 
-  // TODO: This will need to remove all batches
   def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.warn(s"Removing row from collection ${collection.name} id:$id")
+    logger.warn(s"Removing document(s) from collection ${collection.name} id:$id")
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     collection.delete.one(selector).map(_.ok)
   }
 
-  // TODO: This will need to use batches
+  // TODO: Change this
   def removeWithSessionId(sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.warn(s"Removing all rows with session id:$sessionId")
+    logger.warn(s"Removing all document(s) with session id:$sessionId")
     val selector = BSONDocument("lockedBy.sessionId" -> sessionId)
     collection.delete.one(selector).map(_.ok)
   }

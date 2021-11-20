@@ -112,7 +112,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       }
     }
 
-    "return OK when valid response from DES for userDataPayload with only one member based charge and zero value" in {
+    "return OK when valid response from DES for userDataFullPayload with only one member based charge and zero value" in {
 
       val controller = application.injector.instanceOf[AFTController]
       val jsonPayload = jsonOneMemberZeroValue

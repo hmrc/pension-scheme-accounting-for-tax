@@ -24,17 +24,21 @@ import helpers.JsonHelper._
 class BatchService {
   import BatchService._
 
-  def createBatches(userDataPayload: JsObject, userDataBatchSize: Int, sessionDataPayload:Option[JsObject] = None): Set[BatchInfo] = {
-    val batchInfoSessionDataSeq = sessionDataPayload match {
-      case Some(jsObject) => Seq(BatchInfo(SessionData, 1, jsObject))
-      case _ => Nil
+  def createBatches(
+    userDataFullPayload: JsObject,
+    userDataBatchSize: Int,
+    sessionDataPayload:Option[JsObject] = None
+  ): Set[BatchInfo] = {
+    val batchInfoSessionDataSet = sessionDataPayload match {
+      case Some(jsObject) => Set(BatchInfo(SessionData, 1, jsObject))
+      case _ => Set()
     }
-    Set(BatchInfo(Other, 1, getOtherJsObject(userDataPayload))) ++
-      extractAndSplitMemberBasedCharges(userDataPayload, userDataBatchSize) ++
-      batchInfoSessionDataSeq
+    Set(BatchInfo(Other, 1, getOtherJsObject(userDataFullPayload))) ++
+      extractAndSplitMemberBasedCharges(userDataFullPayload, userDataBatchSize) ++
+      batchInfoSessionDataSet
   }
 
-  def createUserDataPayload(batches: Seq[BatchInfo]): JsObject = {
+  def createUserDataFullPayload(batches: Seq[BatchInfo]): JsObject = {
     val payloadForOtherBatch = batches
       .find(_.batchType == Other)
       .map(_.jsValue.as[JsObject])
@@ -45,6 +49,7 @@ class BatchService {
         .filter(_.batchType == ni.batchType)
         .sortBy(_.batchNo)
         .foldLeft[JsArray](JsArray()){ (a, bi) => a ++ bi.jsValue.as[JsArray] }
+
       val payloadForChargePlusMembers = (acc \ ni.nodeNameCharge).asOpt[JsObject].map { jsObjForChargeNode =>
         val jsObjForChargeNodePlusMembers = jsObjForChargeNode ++ Json.obj(ni.nodeNameMembers -> allMembersForCharge)
         Json.obj(ni.nodeNameCharge -> jsObjForChargeNodePlusMembers)
@@ -55,15 +60,6 @@ class BatchService {
 
   def createSessionDataPayload(batches: Seq[BatchInfo]): Option[JsObject] =
     batches.find(_.batchType == SessionData).map(_.jsValue.as[JsObject])
-
-  private case class NodeInfo(nodeNameCharge:String, nodeNameMembers:String, batchType:BatchType)
-
-  private val nodeInfoSet = Set(
-    NodeInfo(nodeNameChargeC, nodeNameEmployers, ChargeC),
-    NodeInfo(nodeNameChargeD, nodeNameMembers, ChargeD),
-    NodeInfo(nodeNameChargeE, nodeNameMembers, ChargeE),
-    NodeInfo(nodeNameChargeG, nodeNameMembers, ChargeG)
-  )
 
   private def splitJsArrayIntoBatches(jsArray:JsArray, batchSize: Int, batchType: BatchType):Set[BatchInfo] = {
     val lastItem = jsArray.value.size - 1
@@ -98,7 +94,7 @@ class BatchService {
 }
 
 object BatchService {
-  // scalastyle.off: magic.number
+  // scalastyle:off magic.number
 
   private val nodeNameChargeC = "chargeCDetails"
   private val nodeNameChargeD = "chargeDDetails"
@@ -116,7 +112,18 @@ object BatchService {
     case object ChargeD extends WithName("chargeD") with BatchType
     case object ChargeE extends WithName("chargeE") with BatchType
     case object ChargeG extends WithName("chargeG") with BatchType
+    private val batchTypes = Seq(SessionData, Other, ChargeC, ChargeD, ChargeE, ChargeG)
+    def getBatchType(s:String):Option[BatchType] = batchTypes.find( _.toString == s)
   }
 
   case class BatchInfo(batchType: BatchType, batchNo: Int, jsValue: JsValue)
+
+  private case class NodeInfo(nodeNameCharge:String, nodeNameMembers:String, batchType:BatchType)
+
+  private val nodeInfoSet = Set(
+    NodeInfo(nodeNameChargeC, nodeNameEmployers, ChargeC),
+    NodeInfo(nodeNameChargeD, nodeNameMembers, ChargeD),
+    NodeInfo(nodeNameChargeE, nodeNameMembers, ChargeE),
+    NodeInfo(nodeNameChargeG, nodeNameMembers, ChargeG)
+  )
 }
