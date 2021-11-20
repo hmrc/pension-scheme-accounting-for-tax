@@ -32,13 +32,14 @@ object SessionData {
   implicit val format: Format[SessionData] = Json.format[SessionData]
 }
 
+// TODO: Remove sessionData
 case class AftDataCache(id: String, sessionData: Option[SessionData], data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
 
 object AftDataCache {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
   implicit val format: Format[AftDataCache] = Json.format[AftDataCache]
   def applyDataCache(id: String,
-                     sessionData: Option[SessionData],
+                     sessionData: Option[SessionData], // TODO: Remove sessionData
                      data: JsValue,
                      lastUpdated: DateTime = DateTime.now(DateTimeZone.UTC),
                      expireAt: DateTime): AftDataCache = {

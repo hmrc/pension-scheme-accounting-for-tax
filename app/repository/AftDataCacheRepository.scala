@@ -29,8 +29,9 @@ import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import repository.model.{SessionData, AftDataCache}
 import services.BatchService
-import services.BatchService.{BatchType, BatchInfo}
+import services.BatchService.{BatchInfo, BatchType}
 import uk.gov.hmrc.mongo.ReactiveRepository
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -103,12 +104,29 @@ class AftDataCacheRepository @Inject()(
     )
 
     val setFutures = batches.map{ bi =>
-      val modifier = BSONDocument("$set" -> Json.obj("data" -> bi.jsValue))
+      implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+      val modifier = BSONDocument("$set" ->
+        Json.obj(
+          "id" -> id,
+          "data" -> bi.jsValue,
+          "lastUpdated" -> DateTime.now(DateTimeZone.UTC),
+          "expireAt" -> expireInSeconds
+        )
+      )
       collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
     }
 
     Future.sequence(setFutures).map(_.forall(_.ok))
   }
+
+  //def oldSave(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+  //  logger.debug("Calling Save in AFT Cache")
+  //  val document: JsValue = Json.toJson(AftDataCache.applyDataCache(
+  //    id = id, None, data = userData, expireAt = expireInSeconds))
+  //  val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
+  //  val modifier = BSONDocument("$set" -> document)
+  //  collection.update.one(selector, modifier, upsert = true).map(_.ok)
+  //}
 
   def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] =
     saveToRepository(
@@ -225,6 +243,9 @@ class AftDataCacheRepository @Inject()(
   // TODO: Change this
   def removeWithSessionId(sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.warn(s"Removing all document(s) with session id:$sessionId")
+
+    // Remove lock
+
     val selector = BSONDocument("lockedBy.sessionId" -> sessionId)
     collection.delete.one(selector).map(_.ok)
   }
