@@ -18,7 +18,7 @@ package controllers.cache
 
 import audit.{AuditEvent, AuditService}
 import com.google.inject.Inject
-import models.LockDetail
+import models.{ChargeType, LockDetail, ChargeAndMember}
 import models.LockDetail.formats
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
@@ -45,13 +45,33 @@ class AftDataCacheController @Inject()(
 
   private val logger = Logger(classOf[AftDataCacheController])
 
+  private def extractChargeAndMemberFromHeaders (implicit hc: HeaderCarrier, request: Request[AnyContent]):Option[ChargeAndMember] = {
+    request.headers.get("chargeType") match {
+      case None => None
+      case Some(ct) =>
+        ChargeType.getChargeType(ct).map { chargeType =>
+          val memberNo = if (ChargeType.isMemberBasedChargeType(chargeType)) {
+            request.headers.get("memberNo").map(_.toInt)
+          } else {
+            None
+          }
+          ChargeAndMember(chargeType, memberNo)
+        }
+    }
+  }
+
   def save: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
+        val optChargeAndMember = extractChargeAndMemberFromHeaders
         request.body.asJson.map {
           jsValue =>
-
-            repository.save(id, jsValue, sessionId)
+            repository.save(
+              id = id,
+              sessionId = sessionId,
+              chargeAndMember = optChargeAndMember,
+              userData = jsValue
+            )
               .map(_ => Created)
         } getOrElse Future.successful(BadRequest)
       }

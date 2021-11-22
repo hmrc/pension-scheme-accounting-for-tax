@@ -20,6 +20,7 @@ import models.enumeration.{WithName, Enumerable}
 import play.api.libs.json._
 import services.BatchService.BatchType.{ChargeE, Other, ChargeC, ChargeG, SessionData, ChargeD}
 import helpers.JsonHelper._
+import models.ChargeAndMember
 
 class BatchService {
   import BatchService._
@@ -60,6 +61,27 @@ class BatchService {
 
   def createSessionDataPayload(batches: Seq[BatchInfo]): Option[JsObject] =
     batches.find(_.batchType == SessionData).map(_.jsValue.as[JsObject])
+
+  /*
+  batch size = 500
+  say 1500 members = 3 batches
+  say 1501 members = 4 batches
+  1..500 - batch 1
+  501..1000 - batch 2
+  1001..1500 - batch 3
+  1501 - batch 4
+   */
+  def batchIdentifierForChargeAndMember(optChargeAndMember: Option[ChargeAndMember], userDataBatchSize: Int):Option[BatchIdentifier] = {
+    optChargeAndMember.map { chargeAndMember =>
+      val batchType = chargeAndMember.batchType
+      val batchNo = (batchType, chargeAndMember.memberNo) match {
+        case (Other, _) => Some(1)
+        case (_, None) => None
+        case (_, Some(memberNo)) => Some((memberNo / userDataBatchSize).ceil.toInt - 1)
+      }
+      BatchIdentifier(batchType, batchNo)
+    }
+  }
 
   private def splitJsArrayIntoBatches(jsArray:JsArray, batchSize: Int, batchType: BatchType):Set[BatchInfo] = {
     val lastItem = jsArray.value.size - 1
@@ -115,6 +137,8 @@ object BatchService {
     private val batchTypes = Seq(SessionData, Other, ChargeC, ChargeD, ChargeE, ChargeG)
     def getBatchType(s:String):Option[BatchType] = batchTypes.find( _.toString == s)
   }
+
+  case class BatchIdentifier(batchType: BatchType, batchNo: Option[Int])
 
   case class BatchInfo(batchType: BatchType, batchNo: Int, jsValue: JsValue)
 

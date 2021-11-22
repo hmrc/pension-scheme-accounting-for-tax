@@ -17,19 +17,19 @@
 package repository
 
 import com.google.inject.Inject
-import models.LockDetail
+import models.{LockDetail, ChargeAndMember}
 import org.joda.time.{DateTimeZone, DateTime}
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.{ReadPreference, Cursor}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import repository.model.{SessionData, AftDataCache}
+import repository.model.SessionData
 import services.BatchService
-import services.BatchService.{BatchInfo, BatchType}
+import services.BatchService.BatchType.Other
+import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -52,6 +52,12 @@ class AftDataCacheRepository @Inject()(
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"))
 
   val collectionIndexes = Seq(
+    Index(
+      Seq(
+        ("uniqueAftId", IndexType.Ascending),
+        ("batchType", IndexType.Ascending),
+        ("batchNo", IndexType.Ascending)
+      ), Some("unique-aft-batch"), unique = true, background = true),
     Index(Seq(("uniqueAftId", IndexType.Ascending)), Some("unique_Aft_Id"), unique = false, background = true),
     Index(Seq(("id", IndexType.Ascending)), Some("srn_startDt_key"), background = true),
     Index(Seq(("expireAt", IndexType.Ascending)), Some("dataExpiry"), unique = true, options = BSONDocument("expireAfterSeconds" -> 0))
@@ -81,42 +87,62 @@ class AftDataCacheRepository @Inject()(
     )
   }
 
+  private def userDataBatchSize:Int = configuration.get[Int](path = "mongodb.aft-cache.aft-journey.userDataBatchSize")
+
+  // scalastyle:off method.length
+  // If batchIdentifier is none then recreate and save all batches, else just update the specified batch
   private def saveToRepository(
     id: String,
-    userData: JsValue,
     sessionId: String,
+    batchIdentifier: Option[BatchIdentifier],
+    userData: JsValue,
     sessionData: Option[SessionData]
   )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug("Calling saveToRepository in AFT Data Cache Repository")
+    println(s"\nSaveToRepository with batchIdentifier $batchIdentifier")
 
-    val batches = batchService.createBatches(
-      userDataFullPayload = userData.as[JsObject],
-      userDataBatchSize = 2,
-      sessionDataPayload = sessionData.map{ sd =>
-        Json.obj("data" -> Json.toJson(sd).as[JsObject])
+    // TODO: Should possibly never delete session details batch...
+    remove(id, sessionId).flatMap{ removed =>
+      removed match {
+        case false => println("\n  .. Save to repository: Unable to remove any existing batches")
+        case true => println("\n .. Save to repository: Deleted any existing batches")
       }
-    )
 
-    def selector(batchType: BatchType, batchNo: Int): BSONDocument = BSONDocument(
-      "uniqueAftId" -> (id + sessionId),
-      "batchType" -> batchType.toString,
-      "batchNo" -> batchNo
-    )
+      val batches = batchIdentifier match {
+        case None =>
+          batchService.createBatches(
+            userDataFullPayload = userData.as[JsObject],
+            userDataBatchSize = userDataBatchSize,
+            sessionDataPayload = sessionData.map{ sd =>
+              Json.obj("data" -> Json.toJson(sd).as[JsObject])
+            }
+          )
+        case Some(BatchIdentifier(Other, _)) => // TODO: Extract the Other batch from full payload
+          Set(BatchInfo(Other, 1, userData.as[JsObject]))
+        case Some(BatchIdentifier(batchType, Some(batchNo))) => // TODO: Extract the member batch for batchNo from the full payload
+          Set(BatchInfo(batchType, batchNo, userData.as[JsObject]))
+        case _ => throw new RuntimeException(s"Unable to update all members for a batch type")
+      }
 
-    val setFutures = batches.map{ bi =>
-      implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-      val modifier = BSONDocument("$set" ->
-        Json.obj(
-          "id" -> id,
-          "data" -> bi.jsValue,
-          "lastUpdated" -> DateTime.now(DateTimeZone.UTC),
-          "expireAt" -> expireInSeconds
+      def selector(batchType: BatchType, batchNo: Int): BSONDocument =
+        BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
+
+      println( s"  .. Updating/inserting batch(es) $batches")
+      val setFutures = batches.map{ bi =>
+        implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+        val modifier = BSONDocument("$set" ->
+          Json.obj(
+            "id" -> id,
+            "data" -> bi.jsValue,
+            "lastUpdated" -> DateTime.now(DateTimeZone.UTC),
+            "expireAt" -> expireInSeconds
+          )
         )
-      )
-      collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
-    }
+        collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
+      }
 
-    Future.sequence(setFutures).map(_.forall(_.ok))
+      Future.sequence(setFutures).map(_.forall(_.ok))
+    }
   }
 
   //def oldSave(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
@@ -128,13 +154,22 @@ class AftDataCacheRepository @Inject()(
   //  collection.update.one(selector, modifier, upsert = true).map(_.ok)
   //}
 
-  def save(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] =
+  // chargeAndMember: None - update whole payload, else only update charge or (if member specified) member
+  def save(
+    id: String,
+    sessionId: String,
+    chargeAndMember: Option[ChargeAndMember],
+    userData: JsValue
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
+    println( s"\nSAVE called with chargeAndMember $chargeAndMember")
     saveToRepository(
       id = id,
-      userData = userData,
       sessionId = sessionId,
+      batchIdentifier = batchService.batchIdentifierForChargeAndMember(chargeAndMember, userDataBatchSize),
+      userData = userData,
       sessionData = None
     )
+  }
 
   def setSessionData(
                       id: String,
@@ -146,11 +181,13 @@ class AftDataCacheRepository @Inject()(
                       areSubmittedVersionsAvailable: Boolean
                     )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"Calling setSessionData in AFT Cache")
+    println( "\nsetSessionData called")
 
     saveToRepository(
       id = id,
-      userData = userData,
       sessionId = sessionId,
+      batchIdentifier = None,
+      userData = userData,
       sessionData = Some(SessionData(sessionId, lockDetail, version, accessMode, areSubmittedVersionsAvailable))
     )
   }
@@ -190,7 +227,7 @@ class AftDataCacheRepository @Inject()(
       case batches =>
         println("\nGetBatchesFromRepository: Batches found")
         val transformedBatches = batches.map{ batchJsValue =>
-          transformToBatchInfo(batchJsValue).getOrElse(throw new RuntimeException(s"Unable to parse json:$batchJsValue")
+          transformToBatchInfo(batchJsValue).getOrElse(throw new RuntimeException(s"Unable to parse json:$batchJsValue"))
         }
         println(s"  ... GetBatchesFromRepository: Batches found: $transformedBatches")
         Some(transformedBatches)
@@ -240,7 +277,7 @@ class AftDataCacheRepository @Inject()(
     collection.delete.one(selector).map(_.ok)
   }
 
-  // TODO: Change this
+  // TODO: Remove: I don't think this is used. It doesn't really make any sense. What is meant by lockedBy.sessionId? It isn't called from aft fe.
   def removeWithSessionId(sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.warn(s"Removing all document(s) with session id:$sessionId")
 
