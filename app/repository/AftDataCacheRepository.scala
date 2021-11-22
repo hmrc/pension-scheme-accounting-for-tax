@@ -117,9 +117,11 @@ class AftDataCacheRepository @Inject()(
               Json.obj("data" -> Json.toJson(sd).as[JsObject])
             }
           )
-        case Some(BatchIdentifier(Other, _)) => // TODO: Extract the Other batch from full payload
+        case Some(BatchIdentifier(Other, _)) => // TODO: Extract the Other batch from full payload BUT Won't need to if fetches already done that
+          // Call batchService.getOtherJsObject
           Set(BatchInfo(Other, 1, userData.as[JsObject]))
         case Some(BatchIdentifier(batchType, Some(batchNo))) => // TODO: Extract the member batch for batchNo from the full payload
+
           Set(BatchInfo(batchType, batchNo, userData.as[JsObject]))
         case _ => throw new RuntimeException(s"Unable to update all members for a batch type")
       }
