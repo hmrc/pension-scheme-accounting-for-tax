@@ -18,7 +18,7 @@ package controllers.cache
 
 import audit.{AuditEvent, AuditService}
 import com.google.inject.Inject
-import models.{ChargeType, LockDetail, ChargeAndMember}
+import models.{ChargeAndMember, ChargeType, LockDetail}
 import models.LockDetail.formats
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
