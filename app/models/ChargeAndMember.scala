@@ -21,11 +21,11 @@ import models.ChargeType.{ChargeTypeLifetimeAllowance, ChargeTypeOverseasTransfe
 
 case class ChargeAndMember(chargeType:ChargeType, memberNo:Option[Int]) {
   def batchType:BatchType = {
-    chargeType match {
-      case ChargeTypeAnnualAllowance => BatchType.ChargeE
-      case ChargeTypeAuthSurplus => BatchType.ChargeC
-      case ChargeTypeLifetimeAllowance => BatchType.ChargeD
-      case ChargeTypeOverseasTransfer => BatchType.ChargeG
+    (chargeType, memberNo) match {
+      case (ChargeTypeAnnualAllowance, Some(_)) => BatchType.ChargeE
+      case (ChargeTypeAuthSurplus, Some(_)) => BatchType.ChargeC
+      case (ChargeTypeLifetimeAllowance, Some(_)) => BatchType.ChargeD
+      case (ChargeTypeOverseasTransfer, Some(_)) => BatchType.ChargeG
       case _ => BatchType.Other
     }
   }

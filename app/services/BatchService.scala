@@ -35,7 +35,7 @@ class BatchService {
       case _ => Set()
     }
     Set(BatchInfo(Other, 1, getOtherJsObject(userDataFullPayload))) ++
-      extractAndSplitMemberBasedCharges(userDataFullPayload, userDataBatchSize) ++
+      getChargeTypeJsObject(userDataFullPayload, userDataBatchSize) ++
       batchInfoSessionDataSet
   }
 
@@ -62,15 +62,6 @@ class BatchService {
   def createSessionDataPayload(batches: Seq[BatchInfo]): Option[JsObject] =
     batches.find(_.batchType == SessionData).map(_.jsValue.as[JsObject])
 
-  /*
-  batch size = 500
-  say 1500 members = 3 batches
-  say 1501 members = 4 batches
-  1..500 - batch 1
-  501..1000 - batch 2
-  1001..1500 - batch 3
-  1501 - batch 4
-   */
   def batchIdentifierForChargeAndMember(optChargeAndMember: Option[ChargeAndMember], userDataBatchSize: Int):Option[BatchIdentifier] = {
     optChargeAndMember.map { chargeAndMember =>
       val batchType = chargeAndMember.batchType
@@ -83,18 +74,13 @@ class BatchService {
     }
   }
 
-  private def splitJsArrayIntoBatches(jsArray:JsArray, batchSize: Int, batchType: BatchType):Set[BatchInfo] = {
-    val lastItem = jsArray.value.size - 1
-    val maxBatch = (jsArray.value.size.toFloat / batchSize).ceil.toInt - 1
-    (0 to maxBatch).map{ index =>
-      val start = index * batchSize
-      val end = Math.min(start + batchSize, lastItem + 1)
-      BatchInfo(batchType, index + 1, JsArray(jsArray.value.slice(start, end)))
-    }.toSet
-  }
-
-  private def extractAndSplitMemberBasedCharges(payload: JsObject, batchSize: Int):Set[BatchInfo] = {
-    nodeInfoSet.flatMap { ni =>
+  def getChargeTypeJsObject(payload: JsObject, batchSize: Int, optBatchType:Option[BatchType] = None):Set[BatchInfo] = {
+    def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] =
+      (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
+    val nis = optBatchType.fold(nodeInfoSet) { bt =>
+      nodeInfoSet.filter(_.batchType == bt)
+    }
+    nis flatMap { ni =>
       getChargeJsArray(payload, ni.nodeNameCharge, ni.nodeNameMembers) match {
         case None => Nil
         case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ni.batchType)
@@ -102,7 +88,7 @@ class BatchService {
     }
   }
 
-  private def getOtherJsObject(payload: JsObject): JsObject = {
+  def getOtherJsObject(payload: JsObject): JsObject = {
     nodeInfoSet.foldLeft[JsObject](payload){ case (acc, ni) =>
       (acc \ ni.nodeNameCharge).toOption match {
         case None => acc
@@ -111,8 +97,27 @@ class BatchService {
     }
   }
 
-  private def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] =
-    (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
+  private def splitJsArrayIntoBatches(jsArray:JsArray, batchSize: Int, batchType: BatchType):Set[BatchInfo] = {
+    val lastItem = jsArray.value.size - 1
+    val maxBatch = (jsArray.value.size.toFloat / batchSize).ceil.toInt
+    (1 to maxBatch).map{ batchNo =>
+      getBatchInfoForBatch(jsArray, batchSize, batchType, batchNo)
+    }.toSet
+  }
+
+  /*
+    1001 items - batch size 500 - i.e. 3 batches
+    batch 1: 0 .. 499 (end will be 500)
+    batch 2: 500 .. 999 (end will be 1000)
+    batch 3: 1000 .. 1001 (end will be 1001)
+   */
+
+  private def getBatchInfoForBatch(jsArray:JsArray, batchSize: Int, batchType: BatchType, batchNo:Int):BatchInfo = {
+    val lastItem = jsArray.value.size - 1
+    val start = (batchNo - 1) * batchSize
+    val end = Math.min(start + batchSize, lastItem + 1)
+    BatchInfo(batchType, batchNo, JsArray(jsArray.value.slice(start, end)))
+  }
 }
 
 object BatchService {

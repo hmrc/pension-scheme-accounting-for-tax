@@ -48,7 +48,4 @@ object ChargeType extends Enumerable.Implicits {
   )
 
   def getChargeType(s:String):Option[ChargeType] = values.find( _.toString == s)
-  //
-  //implicit val enumerable: Enumerable[ChargeType] =
-  //  Enumerable(values.map(v => v.toString -> v): _*)
 }

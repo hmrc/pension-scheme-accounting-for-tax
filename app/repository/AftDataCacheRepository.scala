@@ -17,7 +17,7 @@
 package repository
 
 import com.google.inject.Inject
-import models.{LockDetail, ChargeAndMember}
+import models.{ChargeAndMember, LockDetail}
 import org.joda.time.{DateTimeZone, DateTime}
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
@@ -89,16 +89,6 @@ class AftDataCacheRepository @Inject()(
 
   private def userDataBatchSize:Int = configuration.get[Int](path = "mongodb.aft-cache.aft-journey.userDataBatchSize")
 
-  private def removeNotSessionData(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.warn(s"Removing document(s) from collection ${collection.name} id:$id")
-    val selector = BSONDocument(
-      "uniqueAftId" -> (id + sessionId),
-      "batchType" -> BSONDocument("$ne" -> BatchType.SessionData.toString)
-    )
-
-    collection.delete.one(selector).map(_.ok)
-  }
-
   // scalastyle:off method.length
   // If batchIdentifier is none then recreate and save all batches, else just update the specified batch
   private def saveToRepository(
@@ -111,44 +101,66 @@ class AftDataCacheRepository @Inject()(
     logger.debug("Calling saveToRepository in AFT Data Cache Repository")
     println(s"\nSaveToRepository with batchIdentifier $batchIdentifier")
 
-    removeNotSessionData(id, sessionId).flatMap{ _ =>
-      val batches = batchIdentifier match {
-        case None =>
-          batchService.createBatches(
-            userDataFullPayload = userData.as[JsObject],
-            userDataBatchSize = userDataBatchSize,
-            sessionDataPayload = sessionData.map{ sd =>
-              Json.toJson(sd).as[JsObject]
-            }
-          )
-        case Some(BatchIdentifier(Other, _)) => // TODO: Extract the Other batch from full payload BUT Won't need to if fetches already done that
-          // Call batchService.getOtherJsObject
-          Set(BatchInfo(Other, 1, userData.as[JsObject]))
-        case Some(BatchIdentifier(batchType, Some(batchNo))) => // TODO: Extract the member batch for batchNo from the full payload
-
-          Set(BatchInfo(batchType, batchNo, userData.as[JsObject]))
-        case _ => throw new RuntimeException(s"Unable to update all members for a batch type")
-      }
-
-      def selector(batchType: BatchType, batchNo: Int): BSONDocument =
-        BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
-
-      println( s"  .. Updating/inserting batch(es) $batches")
-      val setFutures = batches.map{ bi =>
-        implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-        val modifier = BSONDocument("$set" ->
-          Json.obj(
-            "id" -> id,
-            "data" -> bi.jsValue,
-            "lastUpdated" -> DateTime.now(DateTimeZone.UTC),
-            "expireAt" -> expireInSeconds
+    val batches = batchIdentifier match {
+      case None =>
+        batchService.createBatches(
+          userDataFullPayload = userData.as[JsObject],
+          userDataBatchSize = userDataBatchSize,
+          sessionDataPayload = sessionData.map{ sd =>
+            Json.toJson(sd).as[JsObject]
+          }
+        )
+      case Some(BatchIdentifier(Other, _)) =>
+        Set(BatchInfo(Other, 1, batchService.getOtherJsObject(userData.as[JsObject])))
+      case Some(BatchIdentifier(batchType, Some(batchNo))) =>
+        // TODO: Extract the member batch json for batchNo from the full payload
+        batchService.getBatchInfoForBatch(userData.as[JsObject], userDataBatchSize, batchType, batchNo)
+        val jsArrayForBatchNo = batchService.getChargeTypeJsObject
+        Set(
+          BatchInfo(
+            batchType,
+            batchNo,
+            jsArrayForBatchNo
           )
         )
-        collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
-      }
-
-      Future.sequence(setFutures).map(_.forall(_.ok))
+      case _ => throw new RuntimeException(s"Unable to update all members for a batch type")
     }
+
+      def selector(batchType: BatchType, batchNo: Int): BSONDocument =
+      BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
+
+    println( s"\nSaveToRepository: updating/inserting batch(es) $batches")
+    val setFutures = batches.map{ bi =>
+      implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+      val modifier = BSONDocument("$set" ->
+        Json.obj(
+          "id" -> id,
+          "data" -> bi.jsValue,
+          "lastUpdated" -> DateTime.now(DateTimeZone.UTC),
+          "expireAt" -> expireInSeconds
+        )
+      )
+      collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
+    }
+    // TODO: if updated ALL batches via upsert then we need to delete any documents which don't form part of this list of batches
+    //val setRemovalFutures = if (batches.size > 1) { // If updating ALL batches then clean up by removing any other batches
+    //  batches.map { b =>
+    //    b.batchType
+    //    b.batchNo
+    //  }
+    //} else {
+    //  Set[Future]()
+    //}
+    Future.sequence(setFutures).map(_.forall(_.ok))
+
+  }
+
+  private def removeNotSessionData(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+    val selector = BSONDocument(
+      "uniqueAftId" -> (id + sessionId),
+      "batchType" -> BSONDocument("$ne" -> BatchType.SessionData.toString)
+    )
+    collection.delete.one(selector).map(_.ok)
   }
 
   def save(
@@ -192,8 +204,8 @@ class AftDataCacheRepository @Inject()(
     val optBatchType = (batchJsValue \ "batchType").asOpt[String].flatMap(BatchType.getBatchType)
     val optBatchNo = (batchJsValue \ "batchNo").asOpt[Int]
     val optJsValue = (batchJsValue \ "data").asOpt[JsValue]
-    println(s"\nTransformToBatchInfo: batchJsValue = $batchJsValue")
-    println(s"  ... parsed as: $optBatchType, $optBatchNo, $optJsValue")
+    //println(s"\nTransformToBatchInfo: batchJsValue = $batchJsValue")
+    //println(s"  ... parsed as: $optBatchType, $optBatchNo, $optJsValue")
     (optBatchType, optBatchNo, optJsValue) match {
       case (Some(batchType), Some(batchNo), Some(jsValue)) =>
         Some(BatchInfo(batchType, batchNo, jsValue))
