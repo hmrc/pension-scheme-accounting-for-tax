@@ -74,13 +74,11 @@ class BatchService {
     }
   }
 
-  def getChargeTypeJsObject(payload: JsObject, batchSize: Int, optBatchType:Option[BatchType] = None):Set[BatchInfo] = {
-    def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] =
-      (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
-    val nis = optBatchType.fold(nodeInfoSet) { bt =>
-      nodeInfoSet.filter(_.batchType == bt)
-    }
-    nis flatMap { ni =>
+  private def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] =
+    (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
+
+  def getChargeTypeJsObject(payload: JsObject, batchSize: Int):Set[BatchInfo] = {
+    nodeInfoSet flatMap { ni =>
       getChargeJsArray(payload, ni.nodeNameCharge, ni.nodeNameMembers) match {
         case None => Nil
         case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ni.batchType)
@@ -88,16 +86,11 @@ class BatchService {
     }
   }
 
-  def getChargeTypeJsObjectX(payload: JsObject, batchSize: Int, optBatchIdentifier:Option[BatchIdentifier] = None):Set[BatchInfo] = {
-    def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] =
-      (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
-    val nis = optBatchIdentifier.fold(nodeInfoSet) { bi =>
-      nodeInfoSet.filter(_.batchType == bi.batchType)
-    }
-    nis flatMap { ni =>
+  def getChargeTypeJsObjectForBatch(payload: JsObject, batchSize: Int, batchType: BatchType, batchNo: Int):Option[BatchInfo] = {
+    nodeInfoSet.find(_.batchType == batchType) flatMap { ni =>
       getChargeJsArray(payload, ni.nodeNameCharge, ni.nodeNameMembers) match {
-        case None => Nil
-        case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ni.batchType)
+        case None => None
+        case Some(jsArray) => Some(getBatchInfoForBatch(jsArray, batchSize, batchType, batchNo))
       }
     }
   }

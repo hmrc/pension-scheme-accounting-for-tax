@@ -113,21 +113,12 @@ class AftDataCacheRepository @Inject()(
       case Some(BatchIdentifier(Other, _)) =>
         Set(BatchInfo(Other, 1, batchService.getOtherJsObject(userData.as[JsObject])))
       case Some(BatchIdentifier(batchType, Some(batchNo))) =>
-        // TODO: Extract the member batch json for batchNo from the full payload
-        batchService.getBatchInfoForBatch(userData.as[JsObject], userDataBatchSize, batchType, batchNo)
-        val jsArrayForBatchNo = batchService.getChargeTypeJsObject
-        Set(
-          BatchInfo(
-            batchType,
-            batchNo,
-            jsArrayForBatchNo
-          )
-        )
+        batchService.getChargeTypeJsObjectForBatch(userData.as[JsObject], userDataBatchSize, batchType, batchNo).toSet[BatchInfo]
       case _ => throw new RuntimeException(s"Unable to update all members for a batch type")
     }
 
-      def selector(batchType: BatchType, batchNo: Int): BSONDocument =
-      BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
+    def selector(batchType: BatchType, batchNo: Int): BSONDocument =
+    BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
 
     println( s"\nSaveToRepository: updating/inserting batch(es) $batches")
     val setFutures = batches.map{ bi =>
