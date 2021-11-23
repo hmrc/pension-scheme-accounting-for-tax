@@ -18,7 +18,7 @@ package services
 
 import models.enumeration.{WithName, Enumerable}
 import play.api.libs.json._
-import services.BatchService.BatchType.{ChargeE, Other, ChargeC, ChargeG, SessionData, ChargeD}
+import services.BatchService.BatchType.{ChargeE, Other, ChargeC, ChargeG, ChargeD}
 import helpers.JsonHelper._
 import models.ChargeAndMember
 
@@ -27,16 +27,10 @@ class BatchService {
 
   def createBatches(
     userDataFullPayload: JsObject,
-    userDataBatchSize: Int,
-    sessionDataPayload:Option[JsObject] = None
+    userDataBatchSize: Int
   ): Set[BatchInfo] = {
-    val batchInfoSessionDataSet = sessionDataPayload match {
-      case Some(jsObject) => Set(BatchInfo(SessionData, 1, jsObject))
-      case _ => Set()
-    }
     Set(BatchInfo(Other, 1, getOtherJsObject(userDataFullPayload))) ++
-      getChargeTypeJsObject(userDataFullPayload, userDataBatchSize) ++
-      batchInfoSessionDataSet
+      getChargeTypeJsObject(userDataFullPayload, userDataBatchSize)
   }
 
   def createUserDataFullPayload(batches: Seq[BatchInfo]): JsObject = {
@@ -58,9 +52,6 @@ class BatchService {
       acc ++ payloadForChargePlusMembers
     }
   }
-
-  def createSessionDataPayload(batches: Seq[BatchInfo]): Option[JsObject] =
-    batches.find(_.batchType == SessionData).map(_.jsValue.as[JsObject])
 
   def batchIdentifierForChargeAndMember(optChargeAndMember: Option[ChargeAndMember], userDataBatchSize: Int):Option[BatchIdentifier] = {
     optChargeAndMember.map { chargeAndMember =>

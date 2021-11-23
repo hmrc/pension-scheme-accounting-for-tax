@@ -102,19 +102,17 @@ class AftDataCacheRepository @Inject()(
   private def sessionDataHandler(
     id: String,
     sessionId: String,
-    sessionData: Option[SessionData]
+    sessionDataToSaveToRepository: Option[SessionData]
   ):Future[Option[BatchInfo]] = {
-    getBatchesFromRepository(id, Some(sessionId), Some(BatchType.SessionData, 1)).map { optSessionDataBatch =>
-      val ff = (sessionData, optSessionDataBatch) match {
-        case (sd@Some(_), None) => remove(id, sessionId).map(_ => sd)
-        case (_, None) => remove(id, sessionId).map(_ => None)
+    getBatchesFromRepository(id, Some(sessionId), Some(BatchType.SessionData, 1)).flatMap { sessionDataBatchRetrievedFromRepository =>
+      (sessionDataToSaveToRepository, sessionDataBatchRetrievedFromRepository) match {
+        case (Some(sdToSave), None) =>
+          remove(id, sessionId).map(_ => Some(BatchInfo(BatchType.SessionData, 1, Json.toJson(sdToSave).as[JsObject])))
+        case (Some(sdToSave), Some(Seq(_))) =>
+          Future.successful(Some(BatchInfo(BatchType.SessionData, 1, Json.toJson(sdToSave).as[JsObject])))
         case (None, Some(Seq(bi))) => Future.successful(Some(bi))
-        case (_, Some(Seq(batchInfo))) =>
-          sessionData.map{ sd =>
-            Json.toJson(sd).as[JsObject]
-          }
+        case _ => remove(id, sessionId).map(_ => None).map(_ => throw new RuntimeException("No session data found"))
       }
-      ff
     }
   }
 
@@ -130,22 +128,24 @@ class AftDataCacheRepository @Inject()(
     logger.debug("Calling saveToRepository in AFT Data Cache Repository")
     println(s"\nSaveToRepository with batchIdentifier $batchIdentifier")
 
-    sessionDataHandler(id, sessionId, sessionData).flatMap{ fosd =>
-      val batches = batchIdentifier match {
+    sessionDataHandler(id, sessionId, sessionData).flatMap{ optionBatchInfo =>
+      val sessionDataBatchInfoSet = optionBatchInfo.fold(Set[BatchInfo]())(Set(_))
+      val batches = (batchIdentifier match {
         case None =>
           batchService.createBatches(
             userDataFullPayload = userData.as[JsObject],
-            userDataBatchSize = userDataBatchSize,
-            sessionDataPayload = sessionData.map{ sd =>
-              Json.toJson(sd).as[JsObject]
-            }
+            userDataBatchSize = userDataBatchSize
+            //,
+            //sessionDataPayload = sessionData.map{ sd =>
+            //  Json.toJson(sd).as[JsObject]
+            //}
           )
         case Some(BatchIdentifier(Other, _)) =>
           Set(BatchInfo(Other, 1, batchService.getOtherJsObject(userData.as[JsObject])))
         case Some(BatchIdentifier(batchType, Some(batchNo))) =>
           batchService.getChargeTypeJsObjectForBatch(userData.as[JsObject], userDataBatchSize, batchType, batchNo).toSet[BatchInfo]
         case _ => throw new RuntimeException(s"Unable to update all members for a batch type")
-      }
+      }) ++ sessionDataBatchInfoSet
 
       def selector(batchType: BatchType, batchNo: Int): BSONDocument =
       BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
@@ -186,14 +186,14 @@ class AftDataCacheRepository @Inject()(
     collection.delete.one(selector).map(_.ok)
   }
 
-  def oldSave(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.debug("Calling Save in AFT Cache")
-    val document: JsValue = Json.toJson(AftDataCache.applyDataCache(
-      id = id, None, data = userData, expireAt = expireInSeconds))
-    val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
-    val modifier = BSONDocument("$set" -> document)
-    collection.update.one(selector, modifier, upsert = true).map(_.ok)
-  }
+  //def oldSave(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+  //  logger.debug("Calling Save in AFT Cache")
+  //  val document: JsValue = Json.toJson(AftDataCache.applyDataCache(
+  //    id = id, None, data = userData, expireAt = expireInSeconds))
+  //  val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
+  //  val modifier = BSONDocument("$set" -> document)
+  //  collection.update.one(selector, modifier, upsert = true).map(_.ok)
+  //}
 
   def save(
     id: String,
