@@ -88,6 +88,43 @@ class BatchService {
     }
   }
 
+  def getChargeTypeJsObjectX(payload: JsObject, batchSize: Int, optBatchIdentifier:Option[BatchIdentifier] = None):Set[BatchInfo] = {
+    def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] =
+      (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
+    val nis = optBatchIdentifier.fold(nodeInfoSet) { bi =>
+      nodeInfoSet.filter(_.batchType == bi.batchType)
+    }
+    nis flatMap { ni =>
+      getChargeJsArray(payload, ni.nodeNameCharge, ni.nodeNameMembers) match {
+        case None => Nil
+        case Some(jsArray) => splitJsArrayIntoBatches(jsArray, batchSize, ni.batchType)
+      }
+    }
+  }
+
+  private def splitJsArrayIntoBatches(jsArray:JsArray, batchSize: Int, batchType: BatchType):Set[BatchInfo] = {
+    val maxBatch = (jsArray.value.size.toFloat / batchSize).ceil.toInt
+    (1 to maxBatch).map{ batchNo =>
+      getBatchInfoForBatch(jsArray, batchSize, batchType, batchNo)
+    }.toSet
+  }
+
+  private def getBatchInfoForBatch(jsArray:JsArray, batchSize: Int, batchType: BatchType, batchNo:Int):BatchInfo = {
+    val lastItem = jsArray.value.size - 1
+    val start = (batchNo - 1) * batchSize
+    val end = Math.min(start + batchSize, lastItem + 1)
+    BatchInfo(batchType, batchNo, JsArray(jsArray.value.slice(start, end)))
+  }
+
+  /*
+  1001 items - batch size 500 - i.e. 3 batches
+  batch 1: 0 .. 499 (end will be 500)
+  batch 2: 500 .. 999 (end will be 1000)
+  batch 3: 1000 .. 1001 (end will be 1001)
+ */
+
+
+
   def getOtherJsObject(payload: JsObject): JsObject = {
     nodeInfoSet.foldLeft[JsObject](payload){ case (acc, ni) =>
       (acc \ ni.nodeNameCharge).toOption match {
@@ -95,28 +132,6 @@ class BatchService {
         case _ => acc.removeObject( JsPath \ ni.nodeNameCharge \ ni.nodeNameMembers ).getOrElse(acc)
       }
     }
-  }
-
-  private def splitJsArrayIntoBatches(jsArray:JsArray, batchSize: Int, batchType: BatchType):Set[BatchInfo] = {
-    val lastItem = jsArray.value.size - 1
-    val maxBatch = (jsArray.value.size.toFloat / batchSize).ceil.toInt
-    (1 to maxBatch).map{ batchNo =>
-      getBatchInfoForBatch(jsArray, batchSize, batchType, batchNo)
-    }.toSet
-  }
-
-  /*
-    1001 items - batch size 500 - i.e. 3 batches
-    batch 1: 0 .. 499 (end will be 500)
-    batch 2: 500 .. 999 (end will be 1000)
-    batch 3: 1000 .. 1001 (end will be 1001)
-   */
-
-  private def getBatchInfoForBatch(jsArray:JsArray, batchSize: Int, batchType: BatchType, batchNo:Int):BatchInfo = {
-    val lastItem = jsArray.value.size - 1
-    val start = (batchNo - 1) * batchSize
-    val end = Math.min(start + batchSize, lastItem + 1)
-    BatchInfo(batchType, batchNo, JsArray(jsArray.value.slice(start, end)))
   }
 }
 

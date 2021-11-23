@@ -36,6 +36,7 @@ object ChargeType extends Enumerable.Implicits {
   case object ChargeTypeOverseasTransfer extends WithName("overseasTransfer") with ChargeType
   case object ChargeTypeShortService extends WithName("shortService") with ChargeType
   case object ChargeTypeLumpSumDeath extends WithName("lumpSumDeath") with ChargeType
+  case object ChargeTypeNone extends WithName("none") with ChargeType
 
   val values: Seq[ChargeType] = Seq(
     ChargeTypeAnnualAllowance,
@@ -44,7 +45,8 @@ object ChargeType extends Enumerable.Implicits {
     ChargeTypeLifetimeAllowance,
     ChargeTypeOverseasTransfer,
     ChargeTypeShortService,
-    ChargeTypeLumpSumDeath
+    ChargeTypeLumpSumDeath,
+    ChargeTypeNone
   )
 
   def getChargeType(s:String):Option[ChargeType] = values.find( _.toString == s)
