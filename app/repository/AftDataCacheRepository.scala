@@ -26,7 +26,7 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import repository.model.SessionData
+import repository.model.{SessionData, AftDataCache}
 import services.BatchService
 import services.BatchService.BatchType.Other
 import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
@@ -94,6 +94,30 @@ class AftDataCacheRepository @Inject()(
 
   private def userDataBatchSize:Int = configuration.get[Int](path = "mongodb.aft-cache.aft-journey.userDataBatchSize")
 
+  /*
+  get session data
+  if no session data then remove all docs
+  if there is session data but no sessionData parameter specified then update the expireAt field
+ */
+  private def sessionDataHandler(
+    id: String,
+    sessionId: String,
+    sessionData: Option[SessionData]
+  ):Future[Option[BatchInfo]] = {
+    getBatchesFromRepository(id, Some(sessionId), Some(BatchType.SessionData, 1)).map { optSessionDataBatch =>
+      val ff = (sessionData, optSessionDataBatch) match {
+        case (sd@Some(_), None) => remove(id, sessionId).map(_ => sd)
+        case (_, None) => remove(id, sessionId).map(_ => None)
+        case (None, Some(Seq(bi))) => Future.successful(Some(bi))
+        case (_, Some(Seq(batchInfo))) =>
+          sessionData.map{ sd =>
+            Json.toJson(sd).as[JsObject]
+          }
+      }
+      ff
+    }
+  }
+
   // scalastyle:off method.length
   // If batchIdentifier is none then recreate and save all batches, else just update the specified batch
   private def saveToRepository(
@@ -106,67 +130,52 @@ class AftDataCacheRepository @Inject()(
     logger.debug("Calling saveToRepository in AFT Data Cache Repository")
     println(s"\nSaveToRepository with batchIdentifier $batchIdentifier")
 
-    /*
-      get session data
-      if no session data then remove all docs
-      if there is session data but no sessionData parameter specified then update the expireAt field
-     */
-
-    val xx = getBatchesFromRepository(id, Some(sessionId), Some(BatchType.SessionData, 1)).map { optSessionDataBatch =>
-      (sessionData, optSessionDataBatch) match {
-        case (_, None) => remove(id, sessionId)
-        case (None, Some(Seq(batchInfo))) =>
-          batchInfo.jsValue.as[JsObject]
-        case (_, Some(Seq(batchInfo))) =>
-          sessionData.map{ sd =>
-            Json.toJson(sd).as[JsObject]
-          }
+    sessionDataHandler(id, sessionId, sessionData).flatMap{ fosd =>
+      val batches = batchIdentifier match {
+        case None =>
+          batchService.createBatches(
+            userDataFullPayload = userData.as[JsObject],
+            userDataBatchSize = userDataBatchSize,
+            sessionDataPayload = sessionData.map{ sd =>
+              Json.toJson(sd).as[JsObject]
+            }
+          )
+        case Some(BatchIdentifier(Other, _)) =>
+          Set(BatchInfo(Other, 1, batchService.getOtherJsObject(userData.as[JsObject])))
+        case Some(BatchIdentifier(batchType, Some(batchNo))) =>
+          batchService.getChargeTypeJsObjectForBatch(userData.as[JsObject], userDataBatchSize, batchType, batchNo).toSet[BatchInfo]
+        case _ => throw new RuntimeException(s"Unable to update all members for a batch type")
       }
-    }
 
-    val batches = batchIdentifier match {
-      case None =>
-        batchService.createBatches(
-          userDataFullPayload = userData.as[JsObject],
-          userDataBatchSize = userDataBatchSize,
-          sessionDataPayload = sessionData.map{ sd =>
-            Json.toJson(sd).as[JsObject]
-          }
+      def selector(batchType: BatchType, batchNo: Int): BSONDocument =
+      BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
+
+      println( s"\nSaveToRepository: updating/inserting batch(es) $batches")
+      val setFutures = batches.map{ bi =>
+        implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+
+        val document: JsValue = Json.toJson(
+          AftDataCache.applyDataCache(
+            id = id,
+            data = bi.jsValue,
+            expireAt = expireInSeconds(bi.batchType)
+          )
         )
-      case Some(BatchIdentifier(Other, _)) =>
-        Set(BatchInfo(Other, 1, batchService.getOtherJsObject(userData.as[JsObject])))
-      case Some(BatchIdentifier(batchType, Some(batchNo))) =>
-        batchService.getChargeTypeJsObjectForBatch(userData.as[JsObject], userDataBatchSize, batchType, batchNo).toSet[BatchInfo]
-      case _ => throw new RuntimeException(s"Unable to update all members for a batch type")
+        val modifier = BSONDocument("$set" -> document)
+
+        collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
+      }
+      // TODO: if updated ALL batches via upsert then we need to delete any documents which don't form part of this list of batches
+      //val setRemovalFutures = if (batches.size > 1) { // If updating ALL batches then clean up by removing any other batches
+      //  batches.map { b =>
+      //    b.batchType
+      //    b.batchNo
+      //  }
+      //} else {
+      //  Set[Future]()
+      //}
+      Future.sequence(setFutures).map(_.forall(_.ok))
     }
-
-    def selector(batchType: BatchType, batchNo: Int): BSONDocument =
-    BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
-
-    println( s"\nSaveToRepository: updating/inserting batch(es) $batches")
-    val setFutures = batches.map{ bi =>
-      implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-      val modifier = BSONDocument("$set" ->
-        Json.obj(
-          "id" -> id,
-          "data" -> bi.jsValue,
-          "lastUpdated" -> DateTime.now(DateTimeZone.UTC),
-          "expireAt" -> expireInSeconds(bi.batchType)
-        )
-      )
-      collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
-    }
-    // TODO: if updated ALL batches via upsert then we need to delete any documents which don't form part of this list of batches
-    //val setRemovalFutures = if (batches.size > 1) { // If updating ALL batches then clean up by removing any other batches
-    //  batches.map { b =>
-    //    b.batchType
-    //    b.batchNo
-    //  }
-    //} else {
-    //  Set[Future]()
-    //}
-    Future.sequence(setFutures).map(_.forall(_.ok))
-
   }
 
   private def removeNotSessionData(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
@@ -175,6 +184,15 @@ class AftDataCacheRepository @Inject()(
       "batchType" -> BSONDocument("$ne" -> BatchType.SessionData.toString)
     )
     collection.delete.one(selector).map(_.ok)
+  }
+
+  def oldSave(id: String, userData: JsValue, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.debug("Calling Save in AFT Cache")
+    val document: JsValue = Json.toJson(AftDataCache.applyDataCache(
+      id = id, None, data = userData, expireAt = expireInSeconds))
+    val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
+    val modifier = BSONDocument("$set" -> document)
+    collection.update.one(selector, modifier, upsert = true).map(_.ok)
   }
 
   def save(
