@@ -48,8 +48,13 @@ class AftDataCacheRepository @Inject()(
 
   override val logger: Logger = LoggerFactory.getLogger("AftDataCacheRepository")
 
-  private def expireInSeconds: DateTime = DateTime.now(DateTimeZone.UTC).
-    plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"))
+  private def expireInSeconds(batchType:BatchType): DateTime = {
+    val ttlConfigItem = batchType match {
+      case BatchType.SessionData => "mongodb.aft-cache.aft-journey.timeToLiveInSeconds"
+      case _ => "mongodb.aft-cache.aft-journey.maxTimeToLiveInSeconds"
+    }
+    DateTime.now(DateTimeZone.UTC).plusSeconds(configuration.get[Int](path = ttlConfigItem))
+  }
 
   val collectionIndexes = Seq(
     Index(
@@ -60,7 +65,7 @@ class AftDataCacheRepository @Inject()(
       ), Some("unique-aft-batch"), unique = true, background = true),
     Index(Seq(("uniqueAftId", IndexType.Ascending)), Some("unique_Aft_Id"), unique = false, background = true),
     Index(Seq(("id", IndexType.Ascending)), Some("srn_startDt_key"), background = true),
-    Index(Seq(("expireAt", IndexType.Ascending)), Some("dataExpiry"), unique = true, options = BSONDocument("expireAfterSeconds" -> 0))
+    Index(Seq(("expireAt", IndexType.Ascending)), Some("dataExpiry"), unique = false, options = BSONDocument("expireAfterSeconds" -> 0))
   )
 
   (for {
@@ -101,6 +106,24 @@ class AftDataCacheRepository @Inject()(
     logger.debug("Calling saveToRepository in AFT Data Cache Repository")
     println(s"\nSaveToRepository with batchIdentifier $batchIdentifier")
 
+    /*
+      get session data
+      if no session data then remove all docs
+      if there is session data but no sessionData parameter specified then update the expireAt field
+     */
+
+    val xx = getBatchesFromRepository(id, Some(sessionId), Some(BatchType.SessionData, 1)).map { optSessionDataBatch =>
+      (sessionData, optSessionDataBatch) match {
+        case (_, None) => remove(id, sessionId)
+        case (None, Some(Seq(batchInfo))) =>
+          batchInfo.jsValue.as[JsObject]
+        case (_, Some(Seq(batchInfo))) =>
+          sessionData.map{ sd =>
+            Json.toJson(sd).as[JsObject]
+          }
+      }
+    }
+
     val batches = batchIdentifier match {
       case None =>
         batchService.createBatches(
@@ -128,7 +151,7 @@ class AftDataCacheRepository @Inject()(
           "id" -> id,
           "data" -> bi.jsValue,
           "lastUpdated" -> DateTime.now(DateTimeZone.UTC),
-          "expireAt" -> expireInSeconds
+          "expireAt" -> expireInSeconds(bi.batchType)
         )
       )
       collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
