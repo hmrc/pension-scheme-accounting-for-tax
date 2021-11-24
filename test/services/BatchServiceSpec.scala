@@ -19,8 +19,7 @@ package services
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsObject, JsArray, Json}
-import services.BatchService.BatchType.SessionData
-import services.BatchService.{BatchInfo, BatchType}
+import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 
 class BatchServiceSpec extends AnyWordSpec with Matchers {
   // scalastyle:off magic.number
@@ -45,15 +44,6 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val payload = payloadOther ++ payloadChargeTypeA
       batchService.createBatches(payload, batchSize) mustBe Set(
         BatchInfo(BatchType.Other, 1, payload)
-      )
-    }
-
-    "return correct batch info with no member-based charges plus a session data payload" in {
-      val payload = payloadOther ++ payloadChargeTypeA
-      val sessionDataPayload = Json.obj("test" -> "test")
-      batchService.createBatches(payload, batchSize, Some(sessionDataPayload)) mustBe Set(
-        BatchInfo(BatchType.Other, 1, payload),
-        BatchInfo(BatchType.SessionData, 1, sessionDataPayload)
       )
     }
 
@@ -336,19 +326,30 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     }
   }
 
-  "createSessionDataPayload" must {
-    "return none where no session data batch is present" in {
-      batchService.createSessionDataPayload(Nil) mustBe None
-    }
-
-    "return the session data payload where present" in {
-      val sessionDataJsobject = Json.obj("test" -> "test")
-      val batches = Seq(
-        BatchInfo(SessionData, 1, sessionDataJsobject)
+  "lastBatchNo" must {
+    "return the last batch number for each batch type" in {
+      val dummyPayload = Json.obj()
+      val dummyJsArray = JsArray()
+      val batches = Set(
+        BatchInfo(BatchType.Other, 1, dummyPayload),
+        BatchInfo(BatchType.ChargeC, 1, dummyJsArray),
+        BatchInfo(BatchType.ChargeD, 2, dummyJsArray),
+        BatchInfo(BatchType.ChargeD, 1, dummyJsArray),
+        BatchInfo(BatchType.ChargeE, 1, dummyJsArray),
+        BatchInfo(BatchType.ChargeG, 1, dummyJsArray),
+        BatchInfo(BatchType.ChargeG, 2, dummyJsArray),
+        BatchInfo(BatchType.ChargeG, 3, dummyJsArray)
       )
-      batchService.createSessionDataPayload(batches) mustBe Some(sessionDataJsobject)
+      batchService.lastBatchNo(batches) mustBe Set(
+        BatchIdentifier(BatchType.Other, Some(1)),
+        BatchIdentifier(BatchType.ChargeC, Some(1)),
+        BatchIdentifier(BatchType.ChargeD, Some(2)),
+        BatchIdentifier(BatchType.ChargeE, Some(1)),
+        BatchIdentifier(BatchType.ChargeG, Some(3))
+      )
     }
   }
+
 }
 
 object BatchServiceSpec {

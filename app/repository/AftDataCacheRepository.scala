@@ -23,6 +23,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.ImplicitBSONHandlers._
@@ -33,9 +34,8 @@ import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import java.time.{LocalDate, LocalTime}
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import scala.concurrent.{ExecutionContext, Future}
 
 class AftDataCacheRepository @Inject()(
@@ -126,9 +126,7 @@ class AftDataCacheRepository @Inject()(
     }
   }
 
-  def now:String = {
-    "[time" + DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()) + "]"
-  }
+  private def now:String = "[time" + DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()) + "]"
 
   // scalastyle:off method.length
   private def saveToRepository(
@@ -157,6 +155,8 @@ class AftDataCacheRepository @Inject()(
       case Some(BatchIdentifier(batchType, None)) => throw new RuntimeException(s"Unable to update all members for batch type $batchType")
     }
 
+    val lastBatchNos = batchIdentifier.fold(batchService.lastBatchNo(batchesExcludingSessionData))(_=>Set())
+
     getSessionDataBatch(id, sessionId, sessionData).flatMap{ sessionDataBatchInfo =>
       val batches = Set(sessionDataBatchInfo) ++ batchesExcludingSessionData
       println( s"\nSaveToRepository: updating/inserting batch(es) $now")
@@ -171,9 +171,9 @@ class AftDataCacheRepository @Inject()(
         )
         collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
       }
-      // TODO: if updated ALL batches via upsert then we need to delete any documents which don't form part of this list of batches
-      Future.sequence(setFutures).map(_.forall(_.ok)).map { yy =>
-        println( s"\nSaveToRepository: FINISHED updating/inserting batch(es) $now")
+      val allFutures = setFutures ++ lastBatchNos.map(removeBatchesGT(id, sessionId, _))
+      Future.sequence(allFutures).map(_.forall(_.ok)).map { yy =>
+        println( s"\nSaveToRepository: FINISHED updating/inserting/deleting batch(es) $now")
         yy
       }
     }
@@ -302,6 +302,17 @@ class AftDataCacheRepository @Inject()(
     logger.warn(s"Removing document(s) from collection ${collection.name} id:$id")
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     collection.delete.one(selector).map(_.ok)
+  }
+
+  private def removeBatchesGT(id: String, sessionId: String, batchInfo: BatchIdentifier)(implicit ec: ExecutionContext): Future[WriteResult] = {
+    logger.warn(s"Removing document(s) from collection ${collection.name} id:$id")
+    val selector = BSONDocument(
+      "uniqueAftId" -> (id + sessionId),
+      "batchType" -> batchInfo.batchType.toString,
+      "batchNo" -> BSONDocument( "$gt" -> batchInfo.batchNo.toString)
+    )
+
+    collection.delete.one(selector)
   }
 
   // TODO: Remove: I don't think this is used. It doesn't really make any sense. What is meant by lockedBy.sessionId? It isn't called from aft fe.
