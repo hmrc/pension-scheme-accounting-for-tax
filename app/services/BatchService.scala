@@ -62,7 +62,7 @@ class BatchService {
       val batchType = chargeAndMember.batchType
       val batchNo = (batchType, chargeAndMember.memberNo) match {
         case (Other, _) => 1
-        case (_, Some(memberNo)) => (memberNo / userDataBatchSize).ceil.toInt - 1
+        case (_, Some(memberNo)) => (memberNo.toFloat  / userDataBatchSize).ceil.toInt
         case _ => 1 // will not happen!
       }
       BatchIdentifier(batchType, batchNo)

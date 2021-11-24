@@ -156,7 +156,9 @@ class AftDataCacheRepository @Inject()(
     getSessionDataBatch(id, sessionId, sessionData).flatMap{ sessionDataBatchInfo =>
       val batches = Set(sessionDataBatchInfo) ++ batchesExcludingSessionData
       println( s"\nSaveToRepository: updating/inserting batch(es) $now")
+
       val setFutures = batches.map{ bi =>
+//        println( s"\nVALUE=========>batchType=${bi.batchType} and batchNo=${bi.batchNo} " + bi.jsValue )
         val modifier = BSONDocument("$set" ->
           Json.obj(
             "id" -> id,
