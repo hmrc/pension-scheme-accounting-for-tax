@@ -144,15 +144,11 @@ class AftDataCacheRepository @Inject()(
 
     val batchesExcludingSessionData = batchIdentifier match {
       case None =>
-        batchService.createBatches(
-          userDataFullPayload = userData.as[JsObject],
-          userDataBatchSize = userDataBatchSize
-        )
+        batchService.createBatches(userDataFullPayload = userData.as[JsObject], userDataBatchSize = userDataBatchSize)
       case Some(BatchIdentifier(Other, _)) =>
         Set(BatchInfo(Other, 1, batchService.getOtherJsObject(userData.as[JsObject])))
-      case Some(BatchIdentifier(batchType, Some(batchNo))) =>
+      case Some(BatchIdentifier(batchType, batchNo)) =>
         batchService.getChargeTypeJsObjectForBatch(userData.as[JsObject], userDataBatchSize, batchType, batchNo).toSet[BatchInfo]
-      case Some(BatchIdentifier(batchType, None)) => throw new RuntimeException(s"Unable to update all members for batch type $batchType")
     }
 
     val lastBatchNos = batchIdentifier.fold(batchService.lastBatchNo(batchesExcludingSessionData))(_=>Set())

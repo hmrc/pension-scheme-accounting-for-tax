@@ -341,11 +341,11 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         BatchInfo(BatchType.ChargeG, 3, dummyJsArray)
       )
       batchService.lastBatchNo(batches) mustBe Set(
-        BatchIdentifier(BatchType.Other, Some(1)),
-        BatchIdentifier(BatchType.ChargeC, Some(1)),
-        BatchIdentifier(BatchType.ChargeD, Some(2)),
-        BatchIdentifier(BatchType.ChargeE, Some(1)),
-        BatchIdentifier(BatchType.ChargeG, Some(3))
+        BatchIdentifier(BatchType.Other, 1),
+        BatchIdentifier(BatchType.ChargeC, 1),
+        BatchIdentifier(BatchType.ChargeD, 2),
+        BatchIdentifier(BatchType.ChargeE, 1),
+        BatchIdentifier(BatchType.ChargeG, 3)
       )
     }
   }

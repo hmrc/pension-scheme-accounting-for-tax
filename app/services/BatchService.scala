@@ -35,7 +35,7 @@ class BatchService {
 
   def lastBatchNo(batches: Set[BatchInfo]): Set[BatchIdentifier] =
     batches.toSeq.groupBy(_.batchType)
-      .map(g => BatchIdentifier(g._1, Some(g._2.map(_.batchNo).max))).toSet
+      .map(g => BatchIdentifier(g._1, g._2.map(_.batchNo).max)).toSet
 
   def createUserDataFullPayload(batches: Seq[BatchInfo]): JsObject = {
     val payloadForOtherBatch = batches
@@ -61,9 +61,9 @@ class BatchService {
     optChargeAndMember.map { chargeAndMember =>
       val batchType = chargeAndMember.batchType
       val batchNo = (batchType, chargeAndMember.memberNo) match {
-        case (Other, _) => Some(1)
-        case (_, None) => None
-        case (_, Some(memberNo)) => Some((memberNo / userDataBatchSize).ceil.toInt - 1)
+        case (Other, _) => 1
+        case (_, Some(memberNo)) => (memberNo / userDataBatchSize).ceil.toInt - 1
+        case _ => 1 // will not happen!
       }
       BatchIdentifier(batchType, batchNo)
     }
@@ -146,7 +146,7 @@ object BatchService {
     def getBatchType(s:String):Option[BatchType] = batchTypes.find( _.toString == s)
   }
 
-  case class BatchIdentifier(batchType: BatchType, batchNo: Option[Int])
+  case class BatchIdentifier(batchType: BatchType, batchNo: Int)
 
   case class BatchInfo(batchType: BatchType, batchNo: Int, jsValue: JsValue)
 
