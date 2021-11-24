@@ -38,10 +38,15 @@ object FeatureToggleName {
     val asString = "migration-transfer-aft"
   }
 
-  val toggles = Seq(MigrationTransferAft)
+  case object BatchedRepositoryAFT extends FeatureToggleName {
+    val asString = "batched-repository-aft"
+  }
+
+  val toggles = Seq(MigrationTransferAft, BatchedRepositoryAFT)
 
   implicit val reads: Reads[FeatureToggleName] = Reads {
     case JsString(MigrationTransferAft.asString) => JsSuccess(MigrationTransferAft)
+    case JsString(BatchedRepositoryAFT.asString) => JsSuccess(BatchedRepositoryAFT)
     case _ => JsError("Unrecognised feature toggle name")
   }
 

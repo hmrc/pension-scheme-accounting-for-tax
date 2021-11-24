@@ -32,7 +32,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.AftDataCacheRepository
+import repository.AftBatchedDataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
@@ -50,7 +50,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   private val mockDesConnector = mock[DesConnector]
   private val mockAftService = mock[AFTService]
   private val authConnector: AuthConnector = mock[AuthConnector]
-  private val mockDataCacheRepository = mock[AftDataCacheRepository]
+  private val mockDataCacheRepository = mock[AftBatchedDataCacheRepository]
 
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
@@ -64,7 +64,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       bind[AuthConnector].toInstance(authConnector),
       bind[DesConnector].toInstance(mockDesConnector),
       bind[AFTService].toInstance(mockAftService),
-      bind[AftDataCacheRepository].toInstance(mockDataCacheRepository)
+      bind[AftBatchedDataCacheRepository].toInstance(mockDataCacheRepository)
     )
 
   val application: Application = new GuiceApplicationBuilder()

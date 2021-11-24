@@ -48,7 +48,7 @@
 //import play.api.libs.json.Json
 //import play.api.test.FakeRequest
 //import play.api.test.Helpers._
-//import repository.AftDataCacheRepository
+//import repository.AftBatchedDataCacheRepository
 //import repository.model.SessionData
 //import uk.gov.hmrc.auth.core.AuthConnector
 //import uk.gov.hmrc.auth.core.Enrolment
@@ -67,7 +67,7 @@
 //
 //  implicit val hc: HeaderCarrier = HeaderCarrier()
 //
-//  private val repo = mock[AftDataCacheRepository]
+//  private val repo = mock[AftBatchedDataCacheRepository]
 //  private val authConnector: AuthConnector = mock[AuthConnector]
 //  private val id = "id"
 //  private val sessionId = "sessionId"
@@ -79,7 +79,7 @@
 //
 //  private val modules: Seq[GuiceableModule] = Seq(
 //    bind[AuthConnector].toInstance(authConnector),
-//    bind[AftDataCacheRepository].toInstance(repo)
+//    bind[AftBatchedDataCacheRepository].toInstance(repo)
 //  )
 //
 //  before {
