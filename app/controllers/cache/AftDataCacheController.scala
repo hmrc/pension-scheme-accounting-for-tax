@@ -84,7 +84,6 @@ class AftDataCacheController @Inject()(
           case _ =>
             request.body.asJson.map {
               jsValue =>
-
                 unbatchedRepository.save(id, jsValue, sessionId)
                   .map(_ => Created)
             } getOrElse Future.successful(BadRequest)
