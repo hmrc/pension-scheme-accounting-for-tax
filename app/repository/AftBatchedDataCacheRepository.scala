@@ -103,9 +103,9 @@ class AftBatchedDataCacheRepository @Inject()(
   private def getSessionDataBatch(
     id: String,
     sessionId: String,
-    sessionDataToSaveToRepository: Option[SessionData]
+    sessionDataToSaveToRepository: Option[SessionData] = None
   ):Future[Option[BatchInfo]] = {
-    getSessionDataBatchFromRepository(id, Some(sessionId))
+    getSessionDataBatchFromRepository(id, sessionId)
       .flatMap { sessionDataBatchRetrievedFromRepository =>
       (sessionDataToSaveToRepository, sessionDataBatchRetrievedFromRepository) match {
         case (Some(sdToSave), None) =>
@@ -142,7 +142,6 @@ class AftBatchedDataCacheRepository @Inject()(
 
   private def now:String = "[time" + DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()) + "]"
 
-  // scalastyle:off method.length
   private def saveToRepository(
     id: String,
     sessionId: String,
@@ -187,7 +186,7 @@ class AftBatchedDataCacheRepository @Inject()(
     }
   }
 
-  private def jsonPayloadToSave(id: String, batchInfo:BatchInfo) = {
+  private def jsonPayloadToSave(id: String, batchInfo:BatchInfo):JsObject = {
     val userDataBatchSizeJson:JsObject = if (batchInfo.batchType == BatchType.SessionData) {
       Json.obj(
         "batchSize" -> userDataBatchSize
@@ -236,6 +235,63 @@ class AftBatchedDataCacheRepository @Inject()(
       userData = userData,
       sessionData = Some(SessionData(sessionId, lockDetail, version, accessMode, areSubmittedVersionsAvailable))
     )
+  }
+
+  def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
+    logger.debug("Calling getSessionData in AFT Cache")
+    getSessionDataBatch(id, sessionId, None).flatMap {
+      case Some(batchInfo) =>
+        lockedBy(sessionId, id).map { lockDetail =>
+          val sessionData = batchInfo.jsValue.asOpt[SessionData]
+          sessionData.map{ _ copy(lockDetail = lockDetail)}
+        }
+      case _ => Future.successful(None)
+    }
+  }
+
+  def get(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
+    logger.debug("Calling get in AFT Cache")
+    getSessionDataBatch(id, sessionId).flatMap {
+      case Some(_) =>
+        getBatchesFromRepository(id, Some(sessionId), excludeSessionDataBatch = true).flatMap {
+          case None => Future.successful(None)
+          case Some(seqBatchInfo) =>
+            println( s"\nGet: reconstructing full payload from batches $now")
+            val fullPayload = Some(batchService.createUserDataFullPayload(seqBatchInfo))
+            println( s"\nGet: COMPLETE reconstructing full payload from batches $now")
+            Future.successful(fullPayload)
+        }
+      case _ => Future.successful(None)
+    }
+  }
+
+  def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[LockDetail]] = {
+    logger.debug("Calling lockedBy in AFT Cache")
+    getBatchesFromRepository(id = id, batchTypeAndNo = Some(BatchIdentifier(BatchType.SessionData, 1))).map {
+      case None => None
+      case Some(seqBatchInfo) =>
+        seqBatchInfo
+          .flatMap(bi => bi.jsValue.asOpt[SessionData].toSeq)
+          .find(sd => sd.lockDetail.isDefined && sd.sessionId != sessionId)
+          .flatMap(_.lockDetail)
+    }
+  }
+
+  def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
+    logger.warn(s"Removing document(s) from collection ${collection.name} id:$id")
+    val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
+    collection.delete.one(selector).map(_.ok)
+  }
+
+  private def removeBatchesGT(id: String, sessionId: String, batchInfo: BatchIdentifier)(implicit ec: ExecutionContext): Future[WriteResult] = {
+    logger.warn(s"Removing document(s) from collection ${collection.name} id:$id")
+    val selector = BSONDocument(
+      "uniqueAftId" -> (id + sessionId),
+      "batchType" -> batchInfo.batchType.toString,
+      "batchNo" -> BSONDocument( "$gt" -> batchInfo.batchNo.toString)
+    )
+
+    collection.delete.one(selector)
   }
 
   private def transformToBatchInfo(batchJsValue:JsValue):Option[BatchInfo] = {
@@ -289,71 +345,18 @@ class AftBatchedDataCacheRepository @Inject()(
 
   private def getSessionDataBatchFromRepository(
     id: String,
-    optSessionId: Option[String]
+    sessionId: String
   )(implicit ec: ExecutionContext):Future[Option[SessionBatchInfo]] = {
-    findBatches(id, optSessionId, Some(BatchIdentifier(BatchType.SessionData, 1))).map {
+    findBatches(id, Some(sessionId), Some(BatchIdentifier(BatchType.SessionData, 1))).map {
       case batches if batches.isEmpty => None
       case batches =>
-         batches.headOption.map(batchJsValue =>
-           Tuple2(
-             transformToBatchInfo(batchJsValue),
-             transformToBatchSize(batchJsValue)
-           )
-         ).flatMap{ case (bi, bs) => bi.map(SessionBatchInfo(_, bs.getOrElse(0)))}
+        batches.headOption.map(batchJsValue =>
+          Tuple2(
+            transformToBatchInfo(batchJsValue),
+            transformToBatchSize(batchJsValue)
+          )
+        ).flatMap{ case (bi, bs) => bi.map(SessionBatchInfo(_, bs.getOrElse(0)))}
     }
-  }
-
-  def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
-    logger.debug("Calling getSessionData in AFT Cache")
-    getSessionDataBatch(id, sessionId, None).flatMap {
-      case Some(batchInfo) =>
-        lockedBy(sessionId, id).map { lockDetail =>
-          val sessionData = batchInfo.jsValue.asOpt[SessionData]
-          sessionData.map{ _ copy(lockDetail = lockDetail)}
-        }
-      case _ => Future.successful(None)
-    }
-  }
-
-  def get(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
-    logger.debug("Calling get in AFT Cache")
-    getSessionDataBatch(id, sessionId, None).flatMap {
-      case Some(_) =>
-        getBatchesFromRepository(id, Some(sessionId), excludeSessionDataBatch = true).flatMap {
-          case None => Future.successful(None)
-          case Some(seqBatchInfo) => Future.successful(Some(batchService.createUserDataFullPayload(seqBatchInfo)))
-        }
-      case _ => Future.successful(None)
-    }
-  }
-
-  def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[LockDetail]] = {
-    logger.debug("Calling lockedBy in AFT Cache")
-    getBatchesFromRepository(id = id, batchTypeAndNo = Some(BatchIdentifier(BatchType.SessionData, 1))).map {
-      case None => None
-      case Some(seqBatchInfo) =>
-        seqBatchInfo
-          .flatMap(bi => bi.jsValue.asOpt[SessionData].toSeq)
-          .find(sd => sd.lockDetail.isDefined && sd.sessionId != sessionId)
-          .flatMap(_.lockDetail)
-    }
-  }
-
-  def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.warn(s"Removing document(s) from collection ${collection.name} id:$id")
-    val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
-    collection.delete.one(selector).map(_.ok)
-  }
-
-  private def removeBatchesGT(id: String, sessionId: String, batchInfo: BatchIdentifier)(implicit ec: ExecutionContext): Future[WriteResult] = {
-    logger.warn(s"Removing document(s) from collection ${collection.name} id:$id")
-    val selector = BSONDocument(
-      "uniqueAftId" -> (id + sessionId),
-      "batchType" -> batchInfo.batchType.toString,
-      "batchNo" -> BSONDocument( "$gt" -> batchInfo.batchNo.toString)
-    )
-
-    collection.delete.one(selector)
   }
 
   private case class SessionBatchInfo(batchInfo:BatchInfo, batchSize:Int)
