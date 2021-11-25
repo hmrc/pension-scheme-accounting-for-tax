@@ -324,6 +324,23 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         payloadChargeTypeG(numberOfItems = 5)
       batchService.createUserDataFullPayload(batches) mustBe expectedPayload
     }
+
+    "return correct json if there is an 'other' batch with some values but no charge nodes and " +
+      "one minimal batch of one member-based charge (E)" in {
+      val batches = Seq(
+        BatchInfo(BatchType.Other, 1, payloadOther),
+        BatchInfo(BatchType.ChargeE, 1, payloadChargeTypeEMemberMinimal)
+      )
+      val expectedPayload = payloadOther ++ concatenateNodes(
+        Seq(
+          Json.obj(
+        "members" -> payloadChargeTypeEMemberMinimal
+          )
+        ), nodeNameChargeE
+      )
+
+      batchService.createUserDataFullPayload(batches) mustBe expectedPayload
+    }
   }
 
   "lastBatchNo" must {
@@ -519,6 +536,22 @@ object BatchServiceSpec {
                      | }
                      |""".stripMargin).as[JsObject]
       }
+    )
+  }
+
+  private def payloadChargeTypeEMemberMinimal:JsArray = {
+    JsArray(
+      Seq(
+        Json.parse(s"""
+                      | {
+                      |  "memberDetails": {
+                      |   "firstName" : "Jack",
+                      |   "lastName" : "Spratt",
+                      |   "nino" : "CS121212C"
+                      |  }
+                      | }
+                      |""".stripMargin).as[JsObject]
+      )
     )
   }
 

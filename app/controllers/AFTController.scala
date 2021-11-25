@@ -54,7 +54,7 @@ class AFTController @Inject()(
     implicit request =>
 
       post { (pstr, userAnswersJson) =>
-
+println("\n>>>INCOMING PAYLOAD:" + userAnswersJson)
         logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
         userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
 

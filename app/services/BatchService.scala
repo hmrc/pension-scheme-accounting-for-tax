@@ -49,7 +49,13 @@ class BatchService {
         .sortBy(_.batchNo)
         .foldLeft[JsArray](JsArray()){ (a, bi) => a ++ bi.jsValue.as[JsArray] }
 
-      val payloadForChargePlusMembers = (acc \ ni.nodeNameCharge).asOpt[JsObject].map { jsObjForChargeNode =>
+      val nodeValueCharge = (acc \ ni.nodeNameCharge).asOpt[JsObject] match {
+        case existingNode@Some(_) => existingNode
+        case None if allMembersForCharge.value.isEmpty => None
+        case None => Some(Json.obj())
+      }
+
+      val payloadForChargePlusMembers = nodeValueCharge.map { jsObjForChargeNode =>
         val jsObjForChargeNodePlusMembers = jsObjForChargeNode ++ Json.obj(ni.nodeNameMembers -> allMembersForCharge)
         Json.obj(ni.nodeNameCharge -> jsObjForChargeNodePlusMembers)
       }.getOrElse(Json.obj())
