@@ -234,18 +234,6 @@ class AftDataCacheController @Inject()(
       }
   }
 
-  def releaseLockWithSessionId: Action[AnyContent] = Action.async {
-    implicit request =>
-      getSessionId { sessionId =>
-        featureToggleService.get(BatchedRepositoryAFT).flatMap {
-          case Enabled(_) =>
-            batchedRepository.removeWithSessionId(sessionId).map(_ => Ok)
-          case _ =>
-            unbatchedRepository.removeWithSessionId(sessionId).map(_ => Ok)
-        }
-      }
-  }
-
   private def getIdWithName(block: (String, String, String) => Future[Result])
                            (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name) {
@@ -273,16 +261,6 @@ class AftDataCacheController @Inject()(
         val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
         val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
         block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim, psaOrPspId)
-      case _ => Future.failed(CredNameNotFoundFromAuth())
-    }
-  }
-
-  private def getSessionId(block: (String) => Future[Result])
-                          (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name) {
-      case Some(_) =>
-        val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
-        block(sessionId)
       case _ => Future.failed(CredNameNotFoundFromAuth())
     }
   }

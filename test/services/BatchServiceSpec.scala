@@ -326,6 +326,23 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
     }
 
     "return correct json if there is an 'other' batch with some values but no charge nodes and " +
+      "one minimal batch of one member-based charge (C)" in {
+      val batches = Seq(
+        BatchInfo(BatchType.Other, 1, payloadOther),
+        BatchInfo(BatchType.ChargeC, 1, payloadChargeTypeCMemberMinimal)
+      )
+      val expectedPayload = payloadOther ++ concatenateNodes(
+        Seq(
+          Json.obj(
+            "employers" -> payloadChargeTypeCMemberMinimal
+          )
+        ), nodeNameChargeC
+      )
+
+      batchService.createUserDataFullPayload(batches) mustBe expectedPayload
+    }
+
+    "return correct json if there is an 'other' batch with some values but no charge nodes and " +
       "one minimal batch of one member-based charge (E)" in {
       val batches = Seq(
         BatchInfo(BatchType.Other, 1, payloadOther),
@@ -536,6 +553,29 @@ object BatchServiceSpec {
                      | }
                      |""".stripMargin).as[JsObject]
       }
+    )
+  }
+
+  private def payloadChargeTypeCMemberMinimal:JsArray = {
+    JsArray(
+      Seq(
+        Json.parse(s"""
+                      | {
+                      |  "whichTypeOfSponsoringEmployer" : "organisation",
+                      |  "sponsoringOrganisationDetails" : {
+                      |   "name" : "ACME Ltd",
+                      |   "crn" : "AB123456"
+                      |  },
+                      |  "sponsoringEmployerAddress" : {
+                      |   "line1" : "10 Other Place",
+                      |   "line2" : "Some District",
+                      |   "line3" : "Anytown",
+                      |   "country" : "GB",
+                      |   "postcode" : "ZZ1 1ZZ"
+                      |  }
+                      | }
+                      |""".stripMargin).as[JsObject]
+      )
     )
   }
 
