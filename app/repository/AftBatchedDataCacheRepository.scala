@@ -289,7 +289,7 @@ class AftBatchedDataCacheRepository @Inject()(
 
   private def getSessionDataBatchFromRepository(
     id: String,
-    optSessionId: Option[String] = None
+    optSessionId: Option[String]
   )(implicit ec: ExecutionContext):Future[Option[SessionBatchInfo]] = {
     findBatches(id, optSessionId, Some(BatchIdentifier(BatchType.SessionData, 1))).map {
       case batches if batches.isEmpty => None
