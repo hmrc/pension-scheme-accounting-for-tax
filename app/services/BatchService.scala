@@ -64,15 +64,16 @@ class BatchService {
   }
 
   def batchIdentifierForChargeAndMember(optChargeAndMember: Option[ChargeAndMember], userDataBatchSize: Int):Option[BatchIdentifier] = {
-    optChargeAndMember.map { chargeAndMember =>
+    optChargeAndMember.flatMap { chargeAndMember =>
       val batchType = chargeAndMember.batchType
       val batchNo = (batchType, chargeAndMember.memberNo) match {
-        case (Other, _) => 1
-        case (_, Some(memberNo)) =>
-          (memberNo.toFloat  / userDataBatchSize).ceil.toInt
-        case _ => 1 // will not happen!
+        case (Other, _) => Some(1)
+        case (_, Some(memberNo)) => Some((memberNo.toFloat  / userDataBatchSize).ceil.toInt)
+        case _ => None
       }
-      BatchIdentifier(batchType, batchNo)
+      batchNo.map { bn =>
+        BatchIdentifier(batchType, bn)
+      }
     }
   }
 
@@ -110,15 +111,6 @@ class BatchService {
     val end = Math.min(start + batchSize, lastItem + 1)
     BatchInfo(batchType, batchNo, JsArray(jsArray.value.slice(start, end)))
   }
-
-  /*
-  1001 items - batch size 500 - i.e. 3 batches
-  batch 1: 0 .. 499 (end will be 500)
-  batch 2: 500 .. 999 (end will be 1000)
-  batch 3: 1000 .. 1001 (end will be 1001)
- */
-
-
 
   def getOtherJsObject(payload: JsObject): JsObject = {
     nodeInfoSet.foldLeft[JsObject](payload){ case (acc, ni) =>
