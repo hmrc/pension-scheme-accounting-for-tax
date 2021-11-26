@@ -142,6 +142,13 @@ class AftBatchedDataCacheRepository @Inject()(
 
   private def now:String = "[time" + DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()) + "]"
 
+  private def log(s:String):Unit = println( s"\n$s $now")
+
+  private def log[A](s:String, a:A):A = {
+    println( s"\n$s $now")
+    a
+  }
+
   private def saveToRepository(
     id: String,
     sessionId: String,
@@ -151,9 +158,7 @@ class AftBatchedDataCacheRepository @Inject()(
   )(implicit ec: ExecutionContext): Future[Boolean] = {
     require( batchIdentifier.forall(_.batchType != BatchType.SessionData) )
     logger.debug("Calling saveToRepository in AFT Data Cache Repository")
-    def selector(batchType: BatchType, batchNo: Int): BSONDocument =
-      BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
-    println(s"\nSaveToRepository with batchIdentifier $batchIdentifier $now")
+    log(s"SaveToRepository with batchIdentifier $batchIdentifier")
 
     getSessionDataBatch(id, sessionId, sessionData).flatMap{
       case Some(sessionDataBatchInfo) =>
@@ -169,19 +174,20 @@ class AftBatchedDataCacheRepository @Inject()(
         val lastBatchNos = batchIdentifier.fold(batchService.lastBatchNo(batchesExcludingSessionData))(_=>Set())
 
         val batches = Set(sessionDataBatchInfo) ++ batchesExcludingSessionData
-        println( s"\nSaveToRepository: updating/inserting batch(es) $now")
+        def selector(batchType: BatchType, batchNo: Int): BSONDocument =
+          BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
 
+        log( s"SaveToRepository: updating/inserting batch(es)")
         val setFutures = batches.map{ bi =>
           val modifier = BSONDocument("$set" -> jsonPayloadToSave(id, bi))
           collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
         }
         val allFutures = setFutures ++ lastBatchNos.map(removeBatchesGT(id, sessionId, _))
         Future.sequence(allFutures).map(_.forall(_.ok)).map { b =>
-          println( s"\nSaveToRepository: FINISHED updating/inserting/deleting batch(es) $now")
-          b
+          log( s"SaveToRepository: Finished updating/inserting batch(es)", b)
         }
       case _ =>
-        println( "\nUNABLE TO SAVE TO REPO AS NO SESSION DATA FOUND IN REPO OR TO SAVE")
+        log( "UNABLE TO SAVE TO REPO AS NO SESSION DATA FOUND IN REPO OR TO SAVE")
         Future.successful(false)
     }
   }
@@ -256,9 +262,9 @@ class AftBatchedDataCacheRepository @Inject()(
         getBatchesFromRepository(id, Some(sessionId), excludeSessionDataBatch = true).flatMap {
           case None => Future.successful(None)
           case Some(seqBatchInfo) =>
-            println( s"\nGet: reconstructing full payload from batches $now")
+            log( s"Get: Started reconstructing full payload from batches")
             val fullPayload = Some(batchService.createUserDataFullPayload(seqBatchInfo))
-            println( s"\nGet: COMPLETE reconstructing full payload from batches $now")
+            log( s"Get: Finished reconstructing full payload from batches")
             Future.successful(fullPayload)
         }
       case _ => Future.successful(None)
@@ -284,7 +290,7 @@ class AftBatchedDataCacheRepository @Inject()(
   }
 
   private def removeBatchesGT(id: String, sessionId: String, batchInfo: BatchIdentifier)(implicit ec: ExecutionContext): Future[WriteResult] = {
-    logger.warn(s"Removing document(s) from collection ${collection.name} id:$id")
+    logger.warn(s"Removing document(s) greater than last batch no from collection ${collection.name} id:$id")
     val selector = BSONDocument(
       "uniqueAftId" -> (id + sessionId),
       "batchType" -> batchInfo.batchType.toString,
@@ -355,7 +361,7 @@ class AftBatchedDataCacheRepository @Inject()(
             transformToBatchInfo(batchJsValue),
             transformToBatchSize(batchJsValue)
           )
-        ).flatMap{ case (bi, bs) => bi.map(SessionBatchInfo(_, bs.getOrElse(0)))}
+        ).flatMap{ case (batchInfo, batchSize) => batchInfo.map(SessionBatchInfo(_, batchSize.getOrElse(0)))}
     }
   }
 
