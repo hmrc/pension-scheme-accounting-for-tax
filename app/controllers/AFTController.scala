@@ -17,6 +17,8 @@
 package controllers
 
 import connectors.DesConnector
+import models.FeatureToggle.Enabled
+import models.FeatureToggleName.AftOverviewCache
 import models.{AFTSubmitterDetails, VersionsWithSubmitter}
 
 import javax.inject.{Inject, Singleton}
@@ -24,7 +26,8 @@ import models.enumeration.JourneyType
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
-import services.AFTService
+import repository.AftOverviewCacheRepository
+import services.{AFTService, FeatureToggleService}
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
@@ -41,7 +44,9 @@ class AFTController @Inject()(
                                val authConnector: AuthConnector,
                                aftReturnTransformer: AFTReturnTransformer,
                                aftDetailsTransformer: AFTDetailsTransformer,
-                               aftService: AFTService
+                               aftService: AFTService,
+                               featureToggleService: FeatureToggleService,
+                               aftOverviewCacheRepository: AftOverviewCacheRepository
                              )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -133,14 +138,29 @@ class AFTController @Inject()(
       }
   }
 
-  def getOverview: Action[AnyContent] = Action.async {
+  def getOverview(refresh: Option[Boolean] = None): Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
         request.headers.get("endDate") match {
           case Some(endDate) =>
-            desConnector.getAftOverview(pstr, startDate, endDate).flatMap {
-              data =>
+            featureToggleService.get(AftOverviewCache).flatMap {
+              case Enabled(_) if !refresh.contains(true) =>
+                aftOverviewCacheRepository.get(pstr).flatMap {
+                  case Some(data) => Future.successful(Ok(data))
+                  case _ => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
+                    aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
+                      Ok(Json.toJson(data))
+                    }
+                  }
+                }
+              case Enabled(_) => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
+                aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
+                  Ok(Json.toJson(data))
+                }
+              }
+              case _ => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
                 Future.successful(Ok(Json.toJson(data)))
+              }
             }
           case _ =>
             Future.failed(new BadRequestException("Bad Request with no endDate"))

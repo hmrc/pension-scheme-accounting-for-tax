@@ -8,7 +8,7 @@ GET           /get-is-aft-non-zero                                              
 GET           /get-aft-versions                                                     controllers.AFTController.getVersions
 GET           /get-versions-with-submitter                                      controllers.AFTController.getVersionsWithSubmitter
 
-GET           /get-aft-overview                                                     controllers.AFTController.getOverview
+GET           /get-aft-overview                                                     controllers.AFTController.getOverview(refresh: Option[Boolean])
 
 GET           /journey-cache/aft/session-data                                       controllers.cache.AftDataCacheController.getSessionData
 POST          /journey-cache/aft/session-data                                       controllers.cache.AftDataCacheController.setSessionData(lock:Boolean=false)
