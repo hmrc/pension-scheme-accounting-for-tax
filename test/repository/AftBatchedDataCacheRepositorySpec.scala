@@ -21,101 +21,67 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONDocument
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import services.BatchService
-import services.BatchService.{BatchInfo, BatchType}
+import services.BatchService.BatchType
 import com.github.simplyscala.{MongoEmbedDatabase, MongodProps}
-import de.flapdoodle.embed.process.runtime.Network
 import org.mockito.MockitoSugar
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import play.api.libs.json.{JsObject, JsArray, Json}
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
 import uk.gov.hmrc.mongo.MongoConnector
+import org.scalatest.concurrent.ScalaFutures.whenReady
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with MongoEmbedDatabase with BeforeAndAfter {
 
+  import AftBatchedDataCacheRepositorySpec._
 
   var mongoProps: MongodProps = null
 
-  before {
-    //mongoProps = mongoStart()   // by default port = 12345 & version = Version.3.3.1
-
-  }                               // add your own port & version parameters in mongoStart method if you need it
+  before { mongoProps = mongoStart() }
 
   after { mongoStop(mongoProps) }
 
-  "aa" must {
-    "aa" in {
-      mongoProps = mongoStart()
-      val mockConfig = mock[Configuration]
-      val batchService = new BatchService()
-      val a = Network.getLocalHost
-      val b = Network.getFreeServerPort
-      val c = a.getHostAddress + ":" + b.toString
-      println("\n>>" + c)
+  "remove" must {
+    "remove a document if present" in {
+      val aftBatchedDataCacheRepository = new AftBatchedDataCacheRepository(rmc, configuration, batchService )
 
-      //ava.lang.Exception: Invalid mongodb.uri '127.0.1.1:33659'
+      val modifier = BSONDocument("$set" -> Json.obj("uniqueAftId" -> uniqueAftId ))
 
-      val xx: MongoConnector = MongoConnector(c)
-
-      val a1 = new ReactiveMongoComponent {
-        override def mongoConnector = xx
-      }
-      val repository = new AftBatchedDataCacheRepository(a1, mockConfig, batchService )
-
-      val id = "aa"
-      val sessionId = "bb"
-      val bi = BatchInfo(BatchType.ChargeG, 1, JsArray())
-
-      def selector(batchType: BatchType, batchNo: Int): BSONDocument =
-        BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
-
-      val modifier = BSONDocument("$set" -> jsonPayloadToSave(id, bi))
-
-      repository.collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
-
-      repository.remove(id, sessionId).map { result =>
-        result mustBe true
+      whenReady(aftBatchedDataCacheRepository.collection.update.one(selectorByUniqueAftId(id, sessionId), modifier, upsert = true)) { _ =>
+        whenReady(aftBatchedDataCacheRepository.remove(id, sessionId)) { result =>
+          result mustBe true
+          whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { result =>
+            result.isEmpty mustBe true
+          }
+        }
       }
     }
   }
+}
 
-  def jsonPayloadToSave(id: String, batchInfo:BatchInfo):JsObject = {
-    val userDataBatchSizeJson:JsObject = if (batchInfo.batchType == BatchType.SessionData) {
-      Json.obj(
-        "batchSize" -> 5
-      )
-    } else {
-      Json.obj()
-    }
-    Json.obj(
-      "id" -> id,
-      "data" -> batchInfo.jsValue,
-      "expireAt" -> 1000
-    ) ++ userDataBatchSizeJson
+object AftBatchedDataCacheRepositorySpec {
+  private val id = "aa"
+  private val sessionId = "bb"
+  private val uniqueAftId = id + sessionId
+  private val app = new GuiceApplicationBuilder()
+    .overrides(
+      //bind[AftBatchedDataCacheRepository].toInstance(mockDataCacheRepository)
+    )
+    .build()
+  private val configuration = app.injector.instanceOf[Configuration]
+  private val batchService = new BatchService()
+  private val databaseName = "aft-batches"
+  private val mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
+  private val mongoConnectorForTest = MongoConnector(mongoUri)
+  private val rmc = new ReactiveMongoComponent {
+    override def mongoConnector: MongoConnector = mongoConnectorForTest
   }
+  private def selector(batchType: BatchType, batchNo: Int): BSONDocument =
+    BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
 
-  //test("some test with mongo") {
-  //  ...
-  //}
-
-  //test("test with fixture") {
-  //  //add your own port & version parameters in withEmbedMongoFixture method if you need it
-  //  withEmbedMongoFixture() { mongodProps =>
-  //    mongodProps
-  //
-  //
-  //    //val person = MongoDBObject("name"->"Manish")
-  //    //val queryResult = mongoCRUD.insertPerson(person)
-  //    ////assert if the document was inserted into database
-  //    //println(mongoCRUD.findPerson(person).toList)
-  //    //assert(mongoCRUD.findPerson(person).count === 1)
-  //
-  //    // do some mongo database operations
-  //    // in this fixture the dabatase is started
-  //    // at the end of this fixture the database is stopped
-  //  }
-  //}
-
+    private def selectorByUniqueAftId(id:String, sessionId:String): BSONDocument =
+    BSONDocument("uniqueAftId" -> (id + sessionId))
 }
