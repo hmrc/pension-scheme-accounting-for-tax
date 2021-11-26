@@ -18,7 +18,7 @@ package services
 
 
 import models.FeatureToggle.Disabled
-import models.FeatureToggleName.MigrationTransferAft
+import models.FeatureToggleName._
 import models._
 import play.api.cache.AsyncCacheApi
 import repository.AdminDataRepository
@@ -34,9 +34,7 @@ class FeatureToggleService @Inject()(
                                     )(implicit ec: ExecutionContext) {
   private val cacheValidFor: FiniteDuration = Duration(2, Seconds)
 
-  private val defaults: Seq[FeatureToggle] = Seq(
-    Disabled(MigrationTransferAft)
-  )
+  private val defaults: Seq[FeatureToggle] = Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache))
 
   private def addDefaults(fromDb: Seq[FeatureToggle]): Seq[FeatureToggle] = {
     val toAdd = defaults.filterNot(d => fromDb.exists(fdb => fdb.name == d.name))
