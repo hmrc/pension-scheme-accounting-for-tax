@@ -179,7 +179,7 @@ class AftBatchedDataCacheRepository @Inject()(
 
         log( s"SaveToRepository: updating/inserting batch(es)")
         val setFutures = batches.map{ bi =>
-          val modifier = BSONDocument("$set" -> jsonPayloadToSave(id, bi))
+          val modifier = BSONDocument.apply("$set" -> jsonPayloadToSave(id, bi))
           collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
         }
         val allFutures = setFutures ++ lastBatchNos.map(removeBatchesGT(id, sessionId, _))

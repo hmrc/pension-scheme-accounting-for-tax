@@ -24,6 +24,7 @@ object AppDependencies {
     "com.github.tomakehurst"  %  "wiremock"                 % "2.26.0"                % "test",
     "org.scalacheck"          %% "scalacheck"               % "1.14.0"                % "test",
     "org.pegdown"             %  "pegdown"                  % "1.6.0"                 % "test, it",
-    "com.github.tomakehurst"  %  "wiremock-jre8"            % "2.26.0"                % "test"
+    "com.github.tomakehurst"  %  "wiremock-jre8"            % "2.26.0"                % "test",
+    "com.github.simplyscala"  %% "scalatest-embedmongo"     % "0.2.4"                 % "test"
   )
 }
