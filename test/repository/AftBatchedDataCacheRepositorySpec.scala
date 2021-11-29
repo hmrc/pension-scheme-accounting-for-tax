@@ -63,7 +63,6 @@ class AftBatchedDataCacheRepositorySpec
         mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
 
         val fullPayload = payloadOther ++ payloadChargeTypeA
-        when(batchService.lastBatchNo(any())).thenReturn(Set())
         when(batchService.batchIdentifierForChargeAndMember(any(), any()))
           .thenReturn(Some(BatchIdentifier(BatchType.Other, 1)))
         when(batchService.getOtherJsObject(ArgumentMatchers.eq(fullPayload))).thenReturn(dummyJson)
