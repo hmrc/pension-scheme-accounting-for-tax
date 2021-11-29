@@ -29,7 +29,6 @@ import org.mockito.{ArgumentCaptor, MockitoSugar, ArgumentMatchers}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, JsArray, Json, JsValue}
 import uk.gov.hmrc.mongo.MongoConnector
 import org.scalatest.concurrent.ScalaFutures.whenReady
@@ -64,7 +63,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
   "save" must {
     "save de-reg charge batch correctly in Mongo collection where there is some session data" in {
       mongoCollectionDrop()
-      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId), batchSize = 2)
+      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
       mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
 
       val fullPayload = payloadOther ++ payloadChargeTypeA
@@ -91,7 +90,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
 
     "save member-based charge batch for a member correctly in Mongo collection where there is some session data" in {
       mongoCollectionDrop()
-      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId), batchSize = 2)
+      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
       mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
 
       val fullPayload = payloadOther ++ payloadChargeTypeC(5)
@@ -122,7 +121,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
 
     "re-size batches when batch size changed" in {
       mongoCollectionDrop()
-      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId), batchSize = 2)
+      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
       mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
 
       val biCaptor:ArgumentCaptor[Seq[BatchInfo]] = ArgumentCaptor.forClass(classOf[Seq[BatchInfo]])
@@ -188,7 +187,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
   "get" must {
     "return previously entered items minus the session data batch" in {
       mongoCollectionDrop()
-      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId), batchSize = 2)
+      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
       mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
 
       val biCaptor = ArgumentCaptor.forClass(classOf[Seq[BatchInfo]])
@@ -213,7 +212,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
 
     "return None if there are no batches but there is a session data batch" in {
       mongoCollectionDrop()
-      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId), batchSize = 2)
+      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
       when(batchService.createUserDataFullPayload(any())).thenReturn(dummyJson)
 
       val result = Await.result(aftBatchedDataCacheRepository.get(id, sessionId), Duration.Inf)
@@ -224,7 +223,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
   "getSessionData" must {
     "return the session data batch with no lock info if not locked by another user" in {
       mongoCollectionDrop()
-      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId, None), batchSize = 2)
+      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId, None))
 
       val result = Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf)
       result mustBe Some(sessionData(sessionId, None))
@@ -232,8 +231,8 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
 
     "return the session data batch with lock info if locked by another user" in {
       mongoCollectionDrop()
-      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId, None), batchSize = 2)
-      mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId), batchSize = 2)
+      mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId, None))
+      mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
 
       val result = Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf)
       result mustBe Some(sessionData(sessionId))
@@ -283,7 +282,7 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     Await.result(Future.sequence(ff).map{ _.forall(_.ok)}, Duration.Inf)
   }
 
-  private def mongoCollectionInsertSessionDataBatch(id:String, sessionId: String, sd:SessionData, batchSize:Int):Boolean = {
+  private def mongoCollectionInsertSessionDataBatch(id:String, sessionId: String, sd:SessionData):Boolean = {
     val selector: BSONDocument =
       BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> BatchType.SessionData.toString, "batchNo" -> 1)
 
@@ -292,18 +291,20 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
         "id" -> id,
         "id" -> sessionId,
         "data" -> Json.toJson(sd),
-        "batchSize" -> batchSize
+        "batchSize" -> 2
       )
     )
 
     Await.result(aftBatchedDataCacheRepository.collection.update.one(selector, modifier, upsert = true), Duration.Inf).ok
   }
 
-  private def printAll():Unit = {
-    whenReady(aftBatchedDataCacheRepository.findAll()) { x =>
-      println("\n>>>>" + x)
+  /* Useful debug code:-
+    private def printAll():Unit = {
+      whenReady(aftBatchedDataCacheRepository.findAll()) { x =>
+        println("\n>>>>" + x)
+      }
     }
-  }
+  */
 
   private val mockAppConfig = mock[AppConfig]
 
@@ -316,7 +317,6 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
   private val anotherSessionId = "id2"
   private val uniqueAftId = id + sessionId
   private val lockDetail = Some(LockDetail(name = "Billy Wiggins", "A123456"))
-  private val app = new GuiceApplicationBuilder().build()
   private val batchService = mock[BatchService]
   private val databaseName = "aft-batches"
   private val mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
@@ -331,9 +331,6 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     accessMode = accessMode,
     areSubmittedVersionsAvailable = false
   )
-
-  private def selectorByUniqueAftId(id:String, sessionId:String): BSONDocument =
-    BSONDocument("uniqueAftId" -> (id + sessionId))
 
   def checkResult(batchType:BatchType, batchNo:Int, jsValue:JsValue, expectedBatches:Set[BatchInfo]):scalatest.Assertion = {
     (batchType, batchNo) match {
