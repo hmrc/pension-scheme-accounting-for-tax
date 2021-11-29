@@ -26,7 +26,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
-import repository.AftBatchedDataCacheRepository
+import repository.AftDataCacheRepository
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
@@ -43,7 +43,7 @@ class AuditServiceSpec extends AnyWordSpec with Matchers with Inside {
 
       implicit val request: FakeRequest[AnyContentAsEmpty.type] = fakeRequest()
 
-      val event = TestAuditEvent("test-audit-userDataFullPayload")
+      val event = TestAuditEvent("test-audit-payload")
       val templateCaptor = ArgumentCaptor.forClass(classOf[ExtendedDataEvent])
 
       when(mockAuditConnector.sendExtendedEvent(any())(any(), any()))
@@ -56,7 +56,7 @@ class AuditServiceSpec extends AnyWordSpec with Matchers with Inside {
           auditSource mustBe appName
           auditType mustBe "TestAuditEvent"
           detail mustBe Json.obj(
-            "userDataFullPayload" -> "test-audit-userDataFullPayload"
+            "payload" -> "test-audit-payload"
           )
       }
     }
@@ -68,12 +68,12 @@ class AuditServiceSpec extends AnyWordSpec with Matchers with Inside {
 object AuditServiceSpec extends MockitoSugar {
 
   private val mockAuditConnector: AuditConnector = mock[AuditConnector]
-  private val mockDataCacheRepository = mock[AftBatchedDataCacheRepository]
+  private val mockDataCacheRepository = mock[AftDataCacheRepository]
 
   private val app = new GuiceApplicationBuilder()
     .overrides(
       bind[AuditConnector].toInstance(mockAuditConnector),
-      bind[AftBatchedDataCacheRepository].toInstance(mockDataCacheRepository)
+      bind[AftDataCacheRepository].toInstance(mockDataCacheRepository)
     )
     .build()
 
@@ -93,7 +93,7 @@ case class TestAuditEvent(payload: String) extends AuditEvent {
 
   override def details: JsObject =
     Json.obj(
-      "userDataFullPayload" -> payload
+      "payload" -> payload
     )
 
 }

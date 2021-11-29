@@ -31,7 +31,6 @@ import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
-import repository.AftBatchedDataCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http._
 import utils.{JsonFileReader, WireMockHelper}
@@ -49,7 +48,6 @@ class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
 
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
-  private val mockDataCacheRepository = mock[AftBatchedDataCacheRepository]
   private val mockHeaderUtils = mock[HeaderUtils]
 
   private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
@@ -57,7 +55,6 @@ class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
       bind[AuditService].toInstance(mockAuditService),
-      bind[AftBatchedDataCacheRepository].toInstance(mockDataCacheRepository),
       bind[AFTService].toInstance(mockAftService),
       bind[HeaderUtils].toInstance(mockHeaderUtils)
     )
