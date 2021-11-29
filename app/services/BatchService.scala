@@ -77,9 +77,6 @@ class BatchService {
     }
   }
 
-  private def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] =
-    (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
-
   def getChargeTypeJsObject(payload: JsObject, batchSize: Int):Set[BatchInfo] = {
     nodeInfoSet flatMap { ni =>
       getChargeJsArray(payload, ni.nodeNameCharge, ni.nodeNameMembers) match {
@@ -98,6 +95,18 @@ class BatchService {
     }
   }
 
+  def getOtherJsObject(payload: JsObject): JsObject = {
+    nodeInfoSet.foldLeft[JsObject](payload){ case (acc, ni) =>
+      (acc \ ni.nodeNameCharge).toOption match {
+        case None => acc
+        case _ => acc.removeObject( JsPath \ ni.nodeNameCharge \ ni.nodeNameMembers ).getOrElse(acc)
+      }
+    }
+  }
+
+  private def getChargeJsArray(payload: JsObject, node:String, arrayNode:String):Option[JsArray] =
+    (payload \ node).toOption.flatMap{ jsValue => (jsValue.as[JsObject] \ arrayNode).asOpt[JsArray]}
+
   private def splitJsArrayIntoBatches(jsArray:JsArray, batchSize: Int, batchType: BatchType):Set[BatchInfo] = {
     val maxBatch = (jsArray.value.size.toFloat / batchSize).ceil.toInt
     (1 to maxBatch).map{ batchNo =>
@@ -110,15 +119,6 @@ class BatchService {
     val start = (batchNo - 1) * batchSize
     val end = Math.min(start + batchSize, lastItem + 1)
     BatchInfo(batchType, batchNo, JsArray(jsArray.value.slice(start, end)))
-  }
-
-  def getOtherJsObject(payload: JsObject): JsObject = {
-    nodeInfoSet.foldLeft[JsObject](payload){ case (acc, ni) =>
-      (acc \ ni.nodeNameCharge).toOption match {
-        case None => acc
-        case _ => acc.removeObject( JsPath \ ni.nodeNameCharge \ ni.nodeNameMembers ).getOrElse(acc)
-      }
-    }
   }
 }
 

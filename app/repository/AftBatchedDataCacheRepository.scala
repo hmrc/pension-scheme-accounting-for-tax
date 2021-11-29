@@ -17,10 +17,10 @@
 package repository
 
 import com.google.inject.Inject
+import config.AppConfig
 import models.{ChargeAndMember, LockDetail}
 import org.joda.time.{DateTimeZone, DateTime}
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.Configuration
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
@@ -40,11 +40,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AftBatchedDataCacheRepository @Inject()(
                                         mongoComponent: ReactiveMongoComponent,
-                                        configuration: Configuration,
-                                        batchService: BatchService
+                                        batchService: BatchService,
+                                        appConfig: AppConfig
                                       )(implicit val ec: ExecutionContext)
   extends ReactiveRepository[JsValue, BSONObjectID](
-    configuration.get[String](path = "mongodb.aft-cache.aft-batches.name"),
+    appConfig.mongoDBAFTBatchesCollectionName,
     mongoComponent.mongoConnector.db,
     implicitly
   ) {
@@ -55,10 +55,10 @@ class AftBatchedDataCacheRepository @Inject()(
 
   private def expireInSeconds(batchType:BatchType): DateTime = {
     val ttlConfigItem = batchType match {
-      case BatchType.SessionData => "mongodb.aft-cache.aft-batches.timeToLiveInSeconds"
-      case _ => "mongodb.aft-cache.aft-batches.maxTimeToLiveInSeconds"
+      case BatchType.SessionData => appConfig.mongoDBAFTBatchesTTL
+      case _ => appConfig.mongoDBAFTBatchesMaxTTL
     }
-    DateTime.now(DateTimeZone.UTC).plusSeconds(configuration.get[Int](path = ttlConfigItem))
+    DateTime.now(DateTimeZone.UTC).plusSeconds(ttlConfigItem)
   }
 
   val collectionIndexes = Seq(
@@ -98,7 +98,7 @@ class AftBatchedDataCacheRepository @Inject()(
     )
   }
 
-  private def userDataBatchSize:Int = configuration.get[Int](path = "mongodb.aft-cache.aft-batches.userDataBatchSize")
+  private def userDataBatchSize:Int = appConfig.mongoDBUserDataBatchSize
 
   private def getSessionDataBatch(
     id: String,
@@ -251,7 +251,8 @@ class AftBatchedDataCacheRepository @Inject()(
           val sessionData = batchInfo.jsValue.asOpt[SessionData]
           sessionData.map{ _ copy(lockDetail = lockDetail)}
         }
-      case _ => Future.successful(None)
+      case _ =>
+        Future.successful(None)
     }
   }
 
@@ -274,7 +275,8 @@ class AftBatchedDataCacheRepository @Inject()(
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[LockDetail]] = {
     logger.debug("Calling lockedBy in AFT Cache")
     getBatchesFromRepository(id = id, batchTypeAndNo = Some(BatchIdentifier(BatchType.SessionData, 1))).map {
-      case None => None
+      case None =>
+        None
       case Some(seqBatchInfo) =>
         seqBatchInfo
           .flatMap(bi => bi.jsValue.asOpt[SessionData].toSeq)
@@ -294,7 +296,7 @@ class AftBatchedDataCacheRepository @Inject()(
     val selector = BSONDocument(
       "uniqueAftId" -> (id + sessionId),
       "batchType" -> batchInfo.batchType.toString,
-      "batchNo" -> BSONDocument( "$gt" -> batchInfo.batchNo.toString)
+      "batchNo" -> BSONDocument( "$gt" -> batchInfo.batchNo)
     )
 
     collection.delete.one(selector)
