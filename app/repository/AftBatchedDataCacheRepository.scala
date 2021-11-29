@@ -98,7 +98,7 @@ class AftBatchedDataCacheRepository @Inject()(
     )
   }
 
-  private def userDataBatchSize:Int = appConfig.mongoDBUserDataBatchSize
+  private def userDataBatchSize:Int = appConfig.mongoDBAFTBatchesUserDataBatchSize
 
   private def getSessionDataBatch(
     id: String,

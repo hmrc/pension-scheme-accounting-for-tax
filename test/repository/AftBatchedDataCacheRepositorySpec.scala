@@ -55,7 +55,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
 
   override def beforeEach: Unit = {
     super.beforeEach
-    when(mockAppConfig.mongoDBUserDataBatchSize).thenReturn(2)
+    when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(2)
     when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
     when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
     when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn("aft-batches")
@@ -126,7 +126,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
       mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
 
       val biCaptor:ArgumentCaptor[Seq[BatchInfo]] = ArgumentCaptor.forClass(classOf[Seq[BatchInfo]])
-      when(mockAppConfig.mongoDBUserDataBatchSize).thenReturn(4)
+      when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(4)
       when(batchService.createUserDataFullPayload(biCaptor.capture())).thenReturn(dummyJson)
       when(batchService.createBatches(any(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
       val fullPayload = payloadOther ++ payloadChargeTypeA

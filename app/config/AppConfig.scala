@@ -35,7 +35,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   lazy val desEnvironment: String = runModeConfiguration.getOptional[String]("microservice.services.des-hod.env").getOrElse("local")
   lazy val authorization: String = "Bearer " + runModeConfiguration.getOptional[String]("microservice.services.des-hod.authorizationToken").getOrElse("local")
 
-  val mongoDBUserDataBatchSize: Int = config.get[Int](path = "mongodb.aft-cache.aft-batches.userDataBatchSize")
+  val mongoDBAFTBatchesUserDataBatchSize: Int = config.get[Int](path = "mongodb.aft-cache.aft-batches.userDataBatchSize")
   val mongoDBAFTBatchesCollectionName: String = config.get[String](path = "mongodb.aft-cache.aft-batches.name")
   val mongoDBAFTBatchesTTL: Int = config.get[Int](path = "mongodb.aft-cache.aft-batches.timeToLiveInSeconds")
   val mongoDBAFTBatchesMaxTTL: Int = config.get[Int](path = "mongodb.aft-cache.aft-batches.maxTimeToLiveInSeconds")
