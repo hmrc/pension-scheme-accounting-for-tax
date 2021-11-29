@@ -48,7 +48,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
 
   var mongoProps: MongodProps = null
 
-  before { mongoProps = mongoStart() }
+  before { mongoProps = mongoStart(port = 24680) }
 
   after { mongoStop(mongoProps) }
 
@@ -308,13 +308,13 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
 
   private val mockAppConfig = mock[AppConfig]
 
-  private val dummyJson = Json.obj("aa" -> "value")
+  private val dummyJson = Json.obj("dummy" -> "value")
   private val version = 1
-  private val accessMode = "bla"
+  private val accessMode = "dummy"
   private val areSubmittedVersionsAvailable = false
   private val id = "S24000000152020-04-01"
-  private val sessionId = "session-639499ed-3a4b-4e24-813e-b728a7f4003f"
-  private val anotherSessionId = "id2"
+  private val sessionId = "session-1"
+  private val anotherSessionId = "session-2"
   private val uniqueAftId = id + sessionId
   private val lockDetail = Some(LockDetail(name = "Billy Wiggins", "A123456"))
   private val batchService = mock[BatchService]
