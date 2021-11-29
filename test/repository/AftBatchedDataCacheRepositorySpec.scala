@@ -57,7 +57,7 @@ class AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar
     when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(2)
     when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
     when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
-    when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn("aft-batches")
+    when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(databaseName)
   }
 
   "save" must {
