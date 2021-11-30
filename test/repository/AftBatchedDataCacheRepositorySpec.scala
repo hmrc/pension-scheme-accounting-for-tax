@@ -142,14 +142,12 @@ class AftBatchedDataCacheRepositorySpec
           .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), payloadOther),
           Duration.Inf)
         result mustBe false
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { documentsInDB =>
-          documentsInDB.size mustBe 0
-        }
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { _.isEmpty mustBe true}
       }
     }
 
     "setSessionData" must {
-      "save all batches correctly in Mongo collection, removing batches beyond charge G batch 3" in {
+      "save all batches correctly in Mongo collection, lock return, and remove batches beyond last batch (charge G batch 3)" in {
         mongoCollectionDrop()
         val jsObjectCaptor: ArgumentCaptor[JsObject] = ArgumentCaptor.forClass(classOf[JsObject])
         when(batchService.createBatches(jsObjectCaptor.capture(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
@@ -161,12 +159,12 @@ class AftBatchedDataCacheRepositorySpec
 
         result mustBe true
         jsObjectCaptor.getValue mustBe dummyJson
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { result =>
-          result.size mustBe 11
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { documentsInDB =>
+          documentsInDB.size mustBe 11
           val expectedBatches =
             fullSetOfBatchesToSaveToMongo.filterNot(bi => bi.batchType == BatchType.ChargeG && bi.batchNo == 4) ++
               sessionDataBatch(sessionId, lockDetail)
-          dbDocumentsAsSeqBatchInfo(result) mustBe expectedBatches
+          dbDocumentsAsSeqBatchInfo(documentsInDB) mustBe expectedBatches
         }
       }
 
@@ -182,12 +180,11 @@ class AftBatchedDataCacheRepositorySpec
 
         result mustBe true
         jsObjectCaptor.getValue mustBe dummyJson
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { result =>
-
-          result.size mustBe 12
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { documentsInDB =>
+          documentsInDB.size mustBe 12
           val expectedBatches =
             fullSetOfBatchesToSaveToMongo ++ sessionDataBatch(sessionId, None)
-          dbDocumentsAsSeqBatchInfo(result) mustBe expectedBatches
+          dbDocumentsAsSeqBatchInfo(documentsInDB) mustBe expectedBatches
         }
       }
     }
@@ -215,9 +212,7 @@ class AftBatchedDataCacheRepositorySpec
         val result = Await.result(aftBatchedDataCacheRepository.get(id, sessionId), Duration.Inf)
 
         result mustBe None
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {
-          _.size mustBe 0
-        }
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {_.isEmpty mustBe true}
       }
 
       "return None if there are no batches but there is a session data batch" in {
@@ -254,9 +249,32 @@ class AftBatchedDataCacheRepositorySpec
 
         val result = Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf)
         result mustBe None
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {
-          _.size mustBe 0
-        }
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {_.isEmpty mustBe true}
+      }
+    }
+
+    "lockedBy" must {
+      "return None if not locked by another user" in {
+        mongoCollectionDrop()
+
+        val result = Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf)
+        result mustBe None
+      }
+
+      "return the lock info if locked by another user" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
+
+        val result = Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf)
+        result mustBe lockDetail
+      }
+
+      "return None if locked by current user" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
+
+        val result = Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf)
+        result mustBe None
       }
     }
 
@@ -265,9 +283,7 @@ class AftBatchedDataCacheRepositorySpec
         mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
         val result = Await.result(aftBatchedDataCacheRepository.remove(id, sessionId), Duration.Inf)
         result mustBe true
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {
-          _.isEmpty mustBe true
-        }
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {_.isEmpty mustBe true}
       }
     }
   }

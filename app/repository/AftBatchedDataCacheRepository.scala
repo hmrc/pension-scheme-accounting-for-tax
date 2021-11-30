@@ -274,7 +274,7 @@ class AftBatchedDataCacheRepository @Inject()(
 
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[LockDetail]] = {
     logger.debug("Calling lockedBy in AFT Cache")
-    getBatchesFromRepository(id = id, batchTypeAndNo = Some(BatchIdentifier(BatchType.SessionData, 1))).map {
+    getBatchesFromRepository(id = id, batchIdentifier = Some(BatchIdentifier(BatchType.SessionData, 1))).map {
       case None =>
         None
       case Some(seqBatchInfo) =>
@@ -318,10 +318,10 @@ class AftBatchedDataCacheRepository @Inject()(
   private def findBatches(
     id: String,
     optSessionId: Option[String],
-    batchTypeAndNo: Option[BatchIdentifier],
+    batchIdentifier: Option[BatchIdentifier],
     excludeSessionDataBatch: Boolean = false
   )(implicit ec: ExecutionContext):Future[List[JsValue]] = {
-    (optSessionId, batchTypeAndNo) match {
+    (optSessionId, batchIdentifier) match {
       case (Some(sessionId), Some(BatchIdentifier(bt, bn))) =>
         find("uniqueAftId" -> (id + sessionId), "batchType" -> bt.toString, "batchNo" -> bn)
       case (None, Some(BatchIdentifier(bt, bn))) =>
@@ -337,10 +337,10 @@ class AftBatchedDataCacheRepository @Inject()(
   private def getBatchesFromRepository(
     id: String,
     optSessionId: Option[String] = None,
-    batchTypeAndNo: Option[BatchIdentifier] = None,
+    batchIdentifier: Option[BatchIdentifier] = None,
     excludeSessionDataBatch:Boolean = false
   )(implicit ec: ExecutionContext):Future[Option[Seq[BatchInfo]]] = {
-    findBatches(id, optSessionId, batchTypeAndNo, excludeSessionDataBatch).map {
+    findBatches(id, optSessionId, batchIdentifier, excludeSessionDataBatch).map {
       case batches if batches.isEmpty => None
       case batches =>
         val transformedBatches = batches.map( batchJsValue =>
