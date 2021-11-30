@@ -23,7 +23,7 @@ import services.BatchService
 import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 import com.github.simplyscala.MongoEmbedDatabase
 import config.AppConfig
-import models.BatchedRepositorySampleData.{payloadChargeTypeC, payloadOther, payloadChargeTypeA, payloadChargeTypeCEmployer}
+import models.BatchedRepositorySampleData.{nodeNameChargeC, payloadChargeTypeC, payloadOther, payloadChargeTypeCMinusEmployers, payloadChargeTypeA, concatenateNodes, payloadChargeTypeCEmployer}
 import models.{ChargeAndMember, ChargeType, LockDetail}
 import org.mockito.{ArgumentCaptor, MockitoSugar, ArgumentMatchers}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
@@ -101,6 +101,31 @@ class AftBatchedDataCacheRepositorySpec
           documentsInDB.size mustBe 12
           val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
             .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 2))
+          actualOtherBatch.nonEmpty mustBe true
+          actualOtherBatch.foreach { _.jsValue.as[JsArray] mustBe amendedPayload}
+        }
+      }
+
+      "save batch for a new member where member added is first in new batch (batch 3 where currently only 2 batches)" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
+        mongoCollectionInsertBatches(id, sessionId, setOfFourChargeCBatches.toSeq)
+
+        val amendedPayload = payloadChargeTypeCEmployer(numberOfItems = 1, employerName = "WIDGETS INC")
+        val amendedBatchInfo = Some(BatchInfo(BatchType.ChargeC, 3, amendedPayload))
+        when(batchService.batchIdentifierForChargeAndMember(any(), any()))
+          .thenReturn(Some(BatchIdentifier(BatchType.ChargeC, 3)))
+        when(batchService.getChargeTypeJsObjectForBatch(any(), any(), any(), any())).thenReturn(amendedBatchInfo)
+
+        val result = Await.result(aftBatchedDataCacheRepository
+          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeAuthSurplus, Some(5))),
+            payloadOther ++ payloadChargeTypeC(5)), Duration.Inf)
+
+        result mustBe true
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { documentsInDB =>
+          documentsInDB.size mustBe 5
+          val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
+            .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 3))
           actualOtherBatch.nonEmpty mustBe true
           actualOtherBatch.foreach { _.jsValue.as[JsArray] mustBe amendedPayload}
         }
@@ -364,6 +389,16 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
 
   private def filterOnBatchTypeAndNo(batchType: BatchType, batchNo:Int): BatchInfo => Boolean =
     bi => bi.batchType == batchType && bi.batchNo == batchNo
+
+  private val setOfFourChargeCBatches: Set[BatchInfo] = {
+    val payloadOtherBatch = payloadOther
+    val jsArrayChargeC = payloadChargeTypeCEmployer(numberOfItems = 4)
+    Set(
+      BatchInfo(BatchType.Other, 1, payloadOtherBatch),
+      BatchInfo(BatchType.ChargeC, 1, JsArray(Seq(jsArrayChargeC(0), jsArrayChargeC(1)))),
+      BatchInfo(BatchType.ChargeC, 2, JsArray(Seq(jsArrayChargeC(2), jsArrayChargeC(3))))
+    )
+  }
 
   private val fullSetOfBatchesToSaveToMongo: Set[BatchInfo] = {
     val jsArrayChargeC = payloadChargeTypeCEmployer(numberOfItems = 5)
