@@ -73,12 +73,10 @@ class AftBatchedDataCacheRepositorySpec
 
         whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { documentsInDB =>
           documentsInDB.size mustBe 12
-          val otherBatch = documentsInDB
-            .find(jsValue => (jsValue \ "batchType").asOpt[String].contains(BatchType.Other.toString))
-          otherBatch.nonEmpty mustBe true
-          otherBatch.foreach { jsValue =>
-            (jsValue \ "data").as[JsObject] mustBe dummyJson
-          }
+          val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
+            .filter(filterOnBatchTypeAndNo(batchType = BatchType.Other, batchNo = 1))
+          actualOtherBatch.nonEmpty mustBe true
+          actualOtherBatch.foreach { _.jsValue mustBe dummyJson}
         }
       }
 
@@ -101,12 +99,10 @@ class AftBatchedDataCacheRepositorySpec
         result mustBe true
         whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { documentsInDB =>
           documentsInDB.size mustBe 12
-          val chargeCBatch = documentsInDB.find(jsValue => (jsValue \ "batchType").asOpt[String]
-            .contains(BatchType.ChargeC.toString) && (jsValue \ "batchNo").asOpt[Int].contains(2))
-          chargeCBatch.nonEmpty mustBe true
-          chargeCBatch.foreach { jsValue =>
-            (jsValue \ "data").as[JsArray] mustBe amendedPayload
-          }
+          val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
+            .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 2))
+          actualOtherBatch.nonEmpty mustBe true
+          actualOtherBatch.foreach { _.jsValue.as[JsArray] mustBe amendedPayload}
         }
       }
 
@@ -203,6 +199,7 @@ class AftBatchedDataCacheRepositorySpec
         result mustBe Some(dummyJson)
         val capturedSeqBatchInfo: Seq[BatchInfo] = biCaptor.getValue
         capturedSeqBatchInfo.size mustBe 11
+        capturedSeqBatchInfo.toSet mustBe fullSetOfBatchesToSaveToMongo
       }
 
       "remove all documents and return None if there is no session data batch (i.e. it has expired)" in {
@@ -319,15 +316,7 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     Await.result(aftBatchedDataCacheRepository.collection.update.one(selector, modifier, upsert = true), Duration.Inf)
       .ok
   }
-
-  /* Useful debug code:-
-    private def printAll():Unit = {
-      whenReady(aftBatchedDataCacheRepository.findAll()) { x =>
-        println("\n>>>>" + x)
-      }
-    }
-  */
-
+  
   private val mockAppConfig = mock[AppConfig]
 
   private val dummyJson = Json.obj("dummy" -> "value")
@@ -372,6 +361,9 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
       BatchInfo(batchType, batchNo, jsData)
     }.toSet
   }
+
+  private def filterOnBatchTypeAndNo(batchType: BatchType, batchNo:Int): BatchInfo => Boolean =
+    bi => bi.batchType == batchType && bi.batchNo == batchNo
 
   private val fullSetOfBatchesToSaveToMongo: Set[BatchInfo] = {
     val jsArrayChargeC = payloadChargeTypeCEmployer(numberOfItems = 5)
