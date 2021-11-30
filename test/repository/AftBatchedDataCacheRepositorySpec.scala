@@ -23,7 +23,7 @@ import services.BatchService
 import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 import com.github.simplyscala.MongoEmbedDatabase
 import config.AppConfig
-import models.BatchedRepositorySampleData.{nodeNameChargeC, payloadChargeTypeC, payloadOther, payloadChargeTypeCMinusEmployers, payloadChargeTypeA, concatenateNodes, payloadChargeTypeCEmployer}
+import models.BatchedRepositorySampleData.{payloadChargeTypeC, payloadOther, payloadChargeTypeA, payloadChargeTypeCEmployer}
 import models.{ChargeAndMember, ChargeType, LockDetail}
 import org.mockito.{ArgumentCaptor, MockitoSugar, ArgumentMatchers}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
