@@ -316,7 +316,7 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     Await.result(aftBatchedDataCacheRepository.collection.update.one(selector, modifier, upsert = true), Duration.Inf)
       .ok
   }
-  
+
   private val mockAppConfig = mock[AppConfig]
 
   private val dummyJson = Json.obj("dummy" -> "value")
