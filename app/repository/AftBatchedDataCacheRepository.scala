@@ -244,7 +244,7 @@ class AftBatchedDataCacheRepository @Inject()(
 
   def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
     log("Calling getSessionData in AFTBatchedDataCacheRepository")
-    getSessionDataBatch(id, sessionId, None).flatMap {
+    getSessionDataBatch(id, sessionId).flatMap {
       case Some(batchInfo) =>
         lockedBy(sessionId, id).map { lockDetail =>
           val sessionData = batchInfo.jsValue.asOpt[SessionData]
