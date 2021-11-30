@@ -33,8 +33,6 @@ import play.api.libs.json.{JsObject, JsArray, Json, JsValue}
 import uk.gov.hmrc.mongo.MongoConnector
 import org.scalatest.concurrent.ScalaFutures.whenReady
 import org.mockito.ArgumentMatchers._
-import org.scalatest
-import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
 import repository.model.SessionData
 
 import scala.concurrent.{Future, Await}
@@ -72,6 +70,7 @@ class AftBatchedDataCacheRepositorySpec
           Duration.Inf)
 
         result mustBe true
+
         whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { documentsInDB =>
           documentsInDB.size mustBe 12
           val otherBatch = documentsInDB
@@ -148,6 +147,7 @@ class AftBatchedDataCacheRepositorySpec
         }
       }
     }
+
     "setSessionData" must {
       "save all batches correctly in Mongo collection, removing batches beyond charge G batch 3" in {
         mongoCollectionDrop()
@@ -163,12 +163,31 @@ class AftBatchedDataCacheRepositorySpec
         jsObjectCaptor.getValue mustBe dummyJson
         whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { result =>
           result.size mustBe 11
-          result.foreach { b =>
-            BatchType.getBatchType((b \ "batchType").as[String]).map { batchType =>
-              checkResult(batchType, (b \ "batchNo").asOpt[Int].getOrElse(0), (b \ "data").get,
-                fullSetOfBatchesToSaveToMongo)
-            }
-          }
+          val expectedBatches =
+            fullSetOfBatchesToSaveToMongo.filterNot(bi => bi.batchType == BatchType.ChargeG && bi.batchNo == 4) ++
+              sessionDataBatch(sessionId, lockDetail)
+          dbDocumentsAsSeqBatchInfo(result) mustBe expectedBatches
+        }
+      }
+
+      "save all batches correctly in Mongo collection when there is no lock detail and not lock" in {
+        mongoCollectionDrop()
+        val jsObjectCaptor: ArgumentCaptor[JsObject] = ArgumentCaptor.forClass(classOf[JsObject])
+        when(batchService.createBatches(jsObjectCaptor.capture(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
+        when(batchService.lastBatchNo(any())).thenReturn(Set())
+
+        val result = Await.result(aftBatchedDataCacheRepository
+          .setSessionData(id, None, dummyJson, sessionId, version = version, accessMode = accessMode,
+            areSubmittedVersionsAvailable = areSubmittedVersionsAvailable), Duration.Inf)
+
+        result mustBe true
+        jsObjectCaptor.getValue mustBe dummyJson
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { result =>
+
+          result.size mustBe 12
+          val expectedBatches =
+            fullSetOfBatchesToSaveToMongo ++ sessionDataBatch(sessionId, None)
+          dbDocumentsAsSeqBatchInfo(result) mustBe expectedBatches
         }
       }
     }
@@ -251,7 +270,6 @@ class AftBatchedDataCacheRepositorySpec
         }
       }
     }
-
   }
 }
 
@@ -317,19 +335,26 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     sessionId = sessionId, lockDetail = lockDetail, version = version, accessMode = accessMode,
     areSubmittedVersionsAvailable = false)
 
-  def checkResult(batchType: BatchType, batchNo: Int, jsValue: JsValue,
-    expectedBatches: Set[BatchInfo]): scalatest.Assertion = {
-    (batchType, batchNo) match {
-      case (BatchType.Other, 1) => val expectedBatch = expectedBatches
-        .find(b => b.batchType == batchType && b.batchNo == batchNo).map(_.jsValue.as[JsObject]).getOrElse(Json.obj())
-        jsValue mustBe expectedBatch
-      case (BatchType.SessionData, 1) => jsValue.as[JsObject] mustBe Json
-        .obj("sessionId" -> sessionId, "lockDetail" -> Json.toJson(lockDetail), "version" -> version,
-          "accessMode" -> accessMode, "areSubmittedVersionsAvailable" -> areSubmittedVersionsAvailable)
-      case _ => val expectedBatch = expectedBatches.find(b => b.batchType == batchType && b.batchNo == batchNo)
-        .map(_.jsValue.as[JsArray]).getOrElse(JsArray())
-        jsValue mustBe expectedBatch
-    }
+  private def sessionDataBatch(sessionId: String, lockDetail: Option[LockDetail] = lockDetail):Set[BatchInfo] = {
+    val json = Json.toJson(sessionData(sessionId, lockDetail))
+    Set(BatchInfo(BatchType.SessionData, 1, json))
+  }
+
+  private def dbDocumentsAsSeqBatchInfo(s:Seq[JsValue]):Set[BatchInfo] = {
+    s.map { jsValue =>
+      val batchType = BatchType.getBatchType((jsValue \ "batchType").as[String])
+        .getOrElse(throw new RuntimeException("Unknown batch type"))
+      val batchNo = (jsValue \ "batchNo").as[Int]
+      val jsData = {
+        val t = jsValue \ "data"
+        batchType match {
+          case BatchType.Other => t.as[JsObject]
+          case BatchType.SessionData => t.as[JsObject]
+          case _ => t.as[JsArray]
+        }
+      }
+      BatchInfo(batchType, batchNo, jsData)
+    }.toSet
   }
 
   private val fullSetOfBatchesToSaveToMongo: Set[BatchInfo] = {
