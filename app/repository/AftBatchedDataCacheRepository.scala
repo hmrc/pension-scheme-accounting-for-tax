@@ -100,6 +100,8 @@ class AftBatchedDataCacheRepository @Inject()(
 
   private def userDataBatchSize:Int = appConfig.mongoDBAFTBatchesUserDataBatchSize
 
+  private def createSessionDataBatch(sd:SessionData):BatchInfo = BatchInfo(BatchType.SessionData, 1, Json.toJson(sd).as[JsObject])
+
   private def getSessionDataBatch(
     id: String,
     sessionId: String,
@@ -108,10 +110,8 @@ class AftBatchedDataCacheRepository @Inject()(
     getSessionDataBatchFromRepository(id, sessionId)
       .flatMap { sessionDataBatchRetrievedFromRepository =>
       (sessionDataToSaveToRepository, sessionDataBatchRetrievedFromRepository) match {
-        case (Some(sdToSave), None) =>
-          remove(id, sessionId).map(_ => Some(BatchInfo(BatchType.SessionData, 1, Json.toJson(sdToSave).as[JsObject])))
-        case (Some(sdToSave), Some(SessionBatchInfo(_, _))) =>
-          Future.successful(Some(BatchInfo(BatchType.SessionData, 1, Json.toJson(sdToSave).as[JsObject])))
+        case (Some(sdToSave), None) => remove(id, sessionId).map(_ => Some(createSessionDataBatch(sdToSave)))
+        case (Some(sdToSave), Some(SessionBatchInfo(_, _))) => Future.successful(Some(createSessionDataBatch(sdToSave)))
         case (None, Some(SessionBatchInfo(bi, storedBatchSize))) =>
           if (storedBatchSize == userDataBatchSize) {
             Future.successful(Some(bi))
