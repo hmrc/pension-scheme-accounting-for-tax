@@ -38,7 +38,7 @@ class BatchService {
       .map(g => BatchIdentifier(g._1, g._2.map(_.batchNo).max)).toSet
     nodeInfoSet.map{ni =>
       existingBatches.find(_.batchType == ni.batchType) match {
-        case Some(b) => b
+        case Some(bi) => bi
         case None => BatchIdentifier(ni.batchType, 0)
       }
     }
