@@ -190,25 +190,27 @@ class AftBatchedDataCacheRepositorySpec
         }
       }
 
-      "save all batches correctly in Mongo collection where last member for charge E removed so that last batch is empty" in {
-        val setOfOneChargeEMember: Set[BatchInfo] = {
-          val jsArrayChargeE = payloadChargeTypeEMember(numberOfItems = 1)
-          Set(
-            BatchInfo(BatchType.Other, 1, payloadOther ++ concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 1)), nodeNameChargeE)),
-            BatchInfo(BatchType.ChargeE, 1, JsArray(Seq(jsArrayChargeE(0))))
-          )
-        }
+      "save all batches correctly where one charge C batch and last member for last batch for charge E removed" in {
+        val jsArrayChargeC = payloadChargeTypeCEmployer(numberOfItems = 2)
+        val jsArrayChargeE = payloadChargeTypeEMember(numberOfItems = 1)
+        val batchInfoOtherInDB = BatchInfo(BatchType.Other, 1, payloadOther ++
+          concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 1)), nodeNameChargeE) ++
+          concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC))
+        val batchInfoOtherInPayload = BatchInfo(BatchType.Other, 1, payloadOther ++
+          concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC))
+        val batchInfoChargeC = BatchInfo(BatchType.ChargeC, 1, JsArray(Seq(jsArrayChargeC(0), jsArrayChargeC(1))))
+        val batchesToInsertIntoDB: Set[BatchInfo] =
+          Set(batchInfoOtherInDB, batchInfoChargeC, BatchInfo(BatchType.ChargeE, 1, JsArray(Seq(jsArrayChargeE(0)))))
 
         mongoCollectionDrop()
         mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId), batchSize = 5)
-        mongoCollectionInsertBatches(id, sessionId, setOfOneChargeEMember.toSeq)
+        mongoCollectionInsertBatches(id, sessionId, batchesToInsertIntoDB.toSeq)
 
         val jsObjectCaptor: ArgumentCaptor[JsObject] = ArgumentCaptor.forClass(classOf[JsObject])
-        when(batchService.createBatches(jsObjectCaptor.capture(), any())).thenReturn(
-          Set(BatchInfo(BatchType.Other, 1, payloadOther ))
-        )
+        when(batchService.createBatches(jsObjectCaptor.capture(), any()))
+          .thenReturn(Set(batchInfoOtherInPayload, batchInfoChargeC))
         when(batchService.lastBatchNo(any())).thenReturn(Set(
-          BatchIdentifier(ChargeC, 0),
+          BatchIdentifier(ChargeC, 1),
           BatchIdentifier(ChargeD, 0),
           BatchIdentifier(ChargeE, 0),
           BatchIdentifier(ChargeG, 0)
@@ -220,9 +222,10 @@ class AftBatchedDataCacheRepositorySpec
 
         result mustBe true
         whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { documentsInDB =>
-          documentsInDB.size mustBe 2
+          documentsInDB.size mustBe 3
           val actualSetBatchInfo = dbDocumentsAsSeqBatchInfo(documentsInDB)
           actualSetBatchInfo.exists(_.batchType == BatchType.ChargeE) mustBe false
+          actualSetBatchInfo.count(_.batchType == BatchType.ChargeC) mustBe 1
         }
       }
 
