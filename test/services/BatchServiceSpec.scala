@@ -367,7 +367,6 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val dummyJsArray = JsArray()
       val batches = Set(
         BatchInfo(BatchType.Other, 1, dummyPayload),
-        BatchInfo(BatchType.ChargeC, 1, dummyJsArray),
         BatchInfo(BatchType.ChargeD, 2, dummyJsArray),
         BatchInfo(BatchType.ChargeD, 1, dummyJsArray),
         BatchInfo(BatchType.ChargeE, 1, dummyJsArray),
@@ -376,8 +375,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
         BatchInfo(BatchType.ChargeG, 3, dummyJsArray)
       )
       batchService.lastBatchNo(batches) mustBe Set(
-        BatchIdentifier(BatchType.Other, 1),
-        BatchIdentifier(BatchType.ChargeC, 1),
+        BatchIdentifier(BatchType.ChargeC, 0),
         BatchIdentifier(BatchType.ChargeD, 2),
         BatchIdentifier(BatchType.ChargeE, 1),
         BatchIdentifier(BatchType.ChargeG, 3)

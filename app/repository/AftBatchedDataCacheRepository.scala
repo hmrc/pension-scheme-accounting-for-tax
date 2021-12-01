@@ -171,7 +171,6 @@ class AftBatchedDataCacheRepository @Inject()(
         }
 
         val lastBatchNos = batchIdentifier.fold(batchService.lastBatchNo(batchesExcludingSessionData))(_=>Set())
-
         val batches = Set(sessionDataBatchInfo) ++ batchesExcludingSessionData
         def selector(batchType: BatchType, batchNo: Int): BSONDocument =
           BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
@@ -291,13 +290,13 @@ class AftBatchedDataCacheRepository @Inject()(
   }
 
   private def removeBatchesGT(id: String, sessionId: String, batchInfo: BatchIdentifier)(implicit ec: ExecutionContext): Future[WriteResult] = {
-    log(s"Removing document(s) greater than last batch no from collection ${collection.name} id:$id")
+    log(s"Removing document(s) for batch type ${batchInfo.batchType.toString} greater " +
+      s"than last batch no ${batchInfo.batchNo} from collection ${collection.name} id:$id")
     val selector = BSONDocument(
       "uniqueAftId" -> (id + sessionId),
       "batchType" -> batchInfo.batchType.toString,
       "batchNo" -> BSONDocument( "$gt" -> batchInfo.batchNo)
     )
-
     collection.delete.one(selector)
   }
 

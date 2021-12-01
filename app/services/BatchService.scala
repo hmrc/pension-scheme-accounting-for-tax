@@ -33,9 +33,16 @@ class BatchService {
       getChargeTypeJsObject(userDataFullPayload, userDataBatchSize)
   }
 
-  def lastBatchNo(batches: Set[BatchInfo]): Set[BatchIdentifier] =
-    batches.toSeq.groupBy(_.batchType)
+  def lastBatchNo(batches: Set[BatchInfo]): Set[BatchIdentifier] = {
+    val existingBatches = batches.toSeq.groupBy(_.batchType)
       .map(g => BatchIdentifier(g._1, g._2.map(_.batchNo).max)).toSet
+    nodeInfoSet.map{ni =>
+      existingBatches.find(_.batchType == ni.batchType) match {
+        case Some(b) => b
+        case None => BatchIdentifier(ni.batchType, 0)
+      }
+    }
+  }
 
   def createUserDataFullPayload(batches: Seq[BatchInfo]): JsObject = {
     val payloadForOtherBatch = batches
