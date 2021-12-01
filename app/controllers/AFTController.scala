@@ -58,21 +58,22 @@ class AFTController @Inject()(
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
 
-      post { (pstr, userAnswersJson) =>
+        post { (pstr, userAnswersJson) =>
+          aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
+            logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
+            userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
 
-        logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
-        userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
+              case JsSuccess(dataToBeSendToETMP, _) =>
+                logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+                desConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                  Ok(response.body)
+                }
 
-          case JsSuccess(dataToBeSendToETMP, _) =>
-            logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-            desConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                Ok(response.body)
+              case JsError(errors) =>
+                throw JsResultException(errors)
             }
-
-          case JsError(errors) =>
-            throw JsResultException(errors)
+          }
         }
-      }
   }
 
   def getDetails: Action[AnyContent] = Action.async {
@@ -114,7 +115,7 @@ class AFTController @Inject()(
 
                   (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
                     case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
-                    case JsError(errors) => VersionsWithSubmitter(version, None)
+                    case JsError(_) => VersionsWithSubmitter(version, None)
                   }
 
                 case JsError(errors) => throw JsResultException(errors)
@@ -138,13 +139,13 @@ class AFTController @Inject()(
       }
   }
 
-  def getOverview(refresh: Option[Boolean] = None): Action[AnyContent] = Action.async {
+  def getOverview: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
         request.headers.get("endDate") match {
           case Some(endDate) =>
             featureToggleService.get(AftOverviewCache).flatMap {
-              case Enabled(_) if !refresh.contains(true) =>
+              case Enabled(_) =>
                 aftOverviewCacheRepository.get(pstr).flatMap {
                   case Some(data) => Future.successful(Ok(data))
                   case _ => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
