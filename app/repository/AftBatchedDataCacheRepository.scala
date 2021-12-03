@@ -116,8 +116,10 @@ class AftBatchedDataCacheRepository @Inject()(
           if (storedBatchSize == userDataBatchSize) {
             Future.successful(Some(bi))
           } else {
-            logger.warn(s"Batch size of $storedBatchSize not equal to configured batch size " +
-              s"of $userDataBatchSize so will attempt to reconfigure data")
+            val m = s"Batch size of $storedBatchSize not equal to configured batch size " +
+              s"of $userDataBatchSize so will attempt to reconfigure data"
+            logWithTime(m)
+            logger.warn(m)
             reconfigureBatches(id, sessionId, bi)
           }
         case _ => remove(id, sessionId).map(_ => None)
@@ -140,11 +142,11 @@ class AftBatchedDataCacheRepository @Inject()(
     }
   }
 
-  private def now:String = "[time" + DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()) + "]"
+  private def now:String = "[time " + DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()) + "]"
 
-  private def log(s:String):Unit = println( s"\n$s $now")
+  private def logWithTime(s:String):Unit = println( s"\n$s $now")
 
-  private def log[A](s:String, a:A):A = {
+  private def logWithTime[A](s:String, a:A):A = {
     println( s"\n$s $now")
     a
   }
@@ -157,7 +159,7 @@ class AftBatchedDataCacheRepository @Inject()(
     sessionData: Option[SessionData]
   )(implicit ec: ExecutionContext): Future[Boolean] = {
     require( batchIdentifier.forall(_.batchType != BatchType.SessionData) )
-    log(s"Calling SaveToRepository with batchIdentifier $batchIdentifier in AFTBatchedDataCacheRepository")
+    logWithTime(s"Calling SaveToRepository with batchIdentifier $batchIdentifier in AFTBatchedDataCacheRepository")
 
     getSessionDataBatch(id, sessionId, sessionData).flatMap{
       case Some(sessionDataBatchInfo) =>
@@ -175,17 +177,16 @@ class AftBatchedDataCacheRepository @Inject()(
         def selector(batchType: BatchType, batchNo: Int): BSONDocument =
           BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
 
-        log( s"Updating/inserting batch(es) in AFTBatchedDataCacheRepository")
+        logWithTime( s"Updating/inserting batch(es) in AFTBatchedDataCacheRepository")
         val setFutures = batches.map{ bi =>
-          val modifier = BSONDocument.apply("$set" -> jsonPayloadToSave(id, bi))
-          collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
+          collection.update.one(selector(bi.batchType, bi.batchNo), BSONDocument.apply("$set" -> jsonPayloadToSave(id, bi)), upsert = true)
         }
-        val allFutures = setFutures ++ lastBatchNos.map(removeBatchesGT(id, sessionId, _))
+        val allFutures = setFutures ++ lastBatchNos.map(removeBatchesAfterBatchIdentifier(id, sessionId, _))
         Future.sequence(allFutures).map(_.forall(_.ok)).map { b =>
-          log( s"Finished updating/inserting batch(es)  in AFTBatchedDataCacheRepository", b)
+          logWithTime( s"Finished updating/inserting batch(es)  in AFTBatchedDataCacheRepository", b)
         }
       case _ =>
-        log( "UNABLE TO SAVE TO REPO AS NO SESSION DATA FOUND IN REPO OR TO SAVE in AFTBatchedDataCacheRepository")
+        logWithTime( "Unable to save to Mongo repository as no session data found in repository or payload")
         Future.successful(false)
     }
   }
@@ -212,7 +213,7 @@ class AftBatchedDataCacheRepository @Inject()(
     chargeAndMember: Option[ChargeAndMember],
     userData: JsValue
   )(implicit ec: ExecutionContext): Future[Boolean] = {
-    log("Calling save in AFTBatchedDataCacheRepository")
+    logWithTime("Calling save in AFTBatchedDataCacheRepository")
     saveToRepository(
       id = id,
       sessionId = sessionId,
@@ -231,7 +232,7 @@ class AftBatchedDataCacheRepository @Inject()(
                       accessMode: String,
                       areSubmittedVersionsAvailable: Boolean
                     )(implicit ec: ExecutionContext): Future[Boolean] = {
-    log("Calling setSessionData in AFTBatchedDataCacheRepository")
+    logWithTime("Calling setSessionData in AFTBatchedDataCacheRepository")
     saveToRepository(
       id = id,
       sessionId = sessionId,
@@ -242,7 +243,7 @@ class AftBatchedDataCacheRepository @Inject()(
   }
 
   def getSessionData(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[SessionData]] = {
-    log("Calling getSessionData in AFTBatchedDataCacheRepository")
+    logWithTime("Calling getSessionData in AFTBatchedDataCacheRepository")
     getSessionDataBatch(id, sessionId).flatMap {
       case Some(batchInfo) =>
         lockedBy(sessionId, id).map { lockDetail =>
@@ -255,15 +256,15 @@ class AftBatchedDataCacheRepository @Inject()(
   }
 
   def get(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
-    log("Calling get in AFTBatchedDataCacheRepository")
+    logWithTime("Calling get in AFTBatchedDataCacheRepository")
     getSessionDataBatch(id, sessionId).flatMap {
       case Some(_) =>
         getBatchesFromRepository(id, Some(sessionId), excludeSessionDataBatch = true).flatMap {
           case None => Future.successful(None)
           case Some(seqBatchInfo) =>
-            log( s"Get: Started reconstructing full payload from batches")
+            logWithTime( s"Get in AFTBatchedDataCacheRepository: Started reconstructing full payload from ${seqBatchInfo.size} batches")
             val fullPayload = Some(batchService.createUserDataFullPayload(seqBatchInfo))
-            log( s"Get: Finished reconstructing full payload from batches")
+            logWithTime( s"Get in AFTBatchedDataCacheRepository: Finished reconstructing full payload from ${seqBatchInfo.size} batches")
             Future.successful(fullPayload)
         }
       case _ => Future.successful(None)
@@ -271,7 +272,7 @@ class AftBatchedDataCacheRepository @Inject()(
   }
 
   def lockedBy(sessionId: String, id: String)(implicit ec: ExecutionContext): Future[Option[LockDetail]] = {
-    log("Calling lockedBy in AFTBatchedDataCacheRepository")
+    logWithTime("Calling lockedBy in AFTBatchedDataCacheRepository")
     getBatchesFromRepository(id = id, batchIdentifier = Some(BatchIdentifier(BatchType.SessionData, 1))).map {
       case None =>
         None
@@ -284,19 +285,30 @@ class AftBatchedDataCacheRepository @Inject()(
   }
 
   def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    log(s"Removing document(s) from collection ${collection.name} id:$id")
+    logWithTime(s"Removing document(s) from collection ${collection.name} id:$id")
     val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
     collection.delete.one(selector).map(_.ok)
   }
 
-  private def removeBatchesGT(id: String, sessionId: String, batchInfo: BatchIdentifier)(implicit ec: ExecutionContext): Future[WriteResult] = {
-    log(s"Removing document(s) for batch type ${batchInfo.batchType.toString} greater " +
-      s"than last batch no ${batchInfo.batchNo} from collection ${collection.name} id:$id")
-    val selector = BSONDocument(
-      "uniqueAftId" -> (id + sessionId),
-      "batchType" -> batchInfo.batchType.toString,
-      "batchNo" -> BSONDocument( "$gt" -> batchInfo.batchNo)
-    )
+  private def removeBatchesAfterBatchIdentifier(id: String, sessionId: String, batchIdentifier: BatchIdentifier)(implicit
+    ec: ExecutionContext): Future[WriteResult] = {
+    logWithTime(s"Removing document(s) for batch type ${batchIdentifier.batchType.toString} with batchNo greater " +
+      s"than last batch no ${batchIdentifier.batchNo} from collection ${collection.name} id:$id")
+
+    val selector = batchIdentifier match {
+      case BatchIdentifier(batchType, 0) =>
+        BSONDocument(
+          "uniqueAftId" -> (id + sessionId),
+          "batchType" -> batchType.toString
+        )
+      case BatchIdentifier(batchType, batchNo) =>
+        BSONDocument(
+          "uniqueAftId" -> (id + sessionId),
+          "batchType" -> batchType.toString,
+          "batchNo" -> BSONDocument( "$gt" -> batchNo)
+        )
+    }
+
     collection.delete.one(selector)
   }
 
