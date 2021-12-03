@@ -17,18 +17,21 @@
 package controllers
 
 import connectors.DesConnector
-import models.{AFTSubmitterDetails, VersionsWithSubmitter}
+import models.FeatureToggle.Enabled
+import models.FeatureToggleName.AftOverviewCache
+import models.{VersionsWithSubmitter, AFTSubmitterDetails}
 
 import javax.inject.{Inject, Singleton}
 import models.enumeration.JourneyType
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
-import services.AFTService
+import repository.AftOverviewCacheRepository
+import services.{FeatureToggleService, AFTService}
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
+import uk.gov.hmrc.auth.core.{AuthorisedFunctions, Enrolment, AuthConnector}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -41,7 +44,9 @@ class AFTController @Inject()(
                                val authConnector: AuthConnector,
                                aftReturnTransformer: AFTReturnTransformer,
                                aftDetailsTransformer: AFTDetailsTransformer,
-                               aftService: AFTService
+                               aftService: AFTService,
+                               featureToggleService: FeatureToggleService,
+                               aftOverviewCacheRepository: AftOverviewCacheRepository
                              )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -53,20 +58,22 @@ class AFTController @Inject()(
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
 
-      post { (pstr, userAnswersJson) =>
-        logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
-        userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
+        post { (pstr, userAnswersJson) =>
+          aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
+            logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
+            userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
 
-          case JsSuccess(dataToBeSendToETMP, _) =>
-            logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-            desConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                Ok(response.body)
+              case JsSuccess(dataToBeSendToETMP, _) =>
+                logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+                desConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                  Ok(response.body)
+                }
+
+              case JsError(errors) =>
+                throw JsResultException(errors)
             }
-
-          case JsError(errors) =>
-            throw JsResultException(errors)
+          }
         }
-      }
   }
 
   def getDetails: Action[AnyContent] = Action.async {
@@ -108,7 +115,7 @@ class AFTController @Inject()(
 
                   (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
                     case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
-                    case JsError(errors) => VersionsWithSubmitter(version, None)
+                    case JsError(_) => VersionsWithSubmitter(version, None)
                   }
 
                 case JsError(errors) => throw JsResultException(errors)
@@ -137,9 +144,19 @@ class AFTController @Inject()(
       get { (pstr, startDate) =>
         request.headers.get("endDate") match {
           case Some(endDate) =>
-            desConnector.getAftOverview(pstr, startDate, endDate).flatMap {
-              data =>
+            featureToggleService.get(AftOverviewCache).flatMap {
+              case Enabled(_) =>
+                aftOverviewCacheRepository.get(pstr).flatMap {
+                  case Some(data) => Future.successful(Ok(data))
+                  case _ => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
+                    aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
+                      Ok(Json.toJson(data))
+                    }
+                  }
+                }
+              case _ => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
                 Future.successful(Ok(Json.toJson(data)))
+              }
             }
           case _ =>
             Future.failed(new BadRequestException("Bad Request with no endDate"))
