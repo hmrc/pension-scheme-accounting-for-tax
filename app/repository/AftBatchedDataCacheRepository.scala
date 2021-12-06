@@ -144,10 +144,14 @@ class AftBatchedDataCacheRepository @Inject()(
 
   private def now:String = "[time " + DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()) + "]"
 
-  private def logWithTime(s:String):Unit = println( s"\n$s $now")
+  private def logWithTime(s:String):Unit = {
+    logger.info(s"\n$s $now")
+    //println(s"\n$s $now")
+  }
 
   private def logWithTime[A](s:String, a:A):A = {
-    println( s"\n$s $now")
+    logger.info(s"\n$s $now")
+    //println( s"\n$s $now")
     a
   }
 
