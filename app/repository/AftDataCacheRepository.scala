@@ -33,9 +33,9 @@ import uk.gov.hmrc.mongo.ReactiveRepository
 import scala.concurrent.{ExecutionContext, Future}
 
 class AftDataCacheRepository @Inject()(
-                                        mongoComponent: ReactiveMongoComponent,
-                                        configuration: Configuration
-                                      )(implicit val ec: ExecutionContext)
+  mongoComponent: ReactiveMongoComponent,
+  configuration: Configuration
+)(implicit val ec: ExecutionContext)
   extends ReactiveRepository[JsValue, BSONObjectID](
     configuration.get[String](path = "mongodb.aft-cache.aft-journey.name"),
     mongoComponent.mongoConnector.db,
@@ -88,14 +88,14 @@ class AftDataCacheRepository @Inject()(
   }
 
   def setSessionData(
-                      id: String,
-                      lockDetail: Option[LockDetail],
-                      userData: JsValue,
-                      sessionId: String,
-                      version: Int,
-                      accessMode: String,
-                      areSubmittedVersionsAvailable: Boolean
-                    )(implicit ec: ExecutionContext): Future[Boolean] = {
+    id: String,
+    lockDetail: Option[LockDetail],
+    userData: JsValue,
+    sessionId: String,
+    version: Int,
+    accessMode: String,
+    areSubmittedVersionsAvailable: Boolean
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"Calling setSessionData in AFT Cache")
     logger.warn(s"Calling setSessionData in AFT Cache: request body length is ${userData.toString.length}")
     val document: JsValue = Json.toJson(

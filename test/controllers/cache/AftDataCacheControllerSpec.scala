@@ -17,29 +17,24 @@
 package controllers.cache
 
 import akka.util.ByteString
-import models.LockDetail
+import models.FeatureToggleName.BatchedRepositoryAFT
+import models.{FeatureToggle, LockDetail}
 import org.apache.commons.lang3.RandomUtils
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers.{eq => eqTo}
-import org.mockito.ArgumentMatchers._
+import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.mockito.MockitoSugar
+import org.mockito.{MockitoSugar, ArgumentMatchers}
 import play.api.inject.bind
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.inject.guice.GuiceableModule
+import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.AftDataCacheRepository
+import repository.{AftDataCacheRepository, AftBatchedDataCacheRepository}
 import repository.model.SessionData
-import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.auth.core.Enrolment
-import uk.gov.hmrc.auth.core.EnrolmentIdentifier
-import uk.gov.hmrc.auth.core.Enrolments
-import uk.gov.hmrc.auth.core.retrieve.Name
-import uk.gov.hmrc.auth.core.retrieve.~
+import services.FeatureToggleService
+import uk.gov.hmrc.auth.core.{Enrolments, EnrolmentIdentifier, Enrolment, AuthConnector}
+import uk.gov.hmrc.auth.core.retrieve.{~, Name}
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -51,7 +46,8 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  private val repo = mock[AftDataCacheRepository]
+  private val repo = mock[AftBatchedDataCacheRepository]
+  private val repoUnbatched = mock[AftDataCacheRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val id = "id"
   private val sessionId = "sessionId"
@@ -59,16 +55,19 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   private val fakePostRequest = FakeRequest("POST", "/").withHeaders("X-Session-ID" -> sessionId, "id" -> id)
   private val psaId = "A2222222"
   private val pspId = "22222222"
-
+  private val mockFeatureToggleService = mock[FeatureToggleService]
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
-    bind[AftDataCacheRepository].toInstance(repo)
+    bind[AftBatchedDataCacheRepository].toInstance(repo),
+    bind[AftDataCacheRepository].toInstance(repoUnbatched),
+    bind[FeatureToggleService].toInstance(mockFeatureToggleService)
   )
 
   before {
-    reset(repo)
+    reset(repo, repoUnbatched)
     reset(authConnector)
+    when(mockFeatureToggleService.get(any())).thenReturn(Future.successful(FeatureToggle.Enabled(BatchedRepositoryAFT)))
   }
 
   "DataCacheController" when {
@@ -130,7 +129,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[AftDataCacheController]
-        when(repo.save(any(), any(), any())(any())) thenReturn Future.successful(true)
+        when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
         val result = controller.save(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
@@ -142,7 +141,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[AftDataCacheController]
-        when(repo.save(any(), any(), any())(any())) thenReturn Future.successful(true)
+        when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
         val result = controller.save(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
@@ -324,9 +323,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     }
   }
 
-
-
-
   "calling lockedBy" must {
     "return OK when the data is retrieved" in {
       val lockedByUser = LockDetail("bob", psaId)
@@ -353,33 +349,5 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       val result = controller.lockedBy()(fakeRequest)
       status(result) mustEqual NOT_FOUND
     }
-
   }
-
-  "calling releaseLockWithSessionId" must {
-
-    "return OK when the data is removed successfully" in {
-      val app = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-        .overrides(modules: _*).build()
-      val controller = app.injector.instanceOf[AftDataCacheController]
-      when(repo.removeWithSessionId(any())(any())) thenReturn Future.successful(true)
-      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
-
-      val result = controller.releaseLockWithSessionId(fakeRequest)
-      status(result) mustEqual OK
-    }
-
-    "throw an exception when the call is not authorised" in {
-      val app = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-        .overrides(modules: _*).build()
-      val controller = app.injector.instanceOf[AftDataCacheController]
-      when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
-
-      val result = controller.releaseLockWithSessionId(fakeRequest)
-      an[CredNameNotFoundFromAuth] must be thrownBy status(result)
-    }
-  }
-
 }

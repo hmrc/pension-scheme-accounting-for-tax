@@ -19,7 +19,7 @@ package controllers
 import connectors.DesConnector
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.AftOverviewCache
-import models.{AFTSubmitterDetails, VersionsWithSubmitter}
+import models.{VersionsWithSubmitter, AFTSubmitterDetails}
 
 import javax.inject.{Inject, Singleton}
 import models.enumeration.JourneyType
@@ -27,11 +27,11 @@ import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
 import repository.AftOverviewCacheRepository
-import services.{AFTService, FeatureToggleService}
+import services.{FeatureToggleService, AFTService}
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
+import uk.gov.hmrc.auth.core.{AuthorisedFunctions, Enrolment, AuthConnector}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -154,11 +154,6 @@ class AFTController @Inject()(
                     }
                   }
                 }
-              case Enabled(_) => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
-                aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
-                  Ok(Json.toJson(data))
-                }
-              }
               case _ => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
                 Future.successful(Ok(Json.toJson(data)))
               }
