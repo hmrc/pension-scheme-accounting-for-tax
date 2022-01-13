@@ -35,7 +35,8 @@ class FeatureToggleService @Inject()(
                                     )(implicit ec: ExecutionContext) {
   private val cacheValidFor: FiniteDuration = Duration(2, Seconds)
 
-  private val defaults: Seq[FeatureToggle] = Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT))
+  private val defaults: Seq[FeatureToggle] = Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT),
+    Disabled(AftBulkUpload))
 
   private def addDefaults(fromDb: Seq[FeatureToggle]): Seq[FeatureToggle] = {
     val toAdd = defaults.filterNot(d => fromDb.exists(fdb => fdb.name == d.name))
