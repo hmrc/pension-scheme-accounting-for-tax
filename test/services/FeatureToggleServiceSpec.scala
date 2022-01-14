@@ -97,7 +97,7 @@ class FeatureToggleServiceSpec
 
     when(adminDataRepository.getFeatureToggles).thenReturn(Future.successful(Seq.empty))
 
-    OUT.getAll.futureValue mustBe Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT))
+    OUT.getAll.futureValue mustBe Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT),Disabled(AftBulkUpload))
   }
 
   "When a toggle doesn't exist in the repo, return default" in {
