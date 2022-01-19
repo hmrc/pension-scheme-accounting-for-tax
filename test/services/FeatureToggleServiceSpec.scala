@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import akka.Done
 import base.SpecBase
 import models.FeatureToggle.{Enabled, Disabled}
 import models.{OperationFailed, FeatureToggle, FeatureToggleName, OperationSucceeded}
-import models.FeatureToggleName.{MigrationTransferAft, BatchedRepositoryAFT, _}
+import models.FeatureToggleName._
 import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentCaptor, MockitoSugar}
 import org.scalacheck.Arbitrary.arbitrary
@@ -97,7 +97,7 @@ class FeatureToggleServiceSpec
 
     when(adminDataRepository.getFeatureToggles).thenReturn(Future.successful(Seq.empty))
 
-    OUT.getAll.futureValue mustBe Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT))
+    OUT.getAll.futureValue mustBe Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT), Disabled(FinancialInformationAFT))
   }
 
   "When a toggle doesn't exist in the repo, return default" in {

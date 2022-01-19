@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package services
 
 
 import models.FeatureToggle.Disabled
-import models.FeatureToggleName.{MigrationTransferAft, BatchedRepositoryAFT}
 import models.FeatureToggleName._
 import models._
 import play.api.cache.AsyncCacheApi
@@ -35,7 +34,7 @@ class FeatureToggleService @Inject()(
                                     )(implicit ec: ExecutionContext) {
   private val cacheValidFor: FiniteDuration = Duration(2, Seconds)
 
-  private val defaults: Seq[FeatureToggle] = Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT))
+  private val defaults: Seq[FeatureToggle] = Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT), Disabled(FinancialInformationAFT))
 
   private def addDefaults(fromDb: Seq[FeatureToggle]): Seq[FeatureToggle] = {
     val toAdd = defaults.filterNot(d => fromDb.exists(fdb => fdb.name == d.name))

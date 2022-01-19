@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,13 +45,17 @@ object FeatureToggleName {
   case object AftOverviewCache extends FeatureToggleName {
     val asString = "cache-aft-overview"
   }
+  case object FinancialInformationAFT extends FeatureToggleName {
+    val asString = "financial-information-aft"
+  }
 
-  val toggles = Seq(MigrationTransferAft, AftOverviewCache, BatchedRepositoryAFT)
+  val toggles = Seq(MigrationTransferAft, AftOverviewCache, BatchedRepositoryAFT, FinancialInformationAFT)
 
   implicit val reads: Reads[FeatureToggleName] = Reads {
     case JsString(MigrationTransferAft.asString) => JsSuccess(MigrationTransferAft)
     case JsString(AftOverviewCache.asString) => JsSuccess(AftOverviewCache)
     case JsString(BatchedRepositoryAFT.asString) => JsSuccess(BatchedRepositoryAFT)
+    case JsString(FinancialInformationAFT.asString) => JsSuccess(FinancialInformationAFT)
     case _ => JsError("Unrecognised feature toggle name")
   }
 
