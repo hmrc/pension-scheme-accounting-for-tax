@@ -24,7 +24,7 @@ import play.api.cache.AsyncCacheApi
 import repository.AdminDataRepository
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.duration.{FiniteDuration, Duration, SECONDS => Seconds}
+import scala.concurrent.duration.{Duration, FiniteDuration, SECONDS => Seconds}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -34,8 +34,8 @@ class FeatureToggleService @Inject()(
                                     )(implicit ec: ExecutionContext) {
   private val cacheValidFor: FiniteDuration = Duration(2, Seconds)
 
-  private val defaults: Seq[FeatureToggle] = Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache),
-    Disabled(BatchedRepositoryAFT), Disabled(FinancialInformationAFT))
+  private val defaults: Seq[FeatureToggle] = Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT),
+    Disabled(AftBulkUpload), Disabled(FinancialInformationAFT))
 
   private def addDefaults(fromDb: Seq[FeatureToggle]): Seq[FeatureToggle] = {
     val toAdd = defaults.filterNot(d => fromDb.exists(fdb => fdb.name == d.name))
