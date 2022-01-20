@@ -85,7 +85,7 @@ class FinancialStatementConnector @Inject()(
   //scalastyle:off cyclomatic.complexity
   private def transformSchemeFS(pstr: String, url: String, toggleValue:Boolean)(implicit
              hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[Seq[SchemeFS]] = {
-println("\n>>>toggle=" + toggleValue)
+
     val reads: Reads[SchemeFS] = if (toggleValue) SchemeFS.rdsMax else SchemeFS.rds
 
     lazy val financialStatementsTransformer: Reads[JsArray] =
@@ -97,11 +97,11 @@ println("\n>>>toggle=" + toggleValue)
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {
         case OK =>
-          println("\n>>>>>>>>>" + response.body)
+
           logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
           Json.parse(response.body).transform(financialStatementsTransformer) match {
             case JsSuccess(statements, _) =>
-              println("\n>>>>HH")
+
               statements.validate[Seq[SchemeFS]](Reads.seq(reads)) match {
                 case JsSuccess(values, _) =>
                   logger.debug(s"Response received from schemeFinInfo api transformed successfully to $values")
