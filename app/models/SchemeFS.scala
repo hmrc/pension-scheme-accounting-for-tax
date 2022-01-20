@@ -23,7 +23,8 @@ import play.api.libs.json.{Format, JsPath, Json, Reads}
 
 case class SchemeFS(chargeReference: String, chargeType: String, dueDate: Option[LocalDate], totalAmount: BigDecimal, amountDue: BigDecimal,
                     outstandingAmount: BigDecimal, accruedInterestTotal: BigDecimal, stoodOverAmount: BigDecimal,
-                    periodStartDate: Option[LocalDate], periodEndDate: Option[LocalDate])
+                    periodStartDate: Option[LocalDate], periodEndDate: Option[LocalDate], formBundleNumber: String="",
+                    clearedAmountItem: BigDecimal=BigDecimal(0.00), sourceChargeRefForInterest: String="", clearingDate: LocalDate=LocalDate.parse("2020-06-30"), clearingReason:String= "")
 
 object SchemeFS {
 
@@ -38,7 +39,13 @@ object SchemeFS {
       (JsPath \ "stoodOverAmount").read[BigDecimal] and
       (JsPath \ "periodStartDate").readNullable[String] and
       (JsPath \ "periodEndDate").readNullable[String]
+//      (JsPath \ "formBundleNumber").readNullable[String]  and
+//      (JsPath \ "clearedAmountItem").readNullable[BigDecimal] and
+//      (JsPath \ "sourceChargeRefForInterest").readNullable[String] and
+//      (JsPath \ "clearingDate").readNullable[String] and
+//      (JsPath \ "clearingReason").readNullable[String]
     ) (
+    //, formBundleNumber, clearedAmountItem, sourceChargeRefForInterest, clearingDate, clearingReason
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt) =>
       SchemeFS(
@@ -52,6 +59,11 @@ object SchemeFS {
         stoodOverAmount,
         periodStartDateOpt.map(LocalDate.parse),
         periodEndDateOpt.map(LocalDate.parse)
+//        formBundleNumber ,
+//        clearedAmountItem,
+//        sourceChargeRefForInterest,
+//        clearingDate,
+//        clearingReason
       )
   )
 
