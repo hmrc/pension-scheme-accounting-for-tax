@@ -16,18 +16,16 @@
 
 package connectors
 
-import java.time.LocalDate
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.FeatureToggle.{Disabled, Enabled}
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{FeatureToggle, PsaFS, SchemeFS}
+import models.{PsaFS, SchemeFS}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, Mockito}
+import org.mockito.{ArgumentCaptor, Mockito, MockitoSugar}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
-import org.mockito.MockitoSugar
-import org.scalatest.BeforeAndAfterEach
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -35,11 +33,11 @@ import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
-import repository.AftBatchedDataCacheRepositorySpec.{databaseName, mockAppConfig}
 import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.http._
 import utils.WireMockHelper
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with MockitoSugar with BeforeAndAfterEach{
@@ -62,14 +60,15 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       bind[AFTService].toInstance(mockAftService),
       bind[FeatureToggleService].toInstance(mockFutureToggleService)
     )
-  override def beforeEach: Unit = {
-    super.beforeEach
+  override def beforeEach(): Unit = {
+    super.beforeEach()
     when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Disabled(FinancialInformationAFT)))
   }
   private val psaId = "test-psa-id"
   private val pstr = "test-pstr"
   private val getPsaFSUrl = s"/pension-online/financial-statements/psaid/$psaId?dataset=medium"
   private val getSchemeFSUrl = s"/pension-online/financial-statements/pstr/$pstr?dataset=medium"
+  private val getSchemeFSMaxUrl = s"/pension-online/financial-statements/pstr/$pstr?dataset=maximum"
 
   "getPsaFS" must {
     "return user answer json when successful response returned from ETMP" in {
@@ -188,10 +187,19 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
         response mustBe schemeModel
       }
    }
+
+
+
+
+
+
+
+
+
     "return maximum answer json when successful response returned from ETMP when the financial statement toggle is switched on" in {
       when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
       server.stubFor(
-        get(urlEqualTo(getSchemeFSUrl))
+        get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
@@ -394,7 +402,7 @@ object FinancialStatementConnectorSpec {
     "sapDocumentNumber"-> "123456789192",
     "postingDate"-> "<StartOfQ1LastYear>",
     "clearedAmountTotal"-> 7035.10,
-    "formbundleNumber"-> "123456789192",
+    "formbundleNumber"-> "123456789193",
     "chargeClassification"-> "Charge",
     "sourceChargeRefForInterest"-> "XY002610150181",
     "documentLineItemDetails"-> Json.obj(
@@ -434,11 +442,11 @@ object FinancialStatementConnectorSpec {
     stoodOverAmount = 25089.08,
     periodStartDate = Some(LocalDate.parse("2020-04-01")),
     periodEndDate = Some(LocalDate.parse("2020-06-30")),
-    formBundleNumber="123456789192",
-    clearingReason= "C1",
-    sourceChargeRefForInterest = "XY002610150181",
-    clearingDate= LocalDate.parse("2020-06-30"),
-    clearedAmountItem = BigDecimal(0.00)
+    formBundleNumber=Some("123456789193"),
+    clearingReason= Some("C1"),
+    sourceChargeRefForInterest = Some("XY002610150181"),
+    clearingDate = Some(LocalDate.parse("2020-06-30")),
+    clearedAmountItem = Some(BigDecimal(0.00))
   )
 
   private val schemeFSResponse: JsValue = Json.arr(
