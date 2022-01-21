@@ -176,17 +176,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
         val result = controller.registerUploadResult(fakeRequestReference.withRawBody(ByteString(RandomUtils.nextBytes("512001".toInt))))
         status(result) mustEqual BAD_REQUEST
       }
-
-//      "throw an exception when the call is not authorised" in {
-//        val app = new GuiceApplicationBuilder()
-//          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-//          .overrides(modules: _*).build()
-//        val controller = app.injector.instanceOf[FileUploadCacheController]
-//        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
-//
-//        val result = controller.registerUploadResult(fakePostRequest.withJsonBody(Json.obj(fields = "reference" -> "referenceId")))
-//        an[IdNotFoundFromAuth] must be thrownBy status(result)
-//      }
     }
   }
 }
