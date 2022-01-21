@@ -20,7 +20,7 @@ import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.FeatureToggle.{Disabled, Enabled}
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{PsaFS, SchemeFS}
+import models.{DocumentLineItemDetail, PsaFS, SchemeFS}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentCaptor, Mockito, MockitoSugar}
 import org.scalatest.BeforeAndAfterEach
@@ -187,14 +187,6 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
         response mustBe schemeModel
       }
    }
-
-
-
-
-
-
-
-
 
     "return maximum answer json when successful response returned from ETMP when the financial statement toggle is switched on" in {
       when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
@@ -405,17 +397,19 @@ object FinancialStatementConnectorSpec {
     "formbundleNumber"-> "123456789193",
     "chargeClassification"-> "Charge",
     "sourceChargeRefForInterest"-> "XY002610150181",
-    "documentLineItemDetails"-> Json.obj(
-      "sapDocumentItemKey"-> "0000001000",
-      "documentLineItemAmount"-> 0.00,
-      "accruedInterestItem"-> 0.00,
-      "clearingStatus"-> "Open",
-      "clearedAmountItem"-> 0.00,
-      "stoodOverLock"-> false,
-      "clearingLock"-> false,
-      "clearingDate"-> "2020-06-30",
-      "clearingReason"-> "C1",
-      "paymDateOrCredDueDate"-> "<StartOfQ1LastYear>"
+    "documentLineItemDetails"-> Json.arr(
+      Json.obj(
+        "sapDocumentItemKey"-> "0000001000",
+        "documentLineItemAmount"-> 0.00,
+        "accruedInterestItem"-> 0.00,
+        "clearingStatus"-> "Open",
+        "clearedAmountItem"-> 0.00,
+        "stoodOverLock"-> false,
+        "clearingLock"-> false,
+        "clearingDate"-> "2020-06-30",
+        "clearingReason"-> "C1",
+        "paymDateOrCredDueDate"-> "<StartOfQ1LastYear>"
+      )
     )
   )
 
@@ -443,10 +437,12 @@ object FinancialStatementConnectorSpec {
     periodStartDate = Some(LocalDate.parse("2020-04-01")),
     periodEndDate = Some(LocalDate.parse("2020-06-30")),
     formBundleNumber=Some("123456789193"),
-    clearingReason= Some("C1"),
     sourceChargeRefForInterest = Some("XY002610150181"),
-    clearingDate = Some(LocalDate.parse("2020-06-30")),
-    clearedAmountItem = Some(BigDecimal(0.00))
+    Seq(DocumentLineItemDetail(
+      clearingReason= Some("C1"),
+      clearingDate = Some(LocalDate.parse("2020-06-30")),
+      clearedAmountItem = BigDecimal(0.00))
+    )
   )
 
   private val schemeFSResponse: JsValue = Json.arr(
