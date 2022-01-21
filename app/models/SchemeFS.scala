@@ -16,14 +16,32 @@
 
 package models
 
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+
 import java.time.LocalDate
 
-import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, JsPath, Json, Reads}
+case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: Option[LocalDate], clearingReason:Option[String])
 
-case class SchemeFS(chargeReference: String, chargeType: String, dueDate: Option[LocalDate], totalAmount: BigDecimal, amountDue: BigDecimal,
-                    outstandingAmount: BigDecimal, accruedInterestTotal: BigDecimal, stoodOverAmount: BigDecimal,
-                    periodStartDate: Option[LocalDate], periodEndDate: Option[LocalDate])
+object DocumentLineItemDetail {
+  implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
+}
+
+case class SchemeFS(
+                    chargeReference: String,
+                    chargeType: String,
+                    dueDate: Option[LocalDate],
+                    totalAmount: BigDecimal,
+                    amountDue: BigDecimal,
+                    outstandingAmount: BigDecimal,
+                    accruedInterestTotal: BigDecimal,
+                    stoodOverAmount: BigDecimal,
+                    periodStartDate: Option[LocalDate],
+                    periodEndDate: Option[LocalDate],
+                    formBundleNumber: Option[String] = None,
+                    sourceChargeRefForInterest: Option[String] = None,
+                    documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
+                   )
 
 object SchemeFS {
 
@@ -52,6 +70,54 @@ object SchemeFS {
         stoodOverAmount,
         periodStartDateOpt.map(LocalDate.parse),
         periodEndDateOpt.map(LocalDate.parse)
+      )
+  )
+
+  implicit val rdsDocumentLineItemDetail: Reads[DocumentLineItemDetail] = (
+    (JsPath \ "clearedAmountItem").read[BigDecimal] and
+      (JsPath \ "clearingDate").readNullable[LocalDate] and
+      (JsPath \ "clearingReason").readNullable[String]
+    ) (
+    (clearedAmountItem, clearingDate, clearingReason) =>
+      DocumentLineItemDetail(
+        clearedAmountItem,
+        clearingDate,
+        clearingReason
+      )
+    )
+
+  implicit val rdsMax: Reads[SchemeFS] = (
+    (JsPath \ "chargeReference").read[String] and
+      (JsPath \ "chargeType").read[String] and
+      (JsPath \ "dueDate").readNullable[String] and
+      (JsPath \ "totalAmount").read[BigDecimal] and
+      (JsPath \ "amountDue").read[BigDecimal] and
+      (JsPath \ "outstandingAmount").read[BigDecimal] and
+      (JsPath \ "accruedInterestTotal").read[BigDecimal] and
+      (JsPath \ "stoodOverAmount").read[BigDecimal] and
+      (JsPath \ "periodStartDate").readNullable[String] and
+      (JsPath \ "periodEndDate").readNullable[String] and
+      (JsPath \ "formbundleNumber").readNullable[String] and
+      (JsPath \ "sourceChargeRefForInterest").readNullable[String] and
+      (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail))
+    ) (
+    (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
+     accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt,
+     formBundleNumber, sourceChargeRefForInterest, documentLineItemDetails) =>
+      SchemeFS(
+        chargeReference,
+        SchemeChargeType.valueWithName(chargeType),
+        dueDateOpt.map(LocalDate.parse),
+        totalAmount,
+        amountDue,
+        outstandingAmount,
+        accruedInterestTotal,
+        stoodOverAmount,
+        periodStartDateOpt.map(LocalDate.parse),
+        periodEndDateOpt.map(LocalDate.parse),
+        formBundleNumber ,
+        sourceChargeRefForInterest,
+        documentLineItemDetails
       )
   )
 
