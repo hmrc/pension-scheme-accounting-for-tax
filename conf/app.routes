@@ -27,3 +27,7 @@ GET           /psa-financial-statement                                          
 GET           /scheme-financial-statement                                           controllers.FinancialStatementController.schemeStatement
 
 POST          /email-response/:submittedBy/:journeyType/:requestId/:email/:psaId    controllers.EmailResponseController.sendAuditEvents(requestId:String, psaId:String, submittedBy:SchemeAdministratorType.SchemeAdministratorType, email:String, journeyType:JourneyType.Name)
+
+GET           /cache/fileUpload                                                     controllers.cache.FileUploadCacheController.getUploadResult
+POST          /cache/fileUpload                                                     controllers.cache.FileUploadCacheController.requestUpload
+POST          /cache/fileUploadResult                                               controllers.cache.FileUploadCacheController.registerUploadResult
