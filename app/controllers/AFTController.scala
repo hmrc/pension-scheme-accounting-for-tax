@@ -19,22 +19,21 @@ package controllers
 import connectors.DesConnector
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.AftOverviewCache
-import models.{VersionsWithSubmitter, AFTSubmitterDetails}
-
-import javax.inject.{Inject, Singleton}
 import models.enumeration.JourneyType
+import models.{AFTSubmitterDetails, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
 import repository.AftOverviewCacheRepository
-import services.{FeatureToggleService, AFTService}
+import services.{AFTService, FeatureToggleService}
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthorisedFunctions, Enrolment, AuthConnector}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
@@ -78,10 +77,11 @@ class AFTController @Inject()(
 
   def getDetails: Action[AnyContent] = Action.async {
     implicit request =>
-      get { (pstr, startDate) =>
-        request.headers.get("aftVersion") match {
-          case Some(aftVer) =>
-            desConnector.getAftDetails(pstr, startDate, aftVer).map {
+
+      getFbNumber { (pstr, fbNumber) =>
+        fbNumber match {
+          case fbNumber if fbNumber.nonEmpty =>
+            desConnector.getAftDetails(pstr, fbNumber).map {
               etmpJson =>
                 etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
 
@@ -90,7 +90,21 @@ class AFTController @Inject()(
                 }
             }
           case _ =>
-            Future.failed(new BadRequestException("Bad Request with no AFT version"))
+            get { (pstr, startDate) =>
+              request.headers.get("aftVersion") match {
+                case Some(aftVer) =>
+                  desConnector.getAftDetails(pstr, startDate, aftVer).map {
+                    etmpJson =>
+                      etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
+
+                        case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
+                        case JsError(errors) => throw JsResultException(errors)
+                      }
+                  }
+                case _ =>
+                  Future.failed(new BadRequestException("Bad Request with no AFT version"))
+              }
+            }
         }
       }
   }
@@ -208,6 +222,28 @@ class AFTController @Inject()(
             block(pstr, startDate)
           case _ =>
             Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
+        }
+      case _ =>
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
+    }
+  }
+
+  private def getFbNumber(block: (String, String) => Future[Result])
+                 (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
+      case Some(_) =>
+        (
+          request.headers.get("pstr"),
+          request.headers.get("fbNumber"),
+          request.headers.get("startDate")
+        ) match {
+          case (Some(pstr), Some(fbNumber), _) =>
+            block(pstr, fbNumber)
+          case (Some(pstr), _, Some(startDate)) =>
+            block(pstr, "")
+          case _ =>
+            Future.failed(new BadRequestException("Bad Request with missing PSTR"))
         }
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))

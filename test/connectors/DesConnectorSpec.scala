@@ -63,8 +63,10 @@ class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
   private val startDt = "2020-01-01"
   private val endDate = "2021-06-30"
   private val aftVersion = "1"
+  private val fbNumber = "123456789123"
   private val aftSubmitUrl = s"/pension-online/pstr/$pstr/aft/return"
   private val getAftUrl = s"/pension-online/aft-return/$pstr?startDate=$startDt&aftVersion=$aftVersion"
+  private val getAftFbNumberUrl = s"/pension-online/aft-return/$pstr?fbNumber=$fbNumber"
   private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions?startDate=$startDt"
   private val getAftOverviewUrl = s"/pension-online/reports/overview/$pstr/AFT?fromDate=$startDt&toDate=$endDate"
   private val testCorrelationId = "testCorrelationId"
@@ -241,7 +243,22 @@ class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       }
     }
 
-    "send AftGet audit event when successful response returned from ETMP" in {
+    "return user answer json with fbNumber when successful response returned from ETMP" in {
+      server.stubFor(
+        get(urlEqualTo(getAftFbNumberUrl))
+          .willReturn(
+            ok
+              .withHeader("Content-Type", "application/json")
+              .withBody(etmpAFTDetailsResponse.toString())
+          )
+      )
+
+      connector.getAftDetails(pstr, fbNumber).map { response =>
+        response mustBe etmpAFTDetailsResponse
+      }
+    }
+
+      "send AftGet audit event when successful response returned from ETMP" in {
       Mockito.reset(mockAuditService)
       server.stubFor(
         get(urlEqualTo(getAftUrl))
