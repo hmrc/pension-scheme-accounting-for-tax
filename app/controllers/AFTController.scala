@@ -78,9 +78,9 @@ class AFTController @Inject()(
   def getDetails: Action[AnyContent] = Action.async {
     implicit request =>
 
-      getFbNumber { (pstr, fbNumber) =>
-        fbNumber match {
-          case fbNumber if fbNumber.nonEmpty =>
+      getFbNumber { (pstr, fbn) =>
+        fbn match {
+          case Some(fbNumber) =>
             desConnector.getAftDetails(pstr, fbNumber).map {
               etmpJson =>
                 etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
@@ -228,20 +228,19 @@ class AFTController @Inject()(
     }
   }
 
-  private def getFbNumber(block: (String, String) => Future[Result])
+  private def getFbNumber(block: (String, Option[String]) => Future[Result])
                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
 
     authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
       case Some(_) =>
         (
           request.headers.get("pstr"),
-          request.headers.get("fbNumber"),
-          request.headers.get("startDate")
+          request.headers.get("fbNumber")
         ) match {
-          case (Some(pstr), Some(fbNumber), _) =>
-            block(pstr, fbNumber)
-          case (Some(pstr), _, Some(startDate)) =>
-            block(pstr, "")
+          case (Some(pstr), Some(fbNumber)) =>
+            block(pstr, Some(fbNumber))
+          case (Some(pstr), _) =>
+            block(pstr, Option.empty)
           case _ =>
             Future.failed(new BadRequestException("Bad Request with missing PSTR"))
         }
