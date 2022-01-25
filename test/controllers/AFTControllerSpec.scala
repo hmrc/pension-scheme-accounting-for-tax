@@ -16,31 +16,29 @@
 
 package controllers
 
-import java.time.LocalDate
 import connectors.DesConnector
 import models.FeatureToggle.{Disabled, Enabled}
 import models.FeatureToggleName.AftOverviewCache
 import models.enumeration.JourneyType
 import models.{AFTOverview, AFTOverviewVersion, AFTVersion}
-import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
+import org.mockito.{ArgumentMatchers, MockitoSugar}
+import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
-import org.scalatest.BeforeAndAfter
-import org.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.AFTService
 import repository.{AftDataCacheRepository, AftOverviewCacheRepository}
 import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
 
+import java.time.LocalDate
 import scala.concurrent.Future
 
 class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar with BeforeAndAfter with JsonFileReader {
@@ -206,6 +204,19 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       contentAsJson(result) mustBe transformedAftDEtailsUAJson
     }
 
+    "return OK when the details are returned based on pstr, fbNumber" in {
+
+      val controller = application.injector.instanceOf[AFTController]
+
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(fbNumber))(any(), any(), any())).thenReturn(
+        Future.successful(etmpAFTDetailsResponse))
+
+      val result = controller.getDetails()(fakeRequestForGetDetailsWithFbNumber)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe transformedAftDEtailsUAJson
+    }
+
     "throw BadRequestException when PSTR is not present in the header" in {
 
       val controller = application.injector.instanceOf[AFTController]
@@ -214,7 +225,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         controller.getDetails()(fakeRequest.withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing PSTR/Quarter Start Date"
+        response.getMessage mustBe "Bad Request with missing PSTR"
       }
     }
 
@@ -399,6 +410,7 @@ object AFTControllerSpec {
   private val startDt = "2020-01-01"
   private val endDate = "2020-12-31"
   private val aftVer = "99"
+  private val fbNumber = "123456789123"
   private val etmpAFTDetailsResponse: JsValue = Json.obj(
     "schemeDetails" -> Json.obj(
       "pstr" -> "12345678AB",
@@ -516,6 +528,7 @@ object AFTControllerSpec {
 
 
   private val fakeRequestForGetDetails = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("startDate", startDt), ("aftVersion", aftVer))
+  private val fakeRequestForGetDetailsWithFbNumber = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("fbNumber", fbNumber))
   private val json =
     """{
       |  "aftStatus": "Compiled",

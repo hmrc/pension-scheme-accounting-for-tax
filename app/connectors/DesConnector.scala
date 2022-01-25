@@ -89,6 +89,21 @@ class DesConnector @Inject()(
     } andThen aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, startDate)
   }
 
+  def getAftDetails(pstr: String, fbNumber: String)
+                   (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[JsValue] = {
+
+    val getAftUrl: String = config.getAftFbnDetailsUrl.format(pstr, fbNumber)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
+
+    http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
+      response =>
+        response.status match {
+          case OK => Json.parse(response.body)
+          case _ => handleErrorResponse("GET", getAftUrl)(response)
+        }
+    } andThen aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, fbNumber)
+  }
+
   def getAftVersions(pstr: String, startDate: String)
                     (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[AFTVersion]] = {
 
