@@ -71,7 +71,7 @@ class FileUploadCacheController @Inject()(
         request.body.asJson.map {
           jsValue =>
             jsValue.validate[FileUploadStatus] match {
-              case JsSuccess(uploadStatus, _) => repository.updateStatus(id, uploadStatus).map(_ => Ok)
+              case JsSuccess(fileUploadStatus, _) => repository.updateStatus(id, fileUploadStatus).map(_ => Ok)
               case _ => Future.failed(new BadRequestException(s"Invalid request received from frontend for registerUploadResult"))
             }
         } getOrElse Future.successful(BadRequest)
