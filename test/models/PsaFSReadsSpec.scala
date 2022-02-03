@@ -41,6 +41,24 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
       }
     }
   }
+
+  "Psa Max FS" must {
+    "format " when {
+      "reading from json" in {
+        val res= Json.fromJson[PsaFS](psaFSMaxResponseJson(chargeType = "57401091"))(PsaFS.rdsMax)
+        println(res)
+        val result = Json.fromJson[PsaFS](psaFSMaxResponseJson(chargeType = "57401091"))(PsaFS.rdsMax).asOpt.value
+
+        result mustBe psaFSMaxModel
+      }
+
+      "throw NoSuchElementException for invalid charge type" in {
+        intercept[NoSuchElementException] {
+          Json.fromJson[PsaFS](psaFSMaxResponseJson(chargeType = "56000000"))(PsaFS.rdsMax).asOpt.value
+        }
+      }
+    }
+  }
 }
 object PsaFSReadsSpec {
 
@@ -58,6 +76,27 @@ object PsaFSReadsSpec {
     "pstr" -> "24000040IN"
   )
 
+  private def psaFSMaxResponseJson(chargeType: String): JsValue = Json.obj(
+    "chargeReference" -> "XY002610150184",
+    "chargeType" -> s"$chargeType",
+    "dueDate" -> "2020-02-15",
+    "totalAmount" -> 80000.00,
+    "outstandingAmount" -> 56049.08,
+    "stoodOverAmount" -> 25089.08,
+    "accruedInterestTotal" -> 123.32,
+    "amountDue" -> 1029.05,
+    "periodStartDate" -> "2020-04-01",
+    "periodEndDate" -> "2020-06-30",
+    "pstr" -> "24000040IN",
+    "sourceChargeRefForInterest"-> "XY002610150181",
+    "documentLineItemDetails"-> Json.arr(
+      Json.obj(
+        "clearingDate"-> "2020-06-30",
+        "clearingReason"-> "C1",
+        "clearedAmountItem"-> 0.00
+      )
+  ))
+
   private def psaFSModel = PsaFS(
     chargeReference = "XY002610150184",
     chargeType = "Overseas transfer charge late payment penalty (6 months)",
@@ -71,8 +110,24 @@ object PsaFSReadsSpec {
     periodEndDate = LocalDate.parse("2020-06-30"),
     pstr = "24000040IN"
   )
+
+  private def psaFSMaxModel = PsaFS(
+    chargeReference = "XY002610150184",
+    chargeType = "Overseas transfer charge late payment penalty (6 months)",
+    dueDate = Some(LocalDate.parse("2020-02-15")),
+    totalAmount = 80000.00,
+    outstandingAmount = 56049.08,
+    stoodOverAmount = 25089.08,
+    accruedInterestTotal = 123.32,
+    amountDue = 1029.05,
+    periodStartDate = LocalDate.parse("2020-04-01"),
+    periodEndDate = LocalDate.parse("2020-06-30"),
+    pstr = "24000040IN",
+    sourceChargeRefForInterest = Some("XY002610150181"),
+    documentLineItemDetails = Seq(DocumentLineItemDetail(
+      clearingReason= Some("C1"),
+      clearingDate = Some(LocalDate.parse("2020-06-30")),
+      clearedAmountItem = BigDecimal(0.00))
+    )
+  )
 }
-
-
-
-
