@@ -45,10 +45,7 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
   "Psa Max FS" must {
     "format " when {
       "reading from json" in {
-        val res= Json.fromJson[PsaFS](psaFSMaxResponseJson(chargeType = "57401091"))(PsaFS.rdsMax)
-        println(res)
         val result = Json.fromJson[PsaFS](psaFSMaxResponseJson(chargeType = "57401091"))(PsaFS.rdsMax).asOpt.value
-
         result mustBe psaFSMaxModel
       }
 
