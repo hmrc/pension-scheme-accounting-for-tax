@@ -154,7 +154,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
-        val uploadStatus=FileUploadStatus("Success",Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
+        val uploadStatus=FileUploadStatus("Success",None, None, Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
         val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,DateTime.now(DateTimeZone.UTC),DateTime.now(DateTimeZone.UTC))
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(referenceId))
@@ -168,7 +168,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
-        val uploadStatus=FileUploadStatus("Success",Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
+        val uploadStatus=FileUploadStatus("Success",None, None, Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
         val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,DateTime.now(DateTimeZone.UTC),DateTime.now(DateTimeZone.UTC))
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))

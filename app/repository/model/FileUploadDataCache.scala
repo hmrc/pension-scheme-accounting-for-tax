@@ -20,7 +20,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-case class FileUploadStatus(_type: String, downloadUrl: Option[String] = None, mimeType: Option[String] = None,
+case class FileUploadStatus(_type: String, failureReason: Option[String]=None, message: Option[String]=None, downloadUrl: Option[String] = None, mimeType: Option[String] = None,
                             name: Option[String] = None, size: Option[Long] = None)
 
 object FileUploadStatus {
