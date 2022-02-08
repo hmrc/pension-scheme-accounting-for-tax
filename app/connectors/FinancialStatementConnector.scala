@@ -46,9 +46,24 @@ class FinancialStatementConnector @Inject()(
   def getPsaFS(psaId: String)
               (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
 
-    val url: String = config.psaFinancialStatementUrl.format(psaId)
+    val psaInfoUrl = featureToggleService.get(FinancialInformationAFT).map{
+      case Enabled(_) => Tuple2(config.psaFinancialStatementMaxUrl.format(psaId), true)
+      case _ => Tuple2(config.psaFinancialStatementUrl.format(psaId), false)
+    }
 
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
+
+    psaInfoUrl.flatMap{
+      case (url, toggle) =>
+        transformPSAFS(psaId, url, toggle)(hc, implicitly, implicitly)
+    }
+  }
+
+  //scalastyle:off cyclomatic.complexity
+  private def transformPSAFS(psaId: String, url: String, toggleValue:Boolean)
+                            (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[Seq[PsaFS]] = {
+
+    val reads: Reads[PsaFS] = if (toggleValue) PsaFS.rdsMax else PsaFS.rds
 
     lazy val financialStatementsTransformer: Reads[JsArray] =
       __.read[JsArray].map {
@@ -64,7 +79,7 @@ class FinancialStatementConnector @Inject()(
           logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
           Json.parse(response.body).transform(financialStatementsTransformer) match {
             case JsSuccess(statements, _) =>
-              statements.validate[Seq[PsaFS]](Reads.seq(PsaFS.rds)) match {
+              statements.validate[Seq[PsaFS]](Reads.seq(reads)) match {
                 case JsSuccess(values, _) =>
                   logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
                   values
