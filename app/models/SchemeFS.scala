@@ -39,6 +39,7 @@ case class SchemeFS(
                     periodStartDate: Option[LocalDate],
                     periodEndDate: Option[LocalDate],
                     formBundleNumber: Option[String] = None,
+                    aftVersion: Option[Int] = None,
                     sourceChargeRefForInterest: Option[String] = None,
                     documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
                    )
@@ -98,12 +99,13 @@ object SchemeFS {
       (JsPath \ "periodStartDate").readNullable[String] and
       (JsPath \ "periodEndDate").readNullable[String] and
       (JsPath \ "formbundleNumber").readNullable[String] and
+      (JsPath \ "aftVersion").readNullable[Int] and
       (JsPath \ "sourceChargeRefForInterest").readNullable[String] and
       (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail))
     ) (
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt,
-     formBundleNumber, sourceChargeRefForInterest, documentLineItemDetails) =>
+     formBundleNumber, aftVersionOpt, sourceChargeRefForInterest, documentLineItemDetails) =>
       SchemeFS(
         chargeReference,
         SchemeChargeType.valueWithName(chargeType),
@@ -116,6 +118,7 @@ object SchemeFS {
         periodStartDateOpt.map(LocalDate.parse),
         periodEndDateOpt.map(LocalDate.parse),
         formBundleNumber ,
+        aftVersionOpt,
         sourceChargeRefForInterest,
         documentLineItemDetails
       )
