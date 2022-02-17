@@ -418,6 +418,7 @@ object AFTControllerSpec {
     ),
     "aftDetails" -> Json.obj(
       "aftStatus" -> "Compiled",
+      "aftVersion" -> "1",
       "quarterStartDate" -> "2020-02-29",
       "quarterEndDate" -> "2020-05-29",
       "receiptDate" -> "2016-12-17T09:30:47Z",
@@ -443,6 +444,7 @@ object AFTControllerSpec {
 
   private val transformedAftDEtailsUAJson = Json.obj(
     "aftStatus" -> "Compiled",
+    "aftVersion" -> "1",
     "quarter" -> Json.obj(
       "startDate" -> "2020-02-29",
       "endDate" -> "2020-05-29"
@@ -472,6 +474,7 @@ object AFTControllerSpec {
     ),
     "aftDetails" -> Json.obj(
       "aftStatus" -> "Compiled",
+      "aftVersion" -> "1",
       "quarterStartDate" -> "2020-02-29",
       "quarterEndDate" -> "2020-05-29"
     ),
@@ -532,6 +535,7 @@ object AFTControllerSpec {
   private val json =
     """{
       |  "aftStatus": "Compiled",
+      |  "aftVersion": "1",
       |  "quarter": {
       |    "startDate": "2019-01-01",
       |    "endDate": "2019-03-31"
@@ -548,6 +552,7 @@ object AFTControllerSpec {
   private val jsonOneMemberZeroValue = Json.parse(
     """{
       |  "aftStatus": "Compiled",
+      |  "aftVersion": "1",
       |  "quarter": {
       |       "startDate": "2019-01-01",
       |       "endDate": "2019-03-31"

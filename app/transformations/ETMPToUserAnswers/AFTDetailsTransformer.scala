@@ -42,6 +42,7 @@ class AFTDetailsTransformer @Inject()(
 
   private def transformAFTDetails: Reads[JsObject] =
     ((__ \ 'aftStatus).json.copyFrom((__ \ 'aftDetails \ 'aftStatus).json.pick) and
+      (__ \ 'aftVersion).json.copyFrom((__ \ 'aftDetails \ 'aftVersion).json.pick) and
       (__ \ 'quarter \ 'startDate).json.copyFrom((__ \ 'aftDetails \ 'quarterStartDate).json.pick) and
       (__ \ 'quarter \ 'endDate).json.copyFrom((__ \ 'aftDetails \ 'quarterEndDate).json.pick)).reduce
 
