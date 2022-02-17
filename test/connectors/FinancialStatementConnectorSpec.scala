@@ -67,6 +67,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
   private val psaId = "test-psa-id"
   private val pstr = "test-pstr"
   private val getPsaFSUrl = s"/pension-online/financial-statements/psaid/$psaId?dataset=medium"
+  //private val getPsaFSMaxUrl = s"/pension-online/financial-statements/psaid/$psaId?dataset=maximum"
   private val getSchemeFSUrl = s"/pension-online/financial-statements/pstr/$pstr?dataset=medium"
   private val getSchemeFSMaxUrl = s"/pension-online/financial-statements/pstr/$pstr?dataset=maximum"
 
