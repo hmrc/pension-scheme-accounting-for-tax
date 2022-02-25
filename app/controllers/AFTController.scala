@@ -16,7 +16,7 @@
 
 package controllers
 
-import connectors.DesConnector
+import connectors.AFTConnector
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.{AftOverviewCache, MigrationTransferAft}
 import models.enumeration.JourneyType
@@ -39,7 +39,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton()
 class AFTController @Inject()(
                                cc: ControllerComponents,
-                               desConnector: DesConnector,
+                               aftConnector: AFTConnector,
                                val authConnector: AuthConnector,
                                aftReturnTransformer: AFTReturnTransformer,
                                aftDetailsTransformer: AFTDetailsTransformer,
@@ -66,7 +66,7 @@ class AFTController @Inject()(
 
                 case JsSuccess(dataToBeSendToETMP, _) =>
                   logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-                  desConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     Ok(response.body)
                   }
 
@@ -83,7 +83,7 @@ class AFTController @Inject()(
 
                 case JsSuccess(dataToBeSendToETMP, _) =>
                   logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-                  desConnector.fileAFTReturnDES(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                  aftConnector.fileAFTReturnDES(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     Ok(response.body)
                   }
 
@@ -107,13 +107,13 @@ class AFTController @Inject()(
                   case Enabled(_) =>
                     aftOverviewCacheRepository.get(pstr).flatMap {
                       case Some(data) => Future.successful(Ok(data))
-                      case _ => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
+                      case _ => aftConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
                         aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
                           Ok(Json.toJson(data))
                         }
                       }
                     }
-                  case _ => desConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
+                  case _ => aftConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
                     Future.successful(Ok(Json.toJson(data)))
                   }
                 }
@@ -129,13 +129,13 @@ class AFTController @Inject()(
                   case Enabled(_) =>
                     aftOverviewCacheRepository.get(pstr).flatMap {
                       case Some(data) => Future.successful(Ok(data))
-                      case _ => desConnector.getAftOverviewDES(pstr, startDate, endDate).flatMap { data =>
+                      case _ => aftConnector.getAftOverviewDES(pstr, startDate, endDate).flatMap { data =>
                         aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
                           Ok(Json.toJson(data))
                         }
                       }
                     }
-                  case _ => desConnector.getAftOverviewDES(pstr, startDate, endDate).flatMap { data =>
+                  case _ => aftConnector.getAftOverviewDES(pstr, startDate, endDate).flatMap { data =>
                     Future.successful(Ok(Json.toJson(data)))
                   }
                 }
@@ -152,7 +152,7 @@ class AFTController @Inject()(
       getFbNumber { (pstr, fbn) =>
         fbn match {
           case Some(fbNumber) =>
-            desConnector.getAftDetails(pstr, fbNumber).map {
+            aftConnector.getAftDetails(pstr, fbNumber).map {
               etmpJson =>
                 etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
 
@@ -164,7 +164,7 @@ class AFTController @Inject()(
             get { (pstr, startDate) =>
               request.headers.get("aftVersion") match {
                 case Some(aftVer) =>
-                  desConnector.getAftDetails(pstr, startDate, aftVer).map {
+                  aftConnector.getAftDetails(pstr, startDate, aftVer).map {
                     etmpJson =>
                       etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
 
@@ -183,16 +183,16 @@ class AFTController @Inject()(
   def getVersions: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
-        desConnector.getAftVersions(pstr, startDate).map(v => Ok(Json.toJson(v)))
+        aftConnector.getAftVersions(pstr, startDate).map(v => Ok(Json.toJson(v)))
       }
   }
 
   def getVersionsWithSubmitter: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
-        desConnector.getAftVersions(pstr, startDate).flatMap { aftVersions =>
+        aftConnector.getAftVersions(pstr, startDate).flatMap { aftVersions =>
           Future.sequence(aftVersions.map { version =>
-            desConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map { detailsJs =>
+            aftConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map { detailsJs =>
 
               detailsJs.transform(aftDetailsTransformer.transformToUserAnswers) match {
 
@@ -228,7 +228,7 @@ class AFTController @Inject()(
                              )(implicit hc: HeaderCarrier,
                                ec: ExecutionContext,
                                request: RequestHeader): Future[Boolean] = {
-    desConnector.getAftDetails(pstr, startDate, versionNumber).map { jsValue =>
+    aftConnector.getAftDetails(pstr, startDate, versionNumber).map { jsValue =>
       !aftService.isChargeZeroedOut(jsValue)
     }
   }

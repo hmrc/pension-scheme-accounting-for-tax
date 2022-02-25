@@ -37,9 +37,9 @@ import utils.{JsonFileReader, WireMockHelper}
 
 import java.time.LocalDate
 
-class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with JsonFileReader with MockitoSugar {
+class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with JsonFileReader with MockitoSugar {
 
-  import DesConnectorSpec._
+  import AFTConnectorSpec._
 
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
   private implicit lazy val rh: RequestHeader = FakeRequest("", "")
@@ -50,7 +50,7 @@ class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
   private val mockAftService = mock[AFTService]
   private val mockHeaderUtils = mock[HeaderUtils]
 
-  private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
+  private lazy val connector: AFTConnector = injector.instanceOf[AFTConnector]
 
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
@@ -664,7 +664,7 @@ class DesConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
   }
 }
 
-object DesConnectorSpec {
+object AFTConnectorSpec {
   private val etmpAFTDetailsResponse: JsValue = Json.obj(
     "schemeDetails" -> Json.obj(
       "pstr" -> "12345678AB",
@@ -684,11 +684,7 @@ object DesConnectorSpec {
   )
 }
 
-
-
-
-
-class DesConnectorIFSpec extends AsyncWordSpec with Matchers with WireMockHelper with JsonFileReader with MockitoSugar {
+class AFTConnectorIFSpec extends AsyncWordSpec with Matchers with WireMockHelper with JsonFileReader with MockitoSugar {
 
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
   private implicit lazy val rh: RequestHeader = FakeRequest("", "")
@@ -699,7 +695,7 @@ class DesConnectorIFSpec extends AsyncWordSpec with Matchers with WireMockHelper
   private val mockAftService = mock[AFTService]
   private val mockHeaderUtils = mock[HeaderUtils]
 
-  private lazy val connector: DesConnector = injector.instanceOf[DesConnector]
+  private lazy val connector: AFTConnector = injector.instanceOf[AFTConnector]
 
   override protected def bindings: Seq[GuiceableModule] =
     Seq(

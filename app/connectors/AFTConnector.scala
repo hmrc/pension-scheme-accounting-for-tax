@@ -31,7 +31,7 @@ import utils.HttpResponseHelper
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class DesConnector @Inject()(
+class AFTConnector @Inject()(
                               http: HttpClient,
                               config: AppConfig,
                               auditService: AuditService,
@@ -44,7 +44,7 @@ class DesConnector @Inject()(
   extends HttpErrorFunctions
     with HttpResponseHelper {
 
-  private val logger = Logger(classOf[DesConnector])
+  private val logger = Logger(classOf[AFTConnector])
 
   def fileAFTReturnDES(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {

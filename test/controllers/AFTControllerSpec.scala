@@ -16,7 +16,7 @@
 
 package controllers
 
-import connectors.DesConnector
+import connectors.AFTConnector
 import models.FeatureToggle.{Disabled, Enabled}
 import models.FeatureToggleName.{AftOverviewCache, MigrationTransferAft}
 import models.enumeration.JourneyType
@@ -48,7 +48,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val fakeRequest = FakeRequest("GET", "/")
-  private val mockDesConnector = mock[DesConnector]
+  private val mockDesConnector = mock[AFTConnector]
   private val mockAftService = mock[AFTService]
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val mockDataCacheRepository = mock[AftDataCacheRepository]
@@ -65,7 +65,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
-      bind[DesConnector].toInstance(mockDesConnector),
+      bind[AFTConnector].toInstance(mockDesConnector),
       bind[AFTService].toInstance(mockAftService),
       bind[FeatureToggleService].toInstance(mockFeatureToggleService),
       bind[AftOverviewCacheRepository].toInstance(mockAftOverviewCacheRepository),
