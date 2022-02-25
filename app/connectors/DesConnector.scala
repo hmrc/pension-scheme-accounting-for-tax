@@ -48,7 +48,7 @@ class DesConnector @Inject()(
 
   def fileAFTReturnDES(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
-    val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
+    val fileAFTReturnURL = config.fileAFTReturnURLDES.format(pstr)
 
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
 
@@ -102,6 +102,50 @@ class DesConnector @Inject()(
     }
   }
 
+  def getAftOverviewDES(pstr: String, startDate: String, endDate: String)
+                       (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
+
+    val getAftVersionUrl: String = config.getAftOverviewUrlDES.format(pstr, startDate, endDate)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
+
+    http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
+      response.status match {
+        case OK =>
+          Json.parse(response.body).validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
+            case JsSuccess(versions, _) => versions
+            case JsError(errors) => throw JsResultException(errors)
+          }
+        case NOT_FOUND if (Json.parse(response.body) \ "code").as[String].equals("NO_REPORT_FOUND") =>
+          logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
+          Seq.empty[AFTOverview]
+        case _ =>
+          handleErrorResponse("GET", getAftVersionUrl)(response)
+      }
+    }
+  }
+
+  def getAftOverview(pstr: String, startDate: String, endDate: String)
+                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
+
+    val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
+
+    http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
+      response.status match {
+        case OK =>
+          Json.parse(response.body).validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
+            case JsSuccess(versions, _) => versions
+            case JsError(errors) => throw JsResultException(errors)
+          }
+        case NOT_FOUND if (Json.parse(response.body) \ "code").as[String].equals("NO_REPORT_FOUND") =>
+          logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
+          Seq.empty[AFTOverview]
+        case _ =>
+          handleErrorResponse("GET", getAftVersionUrl)(response)
+      }
+    }
+  }
+
   def getAftDetails(pstr: String, startDate: String, aftVersion: String)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[JsValue] = {
 
@@ -152,50 +196,6 @@ class DesConnector @Inject()(
             handleErrorResponse("GET", getAftVersionUrl)(response)
         }
     } andThen aftVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate)
-  }
-
-  def getAftOverviewDES(pstr: String, startDate: String, endDate: String)
-                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
-
-    val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
-
-    http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
-      response.status match {
-        case OK =>
-          Json.parse(response.body).validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
-            case JsSuccess(versions, _) => versions
-            case JsError(errors) => throw JsResultException(errors)
-          }
-        case NOT_FOUND if (Json.parse(response.body) \ "code").as[String].equals("NO_REPORT_FOUND") =>
-          logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
-          Seq.empty[AFTOverview]
-        case _ =>
-          handleErrorResponse("GET", getAftVersionUrl)(response)
-      }
-    }
-  }
-
-  def getAftOverview(pstr: String, startDate: String, endDate: String)
-                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
-
-    val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
-
-    http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
-      response.status match {
-        case OK =>
-          Json.parse(response.body).validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
-            case JsSuccess(versions, _) => versions
-            case JsError(errors) => throw JsResultException(errors)
-          }
-        case NOT_FOUND if (Json.parse(response.body) \ "code").as[String].equals("NO_REPORT_FOUND") =>
-          logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
-          Seq.empty[AFTOverview]
-        case _ =>
-          handleErrorResponse("GET", getAftVersionUrl)(response)
-      }
-    }
   }
 
   private def desHeader: Seq[(String, String)] = {
