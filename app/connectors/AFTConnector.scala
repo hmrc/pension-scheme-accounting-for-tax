@@ -19,7 +19,7 @@ package connectors
 import audit._
 import com.google.inject.Inject
 import config.AppConfig
-import models.{AFTVersion, AFTOverview}
+import models.{AFTOverview, AFTVersion}
 import play.api.Logger
 import play.api.http.Status
 import play.api.http.Status._
@@ -49,7 +49,7 @@ class AFTConnector @Inject()(
   def fileAFTReturnDES(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
     val fileAFTReturnURL = config.fileAFTReturnURLDES.format(pstr)
-
+    logger.warn("File AFT return (DES) called - URL:" + fileAFTReturnURL)
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
 
     if (aftService.isChargeZeroedOut(data)) {
@@ -77,7 +77,7 @@ class AFTConnector @Inject()(
   def fileAFTReturn(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
-
+    logger.warn("File AFT return (IF) called - URL:" + fileAFTReturnURL)
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
 
     if (aftService.isChargeZeroedOut(data)) {
@@ -106,6 +106,9 @@ class AFTConnector @Inject()(
                        (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
 
     val getAftVersionUrl: String = config.getAftOverviewUrlDES.format(pstr, startDate, endDate)
+
+    logger.warn("Get overview (DES) called - URL:" + getAftVersionUrl)
+
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
 
     http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
@@ -128,6 +131,9 @@ class AFTConnector @Inject()(
                     (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
 
     val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
+
+    logger.warn("Get overview (IF) called - URL:" + getAftVersionUrl)
+
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
 
     http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
