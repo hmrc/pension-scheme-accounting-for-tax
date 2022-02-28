@@ -31,7 +31,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
 
   private val baseURL: String = servicesConfig.baseUrl(serviceName = "des-hod")
   private val ifURL: String = servicesConfig.baseUrl(serviceName = "if-hod")
-  val fileAFTReturnURL: String = s"$baseURL${config.get[String](path = "serviceUrls.file-aft-return")}"
+
   lazy val desEnvironment: String = runModeConfiguration.getOptional[String]("microservice.services.des-hod.env").getOrElse("local")
   lazy val authorization: String = "Bearer " + runModeConfiguration.getOptional[String]("microservice.services.des-hod.authorizationToken").getOrElse("local")
 
@@ -45,10 +45,15 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   lazy val integrationframeworkAuthorization: String = "Bearer " + runModeConfiguration.getOptional[String](
     path = "microservice.services.if-hod.authorizationToken").getOrElse("local")
 
+  val fileAFTReturnURL: String = s"$ifURL${config.get[String](path = "serviceUrls.file-aft-return")}"
+  val fileAFTReturnURLDES: String = s"$baseURL${config.get[String](path = "serviceUrls.file-aft-return-des")}"
+
+  def getAftOverviewUrl = s"$ifURL${config.get[String](path = "serviceUrls.get-aft-overview")}"
+  def getAftOverviewUrlDES = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-overview-des")}"
+
   def getAftDetailsUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-details")}"
   def getAftFbnDetailsUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-details-fbNumber")}"
   def getAftVersionUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-version")}"
-  def getAftOverviewUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-overview")}"
   def psaFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.psa-financial-statement")}"
   def psaFinancialStatementMaxUrl = s"$ifURL${config.get[String](path = "serviceUrls.psa-financial-statement-max")}"
   def schemeFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement")}"

@@ -16,9 +16,9 @@
 
 package controllers
 
-import connectors.DesConnector
+import connectors.AFTConnector
 import models.FeatureToggle.{Disabled, Enabled}
-import models.FeatureToggleName.AftOverviewCache
+import models.FeatureToggleName.{AftOverviewCache, MigrationTransferAft}
 import models.enumeration.JourneyType
 import models.{AFTOverview, AFTOverviewVersion, AFTVersion}
 import org.mockito.ArgumentMatchers.any
@@ -48,7 +48,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val fakeRequest = FakeRequest("GET", "/")
-  private val mockDesConnector = mock[DesConnector]
+  private val mockDesConnector = mock[AFTConnector]
   private val mockAftService = mock[AFTService]
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val mockDataCacheRepository = mock[AftDataCacheRepository]
@@ -65,7 +65,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
-      bind[DesConnector].toInstance(mockDesConnector),
+      bind[AFTConnector].toInstance(mockDesConnector),
       bind[AFTService].toInstance(mockAftService),
       bind[FeatureToggleService].toInstance(mockFeatureToggleService),
       bind[AftOverviewCacheRepository].toInstance(mockAftOverviewCacheRepository),
@@ -89,9 +89,50 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
   }
 
-  "fileReturn" must {
+  "fileReturn with the migration toggle switched off" must {
     "return OK when valid response from DES" in {
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Disabled(MigrationTransferAft)))
+      val controller = application.injector.instanceOf[AFTController]
 
+      when(mockDesConnector.fileAFTReturnDES(any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaRequestJson.toString)))
+      when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
+      val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
+        newHeaders = "pstr" -> pstr))
+      status(result) mustBe OK
+    }
+
+    "throw Upstream5XXResponse on Internal Server Error from DES" in {
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Disabled(MigrationTransferAft)))
+      val controller = application.injector.instanceOf[AFTController]
+
+      when(mockDesConnector.fileAFTReturnDES(any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.failed(UpstreamErrorResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+      when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
+      recoverToExceptionIf[UpstreamErrorResponse] {
+        controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
+          withHeaders(newHeaders = "pstr" -> pstr))
+      } map {
+        _.statusCode mustBe INTERNAL_SERVER_ERROR
+      }
+    }
+
+    "return OK when valid response from DES for payload with only one member based charge and zero value" in {
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Disabled(MigrationTransferAft)))
+      val controller = application.injector.instanceOf[AFTController]
+      val jsonPayload = jsonOneMemberZeroValue
+      when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
+      when(mockDesConnector.fileAFTReturnDES(any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.successful(HttpResponse(OK, jsonPayload.toString)))
+      val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(jsonPayload).
+        withHeaders(newHeaders = "pstr" -> pstr))
+      status(result) mustBe OK
+    }
+  }
+
+  "fileReturn with the migration toggle switched on" must {
+    "return OK when valid response from DES" in {
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Enabled(MigrationTransferAft)))
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
@@ -103,7 +144,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     }
 
     "throw Upstream5XXResponse on Internal Server Error from DES" in {
-
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Enabled(MigrationTransferAft)))
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
@@ -118,7 +159,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     }
 
     "return OK when valid response from DES for payload with only one member based charge and zero value" in {
-
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Enabled(MigrationTransferAft)))
       val controller = application.injector.instanceOf[AFTController]
       val jsonPayload = jsonOneMemberZeroValue
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
@@ -195,8 +236,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.successful(etmpAFTDetailsResponse))
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+        .thenReturn(Future.successful(etmpAFTDetailsResponse))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
 
@@ -233,8 +274,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+        .thenReturn(Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
 
       recoverToExceptionIf[BadRequestException] {
         controller.getDetails()(fakeRequestForGetDetails)
@@ -248,8 +289,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(UpstreamErrorResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+        .thenReturn(Future.failed(UpstreamErrorResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
         controller.getDetails()(fakeRequestForGetDetails)
@@ -263,8 +304,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+        .thenReturn(Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
         controller.getDetails()(fakeRequestForGetDetails)
@@ -278,8 +319,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.failed(new Exception("Generic Exception")))
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+        .thenReturn(Future.failed(new Exception("Generic Exception")))
 
       recoverToExceptionIf[Exception] {
         controller.getDetails()(fakeRequestForGetDetails)
@@ -295,8 +336,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.successful(etmpAFTDetailsResponse))
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+        .thenReturn(Future.successful(etmpAFTDetailsResponse))
 
       val result = controller.getIsChargeNonZero()(fakeRequestForGetDetails)
 
@@ -308,8 +349,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any())).thenReturn(
-        Future.successful(etmpAFTDetailsResponse))
+      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+        .thenReturn(Future.successful(etmpAFTDetailsResponse))
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
 
       val result = controller.getIsChargeNonZero()(fakeRequestForGetDetails)
@@ -320,11 +361,87 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
   }
 
-  "getOverview" must {
-
+  "getOverview with the migration toggle switched off" must {
     "return OK with the Seq of overview details when caching toggle is on and no data was found in cache" in {
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(AftOverviewCache))).thenReturn(Future.successful(Enabled(AftOverviewCache)))
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Disabled(MigrationTransferAft)))
+      when(mockAftOverviewCacheRepository.get(any())(any())).thenReturn(Future.successful(None))
+      when(mockAftOverviewCacheRepository.save(any(), any())(any())).thenReturn(Future.successful(true))
+      when(mockDesConnector.getAftOverviewDES(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(endDate))(any(), any()))
+        .thenReturn(Future.successful(aftOverview))
 
-      when(mockFeatureToggleService.get(any())).thenReturn(Future.successful(Enabled(AftOverviewCache)))
+      val controller = application.injector.instanceOf[AFTController]
+
+      val result = controller.getOverview(fakeRequest
+        .withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt, "endDate" -> endDate))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe aftOverviewResponseJson
+    }
+
+    "return OK with the Seq of overview details when caching toggle is on and some data was found in cache" in {
+
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(AftOverviewCache))).thenReturn(Future.successful(Enabled(AftOverviewCache)))
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Disabled(MigrationTransferAft)))
+      when(mockAftOverviewCacheRepository.get(any())(any())).thenReturn(Future.successful(Some(Json.toJson(aftOverview))))
+      val controller = application.injector.instanceOf[AFTController]
+
+      val result = controller.getOverview(fakeRequest
+        .withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt, "endDate" -> endDate))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe aftOverviewResponseJson
+    }
+
+    "return OK with the Seq of overview details when the details are returned based on pstr start date and end date when caching toggle is off" in {
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(AftOverviewCache))).thenReturn(Future.successful(Disabled(AftOverviewCache)))
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Disabled(MigrationTransferAft)))
+      val controller = application.injector.instanceOf[AFTController]
+
+      when(mockDesConnector.getAftOverviewDES(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(endDate))(any(), any()))
+        .thenReturn(Future.successful(aftOverview))
+
+      val result = controller.getOverview(fakeRequest
+        .withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt, "endDate" -> endDate))
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe aftOverviewResponseJson
+    }
+
+    "throw BadRequestException when endDate is not present in the header" in {
+
+      val controller = application.injector.instanceOf[AFTController]
+
+      recoverToExceptionIf[BadRequestException] {
+        controller.getOverview(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+      } map { response =>
+        response.responseCode mustBe BAD_REQUEST
+        response.message must include("Bad Request with no endDate")
+      }
+    }
+
+    "throw Upstream5xxResponse when UpStream5XXResponse with INTERNAL_SERVER_ERROR returned from Des" in {
+
+      val controller = application.injector.instanceOf[AFTController]
+
+      when(mockDesConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
+        Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
+
+      recoverToExceptionIf[UpstreamErrorResponse] {
+        controller.getVersions()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt, "endDate" -> endDate))
+      } map { response =>
+        response.statusCode mustBe INTERNAL_SERVER_ERROR
+        response.getMessage must include("INTERNAL SERVER ERROR")
+        response.reportAs mustBe INTERNAL_SERVER_ERROR
+      }
+    }
+  }
+
+
+  "getOverview with migration toggle switched on" must {
+    "return OK with the Seq of overview details when caching toggle is on and no data was found in cache" in {
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(AftOverviewCache))).thenReturn(Future.successful(Enabled(AftOverviewCache)))
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Enabled(MigrationTransferAft)))
       when(mockAftOverviewCacheRepository.get(any())(any())).thenReturn(Future.successful(None))
       when(mockAftOverviewCacheRepository.save(any(), any())(any())).thenReturn(Future.successful(true))
       when(mockDesConnector.getAftOverview(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(endDate))(any(), any()))
@@ -341,7 +458,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
     "return OK with the Seq of overview details when caching toggle is on and some data was found in cache" in {
 
-      when(mockFeatureToggleService.get(any())).thenReturn(Future.successful(Enabled(AftOverviewCache)))
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(AftOverviewCache))).thenReturn(Future.successful(Enabled(AftOverviewCache)))
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Enabled(MigrationTransferAft)))
       when(mockAftOverviewCacheRepository.get(any())(any())).thenReturn(Future.successful(Some(Json.toJson(aftOverview))))
       val controller = application.injector.instanceOf[AFTController]
 
@@ -353,7 +471,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     }
 
     "return OK with the Seq of overview details when the details are returned based on pstr start date and end date when caching toggle is off" in {
-      when(mockFeatureToggleService.get(any())).thenReturn(Future.successful(Disabled(AftOverviewCache)))
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(AftOverviewCache))).thenReturn(Future.successful(Disabled(AftOverviewCache)))
+      when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Enabled(MigrationTransferAft)))
       val controller = application.injector.instanceOf[AFTController]
 
       when(mockDesConnector.getAftOverview(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(endDate))(any(), any()))
@@ -394,6 +513,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       }
     }
   }
+
 
   def errorResponse(code: String): String = {
     Json.stringify(
@@ -487,19 +607,19 @@ object AFTControllerSpec {
       "periodEndDate" -> "2020-06-30",
       "tpssReportPresent" -> false,
       "versionDetails" -> Json.obj(
-      "numberOfVersions" -> 3,
-      "submittedVersionAvailable" -> false,
-      "compiledVersionAvailable" -> true
-    )),
+        "numberOfVersions" -> 3,
+        "submittedVersionAvailable" -> false,
+        "compiledVersionAvailable" -> true
+      )),
     Json.obj(
       "periodStartDate" -> "2020-07-01",
       "periodEndDate" -> "2020-10-31",
       "tpssReportPresent" -> false,
       "versionDetails" -> Json.obj(
-      "numberOfVersions" -> 2,
-      "submittedVersionAvailable" -> true,
-      "compiledVersionAvailable" -> true
-    ))
+        "numberOfVersions" -> 2,
+        "submittedVersionAvailable" -> true,
+        "compiledVersionAvailable" -> true
+      ))
   )
 
   private val overview1 = AFTOverview(
