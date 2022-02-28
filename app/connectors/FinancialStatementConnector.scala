@@ -59,41 +59,27 @@ class FinancialStatementConnector @Inject()(
     }
   }
 
-  //scalastyle:off cyclomatic.complexity
+    //scalastyle:off cyclomatic.complexity
   private def transformPSAFS(psaId: String, url: String, toggleValue:Boolean)
                             (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[Seq[PsaFS]] = {
 
-    //val reads: Reads[PsaFS] = if (toggleValue) PsaFS.rdsMax else PsaFS.rds
-
-//    lazy val financialStatementsTransformer: Reads[JsArray] =
-//      __.read[JsArray].map {
-//        case JsArray(values) => JsArray(values.filterNot(charge =>
-//          (charge \ "chargeType").as[String].equals("00600100") || (charge \ "chargeType").as[String].equals("57962925")
-//        ))
-//      }
+    val reads: Reads[Seq[PsaFS]] = if (toggleValue) {
+      PsaFS.rdsMaxSeq
+    } else {
+      Reads.seq(PsaFS.rds)
+    }
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
-
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
-
-
-          validate(response, toggleValue) match {
+          Json.parse(response.body).validate[Seq[PsaFS]](reads) match {
             case JsSuccess(values, _) =>
               logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
-              values.filterNot(charge => charge.chargeType.equals("00600100") ||  charge.chargeType.equals("57962925"))
+              values
             case JsError(errors) =>
               throw JsResultException(errors)
           }
-
-/*          Json.parse(response.body).transform(financialStatementsTransformer) match {
-            case JsSuccess(statements, _) =>
-
-
-            case JsError(errors) =>
-              throw JsResultException(errors)
-          })*/
         case NOT_FOUND =>
           Seq.empty[PsaFS]
         case _ =>
@@ -102,19 +88,7 @@ class FinancialStatementConnector @Inject()(
     } andThen financialInfoAuditService.sendPsaFSAuditEvent(psaId)
   }
 
-  private def validate(response: HttpResponse, toggleValue:Boolean) : JsResult[Seq[PsaFS]] = {
-    if (toggleValue) validatePSAMaxReads(response) else validatePSAReads(response)
 
-  }
-  private def validatePSAReads(response: HttpResponse): JsResult[Seq[PsaFS]] = {
-    val reads: Reads[PsaFS] = PsaFS.rds
-    Json.parse(response.body).validate[Seq[PsaFS]](Reads.seq(reads))
-  }
-
-  private def validatePSAMaxReads(response: HttpResponse): JsResult[Seq[PsaFS]] = {
-    val reads: Reads[Seq[PsaFS]] = Reads.seq(PsaFS.rdsMax)
-    Json.parse(response.body).validate[Seq[PsaFS]](Reads.seq(reads).map(_.head))
-  }
 
   //scalastyle:off cyclomatic.complexity
   private def transformSchemeFS(pstr: String, url: String, toggleValue:Boolean)(implicit

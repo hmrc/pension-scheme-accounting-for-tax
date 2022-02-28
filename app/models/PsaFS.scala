@@ -111,6 +111,9 @@ object PsaFS {
       )
   )
 
+  implicit val rdsMaxSeq: Reads[Seq[PsaFS]] =
+    (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsMax))
+
   implicit val formats: Format[PsaFS] = Json.format[PsaFS]
 }
 
