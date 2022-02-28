@@ -21,7 +21,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{FeatureToggleName, PsaFS, SchemeFS}
+import models.{PsaFS, SchemeFS}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
@@ -65,38 +65,46 @@ class FinancialStatementConnector @Inject()(
 
     val reads: Reads[PsaFS] = if (toggleValue) PsaFS.rdsMax else PsaFS.rds
 
-    lazy val financialStatementsTransformer: Reads[JsArray] =
-      __.read[JsArray].map {
-        case JsArray(values) => JsArray(values.filterNot(charge =>
-          (charge \ "chargeType").as[String].equals("00600100") || (charge \ "chargeType").as[String].equals("57962925")
-        ))
-      }
+//    lazy val financialStatementsTransformer: Reads[JsArray] =
+//      __.read[JsArray].map {
+//        case JsArray(values) => JsArray(values.filterNot(charge =>
+//          (charge \ "chargeType").as[String].equals("00600100") || (charge \ "chargeType").as[String].equals("57962925")
+//        ))
+//      }
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
 
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
-          Json.parse(response.body).transform(financialStatementsTransformer) match {
+
+          Json.parse(response.body).validate[Seq[PsaFS]](Reads.seq(reads)) match {
+            case JsSuccess(values, _) =>
+              logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
+              values.filterNot(charge => charge.chargeType.equals("00600100") ||  charge.chargeType.equals("57962925"))
+              values
+            case JsError(errors) =>
+              throw JsResultException(errors)
+          }
+
+/*          Json.parse(response.body).transform(financialStatementsTransformer) match {
             case JsSuccess(statements, _) =>
-              statements.validate[Seq[PsaFS]](Reads.seq(reads)) match {
-                case JsSuccess(values, _) =>
-                  logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
-                  values
-                case JsError(errors) =>
-                  throw JsResultException(errors)
-              }
+
+
             case JsError(errors) =>
               throw JsResultException(errors)
           }
         case NOT_FOUND =>
-          Seq.empty[PsaFS]
+          Seq.empty[PsaFS]*/
         case _ =>
           handleErrorResponse("GET", url)(response)
       }
     } andThen financialInfoAuditService.sendPsaFSAuditEvent(psaId)
   }
 
+  private def validatePSAReads(statements: JsArray): Unit = {
+    //statements.validate[Seq[PsaFS]](Reads.seq(reads))
+  }
   //scalastyle:off cyclomatic.complexity
   private def transformSchemeFS(pstr: String, url: String, toggleValue:Boolean)(implicit
              hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[Seq[SchemeFS]] = {
