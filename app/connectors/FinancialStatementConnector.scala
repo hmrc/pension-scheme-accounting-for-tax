@@ -63,7 +63,7 @@ class FinancialStatementConnector @Inject()(
   private def transformPSAFS(psaId: String, url: String, toggleValue:Boolean)
                             (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[Seq[PsaFS]] = {
 
-    val reads: Reads[Seq[PsaFS]] =  Reads.seq(PsaFS.rdsMax)
+    val reads: Reads[PsaFS] = if (toggleValue) PsaFS.rdsMax else PsaFS.rds
 
     lazy val financialStatementsTransformer: Reads[JsArray] =
       __.read[JsArray].map {

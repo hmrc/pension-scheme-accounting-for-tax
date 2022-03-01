@@ -310,6 +310,9 @@ object FinancialStatementConnectorSpec {
       "outstandingAmount" -> -15000.00,
       "stoodOverAmount" -> 0.00,
       "accruedInterestTotal" -> 0.00,
+      "periodStartDate" -> "2020-04-01",
+      "periodEndDate" -> "2020-06-30",
+      "pstr" -> "24000040IN"
     ),
     Json.obj(
       "chargeReference" -> "XY002610150184",
@@ -338,8 +341,20 @@ object FinancialStatementConnectorSpec {
       "pstr" -> "24000041IN"
     )
   )
-
   private val psaModel: Seq[PsaFS] = Seq(
+    PsaFS(
+      chargeReference = "Not Applicable",
+      chargeType = "Payment on account",
+      dueDate = Some(LocalDate.parse("2020-06-25")),
+      totalAmount = -15000.00,
+      outstandingAmount = -15000.00,
+      stoodOverAmount = 0.00,
+      accruedInterestTotal = 0.00,
+      amountDue = -15000.00,
+      periodStartDate = LocalDate.parse("2020-04-01"),
+      periodEndDate = LocalDate.parse("2020-06-30"),
+      pstr = "24000040IN"
+    ),
     PsaFS(
       chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax late filing penalty",
