@@ -63,12 +63,12 @@ class FinancialStatementConnector @Inject()(
   private def transformPSAFS(psaId: String, url: String, toggleValue:Boolean)
                             (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[Seq[PsaFS]] = {
 
-    val reads: Reads[PsaFS] = if (toggleValue) PsaFS.rdsMax else PsaFS.rds
+    val reads: Reads[Seq[PsaFS]] =  Reads.seq(PsaFS.rdsMax)
 
     lazy val financialStatementsTransformer: Reads[JsArray] =
       __.read[JsArray].map {
         case JsArray(values) => JsArray(values.filterNot(charge =>
-          (charge \ "chargeType").as[String].equals("00600100") || (charge \ "chargeType").as[String].equals("57962925")
+         (charge \ "chargeType").as[String].equals("57962925")
         ))
       }
 
