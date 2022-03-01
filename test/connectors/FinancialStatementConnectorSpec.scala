@@ -22,7 +22,7 @@ import models.FeatureToggle.{Disabled, Enabled}
 import models.FeatureToggleName.FinancialInformationAFT
 import models.{DocumentLineItemDetail, PsaFS, SchemeFS}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, Mockito, MockitoSugar}
+import org.mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
@@ -213,12 +213,12 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
-              .withBody(schemeFSResponseMax.toString())
+              .withBody(schemeFSMaxSeqJson.toString())
           )
       )
 
       connector.getSchemeFS(pstr).map { response =>
-        response mustBe schemeModelMax
+        response mustBe schemeFSMaxSeqModel
       }
     }
 
@@ -550,6 +550,62 @@ object FinancialStatementConnectorSpec {
     )
   )
 
+  private val schemeFSMaxSeqJson: JsValue = Json.obj(
+    "documentHeaderDetails" -> Json.arr(
+      Json.obj(
+        "chargeReference" -> s"XY002610150184",
+        "chargeType" -> "56001000",
+        "dueDate" -> "2020-02-15",
+        "totalAmount" -> 80000.00,
+        "outstandingAmount" -> 56049.08,
+        "stoodOverAmount" -> 25089.08,
+        "amountDue" -> 1029.05,
+        "accruedInterestTotal" -> 100.05,
+        "periodStartDate" -> "2020-04-01",
+        "periodEndDate" -> "2020-06-30",
+        "sapDocumentNumber" -> "123456789192",
+        "postingDate" -> "<StartOfQ1LastYear>",
+        "clearedAmountTotal" -> 7035.10,
+        "formbundleNumber" -> "123456789193",
+        "chargeClassification" -> "Charge",
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "documentLineItemDetails" -> Json.arr(
+          Json.obj(
+            "clearedAmountItem" -> 0.00,
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1",
+          )
+        )
+      ),
+      Json.obj(
+        "chargeReference" -> s"XY002610150184",
+        "chargeType" -> "56001000",
+        "dueDate" -> "2020-02-15",
+        "totalAmount" -> 8000.00,
+        "outstandingAmount" -> 56049.08,
+        "stoodOverAmount" -> 25089.08,
+        "amountDue" -> 1029.05,
+        "accruedInterestTotal" -> 100.05,
+        "periodStartDate" -> "2020-04-01",
+        "periodEndDate" -> "2020-06-30",
+        "sapDocumentNumber" -> "123456789192",
+        "postingDate" -> "<StartOfQ1LastYear>",
+        "clearedAmountTotal" -> 7035.10,
+        "formbundleNumber" -> "123456789183",
+        "chargeClassification" -> "Charge",
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "documentLineItemDetails" -> Json.arr(
+          Json.obj(
+            "clearedAmountItem" -> 0.00,
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1"
+          )
+        )
+      )
+    )
+  )
+
+
   private def schemeFSModel(chargeReference: String) = SchemeFS(
     chargeReference = s"XY00261015018$chargeReference",
     chargeType = "Accounting for Tax return",
@@ -583,20 +639,53 @@ object FinancialStatementConnectorSpec {
     )
   )
 
+  private def schemeFSMaxSeqModel: Seq[SchemeFS] = Seq(
+    SchemeFS(
+      chargeReference = s"XY002610150184",
+      chargeType = "Accounting for Tax return",
+      dueDate = Some(LocalDate.parse("2020-02-15")),
+      totalAmount = 80000.00,
+      amountDue = 1029.05,
+      outstandingAmount = 56049.08,
+      accruedInterestTotal = 100.05,
+      stoodOverAmount = 25089.08,
+      periodStartDate = Some(LocalDate.parse("2020-04-01")),
+      periodEndDate = Some(LocalDate.parse("2020-06-30")),
+      formBundleNumber = Some("123456789193"),
+      sourceChargeRefForInterest = Some("XY002610150181"),
+      Seq(DocumentLineItemDetail(
+        clearingReason = Some("C1"),
+        clearingDate = Some(LocalDate.parse("2020-06-30")),
+        clearedAmountItem = BigDecimal(0.00))
+      )
+    ),
+    SchemeFS(
+      chargeReference = s"XY002610150184",
+      chargeType = "Accounting for Tax return",
+      dueDate = Some(LocalDate.parse("2020-02-15")),
+      totalAmount = 8000.00,
+      amountDue = 1029.05,
+      outstandingAmount = 56049.08,
+      accruedInterestTotal = 100.05,
+      stoodOverAmount = 25089.08,
+      periodStartDate = Some(LocalDate.parse("2020-04-01")),
+      periodEndDate = Some(LocalDate.parse("2020-06-30")),
+      formBundleNumber = Some("123456789183"),
+      sourceChargeRefForInterest = Some("XY002610150181"),
+      Seq(DocumentLineItemDetail(
+        clearingReason = Some("C1"),
+        clearingDate = Some(LocalDate.parse("2020-06-30")),
+        clearedAmountItem = BigDecimal(0.00))
+      )
+    )
+  )
+
   private val schemeFSResponse: JsValue = Json.arr(
     schemeFSJsValue(chargeReference = "4"),
     schemeFSJsValue(chargeReference = "5")
   )
-  private val schemeFSResponseMax: JsValue = Json.arr(
-    schemeFSJsValueMax(chargeReference = "4"),
-    schemeFSJsValueMax(chargeReference = "5")
-  )
   private val schemeModel: Seq[SchemeFS] = Seq(
     schemeFSModel(chargeReference = "4"),
     schemeFSModel(chargeReference = "5")
-  )
-  private val schemeModelMax: Seq[SchemeFS] = Seq(
-    schemeFSModelMax(chargeReference = "4"),
-    schemeFSModelMax(chargeReference = "5")
   )
 }
