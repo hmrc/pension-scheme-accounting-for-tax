@@ -124,6 +124,9 @@ object SchemeFS {
       )
   )
 
+  implicit val rdsMaxSeq: Reads[Seq[SchemeFS]] =
+    (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsMax))
+
   implicit val formats: Format[SchemeFS] = Json.format[SchemeFS]
 }
 
