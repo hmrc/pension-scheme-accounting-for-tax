@@ -76,7 +76,7 @@ class FinancialStatementConnector @Inject()(
           Json.parse(response.body).validate[Seq[PsaFS]](reads) match {
             case JsSuccess(values, _) =>
               logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
-              values.filterNot(charge => charge.chargeType.equals("00600100") || charge.chargeType.equals("57962925"))
+              values.filterNot(charge => charge.chargeType.equals("Payment on account") || charge.chargeType.equals("Repayment Interest"))
             case JsError(errors) =>
               throw JsResultException(errors)
           }
@@ -120,7 +120,7 @@ class FinancialStatementConnector @Inject()(
           Json.parse(response.body).validate[Seq[SchemeFS]](reads) match {
             case JsSuccess(values, _) =>
               logger.debug(s"Response received from schemeFinInfo api transformed successfully to $values")
-              values.filterNot(charge => charge.chargeType.equals("56962925"))
+              values.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
             case JsError(errors) =>
               throw JsResultException(errors)
           }
