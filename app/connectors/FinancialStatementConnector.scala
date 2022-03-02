@@ -76,7 +76,7 @@ class FinancialStatementConnector @Inject()(
           Json.parse(response.body).validate[Seq[PsaFS]](reads) match {
             case JsSuccess(values, _) =>
               logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
-              values.filterNot(charge => charge.chargeType.equals("Payment on account") || charge.chargeType.equals("Repayment Interest"))
+              values.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
             case JsError(errors) =>
               throw JsResultException(errors)
           }

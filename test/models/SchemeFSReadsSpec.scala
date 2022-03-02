@@ -195,7 +195,7 @@ object SchemeFSReadsSpec {
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 80000.00,
       amountDue = 1029.05,
-      outstandingAmount = 1500.00,
+      outstandingAmount = 56049.08,
       accruedInterestTotal = 100.05,
       stoodOverAmount = 25089.08,
       periodStartDate = Some(LocalDate.parse("2020-04-01")),

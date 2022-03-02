@@ -474,7 +474,6 @@ object FinancialStatementConnectorSpec {
       "pstr" -> "24000041IN"
     )
   )
-
   private val psaModel: Seq[PsaFS] = Seq(
     PsaFS(
       chargeReference = "XY002610150184",
