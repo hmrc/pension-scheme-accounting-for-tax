@@ -68,7 +68,7 @@ class FinancialStatementConnector @Inject()(
     lazy val financialStatementsTransformer: Reads[JsArray] =
       __.read[JsArray].map {
         case JsArray(values) => JsArray(values.filterNot(charge =>
-          (charge \ "chargeType").as[String].equals("00600100") || (charge \ "chargeType").as[String].equals("57962925")
+         (charge \ "chargeType").as[String].equals("57962925")
         ))
       }
 
