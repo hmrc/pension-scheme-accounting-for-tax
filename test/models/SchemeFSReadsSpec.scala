@@ -99,6 +99,7 @@ object SchemeFSReadsSpec {
     "periodStartDate" -> "2020-04-01",
     "periodEndDate" -> "2020-06-30",
     "formbundleNumber"-> "123456789193",
+    "aftVersion" -> 0,
     "sourceChargeRefForInterest"-> "XY002610150181",
     "documentLineItemDetails"-> Json.arr(
       Json.obj(
@@ -123,6 +124,7 @@ object SchemeFSReadsSpec {
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
         "formbundleNumber"-> "123456789193",
+        "aftVersion" -> 0,
         "sourceChargeRefForInterest"-> "XY002610150181",
         "documentLineItemDetails"-> Json.arr(
           Json.obj(
@@ -144,6 +146,7 @@ object SchemeFSReadsSpec {
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
         "formbundleNumber"-> "123456789193",
+        "aftVersion" -> 0,
         "sourceChargeRefForInterest"-> "XY002610150181",
         "documentLineItemDetails"-> Json.arr(
           Json.obj(
@@ -180,6 +183,7 @@ object SchemeFSReadsSpec {
     periodStartDate = Some(LocalDate.parse("2020-04-01")),
     periodEndDate = Some(LocalDate.parse("2020-06-30")),
     formBundleNumber=Some("123456789193"),
+    aftVersion = Some(0),
     sourceChargeRefForInterest = Some("XY002610150181"),
     Seq(DocumentLineItemDetail(
       clearingReason= Some("C1"),
@@ -201,6 +205,7 @@ object SchemeFSReadsSpec {
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
       formBundleNumber=Some("123456789193"),
+      aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
       Seq(DocumentLineItemDetail(
         clearingReason= Some("C1"),
@@ -220,6 +225,7 @@ object SchemeFSReadsSpec {
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
       formBundleNumber=Some("123456789193"),
+      aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
       Seq(DocumentLineItemDetail(
         clearingReason= Some("C1"),

@@ -531,6 +531,7 @@ object FinancialStatementConnectorSpec {
     "postingDate" -> "<StartOfQ1LastYear>",
     "clearedAmountTotal" -> 7035.10,
     "formbundleNumber" -> "123456789193",
+    "aftVersion" -> 0,
     "chargeClassification" -> "Charge",
     "sourceChargeRefForInterest" -> "XY002610150181",
     "documentLineItemDetails" -> Json.arr(
@@ -566,6 +567,7 @@ object FinancialStatementConnectorSpec {
         "postingDate" -> "<StartOfQ1LastYear>",
         "clearedAmountTotal" -> 7035.10,
         "formbundleNumber" -> "123456789193",
+        "aftVersion" -> 0,
         "chargeClassification" -> "Charge",
         "sourceChargeRefForInterest" -> "XY002610150181",
         "documentLineItemDetails" -> Json.arr(
@@ -591,6 +593,7 @@ object FinancialStatementConnectorSpec {
         "postingDate" -> "<StartOfQ1LastYear>",
         "clearedAmountTotal" -> 7035.10,
         "formbundleNumber" -> "123456789183",
+        "aftVersion" -> 0,
         "chargeClassification" -> "Charge",
         "sourceChargeRefForInterest" -> "XY002610150181",
         "documentLineItemDetails" -> Json.arr(
@@ -630,6 +633,7 @@ object FinancialStatementConnectorSpec {
     periodStartDate = Some(LocalDate.parse("2020-04-01")),
     periodEndDate = Some(LocalDate.parse("2020-06-30")),
     formBundleNumber = Some("123456789193"),
+    aftVersion = Some(0),
     sourceChargeRefForInterest = Some("XY002610150181"),
     Seq(DocumentLineItemDetail(
       clearingReason = Some("C1"),
@@ -651,6 +655,7 @@ object FinancialStatementConnectorSpec {
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
       formBundleNumber = Some("123456789193"),
+      aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
@@ -670,6 +675,7 @@ object FinancialStatementConnectorSpec {
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
       formBundleNumber = Some("123456789183"),
+      aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
