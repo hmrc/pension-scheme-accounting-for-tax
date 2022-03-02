@@ -21,7 +21,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{FeatureToggleName, PsaFS, SchemeFS}
+import models.{PsaFS, SchemeFS}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
@@ -46,46 +46,37 @@ class FinancialStatementConnector @Inject()(
   def getPsaFS(psaId: String)
               (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
 
-    val psaInfoUrl = featureToggleService.get(FinancialInformationAFT).map{
+    val psaInfoUrl = featureToggleService.get(FinancialInformationAFT).map {
       case Enabled(_) => Tuple2(config.psaFinancialStatementMaxUrl.format(psaId), true)
       case _ => Tuple2(config.psaFinancialStatementUrl.format(psaId), false)
     }
 
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
 
-    psaInfoUrl.flatMap{
+    psaInfoUrl.flatMap {
       case (url, toggle) =>
         transformPSAFS(psaId, url, toggle)(hc, implicitly, implicitly)
     }
   }
 
   //scalastyle:off cyclomatic.complexity
-  private def transformPSAFS(psaId: String, url: String, toggleValue:Boolean)
-                            (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[Seq[PsaFS]] = {
+  private def transformPSAFS(psaId: String, url: String, toggleValue: Boolean)
+                            (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
 
-    val reads: Reads[PsaFS] = if (toggleValue) PsaFS.rdsMax else PsaFS.rds
-
-    lazy val financialStatementsTransformer: Reads[JsArray] =
-      __.read[JsArray].map {
-        case JsArray(values) => JsArray(values.filterNot(charge =>
-         (charge \ "chargeType").as[String].equals("57962925")
-        ))
-      }
+    val reads: Reads[Seq[PsaFS]] = if (toggleValue) {
+      PsaFS.rdsMaxSeq
+    } else {
+      Reads.seq(PsaFS.rds)
+    }
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
-
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
-          Json.parse(response.body).transform(financialStatementsTransformer) match {
-            case JsSuccess(statements, _) =>
-              statements.validate[Seq[PsaFS]](Reads.seq(reads)) match {
-                case JsSuccess(values, _) =>
-                  logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
-                  values
-                case JsError(errors) =>
-                  throw JsResultException(errors)
-              }
+          Json.parse(response.body).validate[Seq[PsaFS]](reads) match {
+            case JsSuccess(values, _) =>
+              logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
+              values.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
             case JsError(errors) =>
               throw JsResultException(errors)
           }
@@ -97,32 +88,39 @@ class FinancialStatementConnector @Inject()(
     } andThen financialInfoAuditService.sendPsaFSAuditEvent(psaId)
   }
 
-  //scalastyle:off cyclomatic.complexity
-  private def transformSchemeFS(pstr: String, url: String, toggleValue:Boolean)(implicit
-             hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[Seq[SchemeFS]] = {
+  def getSchemeFS(pstr: String)
+                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFS]] = {
 
-    val reads: Reads[SchemeFS] = if (toggleValue) SchemeFS.rdsMax else SchemeFS.rds
-    lazy val financialStatementsTransformer: Reads[JsArray] =
-      __.read[JsArray].map {
-        case JsArray(values) => JsArray(values.filterNot(charge =>
-          (charge \ "chargeType").as[String].equals("56962925")
-        ))
-      }
+    val futureURL = featureToggleService.get(FinancialInformationAFT).map {
+      case Enabled(_) => Tuple2(config.schemeFinancialStatementMaxUrl.format(pstr), true)
+      case _ => Tuple2(config.schemeFinancialStatementUrl.format(pstr), false)
+    }
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
+
+    futureURL.flatMap {
+      case (url, toggleValue) =>
+        transformSchemeFS(pstr, url, toggleValue)(hc, implicitly, implicitly)
+    }
+  }
+
+  //scalastyle:off cyclomatic.complexity
+  private def transformSchemeFS(pstr: String, url: String, toggleValue: Boolean)
+                               (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFS]] = {
+
+    val reads: Reads[Seq[SchemeFS]] = if (toggleValue) {
+      SchemeFS.rdsMaxSeq
+    } else {
+      Reads.seq(SchemeFS.rds)
+    }
+
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {
         case OK =>
-
           logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
-
-          Json.parse(response.body).transform(financialStatementsTransformer) match {
-            case JsSuccess(statements, _) =>
-              statements.validate[Seq[SchemeFS]](Reads.seq(reads)) match {
-                case JsSuccess(values, _) =>
-                  logger.debug(s"Response received from schemeFinInfo api transformed successfully to $values")
-                  values
-                case JsError(errors) =>
-                  throw JsResultException(errors)
-              }
+          Json.parse(response.body).validate[Seq[SchemeFS]](reads) match {
+            case JsSuccess(values, _) =>
+              logger.debug(s"Response received from schemeFinInfo api transformed successfully to $values")
+              values.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
             case JsError(errors) =>
               throw JsResultException(errors)
           }
@@ -133,20 +131,5 @@ class FinancialStatementConnector @Inject()(
       }
     } andThen financialInfoAuditService.sendSchemeFSAuditEvent(pstr)
   }
-
-  def getSchemeFS(pstr: String)
-                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFS]] = {
-
-    val futureURL = featureToggleService.get(FinancialInformationAFT).map{
-      case Enabled(_) => Tuple2(config.schemeFinancialStatementMaxUrl.format(pstr), true)
-      case _ => Tuple2(config.schemeFinancialStatementUrl.format(pstr), false)
-    }
-
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
-
-    futureURL.flatMap{
-      case (url, toggleValue) =>
-      transformSchemeFS(pstr, url, toggleValue)(hc, implicitly, implicitly)
-    }
-  }}
+}
 
