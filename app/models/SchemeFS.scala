@@ -39,6 +39,7 @@ case class SchemeFS(
                     periodStartDate: Option[LocalDate],
                     periodEndDate: Option[LocalDate],
                     formBundleNumber: Option[String] = None,
+                    aftVersion: Option[Int] = None,
                     sourceChargeRefForInterest: Option[String] = None,
                     documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
                    )
@@ -98,12 +99,13 @@ object SchemeFS {
       (JsPath \ "periodStartDate").readNullable[String] and
       (JsPath \ "periodEndDate").readNullable[String] and
       (JsPath \ "formbundleNumber").readNullable[String] and
+      (JsPath \ "aftVersion").readNullable[Int] and
       (JsPath \ "sourceChargeRefForInterest").readNullable[String] and
       (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail))
     ) (
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt,
-     formBundleNumber, sourceChargeRefForInterest, documentLineItemDetails) =>
+     formBundleNumber, aftVersionOpt, sourceChargeRefForInterest, documentLineItemDetails) =>
       SchemeFS(
         chargeReference,
         SchemeChargeType.valueWithName(chargeType),
@@ -116,6 +118,7 @@ object SchemeFS {
         periodStartDateOpt.map(LocalDate.parse),
         periodEndDateOpt.map(LocalDate.parse),
         formBundleNumber ,
+        aftVersionOpt,
         sourceChargeRefForInterest,
         documentLineItemDetails
       )
@@ -136,17 +139,17 @@ object SchemeChargeType extends Enumeration {
   val otcAftReturn: TypeValue = TypeValue("56101000", "Overseas transfer charge")
   val otcAftReturnInterest: TypeValue = TypeValue("56152000", "Interest on overseas transfer charge")
   val paymentOnAccount: TypeValue = TypeValue("00600100", "Payment on account")
-  val aftManualAssessment: TypeValue = TypeValue("56201000", "AFT manual assessment")
-  val aftManualAssessmentInterest: TypeValue = TypeValue("56252000", "Interest on AFT manual assessment")
-  val otcManualAssessment: TypeValue = TypeValue("56301000", "OTC manual assessment")
-  val otcManualAssessmentInterest: TypeValue = TypeValue("56352000", "Interest on OTC manual assessment")
+  val aftManualAssessment: TypeValue = TypeValue("56201000", "Accounting for Tax return manual assessment")
+  val aftManualAssessmentInterest: TypeValue = TypeValue("56252000", "Interest on Accounting for Tax return manual assessment")
+  val otcManualAssessment: TypeValue = TypeValue("56301000", "Overseas transfer charge manual assessment")
+  val otcManualAssessmentInterest: TypeValue = TypeValue("56352000", "Interest on overseas transfer charge manual assessment")
   val pssCharge: TypeValue = TypeValue("56701000", "PSS charge")
   val pssChargeInterest: TypeValue = TypeValue("56752000", "PSS charge interest")
-  val contractSettlement: TypeValue = TypeValue("56901000", "Contract settlement")
-  val contractSettlementInterest: TypeValue = TypeValue("56952000", "Contract settlement interest")
+  val contractSettlement: TypeValue = TypeValue("56901000", "Contract settlement charge")
+  val contractSettlementInterest: TypeValue = TypeValue("56952000", "Contract settlement interest charge")
   val repaymentInterest: TypeValue = TypeValue("56962925", "Repayment interest")
-  val excessReliefPaidCharge: TypeValue = TypeValue("57701000", "Excess relief paid")
-  val excessReliefIntCharge: TypeValue = TypeValue("57751000", "Interest on excess relief")
+  val excessReliefPaidCharge: TypeValue = TypeValue("57701000", "Excess relief paid charge")
+  val excessReliefIntCharge: TypeValue = TypeValue("57751000", "Interest on excess relief charge")
 
   def valueWithName(name: String): String = {
     withName(name).asInstanceOf[TypeValue].value

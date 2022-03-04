@@ -43,6 +43,7 @@ class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerato
   private val userAnswersJson = Json.parse(
     """{
       |  "aftStatus": "Compiled",
+      |  "aftVersion": "1",
       |  "pstr": "1234",
       |  "schemeName": "Test Scheme",
       |  "quarter": {
@@ -178,6 +179,7 @@ class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerato
     """{
       |  "aftDetails": {
       |    "aftStatus": "Compiled",
+      |    "aftVersion": "1",
       |    "quarterStartDate": "2019-01-01",
       |    "quarterEndDate": "2019-03-31",
       |    "receiptDate": "2016-12-17T09:30:47Z"
