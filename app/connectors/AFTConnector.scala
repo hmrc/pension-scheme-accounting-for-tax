@@ -78,7 +78,7 @@ class AFTConnector @Inject()(
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
     logger.warn("File AFT return (IF) called - URL:" + fileAFTReturnURL)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
 
     if (aftService.isChargeZeroedOut(data)) {
       http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) map {
@@ -134,7 +134,7 @@ class AFTConnector @Inject()(
 
     logger.warn("Get overview (IF) called - URL:" + getAftVersionUrl)
 
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
 
     http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
       response.status match {
@@ -213,4 +213,10 @@ class AFTConnector @Inject()(
     )
   }
 
+  private def integrationFrameworkHeader: Seq[(String, String)] =
+  {
+    Seq("Environment" -> config.integrationframeworkEnvironment,
+      "Authorization" -> config.integrationframeworkAuthorization,
+      "Content-Type" -> "application/json", "CorrelationId" -> headerUtils.getCorrelationId)
+  }
 }
