@@ -342,7 +342,6 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
   }
 
 
-
   "getAftDetails" must {
     "return user answer json when successful response returned from ETMP" in {
       server.stubFor(
@@ -374,7 +373,7 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       }
     }
 
-      "send AftGet audit event when successful response returned from ETMP" in {
+    "send AftGet audit event when successful response returned from ETMP" in {
       Mockito.reset(mockAuditService)
       server.stubFor(
         get(urlEqualTo(getAftUrl))
@@ -651,7 +650,6 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       }
     }
   }
-
 
 
   def errorResponse(code: String): String = {
@@ -938,6 +936,37 @@ class AFTConnectorIFSpec extends AsyncWordSpec with Matchers with WireMockHelper
       }
     }
 
+    "return a Seq.empty for 404 with response code NO_REPORT_FOUND in a sequence of errors" in {
+      server.stubFor(
+        get(urlEqualTo(getAftOverviewUrl))
+          .willReturn(
+            notFound
+              .withBody(seqErrorResponse("NO_REPORT_FOUND"))
+          )
+      )
+
+      connector.getAftOverview(pstr, startDt, endDate) map { response =>
+        response mustEqual Seq.empty
+      }
+    }
+
+    "return a NotFoundException for a 404 response code without NO_REPORT_FOUND in a sequence of errors" in {
+      server.stubFor(
+        get(urlEqualTo(getAftOverviewUrl))
+          .willReturn(
+            notFound
+              .withBody(seqErrorResponse("SOME_OTHER_ERROR"))
+          )
+      )
+
+      recoverToExceptionIf[NotFoundException] {
+        connector.getAftOverview(pstr, startDt, endDate)
+      } map { response =>
+        response.responseCode mustEqual NOT_FOUND
+        response.message must include("SOME_OTHER_ERROR")
+      }
+    }
+
     "return a NotFoundException for NOT FOUND - 404" in {
       server.stubFor(
         get(urlEqualTo(getAftOverviewUrl))
@@ -994,6 +1023,20 @@ class AFTConnectorIFSpec extends AsyncWordSpec with Matchers with WireMockHelper
       Json.obj(
         "code" -> code,
         "reason" -> s"Reason for $code"
+      )
+    )
+  }
+
+  def seqErrorResponse(code: String): String = {
+    Json.stringify(
+      Json.obj(
+        "failures" ->
+          Json.arr(
+            Json.obj(
+              "code" -> code,
+              "reason" -> s"Reason for $code"
+            )
+          )
       )
     )
   }
