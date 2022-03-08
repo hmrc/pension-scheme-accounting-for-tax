@@ -127,6 +127,7 @@ class AFTConnector @Inject()(
     }
   }
 
+  //scalastyle:off cyclomatic.complexity
   def getAftOverview(pstr: String, startDate: String, endDate: String)
                     (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
 
@@ -143,9 +144,23 @@ class AFTConnector @Inject()(
             case JsSuccess(versions, _) => versions
             case JsError(errors) => throw JsResultException(errors)
           }
-        case NOT_FOUND if (Json.parse(response.body) \ "code").as[String].equals("NO_REPORT_FOUND") =>
-          logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
-          Seq.empty[AFTOverview]
+        case NOT_FOUND =>
+          val singleError = (Json.parse(response.body) \ "code").asOpt[String]
+          val multipleError = (Json.parse(response.body) \ "failures").asOpt[JsArray]
+          (singleError, multipleError) match {
+            case (Some(err), _) if err.equals("NO_REPORT_FOUND") =>
+              logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
+              Seq.empty[AFTOverview]
+            case (_, Some(seqErr)) =>
+              val isAnyNoReportFound = seqErr.value.exists( jsValue => (jsValue \ "code").asOpt[String].contains("NO_REPORT_FOUND"))
+              if (isAnyNoReportFound) {
+                logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
+                Seq.empty[AFTOverview]
+              } else {
+                handleErrorResponse("GET", getAftVersionUrl)(response)
+              }
+            case _ => handleErrorResponse("GET", getAftVersionUrl)(response)
+          }
         case _ =>
           handleErrorResponse("GET", getAftVersionUrl)(response)
       }
