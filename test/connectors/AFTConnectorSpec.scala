@@ -1018,7 +1018,7 @@ class AFTConnectorIFSpec extends AsyncWordSpec with Matchers with WireMockHelper
     }
   }
 
-  def errorResponse(code: String): String = {
+  private def errorResponse(code: String): String = {
     Json.stringify(
       Json.obj(
         "code" -> code,
@@ -1027,7 +1027,7 @@ class AFTConnectorIFSpec extends AsyncWordSpec with Matchers with WireMockHelper
     )
   }
 
-  def seqErrorResponse(code: String): String = {
+  private def seqErrorResponse(code: String): String = {
     Json.stringify(
       Json.obj(
         "failures" ->

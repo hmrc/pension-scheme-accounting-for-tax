@@ -154,7 +154,7 @@ class AFTConnector @Inject()(
             case (_, Some(seqErr)) =>
               val isAnyNoReportFound = seqErr.value.exists( jsValue => (jsValue \ "code").asOpt[String].contains("NO_REPORT_FOUND"))
               if (isAnyNoReportFound) {
-              logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
+                logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
                 Seq.empty[AFTOverview]
               } else {
                 handleErrorResponse("GET", getAftVersionUrl)(response)
