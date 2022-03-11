@@ -27,6 +27,12 @@ object DocumentLineItemDetail {
   implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
 }
 
+case class AccountHeaderDetails(inhibitRefundSignal: Boolean)
+
+object AccountHeaderDetails {
+  implicit val formats: Format[AccountHeaderDetails] = Json.format[AccountHeaderDetails]
+}
+
 case class SchemeFS(
                     chargeReference: String,
                     chargeType: String,
@@ -45,6 +51,16 @@ case class SchemeFS(
                    )
 
 object SchemeFS {
+  implicit val formats: Format[SchemeFS] = Json.format[SchemeFS]
+}
+
+
+case class SchemeFSWrapper(
+                            accountHeaderDetails: AccountHeaderDetails,
+                            schemeFSSeq: Seq[SchemeFS]
+                          )
+
+object SchemeFSWrapper {
 
   implicit val rds: Reads[SchemeFS] = (
     (JsPath \ "chargeReference").read[String] and
@@ -124,10 +140,22 @@ object SchemeFS {
       )
   )
 
+  implicit val rdsAccountHeaderDetails: Reads[AccountHeaderDetails] =
+    (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean])
+    inhibitRefundSignal =>
+      AccountHeaderDetails(inhibitRefundSignal)
+
+
   implicit val rdsMaxSeq: Reads[Seq[SchemeFS]] =
     (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsMax))
 
-  implicit val formats: Format[SchemeFS] = Json.format[SchemeFS]
+  implicit val rdsMaxWrapper: Reads[SchemeFSWrapper] =
+    (rdsAccountHeaderDetails and
+      rdsMaxSeq).read
+      ((accountHeaderDetails,documentHeaderDetails) =>
+        SchemeFSWrapper(accountHeaderDetails, documentHeaderDetails)) 
+
+  implicit val formats: Format[SchemeFSWrapper] = Json.format[SchemeFSWrapper]
 }
 
 object SchemeChargeType extends Enumeration {
