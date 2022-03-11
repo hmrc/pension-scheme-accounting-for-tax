@@ -31,13 +31,13 @@ class SchemeFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
   "Scheme FS" must {
     "format " when {
       "reading from json" in {
-        val result = Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56001000"))(SchemeFS.rds).asOpt.value
+        val result = Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56001000"))(SchemeFSWrapper.rds).asOpt.value
         result mustBe schemeFSModel
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56000000"))(SchemeFS.rds).asOpt.value
+          Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56000000"))(SchemeFSWrapper.rds).asOpt.value
         }
       }
     }
@@ -45,13 +45,13 @@ class SchemeFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
   "Scheme FSMax" must {
     "format " when {
       "reading from json" in {
-        val result = Json.fromJson[SchemeFS](schemeFSResponseJsonMax(chargeType = "56001000"))(SchemeFS.rdsMax).asOpt.value
+        val result = Json.fromJson[SchemeFS](schemeFSResponseJsonMax(chargeType = "56001000"))(SchemeFSWrapper.rdsMax).asOpt.value
         result mustBe schemeFSModelMax
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[SchemeFS](schemeFSResponseJsonMax(chargeType = "56000000"))(SchemeFS.rdsMax).asOpt.value
+          Json.fromJson[SchemeFS](schemeFSResponseJsonMax(chargeType = "56000000"))(SchemeFSWrapper.rdsMax).asOpt.value
         }
       }
     }
@@ -59,14 +59,19 @@ class SchemeFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
   "Scheme FSMax Seq" must {
     "format " when {
-      "reading from json" in {
-        val result = Json.fromJson[Seq[SchemeFS]](schemeFSMaxSeqResponseJson(chargeType = "56001000"))(SchemeFS.rdsMaxSeq).asOpt.value
-        result mustBe schemeFSMaxSeqModel
+      "reading from json and inhibitRefundSignal is true" in {
+        val result = Json.fromJson[SchemeFSWrapper](schemeFSMaxSeqResponseJson(chargeType = "56001000", true))(SchemeFSWrapper.rdsMaxSeq).asOpt.value
+        result mustBe schemeFSMaxWrapperTrue
+      }
+
+        "reading from json and inhibitRefundSignal is false" in {
+          val result = Json.fromJson[SchemeFSWrapper](schemeFSMaxSeqResponseJson(chargeType = "56001000", false))(SchemeFSWrapper.rdsMaxSeq).asOpt.value
+          result mustBe schemeFSMaxWrapperFalse
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[Seq[SchemeFS]](schemeFSMaxSeqResponseJson(chargeType = "56000000"))(SchemeFS.rdsMaxSeq).asOpt.value
+          Json.fromJson[SchemeFSWrapper](schemeFSMaxSeqResponseJson(chargeType = "56000000", false))(SchemeFSWrapper.rdsMaxSeq).asOpt.value
         }
       }
     }
@@ -110,7 +115,8 @@ object SchemeFSReadsSpec {
     )
   )
 
-  private def schemeFSMaxSeqResponseJson(chargeType: String): JsValue = Json.obj(
+  private def schemeFSMaxSeqResponseJson(chargeType: String, inhibitRefundSignal: Boolean): JsValue = Json.obj(
+    "accountHeaderDetails"-> Json.obj( "inhibitRefundSignal" -> inhibitRefundSignal),
     "documentHeaderDetails" -> Json.arr(
       Json.obj(
         "chargeReference" -> "XY002610150184",
@@ -233,6 +239,16 @@ object SchemeFSReadsSpec {
         clearedAmountItem = BigDecimal(0.00))
       )
     )
+  )
+
+  private def schemeFSMaxWrapperTrue = SchemeFSWrapper(
+    accountHeaderDetails = Some(AccountHeaderDetails(true)),
+    documentHeaderDetails = SchemeFSSeq(schemeFSMaxSeqModel)
+  )
+
+  private def schemeFSMaxWrapperFalse = SchemeFSWrapper(
+    accountHeaderDetails = Some(AccountHeaderDetails(false)),
+    documentHeaderDetails = SchemeFSSeq(schemeFSMaxSeqModel)
   )
 }
 

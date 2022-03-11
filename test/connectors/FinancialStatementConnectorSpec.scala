@@ -14,13 +14,29 @@
  * limitations under the License.
  */
 
+/*
+ * Copyright 2022 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package connectors
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.FeatureToggle.{Disabled, Enabled}
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{DocumentLineItemDetail, PsaFS, SchemeFS}
+import models._
 import org.mockito.ArgumentMatchers.any
 import org.mockito._
 import org.scalatest.BeforeAndAfterEach
@@ -197,7 +213,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
-              .withBody(schemeFSResponse.toString())
+              .withBody(schemeFSWrapperResponse.toString())
           )
       )
 
@@ -213,7 +229,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
-              .withBody(schemeFSMaxSeqJson.toString())
+              .withBody(schemeFSWrapperResponseMax.toString())
           )
       )
 
@@ -229,7 +245,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
-              .withBody(schemeFSResponse.toString())
+              .withBody(schemeFSWrapperResponse.toString())
           )
       )
 
@@ -392,12 +408,12 @@ object FinancialStatementConnectorSpec {
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
         "pstr" -> "24000040IN",
-        "sourceChargeRefForInterest"-> "XY002610150181",
-        "documentLineItemDetails"-> Json.arr(
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "documentLineItemDetails" -> Json.arr(
           Json.obj(
-            "clearingDate"-> "2020-06-30",
-            "clearingReason"-> "C1",
-            "clearedAmountItem"-> 0.00
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
           )
         )
       ),
@@ -413,12 +429,12 @@ object FinancialStatementConnectorSpec {
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
         "pstr" -> "24000040IN",
-        "sourceChargeRefForInterest"-> "XY002610150181",
-        "documentLineItemDetails"-> Json.arr(
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "documentLineItemDetails" -> Json.arr(
           Json.obj(
-            "clearingDate"-> "2020-06-30",
-            "clearingReason"-> "C1",
-            "clearedAmountItem"-> 0.00
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
           )
         )
       ),
@@ -434,12 +450,12 @@ object FinancialStatementConnectorSpec {
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
         "pstr" -> "24000040IN",
-        "sourceChargeRefForInterest"-> "XY002610150181",
-        "documentLineItemDetails"-> Json.arr(
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "documentLineItemDetails" -> Json.arr(
           Json.obj(
-            "clearingDate"-> "2020-06-30",
-            "clearingReason"-> "C1",
-            "clearedAmountItem"-> 0.00
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
           )
         )
       )
@@ -550,8 +566,7 @@ object FinancialStatementConnectorSpec {
     )
   )
 
-  private val schemeFSMaxSeqJson: JsValue = Json.obj(
-    "documentHeaderDetails" -> Json.arr(
+  private val schemeFSMaxSeqJson: JsValue =  Json.arr(
       Json.obj(
         "chargeReference" -> s"XY002610150184",
         "chargeType" -> "56001000",
@@ -605,7 +620,6 @@ object FinancialStatementConnectorSpec {
         )
       )
     )
-  )
 
 
   private def schemeFSModel(chargeReference: String) = SchemeFS(
@@ -693,4 +707,10 @@ object FinancialStatementConnectorSpec {
     schemeFSModel(chargeReference = "4"),
     schemeFSModel(chargeReference = "5")
   )
+  private val schemeFSWrapperModel: SchemeFSWrapper = SchemeFSWrapper(Some(AccountHeaderDetails(true)), SchemeFSSeq(schemeFSMaxSeqModel))
+  private val schemeFSWrapperResponse: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++
+    Json.obj("documentHeaderDetails" -> schemeFSResponse)
+  private val schemeFSWrapperResponseMax: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++
+    Json.obj("documentHeaderDetails" -> schemeFSMaxSeqJson)
 }
+

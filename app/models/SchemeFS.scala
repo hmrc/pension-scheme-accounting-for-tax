@@ -33,6 +33,12 @@ object AccountHeaderDetails {
   implicit val formats: Format[AccountHeaderDetails] = Json.format[AccountHeaderDetails]
 }
 
+case class SchemeFSSeq(schemeFSSeq: Seq[SchemeFS])
+
+object SchemeFSSeq {
+  implicit val formats: Format[SchemeFSSeq] = Json.format[SchemeFSSeq]
+}
+
 case class SchemeFS(
                      chargeReference: String,
                      chargeType: String,
@@ -56,8 +62,8 @@ object SchemeFS {
 
 
 case class SchemeFSWrapper(
-                            accountHeaderDetails: AccountHeaderDetails,
-                            schemeFSSeq: Seq[SchemeFS]
+                            accountHeaderDetails: Option[AccountHeaderDetails] = None,
+                            documentHeaderDetails: SchemeFSSeq
                           )
 
 object SchemeFSWrapper {
@@ -139,22 +145,20 @@ object SchemeFSWrapper {
         documentLineItemDetails
       )
   )
-
-  implicit val rdsAccountHeaderDetails: Reads[AccountHeaderDetails] =
-    (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean])
-  inhibitRefundSignal =>
-    AccountHeaderDetails(inhibitRefundSignal)
-
-
-  implicit val rdsMaxSeq: Reads[Seq[SchemeFS]] =
-    (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsMax))
-
-  implicit val rdsMaxWrapper: Reads[SchemeFSWrapper] =
+  implicit val rdsSeq: Reads[SchemeFSWrapper] =
     (
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
-        (JsPath \ "documentHeaderDetails").read((Reads.seq(rdsMax)))
+        (JsPath \ "documentHeaderDetails").read(Reads.seq(rds))
       ) (
-      (accountHeaderDetails, documentHeaderDetails) => SchemeFSWrapper(AccountHeaderDetails(accountHeaderDetails), documentHeaderDetails)
+      (_, documentHeaderDetails) => SchemeFSWrapper(None, SchemeFSSeq(documentHeaderDetails))
+    )
+
+  implicit val rdsMaxSeq: Reads[SchemeFSWrapper] =
+    (
+      (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
+        (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsMax))
+      ) (
+      (inhibitRefundSignal, documentHeaderDetails) => SchemeFSWrapper(Some(AccountHeaderDetails(inhibitRefundSignal)), SchemeFSSeq(documentHeaderDetails))
     )
 
   implicit val formats: Format[SchemeFSWrapper] = Json.format[SchemeFSWrapper]
