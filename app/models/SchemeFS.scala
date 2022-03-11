@@ -21,7 +21,7 @@ import play.api.libs.json._
 
 import java.time.LocalDate
 
-case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: Option[LocalDate], clearingReason:Option[String])
+case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: Option[LocalDate], clearingReason: Option[String])
 
 object DocumentLineItemDetail {
   implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
@@ -34,20 +34,20 @@ object AccountHeaderDetails {
 }
 
 case class SchemeFS(
-                    chargeReference: String,
-                    chargeType: String,
-                    dueDate: Option[LocalDate],
-                    totalAmount: BigDecimal,
-                    amountDue: BigDecimal,
-                    outstandingAmount: BigDecimal,
-                    accruedInterestTotal: BigDecimal,
-                    stoodOverAmount: BigDecimal,
-                    periodStartDate: Option[LocalDate],
-                    periodEndDate: Option[LocalDate],
-                    formBundleNumber: Option[String] = None,
-                    aftVersion: Option[Int] = None,
-                    sourceChargeRefForInterest: Option[String] = None,
-                    documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
+                     chargeReference: String,
+                     chargeType: String,
+                     dueDate: Option[LocalDate],
+                     totalAmount: BigDecimal,
+                     amountDue: BigDecimal,
+                     outstandingAmount: BigDecimal,
+                     accruedInterestTotal: BigDecimal,
+                     stoodOverAmount: BigDecimal,
+                     periodStartDate: Option[LocalDate],
+                     periodEndDate: Option[LocalDate],
+                     formBundleNumber: Option[String] = None,
+                     aftVersion: Option[Int] = None,
+                     sourceChargeRefForInterest: Option[String] = None,
+                     documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
                    )
 
 object SchemeFS {
@@ -101,7 +101,7 @@ object SchemeFSWrapper {
         clearingDate,
         clearingReason
       )
-    )
+  )
 
   implicit val rdsMax: Reads[SchemeFS] = (
     (JsPath \ "chargeReference").read[String] and
@@ -133,7 +133,7 @@ object SchemeFSWrapper {
         stoodOverAmount,
         periodStartDateOpt.map(LocalDate.parse),
         periodEndDateOpt.map(LocalDate.parse),
-        formBundleNumber ,
+        formBundleNumber,
         aftVersionOpt,
         sourceChargeRefForInterest,
         documentLineItemDetails
@@ -142,18 +142,20 @@ object SchemeFSWrapper {
 
   implicit val rdsAccountHeaderDetails: Reads[AccountHeaderDetails] =
     (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean])
-    inhibitRefundSignal =>
-      AccountHeaderDetails(inhibitRefundSignal)
+  inhibitRefundSignal =>
+    AccountHeaderDetails(inhibitRefundSignal)
 
 
   implicit val rdsMaxSeq: Reads[Seq[SchemeFS]] =
     (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsMax))
 
   implicit val rdsMaxWrapper: Reads[SchemeFSWrapper] =
-    (rdsAccountHeaderDetails and
-      rdsMaxSeq).read
-      ((accountHeaderDetails,documentHeaderDetails) =>
-        SchemeFSWrapper(accountHeaderDetails, documentHeaderDetails)) 
+    (
+      (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
+        (JsPath \ "documentHeaderDetails").read((Reads.seq(rdsMax)))
+      ) (
+      (accountHeaderDetails, documentHeaderDetails) => SchemeFSWrapper(AccountHeaderDetails(accountHeaderDetails), documentHeaderDetails)
+    )
 
   implicit val formats: Format[SchemeFSWrapper] = Json.format[SchemeFSWrapper]
 }
