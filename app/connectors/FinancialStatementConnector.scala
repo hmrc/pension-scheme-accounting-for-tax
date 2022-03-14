@@ -21,7 +21,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{PsaFS, SchemeFSDetail, SchemeFSWrapper}
+import models.{PsaFS, SchemeFSDetail, SchemeFS}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
@@ -139,17 +139,17 @@ class FinancialStatementConnector @Inject()(
   private def transformSchemeFS(pstr: String, url: String, toggleValue: Boolean)
                                (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFSDetail]] = {
 
-    val reads: Reads[SchemeFSWrapper] = if (toggleValue) {
-      SchemeFSWrapper.rdsMaxSeq
+    val reads: Reads[SchemeFS] = if (toggleValue) {
+      SchemeFS.rdsMaxSeq
     } else {
-      SchemeFSWrapper.rdsSeq
+      SchemeFS.rdsSeq
     }
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
-          Json.parse(response.body).validate[SchemeFSWrapper](reads) match {
+          Json.parse(response.body).validate[SchemeFS](reads) match {
             case JsSuccess(schemeFSWrapper, _) =>
               logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFSWrapper")
               schemeFSWrapper.documentHeaderDetails.filterNot(charge => charge.chargeType.equals("Repayment Interest"))

@@ -707,7 +707,7 @@ object FinancialStatementConnectorSpec {
     schemeFSModel(chargeReference = "4"),
     schemeFSModel(chargeReference = "5")
   )
-  private val schemeFSWrapperModel: SchemeFSWrapper = SchemeFSWrapper(Some(AccountHeaderDetails(true)), schemeFSMaxSeqModel)
+  private val schemeFSWrapperModel: SchemeFS = SchemeFS(Some(AccountHeaderDetails(true)), schemeFSMaxSeqModel)
   private val schemeFSWrapperResponse: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++
     Json.obj("documentHeaderDetails" -> schemeFSResponse)
   private val schemeFSWrapperResponseMax: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++

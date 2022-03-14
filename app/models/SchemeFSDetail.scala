@@ -55,12 +55,12 @@ object SchemeFSDetail {
 }
 
 
-case class SchemeFSWrapper(
+case class SchemeFS(
                             accountHeaderDetails: Option[AccountHeaderDetails] = None,
                             documentHeaderDetails: Seq[SchemeFSDetail]
                           )
 
-object SchemeFSWrapper {
+object SchemeFS {
 
   implicit val rds: Reads[SchemeFSDetail] = (
     (JsPath \ "chargeReference").read[String] and
@@ -139,20 +139,20 @@ object SchemeFSWrapper {
         documentLineItemDetails
       )
   )
-  implicit val rdsSeq: Reads[SchemeFSWrapper] =
+  implicit val rdsSeq: Reads[SchemeFS] =
     (
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
         (JsPath \ "documentHeaderDetails").read(Reads.seq(rds))
       ) (
-      (_, documentHeaderDetails) => SchemeFSWrapper(None, documentHeaderDetails)
+      (_, documentHeaderDetails) => SchemeFS(None, documentHeaderDetails)
     )
 
-  implicit val rdsMaxSeq: Reads[SchemeFSWrapper] =
+  implicit val rdsMaxSeq: Reads[SchemeFS] =
     (
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
         (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsMax))
       ) (
-      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFSWrapper(Some(AccountHeaderDetails(inhibitRefundSignal)), seqSchemeFSDetail)
+      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFS(Some(AccountHeaderDetails(inhibitRefundSignal)), seqSchemeFSDetail)
     )
 
  // implicit val formats: Format[SchemeFSWrapper] = Json.format[SchemeFSWrapper]
