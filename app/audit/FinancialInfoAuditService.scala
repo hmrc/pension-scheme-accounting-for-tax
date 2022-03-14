@@ -17,7 +17,7 @@
 package audit
 
 import com.google.inject.Inject
-import models.{PsaFS, SchemeFSDetail}
+import models.{PsaFS, SchemeFS, SchemeFSDetail}
 import play.api.http.Status
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.RequestHeader
@@ -41,8 +41,8 @@ class FinancialInfoAuditService @Inject()(auditService: AuditService) {
   }
 
   def sendSchemeFSAuditEvent(pstr: String)
-                            (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[Seq[SchemeFSDetail]], Unit] = {
-    case Success(response) if response.isEmpty =>
+                            (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[SchemeFS], Unit] = {
+    case Success(response) if response.seqSchemeFSDetail.isEmpty =>
       auditService.sendEvent(GetSchemeFS(pstr, Status.NOT_FOUND, None))
     case Success(response) =>
       auditService.sendEvent(GetSchemeFS(pstr, Status.OK, Some(Json.toJson(response))))

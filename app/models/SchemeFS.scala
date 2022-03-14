@@ -27,12 +27,6 @@ object DocumentLineItemDetail {
   implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
 }
 
-case class AccountHeaderDetails(inhibitRefundSignal: Boolean)
-
-object AccountHeaderDetails {
-  implicit val formats: Format[AccountHeaderDetails] = Json.format[AccountHeaderDetails]
-}
-
 case class SchemeFSDetail(
                      chargeReference: String,
                      chargeType: String,
@@ -56,13 +50,24 @@ object SchemeFSDetail {
 
 
 case class SchemeFS(
-                     accountHeaderDetails: Option[AccountHeaderDetails] = None,
+                     inhibitRefundSignal: Boolean = false,
                      seqSchemeFSDetail: Seq[SchemeFSDetail]
                           )
 
 object SchemeFS {
 
-  implicit val rds: Reads[SchemeFSDetail] = (
+  implicit val writesSchemeFS: Writes[SchemeFS] = (
+    (JsPath \ "inhibitRefundSignal").write[Boolean] and
+      (JsPath \ "seqSchemeFSDetail").write[Seq[SchemeFSDetail]]) ( x => (x.inhibitRefundSignal, x.seqSchemeFSDetail))
+
+
+
+  /*
+      (JsPath \ "event").write[Event] and (JsPath \ "detected").write[DateTime]
+    ) ( emailEvent => (emailEvent.event, emailEvent.detected) )
+   */
+
+  implicit val rdsSchemeFSDetailMedium: Reads[SchemeFSDetail] = (
     (JsPath \ "chargeReference").read[String] and
       (JsPath \ "chargeType").read[String] and
       (JsPath \ "dueDate").readNullable[String] and
@@ -103,7 +108,7 @@ object SchemeFS {
       )
   )
 
-  implicit val rdsMax: Reads[SchemeFSDetail] = (
+  implicit val rdsSchemeFSDetailMax: Reads[SchemeFSDetail] = (
     (JsPath \ "chargeReference").read[String] and
       (JsPath \ "chargeType").read[String] and
       (JsPath \ "dueDate").readNullable[String] and
@@ -139,23 +144,21 @@ object SchemeFS {
         documentLineItemDetails
       )
   )
-  implicit val rdsSeq: Reads[SchemeFS] =
+  implicit val rdsSchemeFSMedium: Reads[SchemeFS] =
     (
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
-        (JsPath \ "documentHeaderDetails").read(Reads.seq(rds))
+        (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsSchemeFSDetailMedium))
       ) (
-      (_, documentHeaderDetails) => SchemeFS(None, documentHeaderDetails)
+      (_, documentHeaderDetails) => SchemeFS(inhibitRefundSignal = false, documentHeaderDetails)
     )
 
-  implicit val rdsMaxSeq: Reads[SchemeFS] =
+  implicit val rdsSchemeFSMax: Reads[SchemeFS] =
     (
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
-        (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsMax))
+        (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsSchemeFSDetailMax))
       ) (
-      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFS(Some(AccountHeaderDetails(inhibitRefundSignal)), seqSchemeFSDetail)
+      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFS(inhibitRefundSignal, seqSchemeFSDetail)
     )
-
- // implicit val formats: Format[SchemeFSWrapper] = Json.format[SchemeFSWrapper]
 }
 
 object SchemeChargeType extends Enumeration {

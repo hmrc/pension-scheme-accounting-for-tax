@@ -89,7 +89,7 @@ class FinancialStatementConnector @Inject()(
   }
 
   def getSchemeFS(pstr: String)
-                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFSDetail]] = {
+                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
 
     val futureURL = featureToggleService.get(FinancialInformationAFT).map {
       case Enabled(_) => Tuple2(config.schemeFinancialStatementMaxUrl.format(pstr), true)
@@ -137,12 +137,12 @@ class FinancialStatementConnector @Inject()(
 
   //scalastyle:off cyclomatic.complexity
   private def transformSchemeFS(pstr: String, url: String, toggleValue: Boolean)
-                               (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFSDetail]] = {
+                               (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
 
     val reads: Reads[SchemeFS] = if (toggleValue) {
-      SchemeFS.rdsMaxSeq
+      SchemeFS.rdsSchemeFSMax
     } else {
-      SchemeFS.rdsSeq
+      SchemeFS.rdsSchemeFSMedium
     }
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
@@ -150,14 +150,20 @@ class FinancialStatementConnector @Inject()(
         case OK =>
           logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
           Json.parse(response.body).validate[SchemeFS](reads) match {
-            case JsSuccess(schemeFSWrapper, _) =>
-              logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFSWrapper")
-              schemeFSWrapper.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+            case JsSuccess(schemeFS, _) =>
+              logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFS")
+              SchemeFS(
+                inhibitRefundSignal = schemeFS.inhibitRefundSignal,
+                seqSchemeFSDetail = schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+              )
             case JsError(errors) =>
               throw JsResultException(errors)
           }
         case NOT_FOUND =>
-          Seq.empty[SchemeFSDetail]
+          SchemeFS(
+            inhibitRefundSignal = false,
+            seqSchemeFSDetail = Seq.empty[SchemeFSDetail]
+          )
         case _ =>
           handleErrorResponse("GET", url)(response)
       }

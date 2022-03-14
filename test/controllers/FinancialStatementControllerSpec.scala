@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.FinancialStatementConnector
-import models.{PsaFS, SchemeFSDetail}
+import models.{PsaFS, SchemeFS, SchemeFSDetail}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentMatchers, MockitoSugar}
 import org.scalatest.BeforeAndAfter
@@ -184,18 +184,21 @@ object FinancialStatementControllerSpec {
     )
   )
 
-  private val schemeModel: Seq[SchemeFSDetail] = Seq(
-    SchemeFSDetail(
-      chargeReference = s"XY002610150184",
-      chargeType = "PSS AFT Return",
-      dueDate = Some(LocalDate.parse("2020-02-15")),
-      totalAmount = 80000.00,
-      amountDue = 1029.05,
-      outstandingAmount = 56049.08,
-      accruedInterestTotal = 100.05,
-      stoodOverAmount = 25089.08,
-      periodStartDate = Some(LocalDate.parse("2020-04-01")),
-      periodEndDate = Some(LocalDate.parse("2020-06-30"))
+  private val schemeModel: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        chargeReference = s"XY002610150184",
+        chargeType = "PSS AFT Return",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = 1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
     )
   )
 }
