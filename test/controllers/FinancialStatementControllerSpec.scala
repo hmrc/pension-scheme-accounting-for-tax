@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.FinancialStatementConnector
-import models.{PsaFS, SchemeFS}
+import models.{PsaFS, SchemeFSDetail}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentMatchers, MockitoSugar}
 import org.scalatest.BeforeAndAfter
@@ -184,8 +184,8 @@ object FinancialStatementControllerSpec {
     )
   )
 
-  private val schemeModel: Seq[SchemeFS] = Seq(
-    SchemeFS(
+  private val schemeModel: Seq[SchemeFSDetail] = Seq(
+    SchemeFSDetail(
       chargeReference = s"XY002610150184",
       chargeType = "PSS AFT Return",
       dueDate = Some(LocalDate.parse("2020-02-15")),

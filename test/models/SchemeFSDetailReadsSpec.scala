@@ -24,20 +24,20 @@ import play.api.libs.json.{JsValue, Json}
 import java.time.LocalDate
 import java.util.NoSuchElementException
 
-class SchemeFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
+class SchemeFSDetailReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
-  import SchemeFSReadsSpec._
+  import SchemeFSDetailReadsSpec._
 
   "Scheme FS" must {
     "format " when {
       "reading from json" in {
-        val result = Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56001000"))(SchemeFSWrapper.rds).asOpt.value
+        val result = Json.fromJson[SchemeFSDetail](schemeFSResponseJson(chargeType = "56001000"))(SchemeFSWrapper.rds).asOpt.value
         result mustBe schemeFSModel
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56000000"))(SchemeFSWrapper.rds).asOpt.value
+          Json.fromJson[SchemeFSDetail](schemeFSResponseJson(chargeType = "56000000"))(SchemeFSWrapper.rds).asOpt.value
         }
       }
     }
@@ -45,13 +45,13 @@ class SchemeFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
   "Scheme FSMax" must {
     "format " when {
       "reading from json" in {
-        val result = Json.fromJson[SchemeFS](schemeFSResponseJsonMax(chargeType = "56001000"))(SchemeFSWrapper.rdsMax).asOpt.value
+        val result = Json.fromJson[SchemeFSDetail](schemeFSResponseJsonMax(chargeType = "56001000"))(SchemeFSWrapper.rdsMax).asOpt.value
         result mustBe schemeFSModelMax
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[SchemeFS](schemeFSResponseJsonMax(chargeType = "56000000"))(SchemeFSWrapper.rdsMax).asOpt.value
+          Json.fromJson[SchemeFSDetail](schemeFSResponseJsonMax(chargeType = "56000000"))(SchemeFSWrapper.rdsMax).asOpt.value
         }
       }
     }
@@ -79,7 +79,7 @@ class SchemeFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 }
 
 
-object SchemeFSReadsSpec {
+object SchemeFSDetailReadsSpec {
   private def schemeFSResponseJson(chargeType: String): JsValue = Json.obj(
     "chargeReference" -> "XY002610150184",
     "chargeType" -> s"$chargeType",
@@ -165,7 +165,7 @@ object SchemeFSReadsSpec {
     )
   )
 
-  private def schemeFSModel = SchemeFS(
+  private def schemeFSModel = SchemeFSDetail(
     chargeReference = "XY002610150184",
     chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -177,7 +177,7 @@ object SchemeFSReadsSpec {
     periodStartDate = Some(LocalDate.parse("2020-04-01")),
     periodEndDate = Some(LocalDate.parse("2020-06-30"))
   )
-  private def schemeFSModelMax = SchemeFS(
+  private def schemeFSModelMax = SchemeFSDetail(
     chargeReference = "XY002610150184",
     chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -199,7 +199,7 @@ object SchemeFSReadsSpec {
   )
 
   private def schemeFSMaxSeqModel = Seq(
-    SchemeFS(
+    SchemeFSDetail(
       chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -219,7 +219,7 @@ object SchemeFSReadsSpec {
         clearedAmountItem = BigDecimal(0.00))
       )
     ),
-    SchemeFS(
+    SchemeFSDetail(
       chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -243,12 +243,12 @@ object SchemeFSReadsSpec {
 
   private def schemeFSMaxWrapperTrue = SchemeFSWrapper(
     accountHeaderDetails = Some(AccountHeaderDetails(true)),
-    documentHeaderDetails = SchemeFSSeq(schemeFSMaxSeqModel)
+    documentHeaderDetails = schemeFSMaxSeqModel
   )
 
   private def schemeFSMaxWrapperFalse = SchemeFSWrapper(
     accountHeaderDetails = Some(AccountHeaderDetails(false)),
-    documentHeaderDetails = SchemeFSSeq(schemeFSMaxSeqModel)
+    documentHeaderDetails = schemeFSMaxSeqModel
   )
 }
 

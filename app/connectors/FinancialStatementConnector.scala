@@ -21,7 +21,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{PsaFS, SchemeFS, SchemeFSWrapper}
+import models.{PsaFS, SchemeFSDetail, SchemeFSWrapper}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
@@ -89,7 +89,7 @@ class FinancialStatementConnector @Inject()(
   }
 
   def getSchemeFS(pstr: String)
-                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFS]] = {
+                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFSDetail]] = {
 
     val futureURL = featureToggleService.get(FinancialInformationAFT).map {
       case Enabled(_) => Tuple2(config.schemeFinancialStatementMaxUrl.format(pstr), true)
@@ -137,7 +137,7 @@ class FinancialStatementConnector @Inject()(
 
   //scalastyle:off cyclomatic.complexity
   private def transformSchemeFS(pstr: String, url: String, toggleValue: Boolean)
-                               (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFS]] = {
+                               (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFSDetail]] = {
 
     val reads: Reads[SchemeFSWrapper] = if (toggleValue) {
       SchemeFSWrapper.rdsMaxSeq
@@ -150,14 +150,14 @@ class FinancialStatementConnector @Inject()(
         case OK =>
           logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
           Json.parse(response.body).validate[SchemeFSWrapper](reads) match {
-            case JsSuccess(values, _) =>
-              logger.debug(s"Response received from schemeFinInfo api transformed successfully to $values")
-              values.documentHeaderDetails.schemeFSSeq.seq.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+            case JsSuccess(schemeFSWrapper, _) =>
+              logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFSWrapper")
+              schemeFSWrapper.documentHeaderDetails.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
             case JsError(errors) =>
               throw JsResultException(errors)
           }
         case NOT_FOUND =>
-          Seq.empty[SchemeFS]
+          Seq.empty[SchemeFSDetail]
         case _ =>
           handleErrorResponse("GET", url)(response)
       }

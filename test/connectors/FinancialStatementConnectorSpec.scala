@@ -622,7 +622,7 @@ object FinancialStatementConnectorSpec {
     )
 
 
-  private def schemeFSModel(chargeReference: String) = SchemeFS(
+  private def schemeFSModel(chargeReference: String) = SchemeFSDetail(
     chargeReference = s"XY00261015018$chargeReference",
     chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -635,7 +635,7 @@ object FinancialStatementConnectorSpec {
     periodEndDate = Some(LocalDate.parse("2020-06-30"))
   )
 
-  private def schemeFSModelMax(chargeReference: String) = SchemeFS(
+  private def schemeFSModelMax(chargeReference: String) = SchemeFSDetail(
     chargeReference = s"XY00261015018$chargeReference",
     chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -656,8 +656,8 @@ object FinancialStatementConnectorSpec {
     )
   )
 
-  private def schemeFSMaxSeqModel: Seq[SchemeFS] = Seq(
-    SchemeFS(
+  private def schemeFSMaxSeqModel: Seq[SchemeFSDetail] = Seq(
+    SchemeFSDetail(
       chargeReference = s"XY002610150184",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -677,7 +677,7 @@ object FinancialStatementConnectorSpec {
         clearedAmountItem = BigDecimal(0.00))
       )
     ),
-    SchemeFS(
+    SchemeFSDetail(
       chargeReference = s"XY002610150184",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -703,11 +703,11 @@ object FinancialStatementConnectorSpec {
     schemeFSJsValue(chargeReference = "4"),
     schemeFSJsValue(chargeReference = "5")
   )
-  private val schemeModel: Seq[SchemeFS] = Seq(
+  private val schemeModel: Seq[SchemeFSDetail] = Seq(
     schemeFSModel(chargeReference = "4"),
     schemeFSModel(chargeReference = "5")
   )
-  private val schemeFSWrapperModel: SchemeFSWrapper = SchemeFSWrapper(Some(AccountHeaderDetails(true)), SchemeFSSeq(schemeFSMaxSeqModel))
+  private val schemeFSWrapperModel: SchemeFSWrapper = SchemeFSWrapper(Some(AccountHeaderDetails(true)), schemeFSMaxSeqModel)
   private val schemeFSWrapperResponse: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++
     Json.obj("documentHeaderDetails" -> schemeFSResponse)
   private val schemeFSWrapperResponseMax: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++

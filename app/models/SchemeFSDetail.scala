@@ -33,13 +33,7 @@ object AccountHeaderDetails {
   implicit val formats: Format[AccountHeaderDetails] = Json.format[AccountHeaderDetails]
 }
 
-case class SchemeFSSeq(schemeFSSeq: Seq[SchemeFS])
-
-object SchemeFSSeq {
-  implicit val formats: Format[SchemeFSSeq] = Json.format[SchemeFSSeq]
-}
-
-case class SchemeFS(
+case class SchemeFSDetail(
                      chargeReference: String,
                      chargeType: String,
                      dueDate: Option[LocalDate],
@@ -56,19 +50,19 @@ case class SchemeFS(
                      documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
                    )
 
-object SchemeFS {
-  implicit val formats: Format[SchemeFS] = Json.format[SchemeFS]
+object SchemeFSDetail {
+  implicit val formats: Format[SchemeFSDetail] = Json.format[SchemeFSDetail]
 }
 
 
 case class SchemeFSWrapper(
                             accountHeaderDetails: Option[AccountHeaderDetails] = None,
-                            documentHeaderDetails: SchemeFSSeq
+                            documentHeaderDetails: Seq[SchemeFSDetail]
                           )
 
 object SchemeFSWrapper {
 
-  implicit val rds: Reads[SchemeFS] = (
+  implicit val rds: Reads[SchemeFSDetail] = (
     (JsPath \ "chargeReference").read[String] and
       (JsPath \ "chargeType").read[String] and
       (JsPath \ "dueDate").readNullable[String] and
@@ -82,7 +76,7 @@ object SchemeFSWrapper {
     ) (
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt) =>
-      SchemeFS(
+      SchemeFSDetail(
         chargeReference,
         SchemeChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
@@ -109,7 +103,7 @@ object SchemeFSWrapper {
       )
   )
 
-  implicit val rdsMax: Reads[SchemeFS] = (
+  implicit val rdsMax: Reads[SchemeFSDetail] = (
     (JsPath \ "chargeReference").read[String] and
       (JsPath \ "chargeType").read[String] and
       (JsPath \ "dueDate").readNullable[String] and
@@ -128,7 +122,7 @@ object SchemeFSWrapper {
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt,
      formBundleNumber, aftVersionOpt, sourceChargeRefForInterest, documentLineItemDetails) =>
-      SchemeFS(
+      SchemeFSDetail(
         chargeReference,
         SchemeChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
@@ -150,7 +144,7 @@ object SchemeFSWrapper {
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
         (JsPath \ "documentHeaderDetails").read(Reads.seq(rds))
       ) (
-      (_, documentHeaderDetails) => SchemeFSWrapper(None, SchemeFSSeq(documentHeaderDetails))
+      (_, documentHeaderDetails) => SchemeFSWrapper(None, documentHeaderDetails)
     )
 
   implicit val rdsMaxSeq: Reads[SchemeFSWrapper] =
@@ -158,10 +152,10 @@ object SchemeFSWrapper {
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
         (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsMax))
       ) (
-      (inhibitRefundSignal, documentHeaderDetails) => SchemeFSWrapper(Some(AccountHeaderDetails(inhibitRefundSignal)), SchemeFSSeq(documentHeaderDetails))
+      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFSWrapper(Some(AccountHeaderDetails(inhibitRefundSignal)), seqSchemeFSDetail)
     )
 
-  implicit val formats: Format[SchemeFSWrapper] = Json.format[SchemeFSWrapper]
+ // implicit val formats: Format[SchemeFSWrapper] = Json.format[SchemeFSWrapper]
 }
 
 object SchemeChargeType extends Enumeration {
