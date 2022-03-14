@@ -56,8 +56,8 @@ object SchemeFSDetail {
 
 
 case class SchemeFS(
-                            accountHeaderDetails: Option[AccountHeaderDetails] = None,
-                            documentHeaderDetails: Seq[SchemeFSDetail]
+                     accountHeaderDetails: Option[AccountHeaderDetails] = None,
+                     seqSchemeFSDetail: Seq[SchemeFSDetail]
                           )
 
 object SchemeFS {

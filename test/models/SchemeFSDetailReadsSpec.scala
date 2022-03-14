@@ -243,12 +243,12 @@ object SchemeFSDetailReadsSpec {
 
   private def schemeFSMaxWrapperTrue = SchemeFS(
     accountHeaderDetails = Some(AccountHeaderDetails(true)),
-    documentHeaderDetails = schemeFSMaxSeqModel
+    seqSchemeFSDetail = schemeFSMaxSeqModel
   )
 
   private def schemeFSMaxWrapperFalse = SchemeFS(
     accountHeaderDetails = Some(AccountHeaderDetails(false)),
-    documentHeaderDetails = schemeFSMaxSeqModel
+    seqSchemeFSDetail = schemeFSMaxSeqModel
   )
 }
 

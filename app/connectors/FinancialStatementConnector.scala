@@ -152,7 +152,7 @@ class FinancialStatementConnector @Inject()(
           Json.parse(response.body).validate[SchemeFS](reads) match {
             case JsSuccess(schemeFSWrapper, _) =>
               logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFSWrapper")
-              schemeFSWrapper.documentHeaderDetails.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+              schemeFSWrapper.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
             case JsError(errors) =>
               throw JsResultException(errors)
           }
