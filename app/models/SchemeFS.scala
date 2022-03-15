@@ -50,7 +50,7 @@ object SchemeFSDetail {
 
 
 case class SchemeFS(
-                     inhibitRefundSignal: Boolean = false,
+                     inhibitRefundSignal: Boolean,
                      seqSchemeFSDetail: Seq[SchemeFSDetail]
                           )
 
@@ -59,13 +59,6 @@ object SchemeFS {
   implicit val writesSchemeFS: Writes[SchemeFS] = (
     (JsPath \ "inhibitRefundSignal").write[Boolean] and
       (JsPath \ "seqSchemeFSDetail").write[Seq[SchemeFSDetail]]) ( x => (x.inhibitRefundSignal, x.seqSchemeFSDetail))
-
-
-
-  /*
-      (JsPath \ "event").write[Event] and (JsPath \ "detected").write[DateTime]
-    ) ( emailEvent => (emailEvent.event, emailEvent.detected) )
-   */
 
   implicit val rdsSchemeFSDetailMedium: Reads[SchemeFSDetail] = (
     (JsPath \ "chargeReference").read[String] and
@@ -144,13 +137,12 @@ object SchemeFS {
         documentLineItemDetails
       )
   )
-  implicit val rdsSchemeFSMedium: Reads[SchemeFS] =
-    (
-      (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
-        (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsSchemeFSDetailMedium))
-      ) (
-      (_, documentHeaderDetails) => SchemeFS(inhibitRefundSignal = false, documentHeaderDetails)
-    )
+
+  implicit val rdsSchemeFSMedium: Reads[SchemeFS] = {
+    (JsPath \ "documentHeaderDetails").read[Seq[SchemeFSDetail]](Reads.seq(rdsSchemeFSDetailMedium)).map{
+      seqSchemeFSDetail => SchemeFS(inhibitRefundSignal = false, seqSchemeFSDetail = seqSchemeFSDetail)
+    }
+  }
 
   implicit val rdsSchemeFSMax: Reads[SchemeFS] =
     (
