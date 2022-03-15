@@ -207,13 +207,13 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
   }
 
   "getSchemeFS" must {
-    "return user answer json when successful response returned from ETMP" in {
+    "return user answer json when successful response returned from ETMP when toggle is off" in {
       server.stubFor(
         get(urlEqualTo(getSchemeFSUrl))
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
-              .withBody(schemeFSWrapperResponse.toString())
+              .withBody(schemeFSResponse.toString())
           )
       )
 
@@ -245,7 +245,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
-              .withBody(schemeFSWrapperResponse.toString())
+              .withBody(schemeFSResponse.toString())
           )
       )
 
@@ -710,9 +710,9 @@ object FinancialStatementConnectorSpec {
       schemeFSModel(chargeReference = "5")
     )
   )
+  
   private val schemeFSWrapperModel: SchemeFS = SchemeFS(inhibitRefundSignal = true, schemeFSMaxSeqModel)
-  private val schemeFSWrapperResponse: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++
-    Json.obj("documentHeaderDetails" -> schemeFSResponse)
+
   private val schemeFSWrapperResponseMax: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++
     Json.obj("documentHeaderDetails" -> schemeFSMaxSeqJson)
 }

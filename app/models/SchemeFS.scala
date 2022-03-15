@@ -139,7 +139,7 @@ object SchemeFS {
   )
 
   implicit val rdsSchemeFSMedium: Reads[SchemeFS] = {
-    (JsPath \ "documentHeaderDetails").read[Seq[SchemeFSDetail]](Reads.seq(rdsSchemeFSDetailMedium)).map {
+    Reads.seq(rdsSchemeFSDetailMedium).map {
       seqSchemeFSDetail => SchemeFS(inhibitRefundSignal = false, seqSchemeFSDetail = seqSchemeFSDetail)
     }
   }
