@@ -19,7 +19,7 @@ package controllers.cache
 import com.google.inject.Inject
 import play.api.Logger
 import play.api.mvc._
-import repository.FinancialInfoCacheRepository
+import repository.FinancialInfoCreditAccessRepository
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{HeaderCarrier, UnauthorizedException}
@@ -29,7 +29,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class FinancialInfoCreditAccessController @Inject()(
-                                              repository: FinancialInfoCacheRepository,
+                                              repository: FinancialInfoCreditAccessRepository,
                                               val authConnector: AuthConnector,
                                               cc: ControllerComponents
                                             ) extends BackendController(cc) with AuthorisedFunctions {
