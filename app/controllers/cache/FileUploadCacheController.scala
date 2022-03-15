@@ -59,7 +59,7 @@ class FileUploadCacheController @Inject()(
           repository.getUploadResult(id).map {
             case Some(response) =>
               logger.debug(message = s"FileUploadCacheController.getUploadResult: Response for UploadId $id is $response")
-              Ok(Json.toJson(response.status))
+              Ok(Json.toJson(response))
             case None => NotFound
           }
       }

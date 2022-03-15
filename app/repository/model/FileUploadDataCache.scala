@@ -17,8 +17,11 @@
 package repository.model
 
 import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.json.{Format, Json, OFormat}
+import play.api.libs.functional.syntax.toFunctionalBuilderOps
+import play.api.libs.json.{Format, JsObject, JsString, Json, OFormat, Reads, __}
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+
+import java.time.LocalDateTime
 
 case class FileUploadStatus(_type: String, failureReason: Option[String]=None, message: Option[String]=None, downloadUrl: Option[String] = None, mimeType: Option[String] = None,
                             name: Option[String] = None, size: Option[Long] = None)
@@ -27,17 +30,28 @@ object FileUploadStatus {
   implicit val reads: OFormat[FileUploadStatus] = Json.format[FileUploadStatus]
 }
 
-case class FileUploadDataCache(uploadId: String, reference: String, status: FileUploadStatus, lastUpdated: DateTime, expireAt: DateTime)
+case class FileUploadDataCache(uploadId: String, reference: String, status: FileUploadStatus, lastUpdated: LocalDateTime, expireAt: LocalDateTime)
 
 object FileUploadDataCache {
-  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-  implicit val reads: OFormat[FileUploadDataCache] = Json.format[FileUploadDataCache]
+ // implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+  //implicit val reads: OFormat[FileUploadDataCache] = Json.format[FileUploadDataCache]
+ // implicit val reads: OFormat[FileUploadDataCache] =
+  implicit val reads : Reads[FileUploadDataCache] =
+    (__ \ 'uploadId).read[String] and
+      (__ \ 'reference).read[String] and
+      (__ \ 'status).read[FileUploadStatus] and
+      (__ \ 'lastUpdated).read[String].flatMap { dateTime =>
+         (__ \ 'lastUpdated).json.put(JsString(LocalDateTime.parse(dateTime).toString))
+      } and
+      (__ \ 'expireAt).read[String].flatMap { dateTime =>
+        (__ \ 'expireAt).json.put(JsString(LocalDateTime.parse(dateTime).toString))
+      }
 
   def applyDataCache(uploadId: String,
                      reference: String,
                      status: FileUploadStatus,
-                     lastUpdated: DateTime = DateTime.now(DateTimeZone.UTC),
-                     expireAt: DateTime): FileUploadDataCache = {
+                     lastUpdated: LocalDateTime = LocalDateTime.now(),
+                     expireAt: LocalDateTime): FileUploadDataCache = {
     FileUploadDataCache(uploadId, reference, status, lastUpdated, expireAt)
   }
 }
