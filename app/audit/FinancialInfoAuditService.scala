@@ -17,7 +17,7 @@
 package audit
 
 import com.google.inject.Inject
-import models.{PsaFS, SchemeFS, SchemeFSDetail}
+import models.{PsaFS, SchemeFS}
 import play.api.http.Status
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc.RequestHeader

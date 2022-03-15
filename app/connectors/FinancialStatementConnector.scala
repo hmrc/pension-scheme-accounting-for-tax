@@ -21,7 +21,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{PsaFS, SchemeFSDetail, SchemeFS}
+import models.{PsaFS, SchemeFS, SchemeFSDetail}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
@@ -102,38 +102,6 @@ class FinancialStatementConnector @Inject()(
         transformSchemeFS(pstr, url, toggleValue)(hc, implicitly, implicitly)
     }
   }
-
-// Useful for debugging financial info:-
-//        .map(seqSchemeFS => writeSeqCaseClassToCSVFile(seqSchemeFS, pstr))
-//  private def writeSeqCaseClassToCSVFile[A <: Product](seqA: Seq[A], fileName: String): Seq[A] = {
-//    import org.apache.commons.lang3.StringUtils.EMPTY
-//    def writeToDesktop(content: String, fileName: String): Unit = {
-//      import java.io._
-//      val pw = new PrintWriter(new File(s"/home/digital317593/Desktop/$fileName"))
-//      pw.write(content)
-//      pw.close()
-//    }
-//    def toCSV(prod: Product): String = {
-//      prod.productIterator.map {
-//        case Some(value) => value
-//        case None => EMPTY
-//        case rest => rest
-//      }.mkString(",")
-//    }
-//
-//    val headings = seqA.headOption match {
-//      case None => ""
-//      case Some(hd) => hd.getClass.getDeclaredFields.foldLeft[String](EMPTY) { (acc, h) =>
-//        acc + (if (acc.isEmpty) EMPTY else ",") + h.getName
-//      }
-//    }
-//
-//    val body = seqA.foldLeft[String](EMPTY) { (acc, y) =>
-//        acc + (if (acc.isEmpty) EMPTY else "\n") + toCSV(y)
-//    }
-//    writeToDesktop(headings + body, s"$fileName.csv")
-//    seqA
-//  }
 
   //scalastyle:off cyclomatic.complexity
   private def transformSchemeFS(pstr: String, url: String, toggleValue: Boolean)

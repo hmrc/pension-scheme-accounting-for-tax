@@ -284,7 +284,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       )
 
       connector.getSchemeFS(pstr).map { response =>
-        response mustBe SchemeFS( inhibitRefundSignal = false, Seq.empty )
+        response mustBe SchemeFS(inhibitRefundSignal = false, Seq.empty)
       }
     }
 

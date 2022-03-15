@@ -28,21 +28,21 @@ object DocumentLineItemDetail {
 }
 
 case class SchemeFSDetail(
-                     chargeReference: String,
-                     chargeType: String,
-                     dueDate: Option[LocalDate],
-                     totalAmount: BigDecimal,
-                     amountDue: BigDecimal,
-                     outstandingAmount: BigDecimal,
-                     accruedInterestTotal: BigDecimal,
-                     stoodOverAmount: BigDecimal,
-                     periodStartDate: Option[LocalDate],
-                     periodEndDate: Option[LocalDate],
-                     formBundleNumber: Option[String] = None,
-                     aftVersion: Option[Int] = None,
-                     sourceChargeRefForInterest: Option[String] = None,
-                     documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
-                   )
+                           chargeReference: String,
+                           chargeType: String,
+                           dueDate: Option[LocalDate],
+                           totalAmount: BigDecimal,
+                           amountDue: BigDecimal,
+                           outstandingAmount: BigDecimal,
+                           accruedInterestTotal: BigDecimal,
+                           stoodOverAmount: BigDecimal,
+                           periodStartDate: Option[LocalDate],
+                           periodEndDate: Option[LocalDate],
+                           formBundleNumber: Option[String] = None,
+                           aftVersion: Option[Int] = None,
+                           sourceChargeRefForInterest: Option[String] = None,
+                           documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
+                         )
 
 object SchemeFSDetail {
   implicit val formats: Format[SchemeFSDetail] = Json.format[SchemeFSDetail]
@@ -52,13 +52,13 @@ object SchemeFSDetail {
 case class SchemeFS(
                      inhibitRefundSignal: Boolean,
                      seqSchemeFSDetail: Seq[SchemeFSDetail]
-                          )
+                   )
 
 object SchemeFS {
 
   implicit val writesSchemeFS: Writes[SchemeFS] = (
     (JsPath \ "inhibitRefundSignal").write[Boolean] and
-      (JsPath \ "seqSchemeFSDetail").write[Seq[SchemeFSDetail]]) ( x => (x.inhibitRefundSignal, x.seqSchemeFSDetail))
+      (JsPath \ "seqSchemeFSDetail").write[Seq[SchemeFSDetail]]) (x => (x.inhibitRefundSignal, x.seqSchemeFSDetail))
 
   implicit val rdsSchemeFSDetailMedium: Reads[SchemeFSDetail] = (
     (JsPath \ "chargeReference").read[String] and
@@ -139,7 +139,7 @@ object SchemeFS {
   )
 
   implicit val rdsSchemeFSMedium: Reads[SchemeFS] = {
-    (JsPath \ "documentHeaderDetails").read[Seq[SchemeFSDetail]](Reads.seq(rdsSchemeFSDetailMedium)).map{
+    (JsPath \ "documentHeaderDetails").read[Seq[SchemeFSDetail]](Reads.seq(rdsSchemeFSDetailMedium)).map {
       seqSchemeFSDetail => SchemeFS(inhibitRefundSignal = false, seqSchemeFSDetail = seqSchemeFSDetail)
     }
   }
