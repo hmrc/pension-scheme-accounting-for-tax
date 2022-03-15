@@ -19,7 +19,6 @@ package repository
 import com.google.inject.Inject
 import org.joda.time.{DateTime, DateTimeZone}
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.Configuration
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
@@ -31,7 +30,8 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import scala.concurrent.{ExecutionContext, Future}
 
 class CacheRepository @Inject()(collectionName: String,
-                                expireInSeconds: Int,
+                                expireInSeconds: Option[Int] = None,
+                                expireInDays: Option[Int] = None,
                                 mongoComponent: ReactiveMongoComponent
                               )(implicit val ec: ExecutionContext)
   extends ReactiveRepository[JsValue, BSONObjectID](
@@ -42,7 +42,19 @@ class CacheRepository @Inject()(collectionName: String,
 
   override val logger: Logger = LoggerFactory.getLogger("CacheRepository")
 
-  private def getExpireAt: DateTime = DateTime.now(DateTimeZone.UTC).plusSeconds(expireInSeconds)
+  private def getExpireAt: DateTime =
+    (expireInSeconds, expireInDays) match {
+      case (Some(seconds), None) =>
+          DateTime
+            .now(DateTimeZone.UTC)
+            .plusSeconds(seconds)
+      case (None, Some(days)) =>
+          DateTime
+            .now(DateTimeZone.UTC)
+            .toLocalDate
+            .plusDays(days).toDateTimeAtStartOfDay()
+      case _ => throw new RuntimeException("Missing config item for expire in days/ seconds: one and only one should be present")
+    }
 
   val collectionIndexes = Seq(
     Index(key = Seq(("id", IndexType.Ascending)), name = Some("id"), background = true, unique = true),
