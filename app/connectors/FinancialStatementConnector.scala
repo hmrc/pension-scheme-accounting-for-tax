@@ -21,7 +21,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{PsaFS, SchemeFS, SchemeFSDetail}
+import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
@@ -44,7 +44,7 @@ class FinancialStatementConnector @Inject()(
   private val logger = Logger(classOf[FinancialStatementConnector])
 
   def getPsaFS(psaId: String)
-              (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
+              (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[PsaFS] = {
 
     val psaInfoUrl = featureToggleService.get(FinancialInformationAFT).map {
       case Enabled(_) => Tuple2(config.psaFinancialStatementMaxUrl.format(psaId), true)
@@ -61,27 +61,33 @@ class FinancialStatementConnector @Inject()(
 
   //scalastyle:off cyclomatic.complexity
   private def transformPSAFS(psaId: String, url: String, toggleValue: Boolean)
-                            (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
+                            (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[PsaFS] = {
 
-    val reads: Reads[Seq[PsaFS]] = if (toggleValue) {
-      PsaFS.rdsMaxSeq
+    val reads: Reads[PsaFS] = if (toggleValue) {
+      PsaFS.rdsPsaFSMax
     } else {
-      Reads.seq(PsaFS.rds)
+      PsaFS.rdsPsaFSMedium
     }
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
-          Json.parse(response.body).validate[Seq[PsaFS]](reads) match {
-            case JsSuccess(values, _) =>
-              logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
-              values.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+          Json.parse(response.body).validate[PsaFS](reads) match {
+            case JsSuccess(psaFS, _) =>
+              logger.debug(s"Response received from psaFinInfo api transformed successfully to $psaFS")
+              PsaFS(
+                inhibitRefundSignal = psaFS.inhibitRefundSignal,
+                seqPsaFSDetail = psaFS.seqPsaFSDetail.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+              )
             case JsError(errors) =>
               throw JsResultException(errors)
           }
         case NOT_FOUND =>
-          Seq.empty[PsaFS]
+          PsaFS(
+            inhibitRefundSignal = false,
+            seqPsaFSDetail = Seq.empty[PsaFSDetail]
+          )
         case _ =>
           handleErrorResponse("GET", url)(response)
       }

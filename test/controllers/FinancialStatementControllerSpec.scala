@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.FinancialStatementConnector
-import models.{PsaFS, SchemeFS, SchemeFSDetail}
+import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentMatchers, MockitoSugar}
 import org.scalatest.BeforeAndAfter
@@ -168,8 +168,8 @@ object FinancialStatementControllerSpec {
   private val fakeRequestWithPsaId = fakeRequest.withHeaders(("psaId", psaId))
   private val fakeRequestWithPstr = fakeRequest.withHeaders(("pstr", pstr))
 
-  private val psaFSResponse: Seq[PsaFS] = Seq(
-    PsaFS(
+  private val psaFSDetailResponse: Seq[PsaFSDetail] = Seq(
+    PsaFSDetail(
       chargeReference = "XY002610150184",
       chargeType = "AFT Initial LFP",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -183,6 +183,8 @@ object FinancialStatementControllerSpec {
       pstr = "24000040IN"
     )
   )
+  private val psaFSResponse: PsaFS =
+    PsaFS (false, psaFSDetailResponse)
 
   private val schemeModel: SchemeFS = SchemeFS(
     inhibitRefundSignal = false,

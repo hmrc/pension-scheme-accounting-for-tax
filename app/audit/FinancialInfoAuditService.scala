@@ -29,8 +29,8 @@ import scala.util.{Failure, Success, Try}
 class FinancialInfoAuditService @Inject()(auditService: AuditService) {
 
   def sendPsaFSAuditEvent(psaId: String)
-                         (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[Seq[PsaFS]], Unit] = {
-    case Success(response) if response.isEmpty =>
+                         (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[PsaFS], Unit] = {
+    case Success(response) if response.seqPsaFSDetail.isEmpty =>
       auditService.sendEvent(GetPsaFS(psaId, Status.NOT_FOUND, None))
     case Success(response) =>
       auditService.sendEvent(GetPsaFS(psaId, Status.OK, Some(Json.toJson(response))))
