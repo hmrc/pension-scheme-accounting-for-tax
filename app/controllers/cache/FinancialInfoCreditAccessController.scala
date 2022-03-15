@@ -18,10 +18,13 @@ package controllers.cache
 
 import com.google.inject.Inject
 import play.api.Logger
+import play.api.mvc.Results.Redirect
 import play.api.mvc._
 import repository.FinancialInfoCreditAccessRepository
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
+import uk.gov.hmrc.domain.{PsaId, PspId}
 import uk.gov.hmrc.http.{HeaderCarrier, UnauthorizedException}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -29,25 +32,25 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class FinancialInfoCreditAccessController @Inject()(
-                                              repository: FinancialInfoCreditAccessRepository,
-                                              val authConnector: AuthConnector,
-                                              cc: ControllerComponents
-                                            ) extends BackendController(cc) with AuthorisedFunctions {
+                                                     repository: FinancialInfoCreditAccessRepository,
+                                                     val authConnector: AuthConnector,
+                                                     cc: ControllerComponents
+                                                   ) extends BackendController(cc) with AuthorisedFunctions {
 
   import FinancialInfoCreditAccessController._
 
   private val logger = Logger(classOf[FinancialInfoCreditAccessController])
 
-  def schemeAccess: Action[AnyContent] = Action.async {
-        /*
-        Check if a PSA/PSP accessed scheme in last 28 days and if so return Ok and:-
-        PsaID: Option[String]
-        PspID: Option[String]
+  def schemeAccess(pstr:String): Action[AnyContent] = Action.async {
+    /*
+    Check if a PSA/PSP accessed scheme in last 28 days and if so return Ok and:-
+    PsaID: Option[String]
+    PspID: Option[String]
 
-        If not then insert document for current PSA/PSP and return NotFound
-         */
+    If not then insert document for current PSA/PSP and return NotFound
+     */
     implicit request =>
-      getId { id =>
+      withId { (optPsaId, optPspId) =>
         repository.get(id).map { response =>
           logger.debug(message = s"FinancialInfoCreditAccessController.get: Response for request Id $id is $response")
           response.map {
@@ -57,11 +60,12 @@ class FinancialInfoCreditAccessController @Inject()(
       }
   }
 
-  private def getId(block: String => Future[Result])
+  private def withId(block: (Option[String], Option[String]) => Future[Result])
                    (implicit hc: HeaderCarrier): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(id) => block(id)
-      case _ => Future.failed(IdNotFoundFromAuth())
+    authorised().retrieve(Retrievals.allEnrolments) { enrolments =>
+        val psaId = enrolments.getEnrolment("HMRC-PODS-ORG").flatMap(_.getIdentifier("PSAID")).map(_.value)
+        val pspId = enrolments.getEnrolment("HMRC-PODSPP-ORG").flatMap(_.getIdentifier("PSPID")).map(_.value)
+        block.apply(psaId, pspId)
     }
   }
 }
