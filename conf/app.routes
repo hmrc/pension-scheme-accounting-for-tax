@@ -32,4 +32,4 @@ GET           /cache/fileUpload                                                 
 POST          /cache/fileUpload                                                     controllers.cache.FileUploadCacheController.requestUpload
 POST          /cache/fileUploadResult                                               controllers.cache.FileUploadCacheController.registerUploadResult
 
-GET           /cache/financialInfoCreditAccess/:pstr                                controllers.cache.FinancialInfoCreditAccessController.get(pstr:String)
+GET           /cache/financialInfoCreditAccess/:srn                                controllers.cache.FinancialInfoCreditAccessController.get(srn:String)
