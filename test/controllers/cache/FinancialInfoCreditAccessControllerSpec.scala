@@ -16,6 +16,7 @@
 
 package controllers.cache
 
+import models.enumeration.CreditAccessType.{AccessedByLoggedInPsaOrPsp, AccessedByOtherPsa, AccessedByOtherPsp}
 import org.mockito.ArgumentMatchers._
 import org.mockito.{ArgumentCaptor, ArgumentMatchers, MockitoSugar}
 import org.scalatest.BeforeAndAfter
@@ -64,7 +65,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
         val result = controller.getForPsa(psaPspId, srn)(fakeRequest)
         status(result) mustEqual OK
-        contentAsJson(result) mustEqual JsString("accessedByCurrentPsa")
+        contentAsJson(result) mustEqual JsString(AccessedByLoggedInPsaOrPsp.toString)
       }
 
       "when accessed by different PSA return OK with the accessedByOtherPsa" in {
@@ -77,7 +78,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
         val result = controller.getForPsa(psaPspId, srn)(fakeRequest)
         status(result) mustEqual OK
-        contentAsJson(result) mustEqual JsString("accessedByOtherPsa")
+        contentAsJson(result) mustEqual JsString(AccessedByOtherPsa.toString)
       }
 
       "when not accessed by any PSA or PSP return NOT_FOUND and update repo with psaId and srn" in {
@@ -110,7 +111,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
         val result = controller.getForPsp(psaPspId, srn)(fakeRequest)
         status(result) mustEqual OK
-        contentAsJson(result) mustEqual JsString("accessedByCurrentPsp")
+        contentAsJson(result) mustEqual JsString(AccessedByLoggedInPsaOrPsp.toString)
       }
 
       "when accessed by different PSA return OK with the accessedByOtherPsp" in {
@@ -123,7 +124,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
         val result = controller.getForPsp(psaPspId, srn)(fakeRequest)
         status(result) mustEqual OK
-        contentAsJson(result) mustEqual JsString("accessedByOtherPsp")
+        contentAsJson(result) mustEqual JsString(AccessedByOtherPsp.toString)
       }
 
       "when not accessed by any PSA or PSP return NOT_FOUND and update repo with pspId and srn" in {

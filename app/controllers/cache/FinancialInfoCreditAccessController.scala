@@ -17,8 +17,10 @@
 package controllers.cache
 
 import com.google.inject.Inject
+import models.enumeration.CreditAccessType
+import models.enumeration.CreditAccessType.{AccessedByLoggedInPsaOrPsp, AccessedByOtherPsa, AccessedByOtherPsp}
 import play.api.Logger
-import play.api.libs.json.{JsString, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import repository.FinancialInfoCreditAccessRepository
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
@@ -36,14 +38,14 @@ class FinancialInfoCreditAccessController @Inject()(
 
   private val logger = Logger(classOf[FinancialInfoCreditAccessController])
 
-  private def retrieveAccessInfo(jsValue: JsValue, optLoggedInPsaId: Option[String], optLoggedInPspId: Option[String]): Option[String] = {
+  private def retrieveAccessInfo(jsValue: JsValue, optLoggedInPsaId: Option[String], optLoggedInPspId: Option[String]): Option[CreditAccessType] = {
     val foundOptPsaId = (jsValue \ "psaId").asOpt[String]
     val foundOptPspId = (jsValue \ "pspId").asOpt[String]
     (foundOptPsaId, foundOptPspId, optLoggedInPsaId, optLoggedInPspId) match {
-      case (Some(foundPsaId), _, Some(loggedInPsaId), _) if foundPsaId == loggedInPsaId => Some("accessedByCurrentPsa")
-      case (Some(_), _, Some(_), _) => Some("accessedByOtherPsa")
-      case (_, Some(foundPspId), _, Some(loggedInPspId)) if foundPspId == loggedInPspId => Some("accessedByCurrentPsp")
-      case (_, Some(_), _, Some(_)) => Some("accessedByOtherPsp")
+      case (Some(foundPsaId), _, Some(loggedInPsaId), _) if foundPsaId == loggedInPsaId => Some(AccessedByLoggedInPsaOrPsp)
+      case (Some(_), _, Some(_), _) => Some(AccessedByOtherPsa)
+      case (_, Some(foundPspId), _, Some(loggedInPspId)) if foundPspId == loggedInPspId => Some(AccessedByLoggedInPsaOrPsp)
+      case (_, Some(_), _, Some(_)) => Some(AccessedByOtherPsp)
       case _ => None
     }
   }
@@ -66,7 +68,7 @@ class FinancialInfoCreditAccessController @Inject()(
     repository.get(srn).flatMap { response =>
       logger.debug(message = s"FinancialInfoCreditAccessController.getForPsaOrPsp: Response for request Id $srn is $response")
       response.flatMap(retrieveAccessInfo(_, psaId, pspId)) match {
-        case Some(accessInfo) => Future.successful(Ok(JsString(accessInfo)))
+        case Some(accessInfo) => Future.successful(Ok(Json.toJson(accessInfo)))
         case _ =>
           val jsObject =
             psaId.map(psaId => Json.obj("psaId" -> psaId)).getOrElse(Json.obj()) ++
