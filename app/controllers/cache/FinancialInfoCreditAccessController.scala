@@ -18,12 +18,11 @@ package controllers.cache
 
 import com.google.inject.Inject
 import play.api.Logger
-import play.api.libs.json.Json
+import play.api.libs.json.{JsString, JsValue, Json}
 import play.api.mvc._
 import repository.FinancialInfoCreditAccessRepository
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
-import uk.gov.hmrc.http.{HeaderCarrier, UnauthorizedException}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
+import uk.gov.hmrc.http.UnauthorizedException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -35,46 +34,47 @@ class FinancialInfoCreditAccessController @Inject()(
                                                      cc: ControllerComponents
                                                    ) extends BackendController(cc) with AuthorisedFunctions {
 
-  import FinancialInfoCreditAccessController._
-
   private val logger = Logger(classOf[FinancialInfoCreditAccessController])
 
-  def schemeAccess(srn: String): Action[AnyContent] = Action.async {
-    /*
-    Check if a PSA/PSP accessed scheme in last 28 days and if so return Ok and:-
-    PsaID: Option[String]
-    PspID: Option[String]
+  private def retrieveAccessInfo(jsValue: JsValue, optLoggedInPsaId: Option[String], optLoggedInPspId: Option[String]): Option[String] = {
+    val foundOptPsaId = (jsValue \ "psaId").asOpt[String]
+    val foundOptPspId = (jsValue \ "pspId").asOpt[String]
+    (foundOptPsaId, foundOptPspId, optLoggedInPsaId, optLoggedInPspId) match {
+      case (Some(foundPsaId), _, Some(loggedInPsaId), _) if foundPsaId == loggedInPsaId => Some("accessedByCurrentPsa")
+      case (Some(_), _, Some(_), _) => Some("accessedByOtherPsa")
+      case (_, Some(foundPspId), _, Some(loggedInPspId)) if foundPspId == loggedInPspId => Some("accessedByCurrentPsp")
+      case (_, Some(_), _, Some(_)) => Some("accessedByOtherPsp")
+      case _ => None
+    }
+  }
 
-    If not then insert document for current PSA/PSP and return NotFound
-     */
+  def getForPsa(psaId: String, srn: String): Action[AnyContent] = Action.async {
     implicit request =>
-      withId { (optPsaId, optPspId) =>
-        repository.get(srn).map { response =>
-          logger.debug(message = s"FinancialInfoCreditAccessController.get: Response for request Id $srn is $response")
-          response match {
-            case Some(jsValue) => Ok(jsValue)
-            case _ =>
-              val jsObject =
-                optPsaId.map(psaId => Json.obj("psaId" -> psaId)).getOrElse(Json.obj()) ++
-                  optPspId.map(pspId => Json.obj("pspId" -> pspId)).getOrElse(Json.obj())
-              repository.save(
-                srn,
-                jsObject
-              )
-              NotFound
-          }
-        }
+      authorised(Enrolment("HMRC-PODS-ORG")) {
+        getForPsaOrPsp(Some(psaId), None, srn)
       }
   }
 
-  private def withId(block: (Option[String], Option[String]) => Future[Result])
-                    (implicit hc: HeaderCarrier): Future[Result] = {
-    authorised().retrieve(Retrievals.allEnrolments) { enrolments =>
-      val psaId = enrolments.getEnrolment("HMRC-PODS-ORG").flatMap(_.getIdentifier("PSAID")).map(_.value)
-      val pspId = enrolments.getEnrolment("HMRC-PODSPP-ORG").flatMap(_.getIdentifier("PSPID")).map(_.value)
-      (psaId, pspId) match {
-        case (None, None) => throw IdNotFoundFromAuth()
-        case _ => block.apply(psaId, pspId)
+  def getForPsp(pspId: String, srn: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(Enrolment("HMRC-PODSPP-ORG")) {
+        getForPsaOrPsp(None, Some(pspId), srn)
+      }
+  }
+
+  private def getForPsaOrPsp(psaId: Option[String], pspId: Option[String], srn: String)(implicit request: Request[AnyContent]): Future[Result] = {
+    repository.get(srn).flatMap { response =>
+      logger.debug(message = s"FinancialInfoCreditAccessController.getForPsaOrPsp: Response for request Id $srn is $response")
+      response.flatMap(retrieveAccessInfo(_, psaId, pspId)) match {
+        case Some(accessInfo) => Future.successful(Ok(JsString(accessInfo)))
+        case _ =>
+          val jsObject =
+            psaId.map(psaId => Json.obj("psaId" -> psaId)).getOrElse(Json.obj()) ++
+              pspId.map(pspId => Json.obj("pspId" -> pspId)).getOrElse(Json.obj())
+          repository.save(
+            srn,
+            jsObject
+          ).map(_ => NotFound)
       }
     }
   }

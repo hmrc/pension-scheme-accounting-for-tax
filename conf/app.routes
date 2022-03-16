@@ -32,4 +32,5 @@ GET           /cache/fileUpload                                                 
 POST          /cache/fileUpload                                                     controllers.cache.FileUploadCacheController.requestUpload
 POST          /cache/fileUploadResult                                               controllers.cache.FileUploadCacheController.registerUploadResult
 
-GET           /cache/financialInfoCreditAccess/:srn                                controllers.cache.FinancialInfoCreditAccessController.get(srn:String)
+GET           /cache/financialInfoCreditAccess/psa/:psaId/:srn                      controllers.cache.FinancialInfoCreditAccessController.getForPsa(psaId: String, srn:String)
+GET           /cache/financialInfoCreditAccess/psp/:pspId/:srn                      controllers.cache.FinancialInfoCreditAccessController.getForPsp(pspId: String, srn:String)

@@ -16,17 +16,14 @@
 
 package controllers.cache
 
-import akka.util.ByteString
-import controllers.cache.FinancialInfoCreditAccessController.IdNotFoundFromAuth
-import org.apache.commons.lang3.RandomUtils
-import org.mockito.ArgumentMatchers.{eq => eqTo, _}
-import org.mockito.MockitoSugar
+import org.mockito.ArgumentMatchers._
+import org.mockito.{ArgumentCaptor, ArgumentMatchers, MockitoSugar}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsString, JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository.FinancialInfoCreditAccessRepository
@@ -41,9 +38,10 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
   private val repo = mock[FinancialInfoCreditAccessRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
-  private val id = "id"
   private val fakeRequest = FakeRequest()
-  private val fakePostRequest = FakeRequest("POST", "/")
+  private val psaPspId = "psa"
+  private val otherPsaPspId = "other"
+  private val srn = "srn"
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
@@ -51,60 +49,100 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
   )
 
   before {
-    reset(repo)
-    reset(authConnector)
+    reset(repo, authConnector)
   }
 
   "FinancialInfoCreditAccessController" when {
-    "calling get" must {
-      "return OK with the data" in {
+    "calling getForPsa" must {
+      "when accessed by logged in PSA return OK with the accessedByCurrentPsa" in {
         val app = new GuiceApplicationBuilder()
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
-        when(repo.get(eqTo(id))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
+        when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> psaPspId)))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn (Future.successful(()))
 
-        val result = controller.get(fakeRequest)
+        val result = controller.getForPsa(psaPspId, srn)(fakeRequest)
         status(result) mustEqual OK
-        contentAsJson(result) mustEqual Json.obj(fields = "testId" -> "data")
+        contentAsJson(result) mustEqual JsString("accessedByCurrentPsa")
       }
 
-//      "return NOT FOUND when the data doesn't exist" in {
-//        val app = new GuiceApplicationBuilder()
-//          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-//          .overrides(modules: _*).build()
-//        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
-//        when(repo.get(eqTo(id))(any())) thenReturn Future.successful(None)
-//        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
-//
-//        val result = controller.get(fakeRequest)
-//        status(result) mustEqual NOT_FOUND
-//      }
-//
-//      "throw an exception when the repository call fails" in {
-//        val app = new GuiceApplicationBuilder()
-//          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-//          .overrides(modules: _*).build()
-//        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
-//        when(repo.get(eqTo(id))(any())) thenReturn Future.failed(new Exception())
-//        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
-//        val result = controller.get(fakeRequest)
-//        an[Exception] must be thrownBy status(result)
-//      }
-//
-//      "throw an exception when the call is not authorised" in {
-//        val app = new GuiceApplicationBuilder()
-//          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-//          .overrides(modules: _*).build()
-//        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
-//        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
-//
-//        val result = controller.get(fakeRequest)
-//        an[IdNotFoundFromAuth] must be thrownBy status(result)
-//      }
+      "when accessed by different PSA return OK with the accessedByOtherPsa" in {
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
+        when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> otherPsaPspId)))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn (Future.successful(()))
 
+        val result = controller.getForPsa(psaPspId, srn)(fakeRequest)
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual JsString("accessedByOtherPsa")
+      }
+
+      "when not accessed by any PSA or PSP return NOT_FOUND and update repo with psaId and srn" in {
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
+        when(repo.get(any())(any())) thenReturn Future.successful(None)
+        when(repo.save(any(), any())(any())).thenReturn(Future.successful(true))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
+
+        val result = controller.getForPsa(psaPspId, srn)(fakeRequest)
+        status(result) mustEqual NOT_FOUND
+        val jsValueCaptor: ArgumentCaptor[JsValue] = ArgumentCaptor.forClass(classOf[JsValue])
+        verify(repo, times(1)).save(ArgumentMatchers.eq(srn), jsValueCaptor.capture())(any())
+        jsValueCaptor.getValue mustBe Json.obj(
+          "psaId" -> psaPspId
+        )
+      }
     }
 
+    "calling getForPsp" must {
+      "when accessed by logged in PSA return OK with the accessedByCurrentPsp" in {
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
+        when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("pspId" -> psaPspId)))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn (Future.successful(()))
+
+        val result = controller.getForPsp(psaPspId, srn)(fakeRequest)
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual JsString("accessedByCurrentPsp")
+      }
+
+      "when accessed by different PSA return OK with the accessedByOtherPsp" in {
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
+        when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("pspId" -> otherPsaPspId)))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn (Future.successful(()))
+
+        val result = controller.getForPsp(psaPspId, srn)(fakeRequest)
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual JsString("accessedByOtherPsp")
+      }
+
+      "when not accessed by any PSA or PSP return NOT_FOUND and update repo with pspId and srn" in {
+        val app = new GuiceApplicationBuilder()
+          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+          .overrides(modules: _*).build()
+        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
+        when(repo.get(any())(any())) thenReturn Future.successful(None)
+        when(repo.save(any(), any())(any())).thenReturn(Future.successful(true))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
+
+        val result = controller.getForPsp(psaPspId, srn)(fakeRequest)
+        status(result) mustEqual NOT_FOUND
+        val jsValueCaptor: ArgumentCaptor[JsValue] = ArgumentCaptor.forClass(classOf[JsValue])
+        verify(repo, times(1)).save(ArgumentMatchers.eq(srn), jsValueCaptor.capture())(any())
+        jsValueCaptor.getValue mustBe Json.obj(
+          "pspId" -> psaPspId
+        )
+      }
+    }
   }
 }
