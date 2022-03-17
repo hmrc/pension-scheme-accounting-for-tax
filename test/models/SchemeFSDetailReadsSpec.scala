@@ -24,49 +24,55 @@ import play.api.libs.json.{JsValue, Json}
 import java.time.LocalDate
 import java.util.NoSuchElementException
 
-class SchemeFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
+class SchemeFSDetailReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
-  import SchemeFSReadsSpec._
+  import SchemeFSDetailReadsSpec._
 
-  "Scheme FS" must {
+  "rdsSchemeFSDetailMedium" must {
     "format " when {
       "reading from json" in {
-        val result = Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56001000"))(SchemeFS.rds).asOpt.value
+        val result = Json.fromJson[SchemeFSDetail](schemeFSResponseJson(chargeType = "56001000"))(SchemeFS.rdsSchemeFSDetailMedium).asOpt.value
         result mustBe schemeFSModel
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[SchemeFS](schemeFSResponseJson(chargeType = "56000000"))(SchemeFS.rds).asOpt.value
+          Json.fromJson[SchemeFSDetail](schemeFSResponseJson(chargeType = "56000000"))(SchemeFS.rdsSchemeFSDetailMedium).asOpt.value
         }
       }
     }
   }
-  "Scheme FSMax" must {
+
+  "rdsSchemeFSDetailMax" must {
     "format " when {
       "reading from json" in {
-        val result = Json.fromJson[SchemeFS](schemeFSResponseJsonMax(chargeType = "56001000"))(SchemeFS.rdsMax).asOpt.value
+        val result = Json.fromJson[SchemeFSDetail](schemeFSResponseJsonMax(chargeType = "56001000"))(SchemeFS.rdsSchemeFSDetailMax).asOpt.value
         result mustBe schemeFSModelMax
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[SchemeFS](schemeFSResponseJsonMax(chargeType = "56000000"))(SchemeFS.rdsMax).asOpt.value
+          Json.fromJson[SchemeFSDetail](schemeFSResponseJsonMax(chargeType = "56000000"))(SchemeFS.rdsSchemeFSDetailMax).asOpt.value
         }
       }
     }
   }
 
-  "Scheme FSMax Seq" must {
+  "rdsSchemeFSMax" must {
     "format " when {
-      "reading from json" in {
-        val result = Json.fromJson[Seq[SchemeFS]](schemeFSMaxSeqResponseJson(chargeType = "56001000"))(SchemeFS.rdsMaxSeq).asOpt.value
-        result mustBe schemeFSMaxSeqModel
+      "reading from json and inhibitRefundSignal is true" in {
+        val result = Json.fromJson[SchemeFS](schemeFSMaxSeqResponseJson(chargeType = "56001000", true))(SchemeFS.rdsSchemeFSMax).asOpt.value
+        result mustBe schemeFSMaxWrapperTrue
+      }
+
+      "reading from json and inhibitRefundSignal is false" in {
+        val result = Json.fromJson[SchemeFS](schemeFSMaxSeqResponseJson(chargeType = "56001000", false))(SchemeFS.rdsSchemeFSMax).asOpt.value
+        result mustBe schemeFSMaxWrapperFalse
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[Seq[SchemeFS]](schemeFSMaxSeqResponseJson(chargeType = "56000000"))(SchemeFS.rdsMaxSeq).asOpt.value
+          Json.fromJson[SchemeFS](schemeFSMaxSeqResponseJson(chargeType = "56000000", false))(SchemeFS.rdsSchemeFSMax).asOpt.value
         }
       }
     }
@@ -74,7 +80,7 @@ class SchemeFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 }
 
 
-object SchemeFSReadsSpec {
+object SchemeFSDetailReadsSpec {
   private def schemeFSResponseJson(chargeType: String): JsValue = Json.obj(
     "chargeReference" -> "XY002610150184",
     "chargeType" -> s"$chargeType",
@@ -87,6 +93,7 @@ object SchemeFSReadsSpec {
     "periodStartDate" -> "2020-04-01",
     "periodEndDate" -> "2020-06-30"
   )
+
   private def schemeFSResponseJsonMax(chargeType: String): JsValue = Json.obj(
     "chargeReference" -> "XY002610150184",
     "chargeType" -> s"$chargeType",
@@ -98,19 +105,20 @@ object SchemeFSReadsSpec {
     "stoodOverAmount" -> 25089.08,
     "periodStartDate" -> "2020-04-01",
     "periodEndDate" -> "2020-06-30",
-    "formbundleNumber"-> "123456789193",
+    "formbundleNumber" -> "123456789193",
     "aftVersion" -> 0,
-    "sourceChargeRefForInterest"-> "XY002610150181",
-    "documentLineItemDetails"-> Json.arr(
+    "sourceChargeRefForInterest" -> "XY002610150181",
+    "documentLineItemDetails" -> Json.arr(
       Json.obj(
-        "clearingDate"-> "2020-06-30",
-        "clearingReason"-> "C1",
-        "clearedAmountItem"-> 0.00
+        "clearingDate" -> "2020-06-30",
+        "clearingReason" -> "C1",
+        "clearedAmountItem" -> 0.00
       )
     )
   )
 
-  private def schemeFSMaxSeqResponseJson(chargeType: String): JsValue = Json.obj(
+  private def schemeFSMaxSeqResponseJson(chargeType: String, inhibitRefundSignal: Boolean): JsValue = Json.obj(
+    "accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> inhibitRefundSignal),
     "documentHeaderDetails" -> Json.arr(
       Json.obj(
         "chargeReference" -> "XY002610150184",
@@ -123,14 +131,14 @@ object SchemeFSReadsSpec {
         "stoodOverAmount" -> 25089.08,
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
-        "formbundleNumber"-> "123456789193",
+        "formbundleNumber" -> "123456789193",
         "aftVersion" -> 0,
-        "sourceChargeRefForInterest"-> "XY002610150181",
-        "documentLineItemDetails"-> Json.arr(
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "documentLineItemDetails" -> Json.arr(
           Json.obj(
-            "clearingDate"-> "2020-06-30",
-            "clearingReason"-> "C1",
-            "clearedAmountItem"-> 0.00
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
           )
         )
       ),
@@ -145,21 +153,21 @@ object SchemeFSReadsSpec {
         "stoodOverAmount" -> 508.18,
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
-        "formbundleNumber"-> "123456789193",
+        "formbundleNumber" -> "123456789193",
         "aftVersion" -> 0,
-        "sourceChargeRefForInterest"-> "XY002610150181",
-        "documentLineItemDetails"-> Json.arr(
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "documentLineItemDetails" -> Json.arr(
           Json.obj(
-            "clearingDate"-> "2020-06-30",
-            "clearingReason"-> "C1",
-            "clearedAmountItem"-> 0.00
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
           )
         )
       )
     )
   )
 
-  private def schemeFSModel = SchemeFS(
+  private def schemeFSModel = SchemeFSDetail(
     chargeReference = "XY002610150184",
     chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -171,7 +179,8 @@ object SchemeFSReadsSpec {
     periodStartDate = Some(LocalDate.parse("2020-04-01")),
     periodEndDate = Some(LocalDate.parse("2020-06-30"))
   )
-  private def schemeFSModelMax = SchemeFS(
+
+  private def schemeFSModelMax = SchemeFSDetail(
     chargeReference = "XY002610150184",
     chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -182,18 +191,18 @@ object SchemeFSReadsSpec {
     stoodOverAmount = 25089.08,
     periodStartDate = Some(LocalDate.parse("2020-04-01")),
     periodEndDate = Some(LocalDate.parse("2020-06-30")),
-    formBundleNumber=Some("123456789193"),
+    formBundleNumber = Some("123456789193"),
     aftVersion = Some(0),
     sourceChargeRefForInterest = Some("XY002610150181"),
     Seq(DocumentLineItemDetail(
-      clearingReason= Some("C1"),
+      clearingReason = Some("C1"),
       clearingDate = Some(LocalDate.parse("2020-06-30")),
       clearedAmountItem = BigDecimal(0.00))
     )
   )
 
   private def schemeFSMaxSeqModel = Seq(
-    SchemeFS(
+    SchemeFSDetail(
       chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -204,16 +213,16 @@ object SchemeFSReadsSpec {
       stoodOverAmount = 25089.08,
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
-      formBundleNumber=Some("123456789193"),
+      formBundleNumber = Some("123456789193"),
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
       Seq(DocumentLineItemDetail(
-        clearingReason= Some("C1"),
+        clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
         clearedAmountItem = BigDecimal(0.00))
       )
     ),
-    SchemeFS(
+    SchemeFSDetail(
       chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -224,15 +233,25 @@ object SchemeFSReadsSpec {
       stoodOverAmount = 508.18,
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
-      formBundleNumber=Some("123456789193"),
+      formBundleNumber = Some("123456789193"),
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
       Seq(DocumentLineItemDetail(
-        clearingReason= Some("C1"),
+        clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
         clearedAmountItem = BigDecimal(0.00))
       )
     )
+  )
+
+  private def schemeFSMaxWrapperTrue = SchemeFS(
+    inhibitRefundSignal = true,
+    seqSchemeFSDetail = schemeFSMaxSeqModel
+  )
+
+  private def schemeFSMaxWrapperFalse = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = schemeFSMaxSeqModel
   )
 }
 

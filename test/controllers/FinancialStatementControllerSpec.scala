@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.FinancialStatementConnector
-import models.{PsaFS, SchemeFS}
+import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentMatchers, MockitoSugar}
 import org.scalatest.BeforeAndAfter
@@ -168,8 +168,8 @@ object FinancialStatementControllerSpec {
   private val fakeRequestWithPsaId = fakeRequest.withHeaders(("psaId", psaId))
   private val fakeRequestWithPstr = fakeRequest.withHeaders(("pstr", pstr))
 
-  private val psaFSResponse: Seq[PsaFS] = Seq(
-    PsaFS(
+  private val psaFSDetailResponse: Seq[PsaFSDetail] = Seq(
+    PsaFSDetail(
       chargeReference = "XY002610150184",
       chargeType = "AFT Initial LFP",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -183,19 +183,24 @@ object FinancialStatementControllerSpec {
       pstr = "24000040IN"
     )
   )
+  private val psaFSResponse: PsaFS =
+    PsaFS (false, psaFSDetailResponse)
 
-  private val schemeModel: Seq[SchemeFS] = Seq(
-    SchemeFS(
-      chargeReference = s"XY002610150184",
-      chargeType = "PSS AFT Return",
-      dueDate = Some(LocalDate.parse("2020-02-15")),
-      totalAmount = 80000.00,
-      amountDue = 1029.05,
-      outstandingAmount = 56049.08,
-      accruedInterestTotal = 100.05,
-      stoodOverAmount = 25089.08,
-      periodStartDate = Some(LocalDate.parse("2020-04-01")),
-      periodEndDate = Some(LocalDate.parse("2020-06-30"))
+  private val schemeModel: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        chargeReference = s"XY002610150184",
+        chargeType = "PSS AFT Return",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = 1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
     )
   )
 }
