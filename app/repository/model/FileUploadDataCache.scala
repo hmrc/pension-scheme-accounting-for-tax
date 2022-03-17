@@ -16,10 +16,8 @@
 
 package repository.model
 
-import org.joda.time.{DateTime, DateTimeZone}
-import play.api.libs.functional.syntax.toFunctionalBuilderOps
-import play.api.libs.json.{Format, JsObject, JsString, Json, OFormat, Reads, __}
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import play.api.libs.functional.syntax.{toFunctionalBuilderOps, unlift}
+import play.api.libs.json._
 
 import java.time.LocalDateTime
 
@@ -33,19 +31,40 @@ object FileUploadStatus {
 case class FileUploadDataCache(uploadId: String, reference: String, status: FileUploadStatus, lastUpdated: LocalDateTime, expireAt: LocalDateTime)
 
 object FileUploadDataCache {
- // implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-  //implicit val reads: OFormat[FileUploadDataCache] = Json.format[FileUploadDataCache]
- // implicit val reads: OFormat[FileUploadDataCache] =
-  implicit val reads : Reads[FileUploadDataCache] =
-    (__ \ 'uploadId).read[String] and
-      (__ \ 'reference).read[String] and
-      (__ \ 'status).read[FileUploadStatus] and
-      (__ \ 'lastUpdated).read[String].flatMap { dateTime =>
-         (__ \ 'lastUpdated).json.put(JsString(LocalDateTime.parse(dateTime).toString))
-      } and
-      (__ \ 'expireAt).read[String].flatMap { dateTime =>
-        (__ \ 'expireAt).json.put(JsString(LocalDateTime.parse(dateTime).toString))
-      }
+//  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+//  implicit val reads: OFormat[FileUploadDataCache] = Json.format[FileUploadDataCache]
+//  implicit val reads: OFormat[FileUploadDataCache] =
+//      (JsPath \  'lastUpdated).read[String].flatMap { dateTime =>
+//         (JsPath \  'lastUpdated).json.put(JsString(LocalDateTime.parse(dateTime).toString))} and
+//      (JsPath \  'expireAt).read[String].flatMap { dateTime =>
+//        (JsPath \ 'expireAt).json.put(JsString(LocalDateTime.parse(dateTime).toString))
+//      }
+ implicit val reads : Reads[FileUploadDataCache] =(
+(JsPath \  'uploadId).read[String] and
+      (JsPath \ 'reference).read[String] and
+      (JsPath \  'status).read[FileUploadStatus] and
+       (JsPath \  'lastUpdated).read[String] and
+        (JsPath \  'expireAt).read[String]
+
+  )((uploadId, reference, status, lastUpdated, expireAt)=>
+  FileUploadDataCache(
+    uploadId,
+    reference,
+    status,
+    LocalDateTime.parse(lastUpdated),
+    LocalDateTime.parse(expireAt)
+  ))
+  implicit val writes : Writes[FileUploadDataCache] =(
+    (JsPath \  'uploadId).write[String] and
+      (JsPath \ 'reference).write[String] and
+      (JsPath \  'status).write[FileUploadStatus] and
+      (JsPath \  'lastUpdated).write[String] and
+      (JsPath \  'expireAt).write[String]
+    )(FUDataCache => (FUDataCache.uploadId,
+    FUDataCache.reference,
+    FUDataCache.status,
+    FUDataCache.lastUpdated.toString,
+    FUDataCache.expireAt.toString))
 
   def applyDataCache(uploadId: String,
                      reference: String,

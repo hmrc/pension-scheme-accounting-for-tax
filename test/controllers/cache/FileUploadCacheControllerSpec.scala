@@ -35,6 +35,7 @@ import repository.model.{FileUploadDataCache, FileUploadStatus}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.time.LocalDateTime
 import scala.concurrent.Future
 
 class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfter {
@@ -103,16 +104,16 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
-        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,FileUploadStatus("InProgress")
-          ,DateTime.now(DateTimeZone.UTC),DateTime.now(DateTimeZone.UTC))
+        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,FileUploadStatus("InProgress"),LocalDateTime.now,LocalDateTime.now)
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 
         val result = controller.getUploadResult(fakeRequest)
         status(result) mustEqual OK
+        println("\n\n\n\n----------"+ contentAsJson(result))
         contentAsJson(result) mustEqual Json.obj(fields = "_type" -> "InProgress")
       }
-
+  //    {"uploadId":"uploadId","reference":"reference","status":{"_type":"InProgress"},"lastUpdated":"2022-03-17T14:45:28.197","expireAt":"2022-03-17T14:45:28.210"}
       "return NOT FOUND when the data doesn't exist" in {
         val app = new GuiceApplicationBuilder()
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
@@ -155,7 +156,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
         val uploadStatus=FileUploadStatus("Success",None, None, Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
-        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,DateTime.now(DateTimeZone.UTC),DateTime.now(DateTimeZone.UTC))
+        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,LocalDateTime.now,LocalDateTime.now)
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(referenceId))
 
@@ -169,7 +170,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
         val uploadStatus=FileUploadStatus("Success",None, None, Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
-        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,DateTime.now(DateTimeZone.UTC),DateTime.now(DateTimeZone.UTC))
+        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,LocalDateTime.now,LocalDateTime.now)
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 
