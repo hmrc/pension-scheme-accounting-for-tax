@@ -27,46 +27,51 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
   import PsaFSReadsSpec._
 
-  "Psa FS" must {
+  "rdsPsaFSDetailsMedium" must {
     "format " when {
       "reading from json" in {
-        val result = Json.fromJson[PsaFS](psaFSResponseJson(chargeType = "57401091"))(PsaFS.rds).asOpt.value
+        val result = Json.fromJson[PsaFSDetail](psaFSResponseJson(chargeType = "57401091"))(PsaFS.rdsPsaFSDetailsMedium).asOpt.value
         result mustBe psaFSModel
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[PsaFS](psaFSResponseJson(chargeType = "56000000"))(PsaFS.rds).asOpt.value
+          Json.fromJson[PsaFSDetail](psaFSResponseJson(chargeType = "56000000"))(PsaFS.rdsPsaFSDetailsMedium).asOpt.value
         }
       }
     }
   }
 
-  "Psa Max FS" must {
+  "rdsPsaFSDetailMax" must {
     "format " when {
       "reading from json" in {
-        val result = Json.fromJson[PsaFS](psaFSMaxResponseJson(chargeType = "57401091"))(PsaFS.rdsMax).asOpt.value
+        val result = Json.fromJson[PsaFSDetail](psaFSMaxResponseJson(chargeType = "57401091"))(PsaFS.rdsPsaFSDetailMax).asOpt.value
         result mustBe psaFSMaxModel
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[PsaFS](psaFSMaxResponseJson(chargeType = "56000000"))(PsaFS.rdsMax).asOpt.value
+          Json.fromJson[PsaFSDetail](psaFSMaxResponseJson(chargeType = "56000000"))(PsaFS.rdsPsaFSDetailMax).asOpt.value
         }
       }
     }
   }
 
-  "Psa Max FS Seq" must {
+  "rdsPsaFSMax" must {
     "format " when {
-      "reading from json" in {
-        val result = Json.fromJson[Seq[PsaFS]](psaFSMaxSeqResponse(chargeType = "57401091"))(PsaFS.rdsMaxSeq).asOpt.value
-        result mustBe psaFSMaxSeqModel
+      "reading from json and inhibitRefundSignal is true" in {
+        val result = Json.fromJson[PsaFS](psaFSMaxSeqResponse(chargeType = "57401091", true))(PsaFS.rdsPsaFSMax).asOpt.value
+        result mustBe psaFSMaxTrue
+      }
+
+      "reading from json and inhibitRefundSignal is false" in {
+        val result = Json.fromJson[PsaFS](psaFSMaxSeqResponse(chargeType = "57401091", false))(PsaFS.rdsPsaFSMax).asOpt.value
+        result mustBe psaFSMaxFalse
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[Seq[PsaFS]](psaFSMaxSeqResponse(chargeType = "56000000"))(PsaFS.rdsMaxSeq).asOpt.value
+          Json.fromJson[PsaFS](psaFSMaxSeqResponse(chargeType = "56000000", false))(PsaFS.rdsPsaFSMax).asOpt.value
         }
       }
     }
@@ -109,7 +114,8 @@ object PsaFSReadsSpec {
       )
   ))
 
-  private def psaFSMaxSeqResponse(chargeType: String): JsValue = Json.obj(
+  private def psaFSMaxSeqResponse(chargeType: String, inhibitRefundSignal: Boolean): JsValue = Json.obj(
+    "accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> inhibitRefundSignal),
     "documentHeaderDetails" -> Json.arr(
       Json.obj(
         "chargeReference" -> "Not Applicable",
@@ -156,7 +162,7 @@ object PsaFSReadsSpec {
     )
   )
 
-  private def psaFSModel = PsaFS(
+  private def psaFSModel = PsaFSDetail(
     chargeReference = "XY002610150184",
     chargeType = "Overseas transfer charge late payment penalty (6 months)",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -170,7 +176,7 @@ object PsaFSReadsSpec {
     pstr = "24000040IN"
   )
 
-  private def psaFSMaxModel = PsaFS(
+  private def psaFSMaxModel = PsaFSDetail(
     chargeReference = "XY002610150184",
     chargeType = "Overseas transfer charge late payment penalty (6 months)",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -190,8 +196,8 @@ object PsaFSReadsSpec {
     )
   )
 
-  private val psaFSMaxSeqModel: Seq[PsaFS] = Seq(
-    PsaFS(
+  private val psaFSMaxSeqModel: Seq[PsaFSDetail] = Seq(
+    PsaFSDetail(
       chargeReference = "Not Applicable",
       chargeType = "Overseas transfer charge late payment penalty (6 months)",
       dueDate = Some(LocalDate.parse("2020-06-25")),
@@ -210,7 +216,7 @@ object PsaFSReadsSpec {
         clearedAmountItem = BigDecimal(0.00))
       )
     ),
-    PsaFS(
+    PsaFSDetail(
       chargeReference = "Not Applicable",
       chargeType = "Overseas transfer charge late payment penalty (6 months)",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -229,5 +235,15 @@ object PsaFSReadsSpec {
         clearedAmountItem = BigDecimal(0.00))
       )
     )
+  )
+
+  private def psaFSMaxTrue = PsaFS(
+    inhibitRefundSignal = true,
+    seqPsaFSDetail = psaFSMaxSeqModel
+  )
+
+  private def psaFSMaxFalse = PsaFS(
+    inhibitRefundSignal = false,
+    seqPsaFSDetail = psaFSMaxSeqModel
   )
 }

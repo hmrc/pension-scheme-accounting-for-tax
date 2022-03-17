@@ -21,7 +21,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{PsaFS, SchemeFS}
+import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
@@ -44,7 +44,7 @@ class FinancialStatementConnector @Inject()(
   private val logger = Logger(classOf[FinancialStatementConnector])
 
   def getPsaFS(psaId: String)
-              (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
+              (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[PsaFS] = {
 
     val psaInfoUrl = featureToggleService.get(FinancialInformationAFT).map {
       case Enabled(_) => Tuple2(config.psaFinancialStatementMaxUrl.format(psaId), true)
@@ -61,27 +61,33 @@ class FinancialStatementConnector @Inject()(
 
   //scalastyle:off cyclomatic.complexity
   private def transformPSAFS(psaId: String, url: String, toggleValue: Boolean)
-                            (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[PsaFS]] = {
+                            (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[PsaFS] = {
 
-    val reads: Reads[Seq[PsaFS]] = if (toggleValue) {
-      PsaFS.rdsMaxSeq
+    val reads: Reads[PsaFS] = if (toggleValue) {
+      PsaFS.rdsPsaFSMax
     } else {
-      Reads.seq(PsaFS.rds)
+      PsaFS.rdsPsaFSMedium
     }
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
-          Json.parse(response.body).validate[Seq[PsaFS]](reads) match {
-            case JsSuccess(values, _) =>
-              logger.debug(s"Response received from psaFinInfo api transformed successfully to $values")
-              values.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+          Json.parse(response.body).validate[PsaFS](reads) match {
+            case JsSuccess(psaFS, _) =>
+              logger.debug(s"Response received from psaFinInfo api transformed successfully to $psaFS")
+              PsaFS(
+                inhibitRefundSignal = psaFS.inhibitRefundSignal,
+                seqPsaFSDetail = psaFS.seqPsaFSDetail.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+              )
             case JsError(errors) =>
               throw JsResultException(errors)
           }
         case NOT_FOUND =>
-          Seq.empty[PsaFS]
+          PsaFS(
+            inhibitRefundSignal = false,
+            seqPsaFSDetail = Seq.empty[PsaFSDetail]
+          )
         case _ =>
           handleErrorResponse("GET", url)(response)
       }
@@ -89,7 +95,7 @@ class FinancialStatementConnector @Inject()(
   }
 
   def getSchemeFS(pstr: String)
-                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFS]] = {
+                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
 
     val futureURL = featureToggleService.get(FinancialInformationAFT).map {
       case Enabled(_) => Tuple2(config.schemeFinancialStatementMaxUrl.format(pstr), true)
@@ -103,61 +109,35 @@ class FinancialStatementConnector @Inject()(
     }
   }
 
-// Useful for debugging financial info:-
-//        .map(seqSchemeFS => writeSeqCaseClassToCSVFile(seqSchemeFS, pstr))
-//  private def writeSeqCaseClassToCSVFile[A <: Product](seqA: Seq[A], fileName: String): Seq[A] = {
-//    import org.apache.commons.lang3.StringUtils.EMPTY
-//    def writeToDesktop(content: String, fileName: String): Unit = {
-//      import java.io._
-//      val pw = new PrintWriter(new File(s"/home/digital317593/Desktop/$fileName"))
-//      pw.write(content)
-//      pw.close()
-//    }
-//    def toCSV(prod: Product): String = {
-//      prod.productIterator.map {
-//        case Some(value) => value
-//        case None => EMPTY
-//        case rest => rest
-//      }.mkString(",")
-//    }
-//
-//    val headings = seqA.headOption match {
-//      case None => ""
-//      case Some(hd) => hd.getClass.getDeclaredFields.foldLeft[String](EMPTY) { (acc, h) =>
-//        acc + (if (acc.isEmpty) EMPTY else ",") + h.getName
-//      }
-//    }
-//
-//    val body = seqA.foldLeft[String](EMPTY) { (acc, y) =>
-//        acc + (if (acc.isEmpty) EMPTY else "\n") + toCSV(y)
-//    }
-//    writeToDesktop(headings + body, s"$fileName.csv")
-//    seqA
-//  }
-
   //scalastyle:off cyclomatic.complexity
   private def transformSchemeFS(pstr: String, url: String, toggleValue: Boolean)
-                               (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFS]] = {
+                               (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
 
-    val reads: Reads[Seq[SchemeFS]] = if (toggleValue) {
-      SchemeFS.rdsMaxSeq
+    val reads: Reads[SchemeFS] = if (toggleValue) {
+      SchemeFS.rdsSchemeFSMax
     } else {
-      Reads.seq(SchemeFS.rds)
+      SchemeFS.rdsSchemeFSMedium
     }
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
-          Json.parse(response.body).validate[Seq[SchemeFS]](reads) match {
-            case JsSuccess(values, _) =>
-              logger.debug(s"Response received from schemeFinInfo api transformed successfully to $values")
-              values.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+          Json.parse(response.body).validate[SchemeFS](reads) match {
+            case JsSuccess(schemeFS, _) =>
+              logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFS")
+              SchemeFS(
+                inhibitRefundSignal = schemeFS.inhibitRefundSignal,
+                seqSchemeFSDetail = schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+              )
             case JsError(errors) =>
               throw JsResultException(errors)
           }
         case NOT_FOUND =>
-          Seq.empty[SchemeFS]
+          SchemeFS(
+            inhibitRefundSignal = false,
+            seqSchemeFSDetail = Seq.empty[SchemeFSDetail]
+          )
         case _ =>
           handleErrorResponse("GET", url)(response)
       }
