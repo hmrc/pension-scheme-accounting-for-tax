@@ -707,11 +707,11 @@ class AFTConnectorIFSpec extends AsyncWordSpec with Matchers with WireMockHelper
   private val endDate = "2021-06-30"
   private val aftVersion = "1"
   private val fbNumber = "123456789123"
-  private val aftSubmitUrl = s"/pension-online/pstr/$pstr/aft/return"
+  private val aftSubmitUrl = s"/pension-online/$pstr/aft/return"
   private val getAftUrl = s"/pension-online/aft-return/$pstr?startDate=$startDt&aftVersion=$aftVersion"
   private val getAftFbNumberUrl = s"/pension-online/aft-return/$pstr?fbNumber=$fbNumber"
   private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions?startDate=$startDt"
-  private val getAftOverviewUrl = s"/pension-online/reports/overview/$pstr/AFT?fromDate=$startDt&toDate=$endDate"
+  private val getAftOverviewUrl = s"/pension-online/reports/overview/pods/$pstr/AFT?fromDate=$startDt&toDate=$endDate"
   private val testCorrelationId = "testCorrelationId"
   private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30),
     tpssReportPresent = false,
