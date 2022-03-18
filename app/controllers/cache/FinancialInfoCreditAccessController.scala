@@ -50,17 +50,24 @@ class FinancialInfoCreditAccessController @Inject()(
     }
   }
 
-  def getForPsa(psaId: String, srn: String): Action[AnyContent] = Action.async {
+  def getForSchemePsa(psaId: String, srn: String): Action[AnyContent] = Action.async {
     implicit request =>
       authorised(Enrolment("HMRC-PODS-ORG")) {
         getForPsaOrPsp(Some(psaId), None, srn)
       }
   }
 
-  def getForPsp(pspId: String, srn: String): Action[AnyContent] = Action.async {
+  def getForSchemePsp(pspId: String, srn: String): Action[AnyContent] = Action.async {
     implicit request =>
       authorised(Enrolment("HMRC-PODSPP-ORG")) {
         getForPsaOrPsp(None, Some(pspId), srn)
+      }
+  }
+
+  def getForPsa(psaId: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(Enrolment("HMRC-PODS-ORG")) {
+        getForPsaOrPsp(Some(psaId), None,psaId)
       }
   }
 
