@@ -17,23 +17,17 @@
 package repository
 
 import com.google.inject.Inject
-import org.joda.time.{DateTime, DateTimeZone}
-import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
-import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers._
-import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class FinancialInfoCacheRepository @Inject()(
                                               mongoComponent: ReactiveMongoComponent,
                                               configuration: Configuration
                                             )(implicit val executionContext: ExecutionContext)
-  extends CacheRepository(configuration.get[String](path = "mongodb.aft-cache.financial-info-cache.name"),
-    configuration.get[Int]("mongodb.aft-cache.financial-info-cache.timeToLiveInSeconds"),
-    mongoComponent)
+  extends CacheRepository(
+    collectionName = configuration.get[String](path = "mongodb.aft-cache.financial-info-cache.name"),
+    expireInSeconds = Some(configuration.get[Int]("mongodb.aft-cache.financial-info-cache.timeToLiveInSeconds")),
+    mongoComponent = mongoComponent
+  )

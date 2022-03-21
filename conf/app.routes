@@ -31,3 +31,6 @@ POST          /email-response/:submittedBy/:journeyType/:requestId/:email/:psaId
 GET           /cache/fileUpload                                                     controllers.cache.FileUploadCacheController.getUploadResult
 POST          /cache/fileUpload                                                     controllers.cache.FileUploadCacheController.requestUpload
 POST          /cache/fileUploadResult                                               controllers.cache.FileUploadCacheController.registerUploadResult
+
+GET           /cache/financial-info-credit-access/psa/:psaId/:srn                   controllers.cache.FinancialInfoCreditAccessController.getForPsa(psaId: String, srn:String)
+GET           /cache/financial-info-credit-access/psp/:pspId/:srn                   controllers.cache.FinancialInfoCreditAccessController.getForPsp(pspId: String, srn:String)
