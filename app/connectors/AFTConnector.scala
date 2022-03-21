@@ -46,34 +46,6 @@ class AFTConnector @Inject()(
 
   private val logger = Logger(classOf[AFTConnector])
 
-  def fileAFTReturnDES(pstr: String, journeyType: String, data: JsValue)
-                   (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
-    val fileAFTReturnURL = config.fileAFTReturnURLDES.format(pstr)
-    logger.warn("File AFT return (DES) called - URL:" + fileAFTReturnURL)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
-
-    if (aftService.isChargeZeroedOut(data)) {
-      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) map {
-        response =>
-          response.status match {
-            case OK => response
-            case _ => handleErrorResponse("POST", fileAFTReturnURL, journeyType)(response)
-          }
-      } andThen
-        fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data) andThen
-        fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
-    } else {
-      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) map {
-        response =>
-          response.status match {
-            case OK => response
-            case _ => handleErrorResponse("POST", fileAFTReturnURL, journeyType)(response)
-          }
-      } andThen
-        fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
-    }
-  }
-
   def fileAFTReturn(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
@@ -99,31 +71,6 @@ class AFTConnector @Inject()(
           }
       } andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
-    }
-  }
-
-  def getAftOverviewDES(pstr: String, startDate: String, endDate: String)
-                       (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
-
-    val getAftVersionUrl: String = config.getAftOverviewUrlDES.format(pstr, startDate, endDate)
-
-    logger.warn("Get overview (DES) called - URL:" + getAftVersionUrl)
-
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
-
-    http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
-      response.status match {
-        case OK =>
-          Json.parse(response.body).validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
-            case JsSuccess(versions, _) => versions
-            case JsError(errors) => throw JsResultException(errors)
-          }
-        case NOT_FOUND if (Json.parse(response.body) \ "code").as[String].equals("NO_REPORT_FOUND") =>
-          logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
-          Seq.empty[AFTOverview]
-        case _ =>
-          handleErrorResponse("GET", getAftVersionUrl)(response)
-      }
     }
   }
 
