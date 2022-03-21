@@ -18,7 +18,7 @@ package controllers
 
 import connectors.AFTConnector
 import models.FeatureToggle.Enabled
-import models.FeatureToggleName.{AftOverviewCache, MigrationTransferAft}
+import models.FeatureToggleName.AftOverviewCache
 import models.enumeration.JourneyType
 import models.{AFTSubmitterDetails, VersionsWithSubmitter}
 import play.api.Logger
@@ -57,93 +57,50 @@ class AFTController @Inject()(
   //scalastyle:off cyclomatic.complexity
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
-      featureToggleService.get(MigrationTransferAft).flatMap {
-        case Enabled(_) =>
-          post { (pstr, userAnswersJson) =>
-            aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
-              logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
-              userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
+      post { (pstr, userAnswersJson) =>
+        aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
+          logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
+          userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
 
-                case JsSuccess(dataToBeSendToETMP, _) =>
-                  logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                    Ok(response.body)
-                  }
-
-                case JsError(errors) =>
-                  throw JsResultException(errors)
+            case JsSuccess(dataToBeSendToETMP, _) =>
+              logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+              aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                Ok(response.body)
               }
-            }
-          }
-        case _ =>
-          post { (pstr, userAnswersJson) =>
-            aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
-              logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
-              userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
 
-                case JsSuccess(dataToBeSendToETMP, _) =>
-                  logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-                  aftConnector.fileAFTReturnDES(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                    Ok(response.body)
-                  }
-
-                case JsError(errors) =>
-                  throw JsResultException(errors)
-              }
-            }
+            case JsError(errors) =>
+              throw JsResultException(errors)
           }
+        }
       }
+
   }
 
   //scalastyle:off cyclomatic.complexity
   def getOverview: Action[AnyContent] = Action.async {
     implicit request =>
-      featureToggleService.get(MigrationTransferAft).flatMap {
-        case Enabled(_) =>
-          get { (pstr, startDate) =>
-            request.headers.get("endDate") match {
-              case Some(endDate) =>
-                featureToggleService.get(AftOverviewCache).flatMap {
-                  case Enabled(_) =>
-                    aftOverviewCacheRepository.get(pstr).flatMap {
-                      case Some(data) => Future.successful(Ok(data))
-                      case _ => aftConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
-                        aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
-                          Ok(Json.toJson(data))
-                        }
-                      }
-                    }
+      get { (pstr, startDate) =>
+        request.headers.get("endDate") match {
+          case Some(endDate) =>
+            featureToggleService.get(AftOverviewCache).flatMap {
+              case Enabled(_) =>
+                aftOverviewCacheRepository.get(pstr).flatMap {
+                  case Some(data) => Future.successful(Ok(data))
                   case _ => aftConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
-                    Future.successful(Ok(Json.toJson(data)))
-                  }
-                }
-              case _ =>
-                Future.failed(new BadRequestException("Bad Request with no endDate"))
-            }
-          }
-        case _ =>
-          get { (pstr, startDate) =>
-            request.headers.get("endDate") match {
-              case Some(endDate) =>
-                featureToggleService.get(AftOverviewCache).flatMap {
-                  case Enabled(_) =>
-                    aftOverviewCacheRepository.get(pstr).flatMap {
-                      case Some(data) => Future.successful(Ok(data))
-                      case _ => aftConnector.getAftOverviewDES(pstr, startDate, endDate).flatMap { data =>
-                        aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
-                          Ok(Json.toJson(data))
-                        }
-                      }
+                    aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
+                      Ok(Json.toJson(data))
                     }
-                  case _ => aftConnector.getAftOverviewDES(pstr, startDate, endDate).flatMap { data =>
-                    Future.successful(Ok(Json.toJson(data)))
                   }
                 }
-              case _ =>
-                Future.failed(new BadRequestException("Bad Request with no endDate"))
+              case _ => aftConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
+                Future.successful(Ok(Json.toJson(data)))
+              }
             }
-          }
+          case _ =>
+            Future.failed(new BadRequestException("Bad Request with no endDate"))
+        }
       }
+
   }
 
   def getDetails: Action[AnyContent] = Action.async {
