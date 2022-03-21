@@ -43,7 +43,6 @@ class FileUploadReferenceCacheRepository @Inject()(
   ) {
 
   override val logger: Logger = LoggerFactory.getLogger("FileUploadReferenceCacheRepository")
-  //private def expireInSeconds: LocalDateTime = LocalDateTime.now(DateTimeZone.UTC).
   private def expireInSeconds: LocalDateTime = LocalDateTime.now.
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.file-upload-response-cache.timeToLiveInSeconds"))
 
@@ -93,7 +92,7 @@ class FileUploadReferenceCacheRepository @Inject()(
       _.map {
         dataEntry =>
           FileUploadDataCache.applyDataCache(
-            uploadId = dataEntry.uploadId, reference = dataEntry.reference, status = dataEntry.status, expireAt = expireInSeconds)
+            uploadId = dataEntry.uploadId, reference = dataEntry.reference, status = dataEntry.status, lastUpdated=expireInSeconds, expireAt = expireInSeconds)
       }
     }
   }
