@@ -16,9 +16,10 @@
 
 package config
 
-import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+
+import javax.inject.{Inject, Singleton}
 
 @Singleton
 class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig, runModeConfiguration: Configuration) {
@@ -46,10 +47,8 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
     path = "microservice.services.if-hod.authorizationToken").getOrElse("local")
 
   val fileAFTReturnURL: String = s"$ifURL${config.get[String](path = "serviceUrls.file-aft-return")}"
-  val fileAFTReturnURLDES: String = s"$baseURL${config.get[String](path = "serviceUrls.file-aft-return-des")}"
 
   def getAftOverviewUrl = s"$ifURL${config.get[String](path = "serviceUrls.get-aft-overview")}"
-  def getAftOverviewUrlDES = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-overview-des")}"
 
   def getAftDetailsUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-details")}"
   def getAftFbnDetailsUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-details-fbNumber")}"

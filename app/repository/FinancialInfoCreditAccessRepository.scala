@@ -22,12 +22,12 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 
 import scala.concurrent.ExecutionContext
 
-class AftOverviewCacheRepository @Inject()(
+class FinancialInfoCreditAccessRepository @Inject()(
                                               mongoComponent: ReactiveMongoComponent,
                                               configuration: Configuration
                                             )(implicit val executionContext: ExecutionContext)
   extends CacheRepository(
-    collectionName = configuration.get[String](path = "mongodb.aft-cache.get-overview-cache.name"),
-    expireInSeconds = Some(configuration.get[Int]("mongodb.aft-cache.get-overview-cache.timeToLiveInSeconds")),
+    collectionName = configuration.get[String](path = "mongodb.aft-cache.financial-info-credit-access.name"),
+    expireInDays = Some(configuration.get[Int]("mongodb.aft-cache.financial-info-credit-access.timeToLiveInDays")),
     mongoComponent = mongoComponent
   )
