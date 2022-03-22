@@ -28,42 +28,47 @@ object FileUploadStatus {
   implicit val reads: OFormat[FileUploadStatus] = Json.format[FileUploadStatus]
 }
 
-case class FileUploadDataCache(uploadId: String, reference: String, status: FileUploadStatus, lastUpdated: LocalDateTime, expireAt: LocalDateTime)
+case class FileUploadDataCache(uploadId: String, reference: String, status: FileUploadStatus,created: LocalDateTime,
+                               lastUpdated: LocalDateTime, expireAt: LocalDateTime)
 
 object FileUploadDataCache {
  implicit val reads : Reads[FileUploadDataCache] =(
 (JsPath \  'uploadId).read[String] and
       (JsPath \ 'reference).read[String] and
       (JsPath \  'status).read[FileUploadStatus] and
-       (JsPath \  'lastUpdated).read[String] and
+        (JsPath \  'created).read[String] and
+        (JsPath \  'lastUpdated).read[String] and
         (JsPath \  'expireAt).read[String]
 
-  )((uploadId, reference, status, lastUpdated, expireAt)=>
+  )((uploadId, reference, status,created, lastUpdated, expireAt)=>
   FileUploadDataCache(
     uploadId,
     reference,
     status,
-    LocalDateTime.parse(lastUpdated),
+    LocalDateTime.parse(created), LocalDateTime.parse(lastUpdated),
     LocalDateTime.parse(expireAt)
   ))   ///  reference & file size & uploadtime
   implicit val writes : Writes[FileUploadDataCache] =(
     (JsPath \  'uploadId).write[String] and
       (JsPath \ 'reference).write[String] and
       (JsPath \  'status).write[FileUploadStatus] and
+      (JsPath \  'created).write[String] and
       (JsPath \  'lastUpdated).write[String] and
       (JsPath \  'expireAt).write[String]
     )(FileUploadDataCache => (FileUploadDataCache.uploadId,
     FileUploadDataCache.reference,
     FileUploadDataCache.status,
+    FileUploadDataCache.created.toString,
     FileUploadDataCache.lastUpdated.toString,
     FileUploadDataCache.expireAt.toString))
 
   def applyDataCache(uploadId: String,
                      reference: String,
                      status: FileUploadStatus,
+                     created: LocalDateTime = LocalDateTime.now(),
                      lastUpdated: LocalDateTime = LocalDateTime.now(),
                      expireAt: LocalDateTime): FileUploadDataCache = {
-    FileUploadDataCache(uploadId, reference, status, lastUpdated, expireAt)
+    FileUploadDataCache(uploadId, reference, status,created, lastUpdated, expireAt)
   }
 }
 
