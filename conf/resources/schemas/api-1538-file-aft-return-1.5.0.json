@@ -1,0 +1,2050 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "File AFT Return",
+    "description": "This particular API provides the ability to file Accounting For Tax (AFT) Return.",
+    "version": "1.5.0",
+    "contact": {
+      "name": "Audu Alfa",
+      "email": "audu.alfa@hmrc.gov.uk"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://<host>:<port>",
+      "description": "Actual environment values can be obtained from IF platforms team for each environment."
+    }
+  ],
+  "tags": [
+    {
+      "name": "API#1538",
+      "description": "API for File AFT Return"
+    }
+  ],
+  "paths": {
+    "/pension-online/{pstrNumber}/aft/return": {
+      "post": {
+        "summary": "API#1538 File AFT Return",
+        "description": "File AFT Return <br> /pension-online/12345678RD/aft/return\n```\nChange Log\n```\n\n  | Version | Date | Author | Description |\n  |---|-----|------|-----|\n  | 0.1  | 21-07-2021 | Audu Alfa  | Initial draft |   \n  | 1.4.1  | 27-08-2021 | Audu Alfa  | Changes to version number following current live version |   \n  | 1.4.2  | 01-09-2021 | Audu Alfa  | Changes to the request object (AFT Status is Submitted) to ensure aftDeclarationDetails is required\n  | 1.5.0  | 02-09-2021 | Audu Alfa  | Baselined version\n",
+        "operationId": "fileAFTReturn",
+        "tags": [
+          "API#1538"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/environment"
+          },
+          {
+            "$ref": "#/components/parameters/correlationId"
+          },
+          {
+            "$ref": "#/components/parameters/pstrParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Request body",
+          "content": {
+            "application/json;charset=UTF-8": {
+              "schema": {
+                "$ref": "#/components/schemas/request"
+              },
+              "examples": {
+                "Example1": {
+                  "summary": "aftStatus = Compiled, aftDeclarationDetails provided though optional",
+                  "value": {
+                    "aftDetails": {
+                      "aftStatus": "Compiled",
+                      "formBundleNumber": "000000001234",
+                      "quarterStartDate": "2019-01-01",
+                      "quarterEndDate": "2019-03-31"
+                    },
+                    "chargeDetails": {
+                      "chargeTypeADetails": {
+                        "amendedVersion": 1,
+                        "numberOfMembers": 2,
+                        "totalAmtOfTaxDueAtLowerRate": 200.02,
+                        "totalAmtOfTaxDueAtHigherRate": 200.02,
+                        "totalAmount": 200.02
+                      },
+                      "chargeTypeBDetails": {
+                        "amendedVersion": 1,
+                        "numberOfMembers": 2,
+                        "totalAmount": 200.02
+                      },
+                      "chargeTypeCDetails": {
+                        "amendedVersion": 2,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "memberTypeDetails": {
+                              "memberType": "Individual",
+                              "individualDetails": {
+                                "title": "Mr",
+                                "firstName": "James",
+                                "middleName": "B",
+                                "lastName": "Smith",
+                                "nino": "AA000000A"
+                              }
+                            },
+                            "correspondenceAddressDetails": {
+                              "nonUKAddress": "False",
+                              "addressLine1": "Plaza 2",
+                              "addressLine2": "Ironmasters Way",
+                              "addressLine3": "Telford",
+                              "addressLine4": "Shropshire",
+                              "countryCode": "GB",
+                              "postalCode": "TF3 4NT"
+                            },
+                            "dateOfPayment": "2019-04-29",
+                            "totalAmountOfTaxDue": 200.02
+                          }
+                        ]
+                      },
+                      "chargeTypeDDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": {
+                          "memberStatus": "New",
+                          "memberAFTVersion": null,
+                          "individualsDetails": {
+                            "title": "Mr",
+                            "firstName": "Stewart",
+                            "middleName": "S",
+                            "lastName": "Fish",
+                            "nino": "AA000000B"
+                          },
+                          "dateOfBeneCrysEvent": "2000-02-28",
+                          "totalAmtOfTaxDueAtLowerRate": 200.02,
+                          "totalAmtOfTaxDueAtHigherRate": 200.02
+                        }
+                      },
+                      "chargeTypeEDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": {
+                          "memberStatus\"": "New",
+                          "memberAFTVersion\"": 1,
+                          "individualsDetails\"": {
+                            "title": "Mrs",
+                            "firstName": "Cindy",
+                            "middleName": "D",
+                            "lastName\"": "Morgan",
+                            "nino": "AA023000B"
+                          },
+                          "amountOfCharge": 200.02,
+                          "taxYearEnding": "2018",
+                          "dateOfNotice": "2019-06-29",
+                          "paidUnder237b": "Yes"
+                        }
+                      },
+                      "chargeTypeFDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "dateRegiWithdrawn": "1980-02-29"
+                      },
+                      "chargeTypeGDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": {
+                          "memberStatus": "New",
+                          "memberAFTVersion": 1,
+                          "individualsDetails": {
+                            "title": "Mr",
+                            "firstName": "Alex",
+                            "middleName": "V",
+                            "lastName": "Grath",
+                            "dateOfBirth": "1950-08-29",
+                            "nino": "AA000000B"
+                          },
+                          "qropsReference": "Q000000",
+                          "amountTransferred": 200.02,
+                          "dateOfTransfer": "2016-02-29",
+                          "amountOfTaxDeducted": 200.02
+                        }
+                      }
+                    },
+                    "aftDeclarationDetails": {
+                      "submittedBy": "PSP",
+                      "submittedID": "10000670",
+                      "psaid": "A0003200",
+                      "pspDeclarationDetails": {
+                        "pspDeclaration1": true,
+                        "pspDeclaration2": true
+                      }
+                    }
+                  }
+                },
+                "Example2": {
+                  "summary": "aftStatus = Compiled, aftDeclarationDetails not provided as it's optional",
+                  "value": {
+                    "aftDetails": {
+                      "aftStatus": "Compiled",
+                      "formBundleNumber": "000000001234",
+                      "quarterStartDate": "2019-01-01",
+                      "quarterEndDate": "2019-03-31"
+                    },
+                    "chargeDetails": {
+                      "chargeTypeADetails": {
+                        "amendedVersion": 1,
+                        "numberOfMembers": 2,
+                        "totalAmtOfTaxDueAtLowerRate": 200.02,
+                        "totalAmtOfTaxDueAtHigherRate": 200.02,
+                        "totalAmount": 200.02
+                      },
+                      "chargeTypeBDetails": {
+                        "amendedVersion": 1,
+                        "numberOfMembers": 2,
+                        "totalAmount": 200.02
+                      },
+                      "chargeTypeCDetails": {
+                        "amendedVersion": 2,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "memberTypeDetails": {
+                              "memberType": "Individual",
+                              "individualDetails": {
+                                "title": "Mr",
+                                "firstName": "James",
+                                "middleName": "B",
+                                "lastName": "Smith",
+                                "nino": "AA000000A"
+                              }
+                            },
+                            "correspondenceAddressDetails": {
+                              "nonUKAddress": "False",
+                              "addressLine1": "Plaza 2",
+                              "addressLine2": "Ironmasters Way",
+                              "addressLine3": "Telford",
+                              "addressLine4": "Shropshire",
+                              "countryCode": "GB",
+                              "postalCode": "TF3 4NT"
+                            },
+                            "dateOfPayment": "2019-04-29",
+                            "totalAmountOfTaxDue": 200.02
+                          }
+                        ]
+                      },
+                      "chargeTypeDDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": {
+                          "memberStatus": "New",
+                          "memberAFTVersion": null,
+                          "individualsDetails": {
+                            "title": "Mr",
+                            "firstName": "Stewart",
+                            "middleName": "S",
+                            "lastName": "Fish",
+                            "nino": "AA000000B"
+                          },
+                          "dateOfBeneCrysEvent": "2000-02-28",
+                          "totalAmtOfTaxDueAtLowerRate": 200.02,
+                          "totalAmtOfTaxDueAtHigherRate": 200.02
+                        }
+                      },
+                      "chargeTypeEDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": {
+                          "memberStatus\"": "New",
+                          "memberAFTVersion\"": 1,
+                          "individualsDetails\"": {
+                            "title": "Mrs",
+                            "firstName": "Cindy",
+                            "middleName": "D",
+                            "lastName\"": "Morgan",
+                            "nino": "AA023000B"
+                          },
+                          "amountOfCharge": 200.02,
+                          "taxYearEnding": "2018",
+                          "dateOfNotice": "2019-06-29",
+                          "paidUnder237b": "Yes"
+                        }
+                      },
+                      "chargeTypeFDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "dateRegiWithdrawn": "1980-02-29"
+                      },
+                      "chargeTypeGDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": {
+                          "memberStatus": "New",
+                          "memberAFTVersion": 1,
+                          "individualsDetails": {
+                            "title": "Mr",
+                            "firstName": "Alex",
+                            "middleName": "V",
+                            "lastName": "Grath",
+                            "dateOfBirth": "1950-08-29",
+                            "nino": "AA000000B"
+                          },
+                          "qropsReference": "Q000000",
+                          "amountTransferred": 200.02,
+                          "dateOfTransfer": "2016-02-29",
+                          "amountOfTaxDeducted": 200.02
+                        }
+                      }
+                    }
+                  }
+                },
+                "Example3": {
+                  "summary": "aftStatus = Submitted, Mandatory aftDeclarationDetails provided by PSP",
+                  "value": {
+                    "aftDetails": {
+                      "aftStatus": "Submitted",
+                      "formBundleNumber": "000000001234",
+                      "quarterStartDate": "2019-01-01",
+                      "quarterEndDate": "2019-03-31"
+                    },
+                    "chargeDetails": {
+                      "chargeTypeADetails": {
+                        "amendedVersion": 1,
+                        "numberOfMembers": 2,
+                        "totalAmtOfTaxDueAtLowerRate": 200.02,
+                        "totalAmtOfTaxDueAtHigherRate": 200.02,
+                        "totalAmount": 200.02
+                      },
+                      "chargeTypeBDetails": {
+                        "amendedVersion": 1,
+                        "numberOfMembers": 2,
+                        "totalAmount": 200.02
+                      },
+                      "chargeTypeCDetails": {
+                        "amendedVersion": 2,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "memberTypeDetails": {
+                              "memberType": "Individual",
+                              "individualDetails": {
+                                "title": "Mr",
+                                "firstName": "James",
+                                "middleName": "B",
+                                "lastName": "Smith",
+                                "nino": "AA000000A"
+                              }
+                            },
+                            "correspondenceAddressDetails": {
+                              "nonUKAddress": "False",
+                              "addressLine1": "Plaza 2",
+                              "addressLine2": "Ironmasters Way ",
+                              "addressLine3": "Telford",
+                              "addressLine4": "Shropshire",
+                              "countryCode": "GB",
+                              "postalCode": "TF3 4NT"
+                            },
+                            "dateOfPayment": "2019-04-29",
+                            "totalAmountOfTaxDue": 200.02
+                          }
+                        ]
+                      },
+                      "chargeTypeDDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "individualsDetails": {
+                              "title": "Mr",
+                              "firstName": "Stewart",
+                              "middleName": "S",
+                              "lastName": "Fish",
+                              "nino": "AA000000B"
+                            },
+                            "dateOfBeneCrysEvent": "2000-02-28",
+                            "totalAmtOfTaxDueAtLowerRate": 200.02,
+                            "totalAmtOfTaxDueAtHigherRate": 200.02
+                          }
+                        ]
+                      },
+                      "chargeTypeEDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "individualsDetails": {
+                              "title": "Mrs",
+                              "firstName": "Cindy",
+                              "middleName": "D",
+                              "lastName": "Morgan",
+                              "nino": "AA023000B"
+                            },
+                            "amountOfCharge": 200.02,
+                            "taxYearEnding": "2018",
+                            "dateOfNotice": "2019-06-29",
+                            "paidUnder237b": "Yes"
+                          }
+                        ]
+                      },
+                      "chargeTypeFDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "dateRegiWithdrawn": "1980-02-29"
+                      },
+                      "chargeTypeGDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "individualsDetails": {
+                              "title": "Mr",
+                              "firstName": "Alex",
+                              "middleName": "V",
+                              "lastName": "Grath",
+                              "dateOfBirth": "1950-08-29",
+                              "nino": "AA000000C"
+                            },
+                            "qropsReference": "Q000000",
+                            "amountTransferred": 200.02,
+                            "dateOfTransfer": "2016-02-29",
+                            "amountOfTaxDeducted": 200.02
+                          }
+                        ]
+                      }
+                    },
+                    "aftDeclarationDetails": {
+                      "submittedBy": "PSP",
+                      "submittedID": "10000670",
+                      "psaid": "A0003200",
+                      "pspDeclarationDetails": {
+                        "pspDeclaration1": true,
+                        "pspDeclaration2": true
+                      }
+                    }
+                  }
+                },
+                "Example4": {
+                  "summary": "aftStatus = Submitted, Mandatory aftDeclarationDetails provided by PSA",
+                  "value": {
+                    "aftDetails": {
+                      "aftStatus": "Submitted",
+                      "formBundleNumber": "000000001234",
+                      "quarterStartDate": "2019-01-01",
+                      "quarterEndDate": "2019-03-31"
+                    },
+                    "chargeDetails": {
+                      "chargeTypeADetails": {
+                        "amendedVersion": 1,
+                        "numberOfMembers": 2,
+                        "totalAmtOfTaxDueAtLowerRate": 200.02,
+                        "totalAmtOfTaxDueAtHigherRate": 200.02,
+                        "totalAmount": 200.02
+                      },
+                      "chargeTypeBDetails": {
+                        "amendedVersion": 1,
+                        "numberOfMembers": 2,
+                        "totalAmount": 200.02
+                      },
+                      "chargeTypeCDetails": {
+                        "amendedVersion": 2,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "memberTypeDetails": {
+                              "memberType": "Individual",
+                              "individualDetails": {
+                                "title": "Mr",
+                                "firstName": "James",
+                                "middleName": "B",
+                                "lastName": "Smith",
+                                "nino": "AA000001C"
+                              }
+                            },
+                            "correspondenceAddressDetails": {
+                              "nonUKAddress": "False",
+                              "addressLine1": "Plaza 2",
+                              "addressLine2": "Ironmasters Way ",
+                              "addressLine3": "Telford",
+                              "addressLine4": "Shropshire",
+                              "countryCode": "GB",
+                              "postalCode": "TF3 4NT"
+                            },
+                            "dateOfPayment": "2019-04-29",
+                            "totalAmountOfTaxDue": 200.02
+                          }
+                        ]
+                      },
+                      "chargeTypeDDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "individualsDetails": {
+                              "title": "Mr",
+                              "firstName": "Stewart",
+                              "middleName": "S",
+                              "lastName": "Fish",
+                              "nino": "AA000000B"
+                            },
+                            "dateOfBeneCrysEvent": "2000-02-28",
+                            "totalAmtOfTaxDueAtLowerRate": 200.02,
+                            "totalAmtOfTaxDueAtHigherRate": 200.02
+                          }
+                        ]
+                      },
+                      "chargeTypeEDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "individualsDetails": {
+                              "title": "Mrs",
+                              "firstName": "Cindy",
+                              "middleName": "D",
+                              "lastName": "Morgan",
+                              "nino": "AA023000B"
+                            },
+                            "amountOfCharge": 200.02,
+                            "taxYearEnding": "2018",
+                            "dateOfNotice": "2019-06-29",
+                            "paidUnder237b": "Yes"
+                          }
+                        ]
+                      },
+                      "chargeTypeFDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "dateRegiWithdrawn": "1980-02-29"
+                      },
+                      "chargeTypeGDetails": {
+                        "amendedVersion": 1,
+                        "totalAmount": 200.02,
+                        "memberDetails": [
+                          {
+                            "memberStatus": "New",
+                            "memberAFTVersion": 1,
+                            "individualsDetails": {
+                              "title": "Mr",
+                              "firstName": "Alex",
+                              "middleName": "V",
+                              "lastName": "Grath",
+                              "dateOfBirth": "1950-08-29",
+                              "nino": "AA000002C"
+                            },
+                            "qropsReference": "Q000000",
+                            "amountTransferred": 200.02,
+                            "dateOfTransfer": "2016-02-29",
+                            "amountOfTaxDeducted": 200.02
+                          }
+                        ]
+                      }
+                    },
+                    "aftDeclarationDetails": {
+                      "submittedBy": "PSA",
+                      "submittedID": "A1234567",
+                      "psaDeclarationDetails": {
+                        "psaDeclaration1": true,
+                        "psaDeclaration2": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "headers": {
+              "CorrelationId": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/successResponse"
+                },
+                "examples": {
+                  "Example1": {
+                    "summary": "Success Response",
+                    "value": {
+                      "processingDate": "2001-12-17T09:30:47Z",
+                      "formBundleNumber": "123456789012"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request\n```\n\"code\"                 \"reason\"\nINVALID_PSTR\t          Submission has not passed validation. Invalid parameter pstr.\nINVALID_PAYLOAD\t        Submission has not passed validation. Invalid Payload.\nINVALID_CORRELATIONID\t  Submission has not passed validation. Invalid Header parameter CorrelationId.\nAMOUNT_MISMATCH\t        The remote endpoint has indicated that Members total amount does not match with the amount of charge type <Charge Type Ref (C or D or E or G)>.\nINCORRECT_PERIOD_DATES\tThe remote endpoint has indicated that AFT Return period dates are incorrect.",
+            "headers": {
+              "CorrelationId": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json;charset=UTF-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "examples": {
+                  "Example1_Single_Failure_In_400": {
+                    "summary": "Single Failure",
+                    "value": {
+                      "failures": [
+                        {
+                          "code": "AMOUNT_MISMATCH",
+                          "reason": "The remote endpoint has indicated that members total amount does not match with the amount of charge type."
+                        }
+                      ]
+                    }
+                  },
+                  "Example2_Multiple_Failures_In_400": {
+                    "summary": "Error Response With Multiple Failures",
+                    "value": {
+                      "failures": [
+                        {
+                          "code": "INVALID_PSTR",
+                          "reason": "Submission has not passed validation. Invalid payload."
+                        },
+                        {
+                          "code": "INVALID_CORRELATIONID",
+                          "reason": "Submission has not passed validation. Invalid Header parameter CorrelationId."
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Conflict\n```\n\"code\"                                \"reason\"\nINVALID_PSAID\t                        The remote endpoint has indicated Invalid PSAID <PSAID>.\nNO_RELATIONSHIP_EXISTS_PSAID_SCHEME\t  The remote endpoint has indicated that No relationship exists between the PSPID <PSPID> and the Scheme <PSTR>.\nINVALID_PSPID\t                        The remote endpoint has indicated Invalid PSPID <PSPID>.\nNO_RELATIONSHIP_EXISTS_PSPID_SCHEME\t  The remote endpoint has indicated that no relationship exists between the PSPID and the scheme.\nPSAID_MANDATORY\t                      The remote endpoint has indicated that PSAID is mandatory if the declaration is provided by PSP.\nUNAUTHORIZED_PSP\t                    The remote endpoint has indicated that PSP <PSPID> is not authorized by PSA <PSAID>.\nRETURN_ALREADY_SUBMITTED\t            Return for this quarter is already submitted in TPSS system",
+            "headers": {
+              "CorrelationId": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json;charset=UTF-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "examples": {
+                  "Example_INVALID_PSAID": {
+                    "summary": "Single Failure",
+                    "value": {
+                      "failures": [
+                        {
+                          "code": "RETURN_ALREADY_SUBMITTED",
+                          "reason": "Return for this quarter is already submitted in TPSS system"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict\n```\n\"code\"                 \"reason\"\nDUPLICATE_SUBMISSION   The remote endpoint has indicated a duplicate submission or acknowledgement reference.",
+            "headers": {
+              "CorrelationId": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json;charset=UTF-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "examples": {
+                  "Example_DUPLICATE_SUBMISSION": {
+                    "summary": "Single Failure",
+                    "value": {
+                      "failures": [
+                        {
+                          "code": "DUPLICATE_SUBMISSION",
+                          "reason": "The remote endpoint has indicated a duplicate submission or acknowledgement reference."
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Error\n```\n\"code\"         \"reason\"\nSERVER_ERROR   IF is currently experiencing problems that require live service intervention.",
+            "headers": {
+              "CorrelationId": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json;charset=UTF-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "examples": {
+                  "Example_SERVER_ERROR": {
+                    "value": {
+                      "failures": [
+                        {
+                          "code": "SERVER_ERROR",
+                          "reason": "IF is currently experiencing problems that require live service intervention."
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable\n```\n\"code\"         \"reason\"\nSERVICE_UNAVAILABLE   Dependent systems are currently not responding.",
+            "headers": {
+              "CorrelationId": {
+                "$ref": "#/components/headers/CorrelationId"
+              }
+            },
+            "content": {
+              "application/json;charset=UTF-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse"
+                },
+                "examples": {
+                  "Example_SERVICE_UNAVAILABLE": {
+                    "value": {
+                      "failures": [
+                        {
+                          "code": "SERVICE_UNAVAILABLE",
+                          "reason": "Dependent systems are currently not responding."
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "headers": {
+      "CorrelationId": {
+        "description": "CorrelationId - Used for traceability purposes when present",
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{12}$"
+        }
+      },
+      "Content-Type": {
+        "description": "Indicates the client what the content type of the returned content actually is",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "application/json"
+          ]
+        }
+      }
+    },
+    "parameters": {
+      "environment": {
+        "in": "header",
+        "name": "Environment",
+        "description": "Mandatory. The environment in use.",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "ist0",
+            "clone",
+            "live"
+          ]
+        }
+      },
+      "correlationId": {
+        "in": "header",
+        "name": "CorrelationId",
+        "description": "Optional. A UUID format string for the transaction. If not specified the IF will create a UUID value to be used",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{4}[-][0-9a-fA-F]{12}$"
+        }
+      },
+      "pstrParam": {
+        "in": "path",
+        "name": "pstrNumber",
+        "description": "Pension Scheme Tax Reference Number",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9]{8}[A-Z]{2}$"
+        }
+      }
+    },
+    "schemas": {
+      "request": {
+        "title": "API#1538 File AFT Return",
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "AFT Status is Compiled",
+            "required": [
+              "aftDetails",
+              "chargeDetails"
+            ],
+            "properties": {
+              "aftDetails": {
+                "description": "Accounting For Tax Details",
+                "type": "object",
+                "required": [
+                  "aftStatus",
+                  "quarterStartDate",
+                  "quarterEndDate"
+                ],
+                "properties": {
+                  "aftStatus": {
+                    "type": "string",
+                    "enum": [
+                      "Compiled"
+                    ]
+                  },
+                  "formBundleNumber": {
+                    "type": "string",
+                    "pattern": "^[0-9]{12}$"
+                  },
+                  "quarterStartDate": {
+                    "$ref": "#/components/schemas/dateType"
+                  },
+                  "quarterEndDate": {
+                    "$ref": "#/components/schemas/dateType"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "chargeDetails": {
+                "$ref": "#/components/schemas/chargeDetailsType"
+              },
+              "aftDeclarationDetails": {
+                "$ref": "#/components/schemas/aftDeclarationDetailsType"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "description": "AFT Status is Submitted",
+            "required": [
+              "aftDetails",
+              "chargeDetails",
+              "aftDeclarationDetails"
+            ],
+            "properties": {
+              "aftDetails": {
+                "description": "Accounting For Tax Details",
+                "type": "object",
+                "required": [
+                  "aftStatus",
+                  "quarterStartDate",
+                  "quarterEndDate"
+                ],
+                "properties": {
+                  "aftStatus": {
+                    "type": "string",
+                    "enum": [
+                      "Submitted"
+                    ]
+                  },
+                  "formBundleNumber": {
+                    "type": "string",
+                    "pattern": "^[0-9]{12}$"
+                  },
+                  "quarterStartDate": {
+                    "$ref": "#/components/schemas/dateType"
+                  },
+                  "quarterEndDate": {
+                    "$ref": "#/components/schemas/dateType"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "chargeDetails": {
+                "$ref": "#/components/schemas/chargeDetailsType"
+              },
+              "aftDeclarationDetails": {
+                "$ref": "#/components/schemas/aftDeclarationDetailsType"
+              }
+            },
+            "additionalProperties": false
+          }
+        ],
+        "additionalProperties": false,
+        "x-examples": {
+          "example-1": {
+            "aftDetails": {
+              "aftStatus": "Compiled",
+              "formBundleNumber": "string",
+              "quarterStartDate": "string",
+              "quarterEndDate": "string"
+            },
+            "chargeDetails": {
+              "chargeTypeADetails": {
+                "amendedVersion": 0,
+                "numberOfMembers": 0,
+                "totalAmtOfTaxDueAtLowerRate": 0,
+                "totalAmtOfTaxDueAtHigherRate": 0,
+                "totalAmount": 0
+              },
+              "chargeTypeBDetails": {
+                "amendedVersion": 0,
+                "numberOfMembers": 0,
+                "totalAmount": 0
+              },
+              "chargeTypeCDetails": {
+                "amendedVersion": 0,
+                "totalAmount": 0,
+                "memberDetails": [
+                  {
+                    "memberStatus": "New",
+                    "memberAFTVersion": 0,
+                    "memberTypeDetails": {
+                      "memberType": "Individual",
+                      "individualDetails": {
+                        "title": "Mr",
+                        "firstName": "string",
+                        "middleName": "string",
+                        "lastName": "string",
+                        "nino": "string"
+                      }
+                    },
+                    "correspondenceAddressDetails": {
+                      "nonUKAddress": "False",
+                      "addressLine1": "string",
+                      "addressLine2": "string",
+                      "addressLine3": "string",
+                      "addressLine4": "string",
+                      "countryCode": "GB",
+                      "postalCode": "string"
+                    },
+                    "dateOfPayment": "string",
+                    "totalAmountOfTaxDue": 0
+                  }
+                ]
+              },
+              "chargeTypeDDetails": {
+                "amendedVersion": 0,
+                "totalAmount": 0,
+                "memberDetails": [
+                  {
+                    "memberStatus": "New",
+                    "memberAFTVersion": 0,
+                    "individualsDetails": {
+                      "title": "Mr",
+                      "firstName": "string",
+                      "middleName": "string",
+                      "lastName": "string",
+                      "nino": "string"
+                    },
+                    "dateOfBeneCrysEvent": "string",
+                    "totalAmtOfTaxDueAtLowerRate": 0,
+                    "totalAmtOfTaxDueAtHigherRate": 0
+                  }
+                ]
+              },
+              "chargeTypeEDetails": {
+                "amendedVersion": 0,
+                "totalAmount": 0,
+                "memberDetails": [
+                  {
+                    "memberStatus": "New",
+                    "memberAFTVersion": 0,
+                    "individualsDetails": {
+                      "title": "Mr",
+                      "firstName": "string",
+                      "middleName": "string",
+                      "lastName": "string",
+                      "nino": "string"
+                    },
+                    "amountOfCharge": 0,
+                    "taxYearEnding": "string",
+                    "dateOfNotice": "string",
+                    "paidUnder237b": "Yes"
+                  }
+                ]
+              },
+              "chargeTypeFDetails": {
+                "amendedVersion": 0,
+                "totalAmount": 0,
+                "dateRegiWithdrawn": "string"
+              },
+              "chargeTypeGDetails": {
+                "amendedVersion": 0,
+                "totalAmount": 0,
+                "memberDetails": [
+                  {
+                    "memberStatus": "New",
+                    "memberAFTVersion": 0,
+                    "individualsDetails": {
+                      "title": "Mr",
+                      "firstName": "string",
+                      "middleName": "string",
+                      "lastName": "string",
+                      "dateOfBirth": "string",
+                      "nino": "string"
+                    },
+                    "qropsReference": "string",
+                    "amountTransferred": 0,
+                    "dateOfTransfer": "string",
+                    "amountOfTaxDeducted": 0
+                  }
+                ]
+              }
+            },
+            "aftDeclarationDetails": {
+              "submittedBy": "PSP",
+              "submittedID": "string",
+              "psaid": "string",
+              "pspDeclarationDetails": {
+                "pspDeclaration1": true,
+                "pspDeclaration2": true
+              }
+            }
+          }
+        }
+      },
+      "aftDeclarationDetailsType": {
+        "description": "Either PSA or PSP declaration is mandatory if the AFT status is Submitted.",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "submittedBy",
+              "submittedID",
+              "psaid",
+              "pspDeclarationDetails"
+            ],
+            "properties": {
+              "submittedBy": {
+                "type": "string",
+                "description": "Submitted By PSP",
+                "enum": [
+                  "PSP"
+                ]
+              },
+              "submittedID": {
+                "type": "string",
+                "description": "PSP ID",
+                "pattern": "^[0-9]{8}$"
+              },
+              "psaid": {
+                "type": "string",
+                "description": "PSA ID",
+                "pattern": "^A[0-9]{7}$"
+              },
+              "pspDeclarationDetails": {
+                "$ref": "#/components/schemas/pspDeclarationDetailsType"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "submittedBy",
+              "submittedID",
+              "psaDeclarationDetails"
+            ],
+            "properties": {
+              "submittedBy": {
+                "type": "string",
+                "description": "Submitted By PSA",
+                "enum": [
+                  "PSA"
+                ]
+              },
+              "submittedID": {
+                "type": "string",
+                "description": "PSA ID",
+                "pattern": "^A[0-9]{7}$"
+              },
+              "psaDeclarationDetails": {
+                "$ref": "#/components/schemas/psaDeclarationDetailsType"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "chargeDetailsType": {
+        "type": "object",
+        "description": "There should be at least one charge type.",
+        "minProperties": 1,
+        "properties": {
+          "chargeTypeADetails": {
+            "$ref": "#/components/schemas/chargeTypeADetailsType"
+          },
+          "chargeTypeBDetails": {
+            "$ref": "#/components/schemas/chargeTypeBDetailsType"
+          },
+          "chargeTypeCDetails": {
+            "$ref": "#/components/schemas/chargeTypeCDetailsType"
+          },
+          "chargeTypeDDetails": {
+            "$ref": "#/components/schemas/chargeTypeDDetailsType"
+          },
+          "chargeTypeEDetails": {
+            "$ref": "#/components/schemas/chargeTypeEDetailsType"
+          },
+          "chargeTypeFDetails": {
+            "$ref": "#/components/schemas/chargeTypeFDetailsType"
+          },
+          "chargeTypeGDetails": {
+            "$ref": "#/components/schemas/chargeTypeGDetailsType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "chargeTypeADetailsType": {
+        "type": "object",
+        "required": [
+          "numberOfMembers",
+          "totalAmtOfTaxDueAtLowerRate",
+          "totalAmtOfTaxDueAtHigherRate",
+          "totalAmount"
+        ],
+        "properties": {
+          "amendedVersion": {
+            "$ref": "#/components/schemas/versionType"
+          },
+          "numberOfMembers": {
+            "$ref": "#/components/schemas/numberOfMembersType"
+          },
+          "totalAmtOfTaxDueAtLowerRate": {
+            "$ref": "#/components/schemas/totalAmountType"
+          },
+          "totalAmtOfTaxDueAtHigherRate": {
+            "$ref": "#/components/schemas/totalAmountType"
+          },
+          "totalAmount": {
+            "$ref": "#/components/schemas/totalAmountType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "chargeTypeBDetailsType": {
+        "type": "object",
+        "required": [
+          "numberOfMembers",
+          "totalAmount"
+        ],
+        "properties": {
+          "amendedVersion": {
+            "$ref": "#/components/schemas/versionType"
+          },
+          "numberOfMembers": {
+            "$ref": "#/components/schemas/numberOfMembersType"
+          },
+          "totalAmount": {
+            "$ref": "#/components/schemas/totalAmountType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "chargeTypeCDetailsType": {
+        "type": "object",
+        "required": [
+          "totalAmount",
+          "memberDetails"
+        ],
+        "properties": {
+          "amendedVersion": {
+            "$ref": "#/components/schemas/versionType"
+          },
+          "totalAmount": {
+            "$ref": "#/components/schemas/totalAmountType"
+          },
+          "memberDetails": {
+            "$ref": "#/components/schemas/memberDetailsCType"
+          }
+        }
+      },
+      "memberDetailsCType": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "memberStatus",
+            "memberTypeDetails",
+            "correspondenceAddressDetails",
+            "dateOfPayment",
+            "totalAmountOfTaxDue"
+          ],
+          "properties": {
+            "memberStatus": {
+              "$ref": "#/components/schemas/memberStatusType"
+            },
+            "memberAFTVersion": {
+              "$ref": "#/components/schemas/versionType"
+            },
+            "memberTypeDetails": {
+              "$ref": "#/components/schemas/memberTypeCDetailsType"
+            },
+            "correspondenceAddressDetails": {
+              "$ref": "#/components/schemas/correspondenceAddressDetailsType"
+            },
+            "dateOfPayment": {
+              "$ref": "#/components/schemas/dateType"
+            },
+            "totalAmountOfTaxDue": {
+              "$ref": "#/components/schemas/totalAmountType"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "memberTypeCDetailsType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "memberType",
+              "individualDetails"
+            ],
+            "properties": {
+              "memberType": {
+                "type": "string",
+                "description": "Individual Type Member",
+                "enum": [
+                  "Individual"
+                ]
+              },
+              "individualDetails": {
+                "$ref": "#/components/schemas/individualDetailsType"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "memberType",
+              "comOrOrganisationName",
+              "crnNumber"
+            ],
+            "properties": {
+              "memberType": {
+                "type": "string",
+                "description": "Organisation Type Member",
+                "enum": [
+                  "Organisation"
+                ]
+              },
+              "comOrOrganisationName": {
+                "$ref": "#/components/schemas/comOrOrganisationNameType"
+              },
+              "crnNumber": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9 -]{1,8}$"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "chargeTypeDDetailsType": {
+        "type": "object",
+        "required": [
+          "totalAmount",
+          "memberDetails"
+        ],
+        "properties": {
+          "amendedVersion": {
+            "$ref": "#/components/schemas/versionType"
+          },
+          "totalAmount": {
+            "$ref": "#/components/schemas/totalAmountType"
+          },
+          "memberDetails": {
+            "$ref": "#/components/schemas/memberDetailsDType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "memberDetailsDType": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "memberStatus",
+            "individualsDetails",
+            "dateOfBeneCrysEvent",
+            "totalAmtOfTaxDueAtLowerRate",
+            "totalAmtOfTaxDueAtHigherRate"
+          ],
+          "properties": {
+            "memberStatus": {
+              "$ref": "#/components/schemas/memberStatusType"
+            },
+            "memberAFTVersion": {
+              "$ref": "#/components/schemas/versionType"
+            },
+            "individualsDetails": {
+              "$ref": "#/components/schemas/individualDetailsType"
+            },
+            "dateOfBeneCrysEvent": {
+              "$ref": "#/components/schemas/dateType"
+            },
+            "totalAmtOfTaxDueAtLowerRate": {
+              "$ref": "#/components/schemas/totalAmountType"
+            },
+            "totalAmtOfTaxDueAtHigherRate": {
+              "$ref": "#/components/schemas/totalAmountType"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "chargeTypeEDetailsType": {
+        "type": "object",
+        "required": [
+          "totalAmount",
+          "memberDetails"
+        ],
+        "properties": {
+          "amendedVersion": {
+            "$ref": "#/components/schemas/versionType"
+          },
+          "totalAmount": {
+            "$ref": "#/components/schemas/totalAmountType"
+          },
+          "memberDetails": {
+            "$ref": "#/components/schemas/memberDetailsEType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "memberDetailsEType": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "memberStatus",
+            "individualsDetails",
+            "amountOfCharge",
+            "taxYearEnding",
+            "dateOfNotice"
+          ],
+          "properties": {
+            "memberStatus": {
+              "$ref": "#/components/schemas/memberStatusType"
+            },
+            "memberAFTVersion": {
+              "$ref": "#/components/schemas/versionType"
+            },
+            "individualsDetails": {
+              "$ref": "#/components/schemas/individualDetailsType"
+            },
+            "amountOfCharge": {
+              "$ref": "#/components/schemas/totalAmountType"
+            },
+            "taxYearEnding": {
+              "type": "string",
+              "description": "The tax year",
+              "pattern": "^(19|20)[0-9]{2}$"
+            },
+            "dateOfNotice": {
+              "$ref": "#/components/schemas/dateType"
+            },
+            "paidUnder237b": {
+              "type": "string",
+              "enum": [
+                "Yes",
+                "No"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "chargeTypeFDetailsType": {
+        "type": "object",
+        "required": [
+          "totalAmount"
+        ],
+        "properties": {
+          "amendedVersion": {
+            "$ref": "#/components/schemas/versionType"
+          },
+          "totalAmount": {
+            "$ref": "#/components/schemas/totalAmountType"
+          },
+          "dateRegiWithdrawn": {
+            "$ref": "#/components/schemas/dateType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "chargeTypeGDetailsType": {
+        "type": "object",
+        "required": [
+          "totalAmount",
+          "memberDetails"
+        ],
+        "properties": {
+          "amendedVersion": {
+            "$ref": "#/components/schemas/versionType"
+          },
+          "totalAmount": {
+            "$ref": "#/components/schemas/totalAmountType"
+          },
+          "memberDetails": {
+            "$ref": "#/components/schemas/memberDetailsGType"
+          }
+        },
+        "additionalProperties": false
+      },
+      "memberDetailsGType": {
+        "type": "array",
+        "required": [
+          "memberStatus",
+          "individualsDetails",
+          "qropsReference",
+          "amountTransferred",
+          "dateOfTransfer",
+          "amountOfTaxDeducted"
+        ],
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "properties": {
+            "memberStatus": {
+              "$ref": "#/components/schemas/memberStatusType"
+            },
+            "memberAFTVersion": {
+              "$ref": "#/components/schemas/versionType"
+            },
+            "individualsDetails": {
+              "$ref": "#/components/schemas/individualDetailsGType"
+            },
+            "qropsReference": {
+              "type": "string",
+              "pattern": "^Q[0-9]{6}$"
+            },
+            "amountTransferred": {
+              "$ref": "#/components/schemas/totalAmountType"
+            },
+            "dateOfTransfer": {
+              "$ref": "#/components/schemas/dateType"
+            },
+            "amountOfTaxDeducted": {
+              "$ref": "#/components/schemas/totalAmountType"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "individualDetailsType": {
+        "type": "object",
+        "required": [
+          "firstName",
+          "lastName",
+          "nino"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "enum": [
+              "Mr",
+              "Mrs",
+              "Miss",
+              "Ms",
+              "Dr",
+              "Sir",
+              "Professor",
+              "Lord"
+            ]
+          },
+          "firstName": {
+            "type": "string",
+            "pattern": "^[a-zA-Z &`\\-\\'\\.^]{1,35}$"
+          },
+          "middleName": {
+            "type": "string",
+            "pattern": "^[a-zA-Z &`\\-\\'\\.^]{1,35}$"
+          },
+          "lastName": {
+            "type": "string",
+            "pattern": "^[a-zA-Z &`\\-\\'\\.^]{1,35}$"
+          },
+          "nino": {
+            "type": "string",
+            "pattern": "^((?!(BG|GB|KN|NK|NT|TN|ZZ)|(D|F|I|Q|U|V)[A-Z]|[A-Z](D|F|I|O|Q|U|V))[A-Z]{2})[0-9]{6}[A-D]$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "individualDetailsGType": {
+        "type": "object",
+        "required": [
+          "firstName",
+          "lastName",
+          "dateOfBirth",
+          "nino"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "enum": [
+              "Mr",
+              "Mrs",
+              "Miss",
+              "Ms",
+              "Dr",
+              "Sir",
+              "Professor",
+              "Lord"
+            ]
+          },
+          "firstName": {
+            "type": "string",
+            "pattern": "^[a-zA-Z &`\\-\\'\\.^]{1,35}$"
+          },
+          "middleName": {
+            "type": "string",
+            "pattern": "^[a-zA-Z &`\\-\\'\\.^]{1,35}$"
+          },
+          "lastName": {
+            "type": "string",
+            "pattern": "^[a-zA-Z &`\\-\\'\\.^]{1,35}$"
+          },
+          "dateOfBirth": {
+            "$ref": "#/components/schemas/dateType"
+          },
+          "nino": {
+            "type": "string",
+            "pattern": "^((?!(BG|GB|KN|NK|NT|TN|ZZ)|(D|F|I|Q|U|V)[A-Z]|[A-Z](D|F|I|O|Q|U|V))[A-Z]{2})[0-9]{6}[A-D]$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "psaDeclarationDetailsType": {
+        "type": "object",
+        "required": [
+          "psaDeclaration1",
+          "psaDeclaration2"
+        ],
+        "properties": {
+          "psaDeclaration1": {
+            "type": "boolean"
+          },
+          "psaDeclaration2": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "pspDeclarationDetailsType": {
+        "type": "object",
+        "required": [
+          "pspDeclaration1",
+          "pspDeclaration2"
+        ],
+        "properties": {
+          "pspDeclaration1": {
+            "type": "boolean"
+          },
+          "pspDeclaration2": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "totalAmountType": {
+        "description": "Total Amount 13 digits 2 fraction digits",
+        "type": "number",
+        "minimum": 0,
+        "maximum": 99999999999.99,
+        "multipleOf": 0.01
+      },
+      "versionType": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 999999,
+        "multipleOf": 1
+      },
+      "numberOfMembersType": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 999999,
+        "multipleOf": 1
+      },
+      "comOrOrganisationNameType": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9\\u00C0-\\u00FF !#$%&'‘’\"“”«»()*+,./:;=?@\\[\\]|~£€¥\\u005C\\u2014\\u2013\\u2010\\u005F\\u005E\\u0060\\u002d]{1,160}$"
+      },
+      "correspondenceAddressDetailsType": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "addressLine1",
+              "addressLine2",
+              "countryCode",
+              "postalCode"
+            ],
+            "properties": {
+              "nonUKAddress": {
+                "type": "string",
+                "enum": [
+                  "False"
+                ]
+              },
+              "addressLine1": {
+                "$ref": "#/components/schemas/addressLineType"
+              },
+              "addressLine2": {
+                "$ref": "#/components/schemas/addressLineType"
+              },
+              "addressLine3": {
+                "$ref": "#/components/schemas/addressLineType"
+              },
+              "addressLine4": {
+                "$ref": "#/components/schemas/addressLineType"
+              },
+              "countryCode": {
+                "type": "string",
+                "enum": [
+                  "GB"
+                ]
+              },
+              "postalCode": {
+                "type": "string",
+                "pattern": "^[A-Z]{1,2}[0-9][0-9A-Z]?\\s?[0-9][A-Z]{2}$|BFPO\\s?[0-9]{1,3}$"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "addressLine1",
+              "addressLine2",
+              "countryCode"
+            ],
+            "properties": {
+              "nonUKAddress": {
+                "type": "string",
+                "enum": [
+                  "True"
+                ]
+              },
+              "addressLine1": {
+                "$ref": "#/components/schemas/addressLineType"
+              },
+              "addressLine2": {
+                "$ref": "#/components/schemas/addressLineType"
+              },
+              "addressLine3": {
+                "$ref": "#/components/schemas/addressLineType"
+              },
+              "addressLine4": {
+                "$ref": "#/components/schemas/addressLineType"
+              },
+              "countryCode": {
+                "$ref": "#/components/schemas/countryCodes"
+              },
+              "postalCode": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 10
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "addressLineType": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9 &!'‘’\"“”(),./—–‐-]{1,35}$"
+      },
+      "dateType": {
+        "type": "string",
+        "pattern": "^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$"
+      },
+      "memberStatusType": {
+        "type": "string",
+        "enum": [
+          "New",
+          "Changed",
+          "Deleted"
+        ]
+      },
+      "countryCodes": {
+        "type": "string",
+        "description": "Country code iso 3166-1 alpha-2",
+        "enum": [
+          "AD",
+          "AE",
+          "AF",
+          "AG",
+          "AI",
+          "AL",
+          "AM",
+          "AN",
+          "AO",
+          "AQ",
+          "AR",
+          "AS",
+          "AT",
+          "AU",
+          "AW",
+          "AX",
+          "AZ",
+          "BA",
+          "BB",
+          "BD",
+          "BE",
+          "BF",
+          "BG",
+          "BH",
+          "BI",
+          "BJ",
+          "BL",
+          "BM",
+          "BN",
+          "BO",
+          "BQ",
+          "BR",
+          "BS",
+          "BT",
+          "BV",
+          "BW",
+          "BY",
+          "BZ",
+          "CA",
+          "CC",
+          "CD",
+          "CF",
+          "CG",
+          "CH",
+          "CI",
+          "CK",
+          "CL",
+          "CM",
+          "CN",
+          "CO",
+          "CR",
+          "CS",
+          "CU",
+          "CV",
+          "CW",
+          "CX",
+          "CY",
+          "CZ",
+          "DE",
+          "DJ",
+          "DK",
+          "DM",
+          "DO",
+          "DZ",
+          "EC",
+          "EE",
+          "EG",
+          "EH",
+          "ER",
+          "ES",
+          "ET",
+          "EU",
+          "FC",
+          "FI",
+          "FJ",
+          "FK",
+          "FM",
+          "FO",
+          "FR",
+          "GA",
+          "GD",
+          "GE",
+          "GF",
+          "GG",
+          "GH",
+          "GI",
+          "GL",
+          "GM",
+          "GN",
+          "GP",
+          "GQ",
+          "GR",
+          "GS",
+          "GT",
+          "GU",
+          "GW",
+          "GY",
+          "HK",
+          "HM",
+          "HN",
+          "HR",
+          "HT",
+          "HU",
+          "ID",
+          "IE",
+          "IL",
+          "IM",
+          "IN",
+          "IO",
+          "IQ",
+          "IR",
+          "IS",
+          "IT",
+          "JE",
+          "JM",
+          "JO",
+          "JP",
+          "KE",
+          "KG",
+          "KH",
+          "KI",
+          "KM",
+          "KN",
+          "KP",
+          "KR",
+          "KW",
+          "KY",
+          "KZ",
+          "LA",
+          "LB",
+          "LC",
+          "LI",
+          "LK",
+          "LR",
+          "LS",
+          "LT",
+          "LU",
+          "LV",
+          "LY",
+          "MA",
+          "MC",
+          "MD",
+          "ME",
+          "MF",
+          "MG",
+          "MH",
+          "MK",
+          "ML",
+          "MM",
+          "MN",
+          "MO",
+          "MP",
+          "MQ",
+          "MR",
+          "MS",
+          "MT",
+          "MU",
+          "MV",
+          "MW",
+          "MX",
+          "MY",
+          "MZ",
+          "NA",
+          "NC",
+          "NE",
+          "NF",
+          "NG",
+          "NI",
+          "NL",
+          "NO",
+          "NP",
+          "NR",
+          "NT",
+          "NU",
+          "NZ",
+          "OM",
+          "OR",
+          "PA",
+          "PE",
+          "PF",
+          "PG",
+          "PH",
+          "PK",
+          "PL",
+          "PM",
+          "PN",
+          "PR",
+          "PS",
+          "PT",
+          "PW",
+          "PY",
+          "QA",
+          "RE",
+          "RO",
+          "RS",
+          "RU",
+          "RW",
+          "SA",
+          "SB",
+          "SC",
+          "SD",
+          "SE",
+          "SG",
+          "SH",
+          "SI",
+          "SJ",
+          "SK",
+          "SL",
+          "SM",
+          "SN",
+          "SO",
+          "SR",
+          "SS",
+          "ST",
+          "SV",
+          "SX",
+          "SY",
+          "SZ",
+          "TC",
+          "TD",
+          "TF",
+          "TG",
+          "TH",
+          "TJ",
+          "TK",
+          "TL",
+          "TM",
+          "TN",
+          "TO",
+          "TP",
+          "TR",
+          "TT",
+          "TV",
+          "TW",
+          "TZ",
+          "UA",
+          "UG",
+          "UM",
+          "UN",
+          "US",
+          "UY",
+          "UZ",
+          "VA",
+          "VC",
+          "VE",
+          "VG",
+          "VI",
+          "VN",
+          "VU",
+          "WF",
+          "WS",
+          "YE",
+          "YT",
+          "ZA",
+          "ZM",
+          "ZW"
+        ]
+      },
+      "successResponse": {
+        "title": "04CC - API#1538 File AFT Return - Success Response Schema",
+        "type": "object",
+        "required": [
+          "processingDate"
+        ],
+        "properties": {
+          "processingDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date the message was processed"
+          },
+          "formBundleNumber": {
+            "type": "string",
+            "pattern": "^[0-9]{12}$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "errorResponse": {
+        "title": "04CC - API#1538 File AFT Return - Error Response Schema",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "failures"
+        ],
+        "properties": {
+          "failures": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "code",
+                "reason"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "description": "Keys for all the errors returned",
+                  "enum": [
+                    "INVALID_PSTR",
+                    "INVALID_PAYLOAD",
+                    "INVALID_CORRELATIONID",
+                    "DUPLICATE_SUBMISSION",
+                    "INVALID_PSAID",
+                    "NO_RELATIONSHIP_EXISTS_PSAID_SCHEME",
+                    "INVALID_PSPID",
+                    "NO_RELATIONSHIP_EXISTS_PSPID_SCHEME",
+                    "PSAID_MANDATORY",
+                    "UNAUTHORIZED_PSP",
+                    "AMOUNT_MISMATCH",
+                    "INCORRECT_PERIOD_DATES",
+                    "SERVER_ERROR",
+                    "SERVICE_UNAVAILABLE",
+                    "RETURN_ALREADY_SUBMITTED"
+                  ]
+                },
+                "reason": {
+                  "description": "A simple description for the failure",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
