@@ -19,7 +19,7 @@ package repository
 import com.google.inject.Inject
 import config.AppConfig
 import models.{ChargeAndMember, LockDetail}
-import org.joda.time.{DateTimeZone, DateTime}
+import org.joda.time.{DateTime, DateTimeZone}
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -339,7 +339,7 @@ class AftBatchedDataCacheRepository @Inject()(
       case (Some(sessionId), Some(BatchIdentifier(bt, bn))) =>
         find("uniqueAftId" -> (id + sessionId), "batchType" -> bt.toString, "batchNo" -> bn)
       case (None, Some(BatchIdentifier(bt, bn))) =>
-        find("batchType" -> bt.toString, "batchNo" -> bn)
+        find("id" -> id, "batchType" -> bt.toString, "batchNo" -> bn)
       case (Some(sessionId), None) if excludeSessionDataBatch =>
         find("uniqueAftId" -> (id + sessionId),
           "batchType"-> BSONDocument( "$ne" -> BatchType.SessionData.toString))
@@ -355,7 +355,8 @@ class AftBatchedDataCacheRepository @Inject()(
     excludeSessionDataBatch:Boolean = false
   )(implicit ec: ExecutionContext):Future[Option[Seq[BatchInfo]]] = {
     findBatches(id, optSessionId, batchIdentifier, excludeSessionDataBatch).map {
-      case batches if batches.isEmpty => None
+      case batches if batches.isEmpty =>
+        None
       case batches =>
         val transformedBatches = batches.map( batchJsValue =>
           transformToBatchInfo(batchJsValue)

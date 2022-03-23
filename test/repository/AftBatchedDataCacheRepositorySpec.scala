@@ -16,29 +16,29 @@
 
 package repository
 
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.bson.BSONDocument
-import reactivemongo.play.json.ImplicitBSONHandlers._
-import services.BatchService
-import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 import com.github.simplyscala.MongoEmbedDatabase
 import config.AppConfig
 import models.BatchedRepositorySampleData._
 import models.{ChargeAndMember, ChargeType, LockDetail}
-import org.mockito.{ArgumentCaptor, MockitoSugar, ArgumentMatchers}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import org.mockito.ArgumentMatchers._
+import org.mockito.{ArgumentCaptor, ArgumentMatchers, MockitoSugar}
+import org.scalatest.concurrent.ScalaFutures.whenReady
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import play.api.libs.json.{JsObject, JsArray, Json, JsValue}
-import uk.gov.hmrc.mongo.MongoConnector
-import org.scalatest.concurrent.ScalaFutures.whenReady
-import org.mockito.ArgumentMatchers._
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.bson.BSONDocument
+import reactivemongo.play.json.ImplicitBSONHandlers._
 import repository.model.SessionData
-import services.BatchService.BatchType.{ChargeE, ChargeD, ChargeC, ChargeG}
+import services.BatchService
+import services.BatchService.BatchType.{ChargeC, ChargeD, ChargeE, ChargeG}
+import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
+import uk.gov.hmrc.mongo.MongoConnector
 
-import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class AftBatchedDataCacheRepositorySpec
   extends AnyWordSpec with MockitoSugar with Matchers with MongoEmbedDatabase with BeforeAndAfter with
@@ -287,24 +287,30 @@ class AftBatchedDataCacheRepositorySpec
       }
     }
 
-//    "lockedBy" must {
-//      "return None if not locked by another user" in {
-//        mongoCollectionDrop()
-//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
-//      }
-//
-//      "return the lock info if locked by another user" in {
-//        mongoCollectionDrop()
-//        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
-//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe lockDetail
-//      }
-//
-//      "return None if locked by current user" in {
-//        mongoCollectionDrop()
-//        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
-//      }
-//    }
+    "lockedBy" must {
+      "return None if not locked by another user" in {
+        mongoCollectionDrop()
+        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
+      }
+
+      "return the lock info if same scheme is locked by another user" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
+        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe lockDetail
+      }
+
+      "return None info if different scheme is locked by another user" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
+        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, anotherSchemeId), Duration.Inf) mustBe None
+      }
+
+      "return None if locked by current user" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
+        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
+      }
+    }
 
     "remove" must {
       "remove all documents for scheme if present" in {
@@ -341,7 +347,11 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
       "batchType" -> BatchType.SessionData.toString, "batchNo" -> 1)
 
     val modifier = BSONDocument
-      .apply("$set" -> Json.obj("id" -> id, "id" -> sessionId, "data" -> Json.toJson(sd), "batchSize" -> batchSize))
+      .apply("$set" -> Json.obj(
+        "id" -> id,
+        "data" -> Json.toJson(sd),
+        "batchSize" -> batchSize)
+      )
 
     Await.result(aftBatchedDataCacheRepository.collection.update.one(selector, modifier, upsert = true), Duration.Inf)
       .ok
@@ -354,6 +364,7 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
   private val accessMode = "dummy"
   private val areSubmittedVersionsAvailable = false
   private val id = "S24000000152020-04-01"
+  private val anotherSchemeId = "S24000000162020-04-01"
   private val sessionId = "session-1"
   private val anotherSessionId = "session-2"
   private val uniqueAftId = id + sessionId
