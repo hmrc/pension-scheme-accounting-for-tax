@@ -32,7 +32,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import utils.InvalidPayloadHandlerImpl
+import utils.InvalidPayloadHandler
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -47,7 +47,7 @@ class AFTController @Inject()(
                                aftService: AFTService,
                                featureToggleService: FeatureToggleService,
                                aftOverviewCacheRepository: AftOverviewCacheRepository,
-                               invalidPayloadHandlerImpl: InvalidPayloadHandlerImpl
+                               invalidPayloadHandler: InvalidPayloadHandler
                              )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -64,13 +64,10 @@ class AFTController @Inject()(
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
-              invalidPayloadHandlerImpl.getFailures("/resources/schemas/api-1538-file-aft-return-1.5.0.json")(dataToBeSendToETMP) match {
-                case failures if failures.nonEmpty =>
-                  val mapped = failures.map { f =>
-                    s"Message: ${f.message}, FailureType:${f.failureType}, Value:${f.value.getOrElse("")}"
-                  }
-                  throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${mapped.mkString}")
-                case _ =>
+              invalidPayloadHandler.validateJson("/resources/schemas/api-1538-file-aft-return-1.5.0.json", dataToBeSendToETMP) match {
+                case Some(failures)=>
+                  throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n$failures")
+                case None =>
                   logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
                   aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     Ok(response.body)

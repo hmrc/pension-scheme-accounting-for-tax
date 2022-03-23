@@ -16,114 +16,34 @@
 
 package utils
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.inject.ImplementedBy
-import com.networknt.schema.{JsonSchema, JsonSchemaFactory, ValidationMessage}
+import com.github.fge.jackson.JsonLoader
+import com.github.fge.jsonschema.main.JsonSchemaFactory
+
 import javax.inject.Inject
-import play.api.Logger
+import play.api.{Environment, Logger}
 import play.api.libs.json._
 
 import scala.collection.JavaConverters._
 
-@ImplementedBy(classOf[InvalidPayloadHandlerImpl])
-trait InvalidPayloadHandler {
 
-  def getFailures(schemaFileName: String)(json: JsValue): Set[ValidationFailure]
+class InvalidPayloadHandler @Inject()(environment: Environment) {
 
-  def logFailures(schemaFileName: String, args: String*)(json: JsValue): Unit
-
-}
-
-class InvalidPayloadHandlerImpl @Inject() extends InvalidPayloadHandler {
-
-  private val logger = Logger(classOf[InvalidPayloadHandler])
-
-  private[utils] def loadSchema(schemaFileName: String): JsonSchema = {
-    val schemaUrl = getClass.getResource(schemaFileName)
-    val factory = JsonSchemaFactory.getInstance()
-    factory.getSchema(schemaUrl)
-  }
-
-  override def getFailures(schemaFileName: String)(json: JsValue): Set[ValidationFailure] = {
-println( "\n>>>>>>>schemaFileName:" + schemaFileName)
-println( "\n>>>>>>>json:" + json)
-    val schema = loadSchema(schemaFileName)
-    val x = getFailures(schema, json)
-    println("\nSchema=" + schema)
-    println("\nFailures:" + x)
-x
-  }
-
-  private[utils] def getFailures(schema: JsonSchema, json: JsValue): Set[ValidationFailure] = {
-
-    val mapper = new ObjectMapper()
-    val jsonNode = mapper.readTree(json.toString())
-println("\n>>>U:" + jsonNode)
-    val set = schema.validate(jsonNode).asScala.toSet
-
-    set.map {
-      message =>
-        println("\n>>MSG:" + message)
-        val value = InvalidPayloadHandlerImpl.valueFromJson(message, json)
-        ValidationFailure(message.getType, message.getMessage, value)
-    }
-
-  }
-
-  override def logFailures(schemaFileName: String, args: String*)(json: JsValue): Unit = {
-
-    val schema = loadSchema(schemaFileName)
-    logFailures(schema, json, args)
-
-  }
-
-  private[utils] def logFailures(schema: JsonSchema, json: JsValue, args: Seq[String]): Unit = {
-
-    val failures = getFailures(schema, json)
-    val msg = new StringBuilder()
-
-    msg.append(s"Invalid Payload JSON Failures${if (args.nonEmpty) s" for url: ${args.head}"}\n")
-    msg.append(s"Failures: ${failures.size}\n")
-    msg.append("\n")
-
-    failures.foreach {
-      failure =>
-        msg.append(s"${failure.message}\n")
-        msg.append(s"Type: ${failure.failureType}\n")
-        msg.append(s"Value: ${failure.value.getOrElse("[none]")}\n")
-        msg.append("\n")
-    }
-
-    logger.warn(msg.toString())
-
-  }
-}
-
-object InvalidPayloadHandlerImpl {
-  private[utils] def valueFromJson(message: ValidationMessage, json: JsValue): Option[String] = {
-    message.getType match {
-      case "enum" | "format" | "maximum" | "maxLength" | "minimum" | "minLength" | "pattern" | "type" =>
-        (json \ message.getPath).toEither match {
-          case Right(jsValue) =>
-            jsValue match {
-              case JsBoolean(bool) => Some(bool.toString)
-              case JsNull => Some("null")
-              case JsNumber(n) => Some(depersonalise(n.toString))
-              case JsString(s) => Some(depersonalise(s))
-              case _ => None
-            }
-          case Left(_) => None
-        }
-      case _ => None
+  def validateJson(jsonSchemaPath: String, data: JsValue): Option[String] = {
+    val jsonSchemaFile = environment.getExistingFile(jsonSchemaPath)
+    jsonSchemaFile match {
+      case Some(schemaFile) =>
+        val factory = JsonSchemaFactory.byDefault.getJsonSchema(schemaFile.toURI.toString)
+        val json = JsonLoader.fromString(Json.stringify(data))
+        val errors = factory.validate(json).iterator().asScala
+        if(errors.isEmpty) None else Some(errors.mkString(","))
+      case _ =>
+        throw new RuntimeException("No Schema found")
     }
   }
 
 
-  private def depersonalise(value: String): String = {
-    value
-      .replaceAll("[a-zA-Z]", "x")
-      .replaceAll("[0-9]", "9")
-  }
 }
+
+
 
 case class ValidationFailure(failureType: String, message: String, value: Option[String])
