@@ -311,7 +311,7 @@ class AftBatchedDataCacheRepositorySpec
         Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe lockDetail
       }
 
-      "return None info if different scheme is locked by another user" in {
+      "return None if different scheme is locked by another user" in {
         mongoCollectionDrop()
         mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
         Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, anotherSchemeId), Duration.Inf) mustBe None
