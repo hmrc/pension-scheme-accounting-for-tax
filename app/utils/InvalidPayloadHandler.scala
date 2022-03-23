@@ -45,21 +45,25 @@ class InvalidPayloadHandlerImpl @Inject() extends InvalidPayloadHandler {
   }
 
   override def getFailures(schemaFileName: String)(json: JsValue): Set[ValidationFailure] = {
-
+println( "\n>>>>>>>schemaFileName:" + schemaFileName)
+println( "\n>>>>>>>json:" + json)
     val schema = loadSchema(schemaFileName)
-    getFailures(schema, json)
-
+    val x = getFailures(schema, json)
+    println("\nSchema=" + schema)
+    println("\nFailures:" + x)
+x
   }
 
   private[utils] def getFailures(schema: JsonSchema, json: JsValue): Set[ValidationFailure] = {
 
     val mapper = new ObjectMapper()
     val jsonNode = mapper.readTree(json.toString())
-
+println("\n>>>U:" + jsonNode)
     val set = schema.validate(jsonNode).asScala.toSet
 
     set.map {
       message =>
+        println("\n>>MSG:" + message)
         val value = InvalidPayloadHandlerImpl.valueFromJson(message, json)
         ValidationFailure(message.getType, message.getMessage, value)
     }
