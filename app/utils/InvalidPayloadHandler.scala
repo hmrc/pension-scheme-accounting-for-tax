@@ -39,7 +39,6 @@ class InvalidPayloadHandler @Inject()(environment: Environment) {
         val errors = factory.validate(json).asScala.toSet.map{ x: ProcessingMessage =>
           x.getMessage
         }
-        println( "\n<>>>>" + errors.isEmpty)
         if(errors.isEmpty) None else Some(errors.mkString(","))
       case _ =>
         throw new RuntimeException("No Schema found")

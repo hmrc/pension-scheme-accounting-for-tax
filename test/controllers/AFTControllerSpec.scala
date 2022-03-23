@@ -36,7 +36,7 @@ import repository.{AftDataCacheRepository, AftOverviewCacheRepository}
 import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
-import utils.{InvalidPayloadHandler, JsonFileReader, ValidationFailure}
+import utils.{InvalidPayloadHandler, JsonFileReader}
 
 import java.time.LocalDate
 import scala.concurrent.Future
@@ -120,9 +120,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map { ex =>
-
-
-        ex.exMessage mustBe ""
+        ex.exMessage mustBe "Invalid AFT file AFT return:-\nsome failures"
       }
     }
 

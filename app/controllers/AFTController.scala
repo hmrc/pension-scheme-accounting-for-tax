@@ -55,6 +55,7 @@ class AFTController @Inject()(
     with AuthorisedFunctions {
 
   private val logger = Logger(classOf[AFTController])
+  val basePath = System.getProperty("user.dir")
 
   //scalastyle:off cyclomatic.complexity
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
@@ -65,13 +66,11 @@ class AFTController @Inject()(
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
               invalidPayloadHandler.validateJson(
-                "/home/digital317593/Desktop/hmrc/pods/pension-scheme-accounting-for-tax/conf/resources/schemas/api-1538-file-aft-return-1.5.0.json",
+                s"$basePath/conf/resources/schemas/api-1538-file-aft-return-1.5.0.json",
                 dataToBeSendToETMP) match {
                 case Some(failures)=>
-                  println("\n\n>>>" + failures)
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n$failures")
                 case None =>
-                  println( "\nBBdsdsdsdsdsB")
                   logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
                   aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     Ok(response.body)
