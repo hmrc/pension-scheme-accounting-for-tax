@@ -64,10 +64,14 @@ class AFTController @Inject()(
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
-              invalidPayloadHandler.validateJson("/resources/schemas/api-1538-file-aft-return-1.5.0.json", dataToBeSendToETMP) match {
+              invalidPayloadHandler.validateJson(
+                "/home/digital317593/Desktop/hmrc/pods/pension-scheme-accounting-for-tax/conf/resources/schemas/api-1538-file-aft-return-1.5.0.json",
+                dataToBeSendToETMP) match {
                 case Some(failures)=>
+                  println("\n\n>>>" + failures)
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n$failures")
                 case None =>
+                  println( "\nBBdsdsdsdsdsB")
                   logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
                   aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     Ok(response.body)
@@ -257,4 +261,4 @@ class AFTController @Inject()(
   }
 }
 
-case class AFTValidationFailureException(exMessage: String) extends Exception
+case class AFTValidationFailureException(exMessage: String) extends Exception(exMessage)

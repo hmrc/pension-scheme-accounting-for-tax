@@ -17,24 +17,29 @@
 package utils
 
 import com.github.fge.jackson.JsonLoader
+import com.github.fge.jsonschema.core.report.ProcessingMessage
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 
 import javax.inject.Inject
 import play.api.{Environment, Logger}
 import play.api.libs.json._
 
+import java.io.File
 import scala.collection.JavaConverters._
 
 
 class InvalidPayloadHandler @Inject()(environment: Environment) {
 
   def validateJson(jsonSchemaPath: String, data: JsValue): Option[String] = {
-    val jsonSchemaFile = environment.getExistingFile(jsonSchemaPath)
+    val jsonSchemaFile = Some(new File(jsonSchemaPath))
     jsonSchemaFile match {
       case Some(schemaFile) =>
         val factory = JsonSchemaFactory.byDefault.getJsonSchema(schemaFile.toURI.toString)
         val json = JsonLoader.fromString(Json.stringify(data))
-        val errors = factory.validate(json).iterator().asScala
+        val errors = factory.validate(json).asScala.toSet.map{ x: ProcessingMessage =>
+          x.getMessage
+        }
+        println( "\n<>>>>" + errors.isEmpty)
         if(errors.isEmpty) None else Some(errors.mkString(","))
       case _ =>
         throw new RuntimeException("No Schema found")
