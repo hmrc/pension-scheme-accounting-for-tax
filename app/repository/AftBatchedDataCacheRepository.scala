@@ -67,10 +67,11 @@ class AftBatchedDataCacheRepository @Inject()(
         ("uniqueAftId", IndexType.Ascending),
         ("batchType", IndexType.Ascending),
         ("batchNo", IndexType.Ascending)
-      ), Some("unique-aft-batch"), unique = true, background = true),
-    Index(Seq(("batchType", IndexType.Ascending), ("batchNo", IndexType.Ascending)), Some("aft-batch"), unique = false, background = true),
-    Index(Seq(("uniqueAftId", IndexType.Ascending)), Some("unique_Aft_Id"), unique = false, background = true),
-    Index(Seq(("id", IndexType.Ascending)), Some("srn_startDt_key"), background = true),
+      ), Some("unique-aft-batch"), unique = true, background = false),
+    Index(Seq(("id", IndexType.Ascending), ("batchType", IndexType.Ascending), ("batchNo", IndexType.Ascending)), background = false),
+    Index(Seq(("batchType", IndexType.Ascending), ("batchNo", IndexType.Ascending)), Some("aft-batch"), unique = false, background = false),
+    Index(Seq(("uniqueAftId", IndexType.Ascending)), Some("unique_Aft_Id"), unique = false, background = false),
+    Index(Seq(("id", IndexType.Ascending)), Some("srn_startDt_key"), background = false),
     Index(Seq(("expireAt", IndexType.Ascending)), Some("dataExpiry"), unique = false, options = BSONDocument("expireAfterSeconds" -> 0))
   )
 
