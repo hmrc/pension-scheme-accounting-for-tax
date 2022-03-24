@@ -23,8 +23,9 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 
-class InvalidPayloadHandlerSpec extends AnyWordSpec with MockitoSugar with Matchers with BeforeAndAfter {
+import java.net.URL
 
+class InvalidPayloadHandlerSpec extends AnyWordSpec with MockitoSugar with Matchers with BeforeAndAfter {
 
   private val app = new GuiceApplicationBuilder()
     .overrides(
@@ -35,7 +36,8 @@ class InvalidPayloadHandlerSpec extends AnyWordSpec with MockitoSugar with Match
 
   "validateJson" must {
     "work for valid file" in {
-      val schemaPath =  "/home/digital317593/Desktop/hmrc/pods/pension-scheme-accounting-for-tax/conf/resources/schemas/api-1538-file-aft-return-1.5.0.json"
+      val schemaUrl: URL = getClass.getResource( "/resources/schemas/api-1538-file-aft-return-1.5.0.json")
+      val schemaPath = schemaUrl.getPath
       val json = Json.parse(
         """
           |{
@@ -46,7 +48,7 @@ class InvalidPayloadHandlerSpec extends AnyWordSpec with MockitoSugar with Match
           |   },
           |   "chargeDetails":{
           |      "chargeTypeFDetails":{
-          |         "totalAmount":1,
+          |         "totalAmount":111,
           |         "dateRegiWithdrawn":"2020-04-01"
           |      }
           |   }

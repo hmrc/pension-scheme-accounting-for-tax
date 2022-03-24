@@ -65,10 +65,6 @@ class AFTController @Inject()(
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
-
-
-              println( "\n>>>>ETMP:-" + dataToBeSendToETMP)
-
               invalidPayloadHandler.validateJson(
                 s"$basePath/conf/resources/schemas/api-1538-file-aft-return-1.5.0.json",
                 dataToBeSendToETMP) match {

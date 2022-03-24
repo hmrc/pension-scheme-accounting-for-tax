@@ -51,7 +51,6 @@ class AFTConnector @Inject()(
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
     logger.warn("File AFT return (IF) called - URL:" + fileAFTReturnURL)
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
-
     if (aftService.isChargeZeroedOut(data)) {
       http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) map {
         response =>
