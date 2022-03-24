@@ -57,6 +57,8 @@ class InvalidPayloadHandlerSpec extends AnyWordSpec with MockitoSugar with Match
       val result = invalidPayloadHandler.validateJson(schemaPath, json)
       result mustBe None
     }
+
+
   }
 
 }
