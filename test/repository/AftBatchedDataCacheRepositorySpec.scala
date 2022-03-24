@@ -16,29 +16,29 @@
 
 package repository
 
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.bson.BSONDocument
-import reactivemongo.play.json.ImplicitBSONHandlers._
-import services.BatchService
-import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 import com.github.simplyscala.MongoEmbedDatabase
 import config.AppConfig
 import models.BatchedRepositorySampleData._
 import models.{ChargeAndMember, ChargeType, LockDetail}
-import org.mockito.{ArgumentCaptor, MockitoSugar, ArgumentMatchers}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import org.mockito.ArgumentMatchers._
+import org.mockito.{ArgumentCaptor, ArgumentMatchers, MockitoSugar}
+import org.scalatest.concurrent.ScalaFutures.whenReady
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import play.api.libs.json.{JsObject, JsArray, Json, JsValue}
-import uk.gov.hmrc.mongo.MongoConnector
-import org.scalatest.concurrent.ScalaFutures.whenReady
-import org.mockito.ArgumentMatchers._
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.bson.BSONDocument
+import reactivemongo.play.json.ImplicitBSONHandlers._
 import repository.model.SessionData
-import services.BatchService.BatchType.{ChargeE, ChargeD, ChargeC, ChargeG}
+import services.BatchService
+import services.BatchService.BatchType.{ChargeC, ChargeD, ChargeE, ChargeG}
+import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
+import uk.gov.hmrc.mongo.MongoConnector
 
-import scala.concurrent.{Future, Await}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class AftBatchedDataCacheRepositorySpec
   extends AnyWordSpec with MockitoSugar with Matchers with MongoEmbedDatabase with BeforeAndAfter with
@@ -75,7 +75,9 @@ class AftBatchedDataCacheRepositorySpec
           val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
             .filter(filterOnBatchTypeAndNo(batchType = BatchType.Other, batchNo = 1))
           actualOtherBatch.nonEmpty mustBe true
-          actualOtherBatch.foreach { _.jsValue mustBe dummyJson}
+          actualOtherBatch.foreach {
+            _.jsValue mustBe dummyJson
+          }
         }
       }
 
@@ -99,7 +101,9 @@ class AftBatchedDataCacheRepositorySpec
           val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
             .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 2))
           actualOtherBatch.nonEmpty mustBe true
-          actualOtherBatch.foreach { _.jsValue.as[JsArray] mustBe amendedPayload}
+          actualOtherBatch.foreach {
+            _.jsValue.as[JsArray] mustBe amendedPayload
+          }
         }
       }
 
@@ -122,7 +126,9 @@ class AftBatchedDataCacheRepositorySpec
           val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
             .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 3))
           actualOtherBatch.nonEmpty mustBe true
-          actualOtherBatch.foreach { _.jsValue.as[JsArray] mustBe amendedPayload}
+          actualOtherBatch.foreach {
+            _.jsValue.as[JsArray] mustBe amendedPayload
+          }
         }
       }
 
@@ -155,7 +161,9 @@ class AftBatchedDataCacheRepositorySpec
         Await.result(aftBatchedDataCacheRepository
           .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), payloadOther),
           Duration.Inf) mustBe false
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) { _.isEmpty mustBe true}
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {
+          _.isEmpty mustBe true
+        }
       }
     }
 
@@ -254,7 +262,9 @@ class AftBatchedDataCacheRepositorySpec
         mongoCollectionDrop()
         mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
         Await.result(aftBatchedDataCacheRepository.get(id, sessionId), Duration.Inf) mustBe None
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {_.isEmpty mustBe true}
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {
+          _.isEmpty mustBe true
+        }
       }
 
       "return None if there are no batches but there is a session data batch" in {
@@ -283,34 +293,44 @@ class AftBatchedDataCacheRepositorySpec
         mongoCollectionDrop()
         mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
         Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe None
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {_.isEmpty mustBe true}
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {
+          _.isEmpty mustBe true
+        }
       }
     }
 
-//    "lockedBy" must {
-//      "return None if not locked by another user" in {
-//        mongoCollectionDrop()
-//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
-//      }
-//
-//      "return the lock info if locked by another user" in {
-//        mongoCollectionDrop()
-//        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
-//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe lockDetail
-//      }
-//
-//      "return None if locked by current user" in {
-//        mongoCollectionDrop()
-//        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
-//      }
-//    }
+    "lockedBy" must {
+      "return None if not locked by another user" in {
+        mongoCollectionDrop()
+        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
+      }
+
+      "return the lock info if same scheme is locked by another user" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
+        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe lockDetail
+      }
+
+      "return None if different scheme is locked by another user" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
+        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, anotherSchemeId), Duration.Inf) mustBe None
+      }
+
+      "return None if locked by current user" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
+        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
+      }
+    }
 
     "remove" must {
       "remove all documents for scheme if present" in {
         mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
         Await.result(aftBatchedDataCacheRepository.remove(id, sessionId), Duration.Inf) mustBe true
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {_.isEmpty mustBe true}
+        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {
+          _.isEmpty mustBe true
+        }
       }
     }
   }
@@ -336,12 +356,16 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     }, Duration.Inf)
   }
 
-  private def mongoCollectionInsertSessionDataBatch(id: String, sessionId: String, sd: SessionData, batchSize:Int = 2): Boolean = {
+  private def mongoCollectionInsertSessionDataBatch(id: String, sessionId: String, sd: SessionData, batchSize: Int = 2): Boolean = {
     val selector: BSONDocument = BSONDocument("uniqueAftId" -> (id + sessionId),
       "batchType" -> BatchType.SessionData.toString, "batchNo" -> 1)
 
     val modifier = BSONDocument
-      .apply("$set" -> Json.obj("id" -> id, "id" -> sessionId, "data" -> Json.toJson(sd), "batchSize" -> batchSize))
+      .apply("$set" -> Json.obj(
+        "id" -> id,
+        "data" -> Json.toJson(sd),
+        "batchSize" -> batchSize)
+      )
 
     Await.result(aftBatchedDataCacheRepository.collection.update.one(selector, modifier, upsert = true), Duration.Inf)
       .ok
@@ -354,6 +378,7 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
   private val accessMode = "dummy"
   private val areSubmittedVersionsAvailable = false
   private val id = "S24000000152020-04-01"
+  private val anotherSchemeId = "S24000000162020-04-01"
   private val sessionId = "session-1"
   private val anotherSessionId = "session-2"
   private val uniqueAftId = id + sessionId
@@ -370,12 +395,12 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     sessionId = sessionId, lockDetail = lockDetail, version = version, accessMode = accessMode,
     areSubmittedVersionsAvailable = false)
 
-  private def sessionDataBatch(sessionId: String, lockDetail: Option[LockDetail] = lockDetail):Set[BatchInfo] = {
+  private def sessionDataBatch(sessionId: String, lockDetail: Option[LockDetail] = lockDetail): Set[BatchInfo] = {
     val json = Json.toJson(sessionData(sessionId, lockDetail))
     Set(BatchInfo(BatchType.SessionData, 1, json))
   }
 
-  private def dbDocumentsAsSeqBatchInfo(s:Seq[JsValue]):Set[BatchInfo] = {
+  private def dbDocumentsAsSeqBatchInfo(s: Seq[JsValue]): Set[BatchInfo] = {
     s.map { jsValue =>
       val batchType = BatchType.getBatchType((jsValue \ "batchType").as[String])
         .getOrElse(throw new RuntimeException("Unknown batch type"))
@@ -392,7 +417,7 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     }.toSet
   }
 
-  private def filterOnBatchTypeAndNo(batchType: BatchType, batchNo:Int): BatchInfo => Boolean =
+  private def filterOnBatchTypeAndNo(batchType: BatchType, batchNo: Int): BatchInfo => Boolean =
     bi => bi.batchType == batchType && bi.batchNo == batchNo
 
   private val setOfFourChargeCMembersInTwoBatches: Set[BatchInfo] = {
