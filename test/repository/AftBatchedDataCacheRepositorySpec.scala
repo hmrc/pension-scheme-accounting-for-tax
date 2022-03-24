@@ -299,30 +299,30 @@ class AftBatchedDataCacheRepositorySpec
       }
     }
 
-    "lockedBy" must {
-      "return None if not locked by another user" in {
-        mongoCollectionDrop()
-        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
-      }
-
-      "return the lock info if same scheme is locked by another user" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
-        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe lockDetail
-      }
-
-      "return None if different scheme is locked by another user" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
-        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, anotherSchemeId), Duration.Inf) mustBe None
-      }
-
-      "return None if locked by current user" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
-      }
-    }
+//    "lockedBy" must {
+//      "return None if not locked by another user" in {
+//        mongoCollectionDrop()
+//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
+//      }
+//
+//      "return the lock info if same scheme is locked by another user" in {
+//        mongoCollectionDrop()
+//        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
+//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe lockDetail
+//      }
+//
+//      "return None if different scheme is locked by another user" in {
+//        mongoCollectionDrop()
+//        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
+//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, anotherSchemeId), Duration.Inf) mustBe None
+//      }
+//
+//      "return None if locked by current user" in {
+//        mongoCollectionDrop()
+//        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
+//        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
+//      }
+//    }
 
     "remove" must {
       "remove all documents for scheme if present" in {
