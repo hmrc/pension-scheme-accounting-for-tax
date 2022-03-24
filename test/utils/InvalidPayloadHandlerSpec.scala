@@ -35,7 +35,7 @@ class InvalidPayloadHandlerSpec extends AnyWordSpec with MockitoSugar with Match
 
   "validateJson" must {
     "work for valid file" in {
-      val schemaPath =  "/home/digital317593/Desktop/hmrc/pods/pension-scheme-accounting-for-tax/test/resources/schemas/api-1538-file-aft-return-1.5.0.json"
+      val schemaPath =  "/home/digital317593/Desktop/hmrc/pods/pension-scheme-accounting-for-tax/conf/resources/schemas/api-1538-file-aft-return-1.5.0.json"
       val json = Json.parse(
         """
           |{
