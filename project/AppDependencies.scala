@@ -10,6 +10,7 @@ object AppDependencies {
     "uk.gov.hmrc"             %% "bootstrap-backend-play-28"  % "5.14.0",
     "uk.gov.hmrc"             %% "domain"                     % "6.2.0-play-28",
     "com.github.java-json-tools" %% "json-schema-validator" % "2.2.14",
+    "com.eclipsesource"  %% "play-json-schema-validator" % "0.9.5",
     ehcache
   )
 

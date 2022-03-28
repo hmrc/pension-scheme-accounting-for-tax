@@ -36,7 +36,7 @@ import repository.{AftDataCacheRepository, AftOverviewCacheRepository}
 import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
-import utils.{InvalidPayloadHandler, JsonFileReader}
+import utils.{JSONPayloadSchemaValidator, JsonFileReader}
 
 import java.time.LocalDate
 import scala.concurrent.Future
@@ -54,7 +54,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   private val mockDataCacheRepository = mock[AftDataCacheRepository]
   private val mockFeatureToggleService = mock[FeatureToggleService]
   private val mockAftOverviewCacheRepository = mock[AftOverviewCacheRepository]
- private val mockInvalidPayloadHandlerImpl = mock[InvalidPayloadHandler]
+ private val mockJSONPayloadSchemaValidator = mock[JSONPayloadSchemaValidator]
 
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
@@ -71,7 +71,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       bind[FeatureToggleService].toInstance(mockFeatureToggleService),
       bind[AftOverviewCacheRepository].toInstance(mockAftOverviewCacheRepository),
       bind[AftDataCacheRepository].toInstance(mockDataCacheRepository),
-      bind[InvalidPayloadHandler].toInstance(mockInvalidPayloadHandlerImpl)
+      bind[JSONPayloadSchemaValidator].toInstance(mockJSONPayloadSchemaValidator)
     )
 
   val application: Application = new GuiceApplicationBuilder()
@@ -87,9 +87,9 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   }
 
   before {
-    reset(mockDesConnector, mockAftService, authConnector, mockInvalidPayloadHandlerImpl)
+    reset(mockDesConnector, mockAftService, authConnector, mockJSONPayloadSchemaValidator)
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
-    when(mockInvalidPayloadHandlerImpl.validateJson(any(), any())).thenReturn(None)
+    when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any())).thenReturn(JsSuccess(Json.parse("{}")))
   }
 
   "fileReturn" must {
@@ -110,7 +110,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       val controller = application.injector.instanceOf[AFTController]
 
       val failures = Some("some failures")
-      when(mockInvalidPayloadHandlerImpl.validateJson(any(),any())).thenReturn(failures)
+      //{"schemaPath":"#","keyword":"oneOf","instancePath":"","value":{"aftDetails":{"aftStatus":"Compiled","quarterEndDate":"2020-06-30","quarterStartDate":"2020-10-30"},"chargeDetails":{"chargeTypeFDetails":{"totalAmount":"XXXXXXXXXXXX","dateRegiWithdrawn":"2020-04-01"}}},"errors":{"/oneOf/0":[{"schemaPath":"#/oneOf/0/definitions/totalAmountType","errors":{},"keyword":"type","msgs":["Wrong type. Expected number, was string."],"value":"XXXXXXXXXXXX","instancePath":"/chargeDetails/chargeTypeFDetails/totalAmount"}],"/oneOf/1":[{"schemaPath":"#/oneOf/1","errors":{},"keyword":"required","msgs":["Property aftDeclarationDetails missing."],"value":{"aftDetails":{"aftStatus":"Compiled","quarterEndDate":"2020-06-30","quarterStartDate":"2020-10-30"},"chargeDetails":{"chargeTypeFDetails":{"totalAmount":"XXXXXXXXXXXX","dateRegiWithdrawn":"2020-04-01"}}},"instancePath":""},{"schemaPath":"#/oneOf/1/definitions/totalAmountType","errors":{},"keyword":"type","msgs":["Wrong type. Expected number, was string."],"value":"XXXXXXXXXXXX","instancePath":"/chargeDetails/chargeTypeFDetails/totalAmount"},{"schemaPath":"#/oneOf/1/properties/aftDetails/properties/aftStatus","errors":{"enum":["Submitted"]},"keyword":"enum","msgs":["Instance is invalid enum value."],"value":"Compiled","instancePath":"/aftDetails/aftStatus"}]}}
+      when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(),any())).thenReturn(JsError(JsonValidationError(Seq("test"), "{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}],\"/oneOf/1\":[{\"schemaPath\":\"#/oneOf/1\",\"errors\":{},\"keyword\":\"required\",\"msgs\":[\"Property aftDeclarationDetails missing.\"],\"instancePath\":\"\"},{\"schemaPath\":\"#/oneOf/1/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"},{\"schemaPath\":\"#/oneOf/1/properties/aftDetails/properties/aftStatus\",\"errors\":{\"enum\":[\"Submitted\"]},\"keyword\":\"enum\",\"msgs\":[\"Instance is invalid enum value.\"],\"value\":\"Compiled\",\"instancePath\":\"/aftDetails/aftStatus\"}]}}")))
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaRequestJson.toString)))
@@ -120,7 +121,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map { ex =>
-        ex.exMessage mustBe "Invalid AFT file AFT return:-\nsome failures"
+        ex.exMessage mustBe "Invalid AFT file AFT return:-\nSchemaErrorDetails(Some(#/oneOf/0/definitions/totalAmountType),Some(type),[\"Wrong type. Expected number, was string.\"])"
       }
     }
 
