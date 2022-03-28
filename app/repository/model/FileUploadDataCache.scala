@@ -47,7 +47,7 @@ object FileUploadDataCache {
     status,
     LocalDateTime.parse(created), LocalDateTime.parse(lastUpdated),
     LocalDateTime.parse(expireAt)
-  ))   ///  reference & file size & uploadtime
+  ))
   implicit val writes : Writes[FileUploadDataCache] =(
     (JsPath \  'uploadId).write[String] and
       (JsPath \ 'reference).write[String] and
