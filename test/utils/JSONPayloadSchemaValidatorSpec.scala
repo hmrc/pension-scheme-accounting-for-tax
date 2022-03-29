@@ -36,7 +36,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
   private lazy val jsonPayloadSchemaValidator: JSONPayloadSchemaValidator = app.injector.instanceOf[JSONPayloadSchemaValidator]
   "validateJson" must {
     "Validate payload" in {
-      val schemaUrl: URL = getClass.getResource(SchemaPath.schemaPath)
+      val schemaUrl: URL = getClass.getResource(ExtractErrorDetails.schemaPath)
       val schemaPath = schemaUrl.getPath
       val json = Json.parse(
         """
@@ -59,7 +59,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
     }
 
     "Validate invalid payload with single error" in {
-      val schemaUrl: URL = getClass.getResource(SchemaPath.schemaPath)
+      val schemaUrl: URL = getClass.getResource(ExtractErrorDetails.schemaPath)
       val schemaPath = schemaUrl.getPath
       val json = Json.parse(
         """
@@ -82,14 +82,14 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
 
       result match {
         case JsError(error) =>
-          val expectedMessage = "SchemaErrorDetails(Some(#/oneOf/0/definitions/totalAmountType),Some(type),[\"Wrong type. Expected number, was string.\"])"
-          SchemaPath.getErrors(error) mustBe expectedMessage
+          val expectedMessage = "ExtractErrorDetails(Some(#/oneOf/0/definitions/totalAmountType),[\"Wrong type. Expected number, was string.\"])"
+          ExtractErrorDetails.getErrors(error) mustBe expectedMessage
         case JsSuccess(s, x) =>
       }
     }
 
     "Validate invalid payload with multiple errors" in {
-      val schemaUrl: URL = getClass.getResource(SchemaPath.schemaPath)
+      val schemaUrl: URL = getClass.getResource(ExtractErrorDetails.schemaPath)
       val schemaPath = schemaUrl.getPath
       val json = Json.parse(
         """
@@ -112,13 +112,14 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
 
       result match {
         case JsError(error) =>
-          val expectedMessage = "SchemaErrorDetails(Some(#/oneOf/0/definitions/totalAmountType),Some(type),[\"Wrong type. Expected number, was string.\"]) " +
-            "SchemaErrorDetails(Some(#/oneOf/0/definitions/dateType),Some(pattern)," +
+          val expectedMessage = "ExtractErrorDetails(Some(#/oneOf/0/definitions/totalAmountType)," +
+            "[\"Wrong type. Expected number, was string.\"]) " +
+            "ExtractErrorDetails(Some(#/oneOf/0/definitions/dateType)," +
             "[\"'XXXXXXXXXXXX' does not match pattern " +
             "'^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-]" +
             "(0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|" +
             "(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$'.\"])"
-          SchemaPath.getErrors(error) mustBe expectedMessage
+          ExtractErrorDetails.getErrors(error) mustBe expectedMessage
         case JsSuccess(s, x) =>
       }
     }

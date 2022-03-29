@@ -24,36 +24,31 @@ import com.eclipsesource.schema.drafts.Version7._
 
 import scala.collection.Seq
 
-case class SchemaErrorDetails(schemaPath: Option[String], keyword: Option[String], msgs: JsArray)
+case class ExtractErrorDetails(schemaPath: Option[String], msgs: JsArray)
 
-case class SchemaErrorDetails2(schemaPath: String, keyword:String, instancePath: String, errors: JsObject)
+case class SchemaErrorPayload(errors: JsObject)
 
-object SchemaErrorDetails {
-
-  implicit val reads = Json.reads[SchemaErrorDetails]
-}
-
-object SchemaErrorDetails2 {
-
-  implicit val reads = Json.reads[SchemaErrorDetails2]
-}
-
-object SchemaPath {
+object ExtractErrorDetails {
   val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
+  val key = "/oneOf/0"
 
   def getErrors(error: Seq[(JsPath, Seq[JsonValidationError])]): String = {
+    implicit val readSchemaErrorPayload = Json.reads[SchemaErrorPayload]
+    implicit val readExtractErrorDetails = Json.reads[ExtractErrorDetails]
+
     val message = new StringBuilder("")
     error.flatMap(x => x._2).foldLeft(message){
       (a, b) =>
         val errorAsJson: JsValue = Json.parse( b.args.mkString )
-        val testError = errorAsJson.as[SchemaErrorDetails2]
-        val extract = testError.errors.value("/oneOf/0").result.asInstanceOf[JsDefined].value
-        val errorsDetails = extract.asInstanceOf[JsArray].value.map(element => Json.parse(element.toString()).as[SchemaErrorDetails])
+        val errorPayload = errorAsJson.as[SchemaErrorPayload].errors.value(key).result.asInstanceOf[JsDefined].value
+        val errorsDetails = errorPayload.asInstanceOf[JsArray].value.map(element => Json.parse(element.toString()).as[ExtractErrorDetails])
         a.append(errorsDetails.mkString(" "))
     }
     message.toString()
   }
+
 }
+
 
 class JSONPayloadSchemaValidator {
 

@@ -109,9 +109,12 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockFeatureToggleService.get(ArgumentMatchers.eq(MigrationTransferAft))).thenReturn(Future.successful(Enabled(MigrationTransferAft)))
       val controller = application.injector.instanceOf[AFTController]
 
-      val failures = Some("some failures")
-      //{"schemaPath":"#","keyword":"oneOf","instancePath":"","value":{"aftDetails":{"aftStatus":"Compiled","quarterEndDate":"2020-06-30","quarterStartDate":"2020-10-30"},"chargeDetails":{"chargeTypeFDetails":{"totalAmount":"XXXXXXXXXXXX","dateRegiWithdrawn":"2020-04-01"}}},"errors":{"/oneOf/0":[{"schemaPath":"#/oneOf/0/definitions/totalAmountType","errors":{},"keyword":"type","msgs":["Wrong type. Expected number, was string."],"value":"XXXXXXXXXXXX","instancePath":"/chargeDetails/chargeTypeFDetails/totalAmount"}],"/oneOf/1":[{"schemaPath":"#/oneOf/1","errors":{},"keyword":"required","msgs":["Property aftDeclarationDetails missing."],"value":{"aftDetails":{"aftStatus":"Compiled","quarterEndDate":"2020-06-30","quarterStartDate":"2020-10-30"},"chargeDetails":{"chargeTypeFDetails":{"totalAmount":"XXXXXXXXXXXX","dateRegiWithdrawn":"2020-04-01"}}},"instancePath":""},{"schemaPath":"#/oneOf/1/definitions/totalAmountType","errors":{},"keyword":"type","msgs":["Wrong type. Expected number, was string."],"value":"XXXXXXXXXXXX","instancePath":"/chargeDetails/chargeTypeFDetails/totalAmount"},{"schemaPath":"#/oneOf/1/properties/aftDetails/properties/aftStatus","errors":{"enum":["Submitted"]},"keyword":"enum","msgs":["Instance is invalid enum value."],"value":"Compiled","instancePath":"/aftDetails/aftStatus"}]}}
-      when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(),any())).thenReturn(JsError(JsonValidationError(Seq("test"), "{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}],\"/oneOf/1\":[{\"schemaPath\":\"#/oneOf/1\",\"errors\":{},\"keyword\":\"required\",\"msgs\":[\"Property aftDeclarationDetails missing.\"],\"instancePath\":\"\"},{\"schemaPath\":\"#/oneOf/1/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"},{\"schemaPath\":\"#/oneOf/1/properties/aftDetails/properties/aftStatus\",\"errors\":{\"enum\":[\"Submitted\"]},\"keyword\":\"enum\",\"msgs\":[\"Instance is invalid enum value.\"],\"value\":\"Compiled\",\"instancePath\":\"/aftDetails/aftStatus\"}]}}")))
+      val GivingErrorPayload = "{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\"" +
+                      ",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\"," +
+                      "\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"]," +
+                      "\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}}"
+      when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(),any()))
+        .thenReturn(JsError(JsonValidationError(Seq("test"), GivingErrorPayload)))
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaRequestJson.toString)))
@@ -121,7 +124,9 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map { ex =>
-        ex.exMessage mustBe "Invalid AFT file AFT return:-\nSchemaErrorDetails(Some(#/oneOf/0/definitions/totalAmountType),Some(type),[\"Wrong type. Expected number, was string.\"])"
+        val expectedErrorMessage = "Invalid AFT file AFT return:-" +
+                                   "\nExtractErrorDetails(Some(#/oneOf/0/definitions/totalAmountType),[\"Wrong type. Expected number, was string.\"])"
+        ex.exMessage mustBe expectedErrorMessage
       }
     }
 
