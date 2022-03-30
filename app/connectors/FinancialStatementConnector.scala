@@ -128,7 +128,7 @@ class FinancialStatementConnector @Inject()(
               logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFS")
               SchemeFS(
                 inhibitRefundSignal = schemeFS.inhibitRefundSignal,
-                seqSchemeFSDetail = schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+                seqSchemeFSDetail = schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment interest"))
               )
             case JsError(errors) =>
               throw JsResultException(errors)
