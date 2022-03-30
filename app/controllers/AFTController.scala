@@ -32,7 +32,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import utils.{ExtractErrorDetails, JSONPayloadSchemaValidator}
+import utils.{ErrorDetailsExtractor, JSONPayloadSchemaValidator}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -65,10 +65,10 @@ class AFTController @Inject()(
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
-              val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(s"$basePath/conf/${ExtractErrorDetails.schemaPath}",dataToBeSendToETMP)
+              val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(s"$basePath/conf/${ErrorDetailsExtractor.schemaPath}",dataToBeSendToETMP)
               validationResult match {
                 case JsError(error) =>
-                  val errors = ExtractErrorDetails.getErrors(error)
+                  val errors = ErrorDetailsExtractor.getErrors(error)
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n$errors")
                 case JsSuccess(s, x) =>
                   logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")

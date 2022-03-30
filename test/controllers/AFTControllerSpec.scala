@@ -125,7 +125,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
           withHeaders(newHeaders = "pstr" -> pstr))
       } map { ex =>
         val expectedErrorMessage = "Invalid AFT file AFT return:-" +
-                                   "\nExtractErrorDetails(Some(#/oneOf/0/definitions/totalAmountType),[\"Wrong type. Expected number, was string.\"])"
+                                   "\nErrorDetailsExtractor(Some(#/oneOf/0/definitions/totalAmountType),[\"Wrong type. Expected number, was string.\"])"
         ex.exMessage mustBe expectedErrorMessage
       }
     }
