@@ -32,6 +32,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+import utils.{ErrorDetailsExtractor, JSONPayloadSchemaValidator}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -45,7 +46,8 @@ class AFTController @Inject()(
                                aftDetailsTransformer: AFTDetailsTransformer,
                                aftService: AFTService,
                                featureToggleService: FeatureToggleService,
-                               aftOverviewCacheRepository: AftOverviewCacheRepository
+                               aftOverviewCacheRepository: AftOverviewCacheRepository,
+                               jsonPayloadSchemaValidator: JSONPayloadSchemaValidator
                              )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -53,6 +55,7 @@ class AFTController @Inject()(
     with AuthorisedFunctions {
 
   private val logger = Logger(classOf[AFTController])
+  val basePath = System.getProperty("user.dir")
 
   //scalastyle:off cyclomatic.complexity
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
@@ -61,19 +64,23 @@ class AFTController @Inject()(
         aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
-
             case JsSuccess(dataToBeSendToETMP, _) =>
-              logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-              aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                Ok(response.body)
+              val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(s"$basePath/conf/${ErrorDetailsExtractor.schemaPath}",dataToBeSendToETMP)
+              validationResult match {
+                case JsError(error) =>
+                  val errors = ErrorDetailsExtractor.getErrors(error)
+                  throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n$errors")
+                case JsSuccess(_, _) =>
+                  logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                    Ok(response.body)
+                  }
               }
-
             case JsError(errors) =>
               throw JsResultException(errors)
           }
         }
       }
-
   }
 
   //scalastyle:off cyclomatic.complexity
@@ -252,3 +259,5 @@ class AFTController @Inject()(
     }
   }
 }
+
+case class AFTValidationFailureException(exMessage: String) extends Exception(exMessage)
