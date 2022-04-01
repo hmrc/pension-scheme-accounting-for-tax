@@ -29,6 +29,7 @@ import reactivemongo.play.json.ImplicitBSONHandlers._
 import repository.model._
 import uk.gov.hmrc.mongo.ReactiveRepository
 
+import java.time.LocalDateTime
 import scala.concurrent.{ExecutionContext, Future}
 
 class FileUploadReferenceCacheRepository @Inject()(
@@ -42,8 +43,7 @@ class FileUploadReferenceCacheRepository @Inject()(
   ) {
 
   override val logger: Logger = LoggerFactory.getLogger("FileUploadReferenceCacheRepository")
-
-  private def expireInSeconds: DateTime = DateTime.now(DateTimeZone.UTC).
+  private def expireInSeconds: LocalDateTime = LocalDateTime.now.
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.file-upload-response-cache.timeToLiveInSeconds"))
 
   val collectionIndexes = Seq(
@@ -92,7 +92,7 @@ class FileUploadReferenceCacheRepository @Inject()(
       _.map {
         dataEntry =>
           FileUploadDataCache.applyDataCache(
-            uploadId = dataEntry.uploadId, reference = dataEntry.reference, status = dataEntry.status, expireAt = expireInSeconds)
+            uploadId = dataEntry.uploadId, reference = dataEntry.reference, status = dataEntry.status, lastUpdated=expireInSeconds, expireAt = expireInSeconds)
       }
     }
   }

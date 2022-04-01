@@ -19,7 +19,6 @@ package controllers.cache
 import akka.util.ByteString
 import controllers.cache.FinancialInfoCacheController.IdNotFoundFromAuth
 import org.apache.commons.lang3.RandomUtils
-import org.joda.time.{DateTime, DateTimeZone}
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.MockitoSugar
 import org.scalatest.BeforeAndAfter
@@ -35,6 +34,7 @@ import repository.model.{FileUploadDataCache, FileUploadStatus}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.time.LocalDateTime
 import scala.concurrent.Future
 
 class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfter {
@@ -103,16 +103,14 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
-        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,FileUploadStatus("InProgress")
-          ,DateTime.now(DateTimeZone.UTC),DateTime.now(DateTimeZone.UTC))
+        val dateTimeNow = LocalDateTime.now()
+        val fileUploadDataCache = FileUploadDataCache(uploadId,referenceId,FileUploadStatus("InProgress"),dateTimeNow,dateTimeNow, dateTimeNow)
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
-
         val result = controller.getUploadResult(fakeRequest)
         status(result) mustEqual OK
-        contentAsJson(result) mustEqual Json.obj(fields = "_type" -> "InProgress")
+        contentAsJson(result) mustEqual Json.obj(fields = "uploadId" -> "uploadId", "reference" -> "reference","status" -> Json.obj("_type"-> "InProgress"), "created" -> dateTimeNow, "lastUpdated" -> dateTimeNow,"expireAt" -> dateTimeNow)
       }
-
       "return NOT FOUND when the data doesn't exist" in {
         val app = new GuiceApplicationBuilder()
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
@@ -155,7 +153,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
         val uploadStatus=FileUploadStatus("Success",None, None, Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
-        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,DateTime.now(DateTimeZone.UTC),DateTime.now(DateTimeZone.UTC))
+        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,LocalDateTime.now, LocalDateTime.now,LocalDateTime.now)
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(referenceId))
 
@@ -169,7 +167,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
         val uploadStatus=FileUploadStatus("Success",None, None, Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
-        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,DateTime.now(DateTimeZone.UTC),DateTime.now(DateTimeZone.UTC))
+        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus, LocalDateTime.now, LocalDateTime.now,LocalDateTime.now)
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 
