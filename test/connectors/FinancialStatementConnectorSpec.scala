@@ -561,7 +561,7 @@ object FinancialStatementConnectorSpec {
       )
     ),
     Json.obj(
-      "chargeReference" -> s"XY002610150184",
+      "chargeReference" -> s"XY002610150185",
       "chargeType" -> "56001000",
       "dueDate" -> "2020-02-15",
       "totalAmount" -> 8000.00,
@@ -577,7 +577,7 @@ object FinancialStatementConnectorSpec {
       "formbundleNumber" -> "123456789183",
       "aftVersion" -> 0,
       "chargeClassification" -> "Charge",
-      "sourceChargeRefForInterest" -> "XY002610150181",
+      "sourceChargeRefForInterest" -> "XY002610150184",
       "documentLineItemDetails" -> Json.arr(
         Json.obj(
           "clearedAmountItem" -> 0.00,
@@ -605,7 +605,7 @@ object FinancialStatementConnectorSpec {
 
   private def schemeFSMaxSeqModel: Seq[SchemeFSDetail] = Seq(
     SchemeFSDetail(
-      index = 0,
+      index = 1,
       chargeReference = s"XY002610150184",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -620,8 +620,7 @@ object FinancialStatementConnectorSpec {
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
       sourceChargeIndex = None,
-      sourceChargeReceiptDate = None,
-      sourceChargeVersion = None,
+      sourceChargeFormBundleNumber = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -629,8 +628,8 @@ object FinancialStatementConnectorSpec {
       )
     ),
     SchemeFSDetail(
-      index = 0,
-      chargeReference = s"XY002610150184",
+      index = 2,
+      chargeReference = s"XY002610150185",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 8000.00,
@@ -642,10 +641,9 @@ object FinancialStatementConnectorSpec {
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
       formBundleNumber = Some("123456789183"),
       aftVersion = Some(0),
-      sourceChargeRefForInterest = Some("XY002610150181"),
-      sourceChargeIndex = None,
-      sourceChargeReceiptDate = None,
-      sourceChargeVersion = None,
+      sourceChargeRefForInterest = Some("XY002610150184"),
+      sourceChargeIndex = Some(1),
+      sourceChargeFormBundleNumber = Some("123456789193"),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),

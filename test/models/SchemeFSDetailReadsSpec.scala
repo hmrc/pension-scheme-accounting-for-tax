@@ -153,7 +153,7 @@ object SchemeFSDetailReadsSpec {
         "stoodOverAmount" -> 508.18,
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
-        "formbundleNumber" -> "123456789193",
+        "formbundleNumber" -> "123456789194",
         "aftVersion" -> 0,
         "sourceChargeRefForInterest" -> "XY002610150184",
         "documentLineItemDetails" -> Json.arr(
@@ -197,8 +197,7 @@ object SchemeFSDetailReadsSpec {
     aftVersion = Some(0),
     sourceChargeRefForInterest = Some("XY002610150181"),
     sourceChargeIndex = None,
-    sourceChargeReceiptDate = None,
-    sourceChargeVersion = None,
+    sourceChargeFormBundleNumber = None,
     Seq(DocumentLineItemDetail(
       clearingReason = Some("C1"),
       clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -223,8 +222,7 @@ object SchemeFSDetailReadsSpec {
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
       sourceChargeIndex = None,
-      sourceChargeReceiptDate = None,
-      sourceChargeVersion = None,
+      sourceChargeFormBundleNumber = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -243,12 +241,11 @@ object SchemeFSDetailReadsSpec {
       stoodOverAmount = 508.18,
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
-      formBundleNumber = Some("123456789193"),
+      formBundleNumber = Some("123456789194"),
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150184"),
       sourceChargeIndex = Some(1),
-      sourceChargeReceiptDate = None,
-      sourceChargeVersion = None,
+      sourceChargeFormBundleNumber = Some("123456789193"),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),

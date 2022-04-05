@@ -43,8 +43,7 @@ case class SchemeFSDetail(
                            aftVersion: Option[Int] = None,
                            sourceChargeRefForInterest: Option[String] = None,
                            sourceChargeIndex: Option[Int] = None,
-                           sourceChargeReceiptDate: Option[LocalDate] = None,
-                           sourceChargeVersion: Option[Int] = None,
+                           sourceChargeFormBundleNumber: Option[String] = None,
                            documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
                          )
 
@@ -142,7 +141,6 @@ object SchemeFS {
         sourceChargeRefForInterest,
         None,
         None,
-        None,
         documentLineItemDetails
       )
   )
@@ -154,22 +152,28 @@ object SchemeFS {
   }
 
   implicit val rdsSchemeFSMax: Reads[SchemeFS] = {
-    def transformExtraFields(seqSchemeFSDetail: Seq[SchemeFSDetail]):Seq[SchemeFSDetail] = {
-      val seqSchemeFSDetailWithIndexes = seqSchemeFSDetail.zipWithIndex.map{ case (schemeFSDetail, i) =>
+    def transformExtraFields(seqSchemeFSDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
+      val seqSchemeFSDetailWithIndexes = seqSchemeFSDetail.zipWithIndex.map { case (schemeFSDetail, i) =>
         schemeFSDetail copy (
           index = i + 1
           )
       }
-      seqSchemeFSDetailWithIndexes.map{ schemeFSDetail =>
-        val foundSourceChargeIndex = schemeFSDetail.sourceChargeRefForInterest match {
-          case Some(ref) => seqSchemeFSDetailWithIndexes.find(_.chargeReference == ref) map { _.index}
+      seqSchemeFSDetailWithIndexes.map { schemeFSDetail =>
+        val referencedItems: Option[(Option[Int], Option[String])] = schemeFSDetail.sourceChargeRefForInterest match {
+          case Some(ref) => seqSchemeFSDetailWithIndexes.find(_.chargeReference == ref) map { x => Tuple2(Some(x.index), x.formBundleNumber) }
           case _ => None
         }
-        schemeFSDetail copy (
-          sourceChargeIndex = foundSourceChargeIndex
-        )
+        referencedItems match {
+          case Some(Tuple2(foundSourceChargeIndex, foundSourceChargeFormBundleNumber)) =>
+            schemeFSDetail copy(
+              sourceChargeIndex = foundSourceChargeIndex,
+              sourceChargeFormBundleNumber = foundSourceChargeFormBundleNumber
+            )
+          case _ => schemeFSDetail
+        }
       }
     }
+
     (
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
         (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsSchemeFSDetailMax))
