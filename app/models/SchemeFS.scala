@@ -41,6 +41,9 @@ case class SchemeFSDetail(
                            formBundleNumber: Option[String] = None,
                            aftVersion: Option[Int] = None,
                            sourceChargeRefForInterest: Option[String] = None,
+                           sourceChargeIndex: Int = 0,
+                           sourceChargeReceiptDate: Option[LocalDate] = None,
+                           sourceChargeVersion: Option[Int] = None,
                            documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
                          )
 
@@ -134,6 +137,9 @@ object SchemeFS {
         formBundleNumber,
         aftVersionOpt,
         sourceChargeRefForInterest,
+        0,
+        None,
+        None,
         documentLineItemDetails
       )
   )

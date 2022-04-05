@@ -194,6 +194,9 @@ object SchemeFSDetailReadsSpec {
     formBundleNumber = Some("123456789193"),
     aftVersion = Some(0),
     sourceChargeRefForInterest = Some("XY002610150181"),
+    sourceChargeIndex = 0,
+    sourceChargeReceiptDate = None,
+    sourceChargeVersion = None,
     Seq(DocumentLineItemDetail(
       clearingReason = Some("C1"),
       clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -216,6 +219,9 @@ object SchemeFSDetailReadsSpec {
       formBundleNumber = Some("123456789193"),
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
+      sourceChargeIndex = 0,
+      sourceChargeReceiptDate = None,
+      sourceChargeVersion = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -236,6 +242,9 @@ object SchemeFSDetailReadsSpec {
       formBundleNumber = Some("123456789193"),
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
+      sourceChargeIndex = 0,
+      sourceChargeReceiptDate = None,
+      sourceChargeVersion = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
