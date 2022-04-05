@@ -190,6 +190,7 @@ object FinancialStatementControllerSpec {
     inhibitRefundSignal = false,
     seqSchemeFSDetail = Seq(
       SchemeFSDetail(
+        index = 0,
         chargeReference = s"XY002610150184",
         chargeType = "PSS AFT Return",
         dueDate = Some(LocalDate.parse("2020-02-15")),

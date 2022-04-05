@@ -28,6 +28,7 @@ object DocumentLineItemDetail {
 }
 
 case class SchemeFSDetail(
+                           index: Int,
                            chargeReference: String,
                            chargeType: String,
                            dueDate: Option[LocalDate],
@@ -41,7 +42,7 @@ case class SchemeFSDetail(
                            formBundleNumber: Option[String] = None,
                            aftVersion: Option[Int] = None,
                            sourceChargeRefForInterest: Option[String] = None,
-                           sourceChargeIndex: Int = 0,
+                           sourceChargeIndex: Option[Int] = None,
                            sourceChargeReceiptDate: Option[LocalDate] = None,
                            sourceChargeVersion: Option[Int] = None,
                            documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
@@ -78,6 +79,7 @@ object SchemeFS {
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt) =>
       SchemeFSDetail(
+        index = 0,
         chargeReference,
         SchemeChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
@@ -124,6 +126,7 @@ object SchemeFS {
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt,
      formBundleNumber, aftVersionOpt, sourceChargeRefForInterest, documentLineItemDetails) =>
       SchemeFSDetail(
+        index = 0,
         chargeReference,
         SchemeChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
@@ -137,7 +140,7 @@ object SchemeFS {
         formBundleNumber,
         aftVersionOpt,
         sourceChargeRefForInterest,
-        0,
+        None,
         None,
         None,
         documentLineItemDetails
@@ -150,13 +153,30 @@ object SchemeFS {
     }
   }
 
-  implicit val rdsSchemeFSMax: Reads[SchemeFS] =
+  implicit val rdsSchemeFSMax: Reads[SchemeFS] = {
+    def transformExtraFields(seqSchemeFSDetail: Seq[SchemeFSDetail]):Seq[SchemeFSDetail] = {
+      val seqSchemeFSDetailWithIndexes = seqSchemeFSDetail.zipWithIndex.map{ case (schemeFSDetail, i) =>
+        schemeFSDetail copy (
+          index = i + 1
+          )
+      }
+      seqSchemeFSDetailWithIndexes.map{ schemeFSDetail =>
+        val foundSourceChargeIndex = schemeFSDetail.sourceChargeRefForInterest match {
+          case Some(ref) => seqSchemeFSDetailWithIndexes.find(_.chargeReference == ref) map { _.index}
+          case _ => None
+        }
+        schemeFSDetail copy (
+          sourceChargeIndex = foundSourceChargeIndex
+        )
+      }
+    }
     (
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
         (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsSchemeFSDetailMax))
       ) (
-      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFS(inhibitRefundSignal, seqSchemeFSDetail)
+      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFS(inhibitRefundSignal, transformExtraFields(seqSchemeFSDetail))
     )
+  }
 }
 
 object SchemeChargeType extends Enumeration {
