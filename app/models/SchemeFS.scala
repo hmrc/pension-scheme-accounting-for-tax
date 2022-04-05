@@ -154,9 +154,7 @@ object SchemeFS {
   implicit val rdsSchemeFSMax: Reads[SchemeFS] = {
     def transformExtraFields(seqSchemeFSDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
       val seqSchemeFSDetailWithIndexes = seqSchemeFSDetail.zipWithIndex.map { case (schemeFSDetail, i) =>
-        schemeFSDetail copy (
-          index = i + 1
-          )
+        schemeFSDetail copy (index = i + 1)
       }
       seqSchemeFSDetailWithIndexes.map { schemeFSDetail =>
         val referencedItems: Option[(Option[Int], Option[String])] = schemeFSDetail.sourceChargeRefForInterest match {
