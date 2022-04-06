@@ -80,6 +80,7 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 object PsaFSReadsSpec {
 
   private def psaFSResponseJson(chargeType: String): JsValue = Json.obj(
+    "index" -> 0,
     "chargeReference" -> "XY002610150184",
     "chargeType" -> s"$chargeType",
     "dueDate" -> "2020-02-15",
@@ -94,6 +95,7 @@ object PsaFSReadsSpec {
   )
 
   private def psaFSMaxResponseJson(chargeType: String): JsValue = Json.obj(
+    "index" -> 0,
     "chargeReference" -> "XY002610150184",
     "chargeType" -> s"$chargeType",
     "dueDate" -> "2020-02-15",
@@ -106,6 +108,7 @@ object PsaFSReadsSpec {
     "periodEndDate" -> "2020-06-30",
     "pstr" -> "24000040IN",
     "sourceChargeRefForInterest"-> "XY002610150181",
+    "sourceChargeIndex" -> None,
     "documentLineItemDetails"-> Json.arr(
       Json.obj(
         "clearingDate"-> "2020-06-30",
@@ -118,7 +121,8 @@ object PsaFSReadsSpec {
     "accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> inhibitRefundSignal),
     "documentHeaderDetails" -> Json.arr(
       Json.obj(
-        "chargeReference" -> "Not Applicable",
+        "index" -> 1,
+        "chargeReference" -> "XY002610150184",
         "chargeType" -> s"$chargeType",
         "totalAmount" -> -15000.00,
         "dueDate" -> "2020-06-25",
@@ -130,6 +134,7 @@ object PsaFSReadsSpec {
         "periodEndDate" -> "2020-06-30",
         "pstr" -> "24000040IN",
         "sourceChargeRefForInterest"-> "XY002610150181",
+        "sourceChargeIndex" -> None,
         "documentLineItemDetails"-> Json.arr(
           Json.obj(
             "clearingDate"-> "2020-06-30",
@@ -139,6 +144,7 @@ object PsaFSReadsSpec {
         )
       ),
       Json.obj(
+        "index" -> 2,
         "chargeReference" -> "Not Applicable",
         "chargeType" -> s"$chargeType",
         "dueDate" -> "2020-02-15",
@@ -150,7 +156,8 @@ object PsaFSReadsSpec {
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
         "pstr" -> "24000040IN",
-        "sourceChargeRefForInterest"-> "XY002610150181",
+        "sourceChargeRefForInterest"-> "XY002610150184",
+        "sourceChargeIndex" -> Some(1),
         "documentLineItemDetails"-> Json.arr(
           Json.obj(
             "clearingDate"-> "2020-06-30",
@@ -163,6 +170,7 @@ object PsaFSReadsSpec {
   )
 
   private def psaFSModel = PsaFSDetail(
+    index = 0,
     chargeReference = "XY002610150184",
     chargeType = "Overseas transfer charge late payment penalty (6 months)",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -177,6 +185,7 @@ object PsaFSReadsSpec {
   )
 
   private def psaFSMaxModel = PsaFSDetail(
+    index = 0,
     chargeReference = "XY002610150184",
     chargeType = "Overseas transfer charge late payment penalty (6 months)",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -189,6 +198,7 @@ object PsaFSReadsSpec {
     periodEndDate = LocalDate.parse("2020-06-30"),
     pstr = "24000040IN",
     sourceChargeRefForInterest = Some("XY002610150181"),
+    sourceChargeIndex = None,
     documentLineItemDetails = Seq(DocumentLineItemDetail(
       clearingReason= Some("C1"),
       clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -198,7 +208,8 @@ object PsaFSReadsSpec {
 
   private val psaFSMaxSeqModel: Seq[PsaFSDetail] = Seq(
     PsaFSDetail(
-      chargeReference = "Not Applicable",
+      index = 1,
+      chargeReference = "XY002610150184",
       chargeType = "Overseas transfer charge late payment penalty (6 months)",
       dueDate = Some(LocalDate.parse("2020-06-25")),
       totalAmount = -15000.00,
@@ -210,6 +221,7 @@ object PsaFSReadsSpec {
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
       sourceChargeRefForInterest = Some("XY002610150181"),
+      sourceChargeIndex = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -217,6 +229,7 @@ object PsaFSReadsSpec {
       )
     ),
     PsaFSDetail(
+      index = 2,
       chargeReference = "Not Applicable",
       chargeType = "Overseas transfer charge late payment penalty (6 months)",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -228,7 +241,8 @@ object PsaFSReadsSpec {
       periodStartDate = LocalDate.parse("2020-04-01"),
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
-      sourceChargeRefForInterest = Some("XY002610150181"),
+      sourceChargeRefForInterest = Some("XY002610150184"),
+      sourceChargeIndex = Some(1),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),

@@ -170,6 +170,7 @@ object FinancialStatementControllerSpec {
 
   private val psaFSDetailResponse: Seq[PsaFSDetail] = Seq(
     PsaFSDetail(
+      index = 0,
       chargeReference = "XY002610150184",
       chargeType = "AFT Initial LFP",
       dueDate = Some(LocalDate.parse("2020-02-15")),
