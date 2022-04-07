@@ -27,6 +27,15 @@ object DocumentLineItemDetail {
   implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
 }
 
+case class SourceChargeInfo(
+                             sourceChargeIndex: Int,
+                             sourceChargeFormBundleNumber: Option[String] = None
+                           )
+
+object SourceChargeInfo {
+  implicit val formats: Format[SourceChargeInfo] = Json.format[SourceChargeInfo]
+}
+
 case class SchemeFSDetail(
                            index: Int,
                            chargeReference: String,
@@ -42,8 +51,7 @@ case class SchemeFSDetail(
                            formBundleNumber: Option[String] = None,
                            aftVersion: Option[Int] = None,
                            sourceChargeRefForInterest: Option[String] = None,
-                           sourceChargeIndex: Option[Int] = None,
-                           sourceChargeFormBundleNumber: Option[String] = None,
+                           sourceChargeInfo: Option[SourceChargeInfo] = None,
                            documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
                          )
 
@@ -140,7 +148,6 @@ object SchemeFS {
         aftVersionOpt,
         sourceChargeRefForInterest,
         None,
-        None,
         documentLineItemDetails
       )
   )
@@ -157,16 +164,17 @@ object SchemeFS {
         schemeFSDetail copy (index = i + 1)
       }
       seqSchemeFSDetailWithIndexes.map { schemeFSDetail =>
-        val referencedItems: Option[(Option[Int], Option[String])] = schemeFSDetail.sourceChargeRefForInterest match {
-          case Some(ref) => seqSchemeFSDetailWithIndexes.find(_.chargeReference == ref) map { x => Tuple2(Some(x.index), x.formBundleNumber) }
-          case _ => None
-        }
-        referencedItems match {
-          case Some(Tuple2(foundSourceChargeIndex, foundSourceChargeFormBundleNumber)) =>
-            schemeFSDetail copy(
-              sourceChargeIndex = foundSourceChargeIndex,
-              sourceChargeFormBundleNumber = foundSourceChargeFormBundleNumber
+        schemeFSDetail.sourceChargeRefForInterest match {
+          case Some(ref) => seqSchemeFSDetailWithIndexes.find(_.chargeReference == ref) match {
+            case Some(foundOriginalCharge) =>
+            schemeFSDetail copy (
+              sourceChargeInfo = Some(SourceChargeInfo(
+                sourceChargeIndex = foundOriginalCharge.index,
+                sourceChargeFormBundleNumber = foundOriginalCharge.formBundleNumber
+              ))
             )
+            case _ => schemeFSDetail
+          }
           case _ => schemeFSDetail
         }
       }
