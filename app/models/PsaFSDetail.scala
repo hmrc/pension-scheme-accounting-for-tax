@@ -44,8 +44,7 @@ case class SourceChargeInfo(
                              index: Int,
                              chargeType: String,
                              periodStartDate: LocalDate,
-                             periodEndDate: LocalDate,
-                             pstr: String
+                             periodEndDate: LocalDate
                            )
 
 object SourceChargeInfo {
@@ -167,8 +166,7 @@ object SourceChargeInfo {
                     index = foundOriginalCharge.index,
                     chargeType = foundOriginalCharge.chargeType,
                     periodStartDate = foundOriginalCharge.periodStartDate,
-                    periodEndDate = foundOriginalCharge.periodEndDate,
-                    pstr = foundOriginalCharge.pstr
+                    periodEndDate = foundOriginalCharge.periodEndDate
                   ))
                   )
               case _ => psaFSDetail

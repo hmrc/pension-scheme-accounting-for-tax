@@ -210,8 +210,7 @@ object PsaFSReadsSpec {
     index = 1,
     chargeType = "Contract settlement charge",
     periodStartDate = LocalDate.parse("2020-04-01"),
-    periodEndDate = LocalDate.parse("2020-06-30"),
-    pstr = "24000040IN"
+    periodEndDate = LocalDate.parse("2020-06-30")
   )
 
   private val psaFSMaxSeqModel: Seq[PsaFSDetail] = Seq(
