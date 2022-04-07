@@ -129,7 +129,13 @@ class FinancialStatementConnector @Inject()(
                       index = sci.index,
                       formBundleNumber = sci.formBundleNumber,
                       version = optVersion,
-                      receiptDate = optReceiptDate
+                      receiptDate = optReceiptDate,
+                      chargeType = sci.chargeType,
+                      dueDate = sci.dueDate,
+                      amountDue = sci.amountDue,
+                      accruedInterestTotal = sci.accruedInterestTotal,
+                      periodStartDate = sci.periodStartDate,
+                      periodEndDate = sci.periodEndDate
                     )
                     schemeFSDetail copy (
                       sourceChargeInfo = Some(newSourceChargeInfo)

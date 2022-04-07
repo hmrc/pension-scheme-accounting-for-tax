@@ -204,6 +204,8 @@ object SchemeFSDetailReadsSpec {
     )
   )
 
+
+  //scalastyle:off method.length
   private def schemeFSMaxSeqModel = Seq(
     SchemeFSDetail(
       index = 1,
@@ -242,7 +244,18 @@ object SchemeFSDetailReadsSpec {
       formBundleNumber = Some("123456789194"),
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150184"),
-      sourceChargeInfo = Some(SourceChargeInfo(index = 1, formBundleNumber = Some("123456789193"))),
+      sourceChargeInfo = Some(
+        SourceChargeInfo(
+          index = 1,
+          formBundleNumber = Some("123456789193"),
+          chargeType = "Accounting for Tax return",
+          dueDate = Some(LocalDate.of(2020, 2, 15)),
+          amountDue = BigDecimal(1029.05),
+          accruedInterestTotal = BigDecimal(100.05),
+          periodStartDate = Some(LocalDate.of(2020, 4, 1)),
+          periodEndDate = Some(LocalDate.of(2020, 6, 30))
+        )
+      ),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),

@@ -26,12 +26,17 @@ case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: O
 object DocumentLineItemDetail {
   implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
 }
-
 case class SourceChargeInfo(
                              index: Int,
                              formBundleNumber: Option[String],
                              version: Option[Int] = None,
-                             receiptDate: Option[LocalDate] = None
+                             receiptDate: Option[LocalDate] = None,
+                             chargeType: String,
+                             dueDate: Option[LocalDate],
+                             amountDue: BigDecimal,
+                             accruedInterestTotal: BigDecimal,
+                             periodStartDate: Option[LocalDate],
+                             periodEndDate: Option[LocalDate]
                            )
 
 object SourceChargeInfo {
@@ -172,7 +177,13 @@ object SchemeFS {
               schemeFSDetail copy (
                 sourceChargeInfo = Some(SourceChargeInfo(
                   index = foundOriginalCharge.index,
-                  formBundleNumber = foundOriginalCharge.formBundleNumber
+                  formBundleNumber = foundOriginalCharge.formBundleNumber,
+                  chargeType = foundOriginalCharge.chargeType,
+                  dueDate = foundOriginalCharge.dueDate,
+                  amountDue = foundOriginalCharge.amountDue,
+                  accruedInterestTotal = foundOriginalCharge.accruedInterestTotal,
+                  periodStartDate = foundOriginalCharge.periodStartDate,
+                  periodEndDate = foundOriginalCharge.periodEndDate
                 ))
                 )
             case _ => schemeFSDetail
