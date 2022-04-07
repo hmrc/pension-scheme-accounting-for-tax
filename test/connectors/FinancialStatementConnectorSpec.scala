@@ -66,6 +66,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
   override protected def portConfigKey: String = "microservice.services.if-hod.port"
 
   private val mockAuditService = mock[AuditService]
+  private val mockAFTConnector = mock[AFTConnector]
   private val mockAftService = mock[AFTService]
   private val mockFutureToggleService = mock[FeatureToggleService]
   private lazy val connector: FinancialStatementConnector = injector.instanceOf[FinancialStatementConnector]
@@ -74,7 +75,8 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AFTService].toInstance(mockAftService),
-      bind[FeatureToggleService].toInstance(mockFutureToggleService)
+      bind[FeatureToggleService].toInstance(mockFutureToggleService),
+      bind[AFTConnector].toInstance(mockAFTConnector)
     )
 
   override def beforeEach(): Unit = {
@@ -222,8 +224,16 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       }
     }
 
-    "return maximum answer json when successful response returned from ETMP when the financial statement toggle is switched on" in {
+    "return maximum answer json when successful response returned from ETMP when the financial statement toggle is " +
+      "switched on and get aft details finds version etc" in {
+      val aftDetailsJson = Json.obj(
+        "aftVersion" -> 2,
+        "submitterDetails" -> Json.obj(
+          "receiptDate" -> Json.toJson(receiptDate)
+        )
+      )
       when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(aftDetailsJson))
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -325,6 +335,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 }
 
 object FinancialStatementConnectorSpec {
+  private val receiptDate = LocalDate.of(2020,12,12)
   def errorResponse(code: String): String = {
     Json.stringify(
       Json.obj(
@@ -641,7 +652,13 @@ object FinancialStatementConnectorSpec {
       formBundleNumber = Some("123456789183"),
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150184"),
-      sourceChargeInfo = Some(SourceChargeInfo(index = 1, formBundleNumber = Some("123456789193"))),
+      sourceChargeInfo = Some(SourceChargeInfo(
+        index = 1,
+        formBundleNumber = Some("123456789193"),
+        version = Some(2),
+        receiptDate = Some(receiptDate)
+      )
+      ),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),

@@ -29,7 +29,9 @@ object DocumentLineItemDetail {
 
 case class SourceChargeInfo(
                              index: Int,
-                             formBundleNumber: Option[String] = None
+                             formBundleNumber: Option[String],
+                             version: Option[Int] = None,
+                             receiptDate: Option[LocalDate] = None
                            )
 
 object SourceChargeInfo {
@@ -167,12 +169,12 @@ object SchemeFS {
         schemeFSDetail.sourceChargeRefForInterest match {
           case Some(ref) => seqSchemeFSDetailWithIndexes.find(_.chargeReference == ref) match {
             case Some(foundOriginalCharge) =>
-            schemeFSDetail copy (
-              sourceChargeInfo = Some(SourceChargeInfo(
-                index = foundOriginalCharge.index,
-                formBundleNumber = foundOriginalCharge.formBundleNumber
-              ))
-            )
+              schemeFSDetail copy (
+                sourceChargeInfo = Some(SourceChargeInfo(
+                  index = foundOriginalCharge.index,
+                  formBundleNumber = foundOriginalCharge.formBundleNumber
+                ))
+                )
             case _ => schemeFSDetail
           }
           case _ => schemeFSDetail
