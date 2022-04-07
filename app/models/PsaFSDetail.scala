@@ -20,17 +20,36 @@ import java.time.LocalDate
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, JsPath, Json, Reads, Writes}
 
-case class PsaFSDetail(index: Int, chargeReference: String, chargeType: String, dueDate: Option[LocalDate],
-                       totalAmount: BigDecimal, amountDue: BigDecimal, outstandingAmount: BigDecimal,
-                       stoodOverAmount: BigDecimal, accruedInterestTotal: BigDecimal,
-                       periodStartDate: LocalDate, periodEndDate: LocalDate,
+case class PsaFSDetail(index: Int,
+                       chargeReference: String,
+                       chargeType: String,
+                       dueDate: Option[LocalDate],
+                       totalAmount: BigDecimal,
+                       amountDue: BigDecimal,
+                       outstandingAmount: BigDecimal,
+                       stoodOverAmount: BigDecimal,
+                       accruedInterestTotal: BigDecimal,
+                       periodStartDate: LocalDate,
+                       periodEndDate: LocalDate,
                        pstr: String,
                        sourceChargeRefForInterest: Option[String] = None,
-                       sourceChargeIndex: Option[Int] = None,
+                       sourceChargeInfo: Option[SourceChargeInfo] = None,
                        documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil)
 
 object PsaFSDetail {
   implicit val formats: Format[PsaFSDetail] = Json.format[PsaFSDetail]
+}
+
+case class SourceChargeInfo(
+                             index: Int,
+                             chargeType: String,
+                             periodStartDate: LocalDate,
+                             periodEndDate: LocalDate,
+                             pstr: String
+                           )
+
+object SourceChargeInfo {
+  implicit val formats: Format[SourceChargeInfo] = Json.format[SourceChargeInfo]
 }
 
   case class PsaFS(
@@ -140,15 +159,20 @@ object PsaFSDetail {
           psaFSDetail copy (index = i + 1)
         }
         seqPsaFSDetailWithIndexes.map { psaFSDetail =>
-          val referencedItems: Option[Option[Int]] = psaFSDetail.sourceChargeRefForInterest match {
-            case Some(ref) => seqPsaFSDetailWithIndexes.find(_.chargeReference == ref) map { x => Some(x.index) }
-            case _ => None
-          }
-          referencedItems match {
-            case Some(foundSourceChargeIndex) =>
-              psaFSDetail copy (
-                sourceChargeIndex = foundSourceChargeIndex
-                )
+          psaFSDetail.sourceChargeRefForInterest match {
+            case Some(ref) => seqPsaFSDetailWithIndexes.find(_.chargeReference == ref) match {
+              case Some(foundOriginalCharge) =>
+                psaFSDetail copy (
+                  sourceChargeInfo = Some(SourceChargeInfo(
+                    index = foundOriginalCharge.index,
+                    chargeType = foundOriginalCharge.chargeType,
+                    periodStartDate = foundOriginalCharge.periodStartDate,
+                    periodEndDate = foundOriginalCharge.periodEndDate,
+                    pstr = foundOriginalCharge.pstr
+                  ))
+                  )
+              case _ => psaFSDetail
+            }
             case _ => psaFSDetail
           }
         }
