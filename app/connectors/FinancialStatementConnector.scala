@@ -121,12 +121,10 @@ class FinancialStatementConnector @Inject()(
         seqSchemeFSDetails.map { schemeFSDetail =>
           schemeFSDetail.formBundleNumber match {
             case Some(fb) =>
-              println("\n>>fb->>"+ fb)
               aftConnector.getAftDetails(pstr, fb).map { jsValue =>
                 val receiptDateReads: Reads[LocalDate] = __.read[String].map{dateTime => LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate}
                 val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
                 val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](receiptDateReads)
-                println(s"\nFOUND $optVersion and $optReceiptDate")
                 schemeFSDetail copy(
                   receiptDate = optReceiptDate,
                   version = optVersion,
