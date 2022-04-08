@@ -127,7 +127,7 @@ class FinancialStatementConnector @Inject()(
                 val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
                 schemeFSDetail copy(
                   receiptDate = optReceiptDate,
-                  version = optVersion,
+                  version = optVersion
                 )
               }
             case _ => Future.successful(schemeFSDetail)

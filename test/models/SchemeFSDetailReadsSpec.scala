@@ -252,8 +252,7 @@ object SchemeFSDetailReadsSpec {
       sourceChargeRefForInterest = Some("XY002610150184"),
       sourceChargeInfo = Some(
         SourceChargeInfo(
-          index = 1,
-          formBundleNumber = Some("123456789193")
+          index = 1
         )
       ),
       Seq(DocumentLineItemDetail(

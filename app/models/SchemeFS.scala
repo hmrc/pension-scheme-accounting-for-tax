@@ -28,7 +28,6 @@ object DocumentLineItemDetail {
 }
 case class SourceChargeInfo(
                              index: Int,
-                             formBundleNumber: Option[String],
                              version: Option[Int] = None,
                              receiptDate: Option[LocalDate] = None
                            )
@@ -174,8 +173,7 @@ object SchemeFS {
             case Some(foundOriginalCharge) =>
               schemeFSDetail copy (
                 sourceChargeInfo = Some(SourceChargeInfo(
-                  index = foundOriginalCharge.index,
-                  formBundleNumber = foundOriginalCharge.formBundleNumber
+                  index = foundOriginalCharge.index
                 ))
                 )
             case _ => schemeFSDetail

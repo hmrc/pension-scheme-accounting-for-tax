@@ -662,7 +662,6 @@ object FinancialStatementConnectorSpec {
       sourceChargeInfo = Some(
         SourceChargeInfo(
           index = 1,
-          formBundleNumber = Some("222"),
           version = Some(2),
           receiptDate = Some(receiptDate)
         )
