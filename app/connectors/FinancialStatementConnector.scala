@@ -21,7 +21,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail, SourceChargeInfo}
+import models._
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
@@ -30,7 +30,7 @@ import services.FeatureToggleService
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialStatementConnector @Inject()(
@@ -111,48 +111,55 @@ class FinancialStatementConnector @Inject()(
     }
   }
 
+  // scalastyle:off method.length
   private def callAFTDetails(
                               pstr: String,
                               seqSchemeFSDetails: Seq[SchemeFSDetail],
                               toggleValue: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFSDetail]] = {
     if (toggleValue) {
-      Future.sequence(
+      val futureSeqSchemeFSWithAFTDetails = Future.sequence(
         seqSchemeFSDetails.map { schemeFSDetail =>
-          schemeFSDetail.sourceChargeInfo match {
-            case Some(sci) =>
-              sci.formBundleNumber match {
-                case Some(fb) =>
-                  aftConnector.getAftDetails(pstr, fb).map { jsValue =>
-                    val optVersion = (jsValue \ "aftVersion").asOpt[Int]
-                    val optReceiptDate = (jsValue \ "submitterDetails" \ "receiptDate").asOpt[LocalDate]
-                    val newSourceChargeInfo = SourceChargeInfo(
-                      index = sci.index,
-                      formBundleNumber = sci.formBundleNumber,
-                      version = optVersion,
-                      receiptDate = optReceiptDate,
-                      chargeType = sci.chargeType,
-                      dueDate = sci.dueDate,
-                      amountDue = sci.amountDue,
-                      accruedInterestTotal = sci.accruedInterestTotal,
-                      periodStartDate = sci.periodStartDate,
-                      periodEndDate = sci.periodEndDate
-                    )
-                    schemeFSDetail copy (
-                      sourceChargeInfo = Some(newSourceChargeInfo)
-                      )
-                  }
-                case _ => Future.successful(schemeFSDetail)
+          schemeFSDetail.formBundleNumber match {
+            case Some(fb) =>
+              println("\n>>fb->>"+ fb)
+              aftConnector.getAftDetails(pstr, fb).map { jsValue =>
+                val receiptDateReads: Reads[LocalDate] = __.read[String].map{dateTime => LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate}
+                val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
+                val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](receiptDateReads)
+                println(s"\nFOUND $optVersion and $optReceiptDate")
+                schemeFSDetail copy(
+                  receiptDate = optReceiptDate,
+                  version = optVersion,
+                )
               }
             case _ => Future.successful(schemeFSDetail)
           }
         }
       )
+      futureSeqSchemeFSWithAFTDetails.map { seqSchemeFsDetails =>
+        seqSchemeFsDetails.map { schemeFSDetail =>
+          schemeFSDetail.sourceChargeInfo match {
+            case Some(sci) =>
+              val newSourceChargeInfo = seqSchemeFsDetails.find(_.index == sci.index) match {
+                case Some(foundOriginalCharge) =>
+                  sci copy(
+                    version = foundOriginalCharge.version,
+                    receiptDate = foundOriginalCharge.receiptDate
+                  )
+                case _ => sci
+              }
+              schemeFSDetail copy (
+                sourceChargeInfo = Some(newSourceChargeInfo)
+              )
+            case _ => schemeFSDetail
+          }
+        }
+      }
     } else {
       Future.successful(seqSchemeFSDetails)
     }
   }
 
-  //scalastyle:off cyclomatic.complexity
   private def transformSchemeFS(pstr: String, url: String, toggleValue: Boolean)
                                (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
 

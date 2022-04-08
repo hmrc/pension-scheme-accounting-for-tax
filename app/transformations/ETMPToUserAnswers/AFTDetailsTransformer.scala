@@ -78,7 +78,7 @@ class AFTDetailsTransformer @Inject()(
       }
     ).reduce
 
-  private def receiptDateReads: Reads[JsObject] =
+  def receiptDateReads: Reads[JsObject] =
     (__ \ "aftDetails" \ "receiptDate").read[String].flatMap { dateTime =>
       (__ \ 'submitterDetails \ 'receiptDate).json.put(JsString(LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate.toString))
     }

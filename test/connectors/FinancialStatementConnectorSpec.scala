@@ -629,6 +629,8 @@ object FinancialStatementConnectorSpec {
       periodStartDate = Some(LocalDate.parse("2020-01-01")),
       periodEndDate = Some(LocalDate.parse("2020-03-31")),
       formBundleNumber = Some("222"),
+      version = Some(2),
+      receiptDate = Some(receiptDate),
       aftVersion = Some(1),
       sourceChargeRefForInterest = None,
       sourceChargeInfo = None,
@@ -651,6 +653,8 @@ object FinancialStatementConnectorSpec {
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
       formBundleNumber = Some("123456789183"),
+      version = Some(2),
+      receiptDate = Some(receiptDate),
       aftVersion = Some(1),
       sourceChargeRefForInterest = Some("XY002610150184"),
       sourceChargeInfo = Some(
