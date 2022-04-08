@@ -27,10 +27,11 @@ import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import services.FeatureToggleService
+import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialStatementConnector @Inject()(
@@ -122,9 +123,8 @@ class FinancialStatementConnector @Inject()(
           schemeFSDetail.formBundleNumber match {
             case Some(fb) =>
               aftConnector.getAftDetails(pstr, fb).map { jsValue =>
-                val receiptDateReads: Reads[LocalDate] = __.read[String].map{dateTime => LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate}
                 val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
-                val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](receiptDateReads)
+                val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
                 schemeFSDetail copy(
                   receiptDate = optReceiptDate,
                   version = optVersion,
