@@ -30,13 +30,7 @@ case class SourceChargeInfo(
                              index: Int,
                              formBundleNumber: Option[String],
                              version: Option[Int] = None,
-                             receiptDate: Option[LocalDate] = None,
-                             chargeType: String,
-                             dueDate: Option[LocalDate],
-                             amountDue: BigDecimal,
-                             accruedInterestTotal: BigDecimal,
-                             periodStartDate: Option[LocalDate],
-                             periodEndDate: Option[LocalDate]
+                             receiptDate: Option[LocalDate] = None
                            )
 
 object SourceChargeInfo {
@@ -181,13 +175,7 @@ object SchemeFS {
               schemeFSDetail copy (
                 sourceChargeInfo = Some(SourceChargeInfo(
                   index = foundOriginalCharge.index,
-                  formBundleNumber = foundOriginalCharge.formBundleNumber,
-                  chargeType = foundOriginalCharge.chargeType,
-                  dueDate = foundOriginalCharge.dueDate,
-                  amountDue = foundOriginalCharge.amountDue,
-                  accruedInterestTotal = foundOriginalCharge.accruedInterestTotal,
-                  periodStartDate = foundOriginalCharge.periodStartDate,
-                  periodEndDate = foundOriginalCharge.periodEndDate
+                  formBundleNumber = foundOriginalCharge.formBundleNumber
                 ))
                 )
             case _ => schemeFSDetail

@@ -19,9 +19,9 @@ package transformations.ETMPToUserAnswers
 import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{JsObject, JsString, Reads, __, _}
+import play.api.libs.json._
 
-import java.time.LocalDateTime
+import java.time.{LocalDate, LocalDateTime}
 
 class AFTDetailsTransformer @Inject()(
                                        chargeATransformer: ChargeATransformer,
@@ -82,6 +82,10 @@ class AFTDetailsTransformer @Inject()(
     (__ \ "aftDetails" \ "receiptDate").read[String].flatMap { dateTime =>
       (__ \ 'submitterDetails \ 'receiptDate).json.put(JsString(LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate.toString))
     }
+}
+
+object AFTDetailsTransformer {
+  val localDateDateReads: Reads[LocalDate] = __.read[String].map{dateTime => LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate}
 }
 
 case object ReceiptDateNotInExpectedFormat extends Exception("Get AFT details returned a receipt date which was not in expected format")

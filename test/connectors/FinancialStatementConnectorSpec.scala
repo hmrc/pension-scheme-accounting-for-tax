@@ -226,10 +226,11 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
     "return maximum answer json when successful response returned from ETMP when the financial statement toggle is " +
       "switched on and get aft details finds version etc" in {
+
       val aftDetailsJson = Json.obj(
-        "aftVersion" -> 2,
-        "submitterDetails" -> Json.obj(
-          "receiptDate" -> Json.toJson(receiptDate)
+        "aftDetails" -> Json.obj(
+          "aftVersion" -> 2,
+          "receiptDate" -> Json.toJson(receiptDateFromIF)
         )
       )
       when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
@@ -336,6 +337,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
 object FinancialStatementConnectorSpec {
   private val receiptDate = LocalDate.of(2020, 12, 12)
+  private val receiptDateFromIF = "2020-12-12T09:30:47Z"
 
   def errorResponse(code: String): String = {
     Json.stringify(
@@ -662,13 +664,7 @@ object FinancialStatementConnectorSpec {
           index = 1,
           formBundleNumber = Some("222"),
           version = Some(2),
-          receiptDate = Some(receiptDate),
-          chargeType = "Accounting for Tax return",
-          dueDate = Some(LocalDate.parse("2020-02-15")),
-          amountDue = BigDecimal(1029.05),
-          accruedInterestTotal = BigDecimal(100.05),
-          periodStartDate = Some(LocalDate.parse("2020-01-01")),
-          periodEndDate = Some(LocalDate.parse("2020-03-31")),
+          receiptDate = Some(receiptDate)
         )
       ),
       Seq(DocumentLineItemDetail(

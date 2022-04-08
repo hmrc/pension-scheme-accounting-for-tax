@@ -253,13 +253,7 @@ object SchemeFSDetailReadsSpec {
       sourceChargeInfo = Some(
         SourceChargeInfo(
           index = 1,
-          formBundleNumber = Some("123456789193"),
-          chargeType = "Accounting for Tax return",
-          dueDate = Some(LocalDate.of(2020, 2, 15)),
-          amountDue = BigDecimal(1029.05),
-          accruedInterestTotal = BigDecimal(100.05),
-          periodStartDate = Some(LocalDate.of(2020, 4, 1)),
-          periodEndDate = Some(LocalDate.of(2020, 6, 30))
+          formBundleNumber = Some("123456789193")
         )
       ),
       Seq(DocumentLineItemDetail(

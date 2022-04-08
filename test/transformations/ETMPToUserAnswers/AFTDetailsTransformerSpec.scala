@@ -21,7 +21,11 @@ import org.scalatest.freespec.AnyFreeSpec
 import play.api.libs.json.Json
 import transformations.generators.AFTETMPResponseGenerators
 
+import java.time.LocalDate
+
 class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
+
+  import AFTDetailsTransformerSpec._
 
   private val chargeATransformer = new ChargeATransformer
   private val chargeBTransformer = new ChargeBTransformer
@@ -38,7 +42,21 @@ class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerato
       val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
       transformedUserAnswersJson mustBe userAnswersJson
     }
+
+    "must tranform a datetime to localdate" in {
+      val aftDetailsJson = Json.obj(
+        "abc" -> Json.obj(
+          "def" -> Json.toJson("2020-12-12T09:30:47Z")
+        )
+      )
+
+      val result = (aftDetailsJson \ "abc" \ "def").asOpt[LocalDate](AFTDetailsTransformer.localDateDateReads)
+      result mustBe Some(LocalDate.of(2020, 12, 12))
+    }
   }
+}
+
+object AFTDetailsTransformerSpec {
 
   private val userAnswersJson = Json.parse(
     """{
