@@ -253,7 +253,8 @@ object SchemeFSDetailReadsSpec {
       sourceChargeInfo = Some(
         SchemeSourceChargeInfo(
           index = 1,
-          periodStartDate = Some(LocalDate.parse("2020-04-01"))
+          periodStartDate = Some(LocalDate.parse("2020-04-01")),
+          periodEndDate = Some(LocalDate.parse("2020-06-30"))
         )
       ),
       Seq(DocumentLineItemDetail(

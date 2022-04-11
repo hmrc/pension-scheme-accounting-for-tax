@@ -30,7 +30,8 @@ case class SchemeSourceChargeInfo(
                              index: Int,
                              version: Option[Int] = None,
                              receiptDate: Option[LocalDate] = None,
-                             periodStartDate: Option[LocalDate] = None
+                             periodStartDate: Option[LocalDate] = None,
+                             periodEndDate: Option[LocalDate] = None
                            )
 
 object SchemeSourceChargeInfo {
@@ -175,7 +176,8 @@ object SchemeFS {
               schemeFSDetail copy (
                 sourceChargeInfo = Some(SchemeSourceChargeInfo(
                   index = foundOriginalCharge.index,
-                  periodStartDate = foundOriginalCharge.periodStartDate
+                  periodStartDate = foundOriginalCharge.periodStartDate,
+                  periodEndDate = foundOriginalCharge.periodEndDate
                 ))
                 )
             case _ => schemeFSDetail

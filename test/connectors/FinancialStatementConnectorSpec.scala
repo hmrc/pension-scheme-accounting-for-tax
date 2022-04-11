@@ -668,7 +668,8 @@ object FinancialStatementConnectorSpec {
           index = 1,
           version = None,
           receiptDate = None,
-          periodStartDate = Some(LocalDate.parse("2020-01-01"))
+          periodStartDate = Some(LocalDate.parse("2020-01-01")),
+          periodEndDate = Some(LocalDate.parse("2020-03-31"))
         )
       ),
       Seq(DocumentLineItemDetail(
