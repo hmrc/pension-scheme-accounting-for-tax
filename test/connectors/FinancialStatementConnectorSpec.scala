@@ -66,7 +66,6 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
   override protected def portConfigKey: String = "microservice.services.if-hod.port"
 
   private val mockAuditService = mock[AuditService]
-  private val mockAFTConnector = mock[AFTConnector]
   private val mockAftService = mock[AFTService]
   private val mockFutureToggleService = mock[FeatureToggleService]
   private lazy val connector: FinancialStatementConnector = injector.instanceOf[FinancialStatementConnector]
@@ -75,8 +74,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AFTService].toInstance(mockAftService),
-      bind[FeatureToggleService].toInstance(mockFutureToggleService),
-      bind[AFTConnector].toInstance(mockAFTConnector)
+      bind[FeatureToggleService].toInstance(mockFutureToggleService)
     )
 
   override def beforeEach(): Unit = {
@@ -224,17 +222,8 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       }
     }
 
-    "return maximum answer json when successful response returned from ETMP when the financial statement toggle is " +
-      "switched on and get aft details finds version etc" in {
-
-      val aftDetailsJson = Json.obj(
-        "aftDetails" -> Json.obj(
-          "aftVersion" -> 2,
-          "receiptDate" -> Json.toJson(receiptDateFromIF)
-        )
-      )
+    "return maximum answer json when successful response returned from ETMP when the financial statement toggle is on"in {
       when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
-      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(aftDetailsJson))
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -337,7 +326,6 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
 object FinancialStatementConnectorSpec {
   private val receiptDate = LocalDate.of(2020, 12, 12)
-  private val receiptDateFromIF = "2020-12-12T09:30:47Z"
 
   def errorResponse(code: String): String = {
     Json.stringify(
@@ -631,8 +619,8 @@ object FinancialStatementConnectorSpec {
       periodStartDate = Some(LocalDate.parse("2020-01-01")),
       periodEndDate = Some(LocalDate.parse("2020-03-31")),
       formBundleNumber = Some("222"),
-      version = Some(2),
-      receiptDate = Some(receiptDate),
+      version = None,
+      receiptDate = None,
       aftVersion = Some(1),
       sourceChargeRefForInterest = None,
       sourceChargeInfo = None,
@@ -655,15 +643,15 @@ object FinancialStatementConnectorSpec {
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
       formBundleNumber = Some("123456789183"),
-      version = Some(2),
-      receiptDate = Some(receiptDate),
+      version = None,
+      receiptDate = None,
       aftVersion = Some(1),
       sourceChargeRefForInterest = Some("XY002610150184"),
       sourceChargeInfo = Some(
         SourceChargeInfo(
           index = 1,
-          version = Some(2),
-          receiptDate = Some(receiptDate)
+          version = None,
+          receiptDate = None
         )
       ),
       Seq(DocumentLineItemDetail(

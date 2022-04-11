@@ -21,17 +21,15 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models._
+import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import services.FeatureToggleService
-import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
-import java.time.LocalDate
 import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialStatementConnector @Inject()(
@@ -39,8 +37,7 @@ class FinancialStatementConnector @Inject()(
                                              config: AppConfig,
                                              headerUtils: HeaderUtils,
                                              financialInfoAuditService: FinancialInfoAuditService,
-                                             featureToggleService: FeatureToggleService,
-                                             aftConnector: AFTConnector
+                                             featureToggleService : FeatureToggleService
                                            )
   extends HttpErrorFunctions with HttpResponseHelper {
 
@@ -112,52 +109,7 @@ class FinancialStatementConnector @Inject()(
     }
   }
 
-  // scalastyle:off method.length
-  private def callAFTDetails(
-                              pstr: String,
-                              seqSchemeFSDetails: Seq[SchemeFSDetail],
-                              toggleValue: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[SchemeFSDetail]] = {
-    if (toggleValue) {
-      val futureSeqSchemeFSWithAFTDetails = Future.sequence(
-        seqSchemeFSDetails.map { schemeFSDetail =>
-          schemeFSDetail.formBundleNumber match {
-            case Some(fb) =>
-              aftConnector.getAftDetails(pstr, fb).map { jsValue =>
-                val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
-                val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
-                schemeFSDetail copy(
-                  receiptDate = optReceiptDate,
-                  version = optVersion
-                )
-              }
-            case _ => Future.successful(schemeFSDetail)
-          }
-        }
-      )
-      futureSeqSchemeFSWithAFTDetails.map { seqSchemeFsDetails =>
-        seqSchemeFsDetails.map { schemeFSDetail =>
-          schemeFSDetail.sourceChargeInfo match {
-            case Some(sci) =>
-              val newSourceChargeInfo = seqSchemeFsDetails.find(_.index == sci.index) match {
-                case Some(foundOriginalCharge) =>
-                  sci copy(
-                    version = foundOriginalCharge.version,
-                    receiptDate = foundOriginalCharge.receiptDate
-                  )
-                case _ => sci
-              }
-              schemeFSDetail copy (
-                sourceChargeInfo = Some(newSourceChargeInfo)
-              )
-            case _ => schemeFSDetail
-          }
-        }
-      }
-    } else {
-      Future.successful(seqSchemeFSDetails)
-    }
-  }
-
+  //scalastyle:off cyclomatic.complexity
   private def transformSchemeFS(pstr: String, url: String, toggleValue: Boolean)
                                (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
 
@@ -167,30 +119,24 @@ class FinancialStatementConnector @Inject()(
       SchemeFS.rdsSchemeFSMedium
     }
 
-    http.GET[HttpResponse](url)(implicitly, hc, implicitly).flatMap { response =>
+    http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
           Json.parse(response.body).validate[SchemeFS](reads) match {
             case JsSuccess(schemeFS, _) =>
               logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFS")
-              callAFTDetails(
-                pstr,
-                schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment interest")), toggleValue).map { f =>
-                SchemeFS(
-                  inhibitRefundSignal = schemeFS.inhibitRefundSignal,
-                  seqSchemeFSDetail = f
-                )
-              }
+              SchemeFS(
+                inhibitRefundSignal = schemeFS.inhibitRefundSignal,
+                seqSchemeFSDetail = schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment interest"))
+              )
             case JsError(errors) =>
               throw JsResultException(errors)
           }
         case NOT_FOUND =>
-          Future.successful(
-            SchemeFS(
-              inhibitRefundSignal = false,
-              seqSchemeFSDetail = Seq.empty[SchemeFSDetail]
-            )
+          SchemeFS(
+            inhibitRefundSignal = false,
+            seqSchemeFSDetail = Seq.empty[SchemeFSDetail]
           )
         case _ =>
           handleErrorResponse("GET", url)(response)

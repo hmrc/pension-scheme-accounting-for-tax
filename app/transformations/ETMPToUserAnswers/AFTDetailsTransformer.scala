@@ -20,6 +20,7 @@ import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
+import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 
 import java.time.{LocalDate, LocalDateTime}
 
@@ -79,8 +80,8 @@ class AFTDetailsTransformer @Inject()(
     ).reduce
 
   def receiptDateReads: Reads[JsObject] =
-    (__ \ "aftDetails" \ "receiptDate").read[String].flatMap { dateTime =>
-      (__ \ 'submitterDetails \ 'receiptDate).json.put(JsString(LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate.toString))
+    (__ \ "aftDetails" \ "receiptDate").read[LocalDate](localDateDateReads).flatMap { receiptDate =>
+      (__ \ 'submitterDetails \ 'receiptDate).json.put(JsString(receiptDate.toString))
     }
 }
 

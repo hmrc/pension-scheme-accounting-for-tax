@@ -16,22 +16,30 @@
 
 package controllers
 
-import connectors.FinancialStatementConnector
+import connectors.{AFTConnector, FinancialStatementConnector}
+import models.FeatureToggle.Enabled
+import models.FeatureToggleName.FinancialInformationAFT
+import models.{SchemeFS, SchemeFSDetail}
 import play.api.libs.json._
 import play.api.mvc._
+import services.FeatureToggleService
+import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.HttpResponseHelper
 
+import java.time.LocalDate
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
 class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
-                                             val authConnector: AuthConnector
+                                             val authConnector: AuthConnector,
+                                             aftConnector: AFTConnector,
+                                             featureToggleService: FeatureToggleService
                                             )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -48,11 +56,63 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       }
   }
 
+  // scalastyle:off method.length
+  private def supplementWithVersionAndReceiptDate(
+                                                   pstr: String,
+                                                   schemeFS: SchemeFS
+                                                 )(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
+    val seqSchemeFSDetails = schemeFS.seqSchemeFSDetail
+    val futureSeqSchemeFSWithAFTDetails = Future.sequence(
+      seqSchemeFSDetails.map { schemeFSDetail =>
+        schemeFSDetail.formBundleNumber match {
+          case Some(fb) =>
+            aftConnector.getAftDetails(pstr, fb).map { jsValue =>
+              val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
+              val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
+              schemeFSDetail copy(
+                receiptDate = optReceiptDate,
+                version = optVersion
+              )
+            }
+          case _ => Future.successful(schemeFSDetail)
+        }
+      }
+    )
+     futureSeqSchemeFSWithAFTDetails.map { seqSchemeFsDetails =>
+      val updatedSeqSchemeFSDetail = seqSchemeFsDetails.map { schemeFSDetail =>
+        schemeFSDetail.sourceChargeInfo match {
+          case Some(sci) =>
+            val newSourceChargeInfo = seqSchemeFsDetails.find(_.index == sci.index) match {
+              case Some(foundOriginalCharge) =>
+                sci copy(
+                  version = foundOriginalCharge.version,
+                  receiptDate = foundOriginalCharge.receiptDate
+                )
+              case _ => sci
+            }
+            schemeFSDetail copy (
+              sourceChargeInfo = Some(newSourceChargeInfo)
+              )
+          case _ => schemeFSDetail
+        }
+      }
+      schemeFS copy (
+        seqSchemeFSDetail = updatedSeqSchemeFSDetail
+        )
+    }
+  }
+
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
       get(key = "pstr") { pstr =>
-        financialStatementConnector.getSchemeFS(pstr).map { data =>
-          Ok(Json.toJson(data))
+        financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
+          val updatedSchemeFS = featureToggleService.get(FinancialInformationAFT).flatMap {
+            case Enabled(_) => supplementWithVersionAndReceiptDate(pstr, data)
+            case _ => Future.successful(data)
+          }
+          updatedSchemeFS.map { sss =>
+            Ok(Json.toJson(sss))
+          }
         }
       }
   }
