@@ -338,6 +338,7 @@ object FinancialStatementConnectorSpec {
 
   private val psaModelMax: PsaFS = PsaFS(true, Seq(
     PsaFSDetail(
+      index = 1,
       chargeReference = "Not Applicable",
       chargeType = "Payment on account",
       dueDate = Some(LocalDate.parse("2020-06-25")),
@@ -350,6 +351,7 @@ object FinancialStatementConnectorSpec {
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
       sourceChargeRefForInterest = Some("XY002610150181"),
+      sourceChargeInfo = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -357,6 +359,7 @@ object FinancialStatementConnectorSpec {
       )
     ),
     PsaFSDetail(
+      index = 2,
       chargeReference = "Not Applicable",
       chargeType = "Accounting for Tax late filing penalty",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -369,6 +372,7 @@ object FinancialStatementConnectorSpec {
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
       sourceChargeRefForInterest = Some("XY002610150181"),
+      sourceChargeInfo = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -376,6 +380,7 @@ object FinancialStatementConnectorSpec {
       )
     ),
     PsaFSDetail(
+      index = 3,
       chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax further late filing penalty",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -388,6 +393,7 @@ object FinancialStatementConnectorSpec {
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
       sourceChargeRefForInterest = Some("XY002610150181"),
+      sourceChargeInfo = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -397,69 +403,75 @@ object FinancialStatementConnectorSpec {
   )
 
   private val psaFSMaxResponse: JsValue = Json.arr(
-    Json.obj(
-      "chargeReference" -> "Not Applicable",
-      "chargeType" -> "00600100",
-      "totalAmount" -> -15000.00,
-      "dueDate" -> "2020-06-25",
-      "amountDue" -> -15000.00,
-      "outstandingAmount" -> -15000.00,
-      "stoodOverAmount" -> 0.00,
-      "accruedInterestTotal" -> 0.00,
-      "periodStartDate" -> "2020-04-01",
-      "periodEndDate" -> "2020-06-30",
-      "pstr" -> "24000040IN",
-      "sourceChargeRefForInterest" -> "XY002610150181",
-      "documentLineItemDetails" -> Json.arr(
-        Json.obj(
-          "clearingDate" -> "2020-06-30",
-          "clearingReason" -> "C1",
-          "clearedAmountItem" -> 0.00
+      Json.obj(
+        "index" -> 1,
+        "chargeReference" -> "Not Applicable",
+        "chargeType" -> "00600100",
+        "totalAmount" -> -15000.00,
+        "dueDate" -> "2020-06-25",
+        "amountDue" -> -15000.00,
+        "outstandingAmount" -> -15000.00,
+        "stoodOverAmount" -> 0.00,
+        "accruedInterestTotal" -> 0.00,
+        "periodStartDate" -> "2020-04-01",
+        "periodEndDate" -> "2020-06-30",
+        "pstr" -> "24000040IN",
+        "sourceChargeIndex" -> None,
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "documentLineItemDetails" -> Json.arr(
+          Json.obj(
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
+          )
+        )
+      ),
+      Json.obj(
+        "index" -> 2,
+        "chargeReference" -> "Not Applicable",
+        "chargeType" -> "57001080",
+        "dueDate" -> "2020-02-15",
+        "totalAmount" -> 80000.00,
+        "outstandingAmount" -> 56049.08,
+        "stoodOverAmount" -> 25089.08,
+        "accruedInterestTotal" -> 123.00,
+        "amountDue" -> 1029.05,
+        "periodStartDate" -> "2020-04-01",
+        "periodEndDate" -> "2020-06-30",
+        "pstr" -> "24000040IN",
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "sourceChargeIndex" -> None,
+        "documentLineItemDetails" -> Json.arr(
+          Json.obj(
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
+          )
+        )
+      ),
+      Json.obj(
+        "index" -> 3,
+        "chargeReference" -> "XY002610150184",
+        "chargeType" -> "57001091",
+        "dueDate" -> "2020-02-15",
+        "totalAmount" -> 80000.00,
+        "outstandingAmount" -> 56049.08,
+        "stoodOverAmount" -> 25089.08,
+        "accruedInterestTotal" -> 123.00,
+        "amountDue" -> 1029.05,
+        "periodStartDate" -> "2020-04-01",
+        "periodEndDate" -> "2020-06-30",
+        "pstr" -> "24000040IN",
+        "sourceChargeRefForInterest" -> "XY002610150181",
+        "sourceChargeIndex" -> None,
+        "documentLineItemDetails" -> Json.arr(
+          Json.obj(
+            "clearingDate" -> "2020-06-30",
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
+          )
         )
       )
-    ),
-    Json.obj(
-      "chargeReference" -> "Not Applicable",
-      "chargeType" -> "57001080",
-      "dueDate" -> "2020-02-15",
-      "totalAmount" -> 80000.00,
-      "outstandingAmount" -> 56049.08,
-      "stoodOverAmount" -> 25089.08,
-      "accruedInterestTotal" -> 123.00,
-      "amountDue" -> 1029.05,
-      "periodStartDate" -> "2020-04-01",
-      "periodEndDate" -> "2020-06-30",
-      "pstr" -> "24000040IN",
-      "sourceChargeRefForInterest" -> "XY002610150181",
-      "documentLineItemDetails" -> Json.arr(
-        Json.obj(
-          "clearingDate" -> "2020-06-30",
-          "clearingReason" -> "C1",
-          "clearedAmountItem" -> 0.00
-        )
-      )
-    ),
-    Json.obj(
-      "chargeReference" -> "XY002610150184",
-      "chargeType" -> "57001091",
-      "dueDate" -> "2020-02-15",
-      "totalAmount" -> 80000.00,
-      "outstandingAmount" -> 56049.08,
-      "stoodOverAmount" -> 25089.08,
-      "accruedInterestTotal" -> 123.00,
-      "amountDue" -> 1029.05,
-      "periodStartDate" -> "2020-04-01",
-      "periodEndDate" -> "2020-06-30",
-      "pstr" -> "24000040IN",
-      "sourceChargeRefForInterest" -> "XY002610150181",
-      "documentLineItemDetails" -> Json.arr(
-        Json.obj(
-          "clearingDate" -> "2020-06-30",
-          "clearingReason" -> "C1",
-          "clearedAmountItem" -> 0.00
-        )
-      )
-    )
   )
 
   private val psaFSWrapperResponseMax: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++
@@ -467,6 +479,7 @@ object FinancialStatementConnectorSpec {
 
   private val psaFSResponse: JsValue = Json.arr(
     Json.obj(
+      "index" -> 1,
       "chargeReference" -> "XY002610150184",
       "chargeType" -> "57001080",
       "dueDate" -> "2020-02-15",
@@ -480,6 +493,7 @@ object FinancialStatementConnectorSpec {
       "pstr" -> "24000040IN"
     ),
     Json.obj(
+      "index" -> 2,
       "chargeReference" -> "XY002610150184",
       "chargeType" -> "57001091",
       "dueDate" -> "2020-02-15",
@@ -495,6 +509,7 @@ object FinancialStatementConnectorSpec {
   )
   private val psaModel: PsaFS = PsaFS(false, Seq(
     PsaFSDetail(
+      index = 0,
       chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax late filing penalty",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -508,6 +523,7 @@ object FinancialStatementConnectorSpec {
       pstr = "24000040IN"
     ),
     PsaFSDetail(
+      index = 0,
       chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax further late filing penalty",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -648,7 +664,7 @@ object FinancialStatementConnectorSpec {
       aftVersion = Some(1),
       sourceChargeRefForInterest = Some("XY002610150184"),
       sourceChargeInfo = Some(
-        SourceChargeInfo(
+        SchemeSourceChargeInfo(
           index = 1,
           version = None,
           receiptDate = None,

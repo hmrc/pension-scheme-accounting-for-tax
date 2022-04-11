@@ -26,15 +26,15 @@ case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: O
 object DocumentLineItemDetail {
   implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
 }
-case class SourceChargeInfo(
+case class SchemeSourceChargeInfo(
                              index: Int,
                              version: Option[Int] = None,
                              receiptDate: Option[LocalDate] = None,
                              periodStartDate: Option[LocalDate] = None
                            )
 
-object SourceChargeInfo {
-  implicit val formats: Format[SourceChargeInfo] = Json.format[SourceChargeInfo]
+object SchemeSourceChargeInfo {
+  implicit val formats: Format[SchemeSourceChargeInfo] = Json.format[SchemeSourceChargeInfo]
 }
 
 case class SchemeFSDetail(
@@ -54,7 +54,7 @@ case class SchemeFSDetail(
                            receiptDate: Option[LocalDate] = None,
                            aftVersion: Option[Int] = None,
                            sourceChargeRefForInterest: Option[String] = None,
-                           sourceChargeInfo: Option[SourceChargeInfo] = None,
+                           sourceChargeInfo: Option[SchemeSourceChargeInfo] = None,
                            documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
                          )
 
@@ -173,7 +173,7 @@ object SchemeFS {
           case Some(ref) => seqSchemeFSDetailWithIndexes.find(_.chargeReference == ref) match {
             case Some(foundOriginalCharge) =>
               schemeFSDetail copy (
-                sourceChargeInfo = Some(SourceChargeInfo(
+                sourceChargeInfo = Some(SchemeSourceChargeInfo(
                   index = foundOriginalCharge.index,
                   periodStartDate = foundOriginalCharge.periodStartDate
                 ))
