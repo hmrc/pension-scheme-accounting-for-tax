@@ -114,9 +114,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
               } yield updateSourceChargeInfo(data, updatedSeqSchemeFSDetail)
             case _ => Future.successful(data)
           }
-          updatedSchemeFS.map { sss =>
-            Ok(Json.toJson(sss))
-          }
+          updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
         }
       }
   }
