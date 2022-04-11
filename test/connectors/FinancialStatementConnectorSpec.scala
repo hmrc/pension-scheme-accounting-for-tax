@@ -651,7 +651,8 @@ object FinancialStatementConnectorSpec {
         SourceChargeInfo(
           index = 1,
           version = None,
-          receiptDate = None
+          receiptDate = None,
+          periodStartDate = Some(LocalDate.parse("2020-01-01"))
         )
       ),
       Seq(DocumentLineItemDetail(

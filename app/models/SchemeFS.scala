@@ -29,7 +29,8 @@ object DocumentLineItemDetail {
 case class SourceChargeInfo(
                              index: Int,
                              version: Option[Int] = None,
-                             receiptDate: Option[LocalDate] = None
+                             receiptDate: Option[LocalDate] = None,
+                             periodStartDate: Option[LocalDate] = None
                            )
 
 object SourceChargeInfo {
@@ -173,7 +174,8 @@ object SchemeFS {
             case Some(foundOriginalCharge) =>
               schemeFSDetail copy (
                 sourceChargeInfo = Some(SourceChargeInfo(
-                  index = foundOriginalCharge.index
+                  index = foundOriginalCharge.index,
+                  periodStartDate = foundOriginalCharge.periodStartDate
                 ))
                 )
             case _ => schemeFSDetail
