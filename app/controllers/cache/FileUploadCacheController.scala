@@ -22,6 +22,7 @@ import play.api.Logger
 import play.api.libs.json.{JsSuccess, Json}
 import play.api.mvc._
 import repository.FileUploadReferenceCacheRepository
+import repository.model.FileUploadStatus
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
@@ -29,7 +30,6 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import repository.model.FileUploadStatus
 
 class FileUploadCacheController @Inject()(
                                            repository: FileUploadReferenceCacheRepository,

@@ -18,7 +18,6 @@ package connectors
 
 import com.google.inject.Inject
 import config.AppConfig
-import uk.gov.hmrc.http.HeaderCarrier
 
 import java.util.UUID.randomUUID
 

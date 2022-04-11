@@ -198,7 +198,7 @@ object PsaFSReadsSpec {
     periodEndDate = LocalDate.parse("2020-06-30"),
     pstr = "24000040IN",
     sourceChargeRefForInterest = Some("XY002610150181"),
-    sourceChargeInfo = None,
+    psaSourceChargeInfo = None,
     documentLineItemDetails = Seq(DocumentLineItemDetail(
       clearingReason= Some("C1"),
       clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -206,7 +206,7 @@ object PsaFSReadsSpec {
     )
   )
 
-  private val sourceChargeInfo : SourceChargeInfo = SourceChargeInfo(
+  private val psaSourceChargeInfo : PsaSourceChargeInfo = PsaSourceChargeInfo(
     index = 1,
     chargeType = "Contract settlement charge",
     periodStartDate = LocalDate.parse("2020-04-01"),
@@ -228,7 +228,7 @@ object PsaFSReadsSpec {
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
       sourceChargeRefForInterest = Some("XY002610150181"),
-      sourceChargeInfo = None,
+      psaSourceChargeInfo = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -249,7 +249,7 @@ object PsaFSReadsSpec {
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
       sourceChargeRefForInterest = Some("XY002610150184"),
-      sourceChargeInfo = Some(sourceChargeInfo),
+      psaSourceChargeInfo = Some(psaSourceChargeInfo),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),

@@ -17,7 +17,6 @@
 package repository
 
 import com.google.inject.Inject
-import org.joda.time.{DateTime, DateTimeZone}
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.Configuration
 import play.api.libs.json._
