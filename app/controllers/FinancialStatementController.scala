@@ -56,13 +56,11 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       }
   }
 
-  // scalastyle:off method.length
-  private def supplementWithVersionAndReceiptDate(
-                                                   pstr: String,
-                                                   schemeFS: SchemeFS
-                                                 )(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
-    val seqSchemeFSDetails = schemeFS.seqSchemeFSDetail
-    val futureSeqSchemeFSWithAFTDetails = Future.sequence(
+  private def updateWithVersionAndReceiptDate(pstr: String,
+                                              seqSchemeFSDetails: Seq[SchemeFSDetail])(implicit hc: HeaderCarrier,
+                                                                                       ec: ExecutionContext,
+                                                                                       request: RequestHeader): Future[Seq[SchemeFSDetail]] = {
+    Future.sequence(
       seqSchemeFSDetails.map { schemeFSDetail =>
         schemeFSDetail.formBundleNumber match {
           case Some(fb) =>
@@ -78,27 +76,42 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
         }
       }
     )
-     futureSeqSchemeFSWithAFTDetails.map { seqSchemeFsDetails =>
-      val updatedSeqSchemeFSDetail = seqSchemeFsDetails.map { schemeFSDetail =>
-        schemeFSDetail.sourceChargeInfo match {
-          case Some(sci) =>
-            val newSourceChargeInfo = seqSchemeFsDetails.find(_.index == sci.index) match {
-              case Some(foundOriginalCharge) =>
-                sci copy(
-                  version = foundOriginalCharge.version,
-                  receiptDate = foundOriginalCharge.receiptDate
-                )
-              case _ => sci
-            }
-            schemeFSDetail copy (
-              sourceChargeInfo = Some(newSourceChargeInfo)
+  }
+
+  private def updateSourceChargeInfo(schemeFS: SchemeFS,
+                                     seqSchemeFsDetails: Seq[SchemeFSDetail]
+                                    )(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): SchemeFS = {
+    val updatedSeqSchemeFSDetail = seqSchemeFsDetails.map { schemeFSDetail =>
+      schemeFSDetail.sourceChargeInfo match {
+        case Some(sci) =>
+          val newSourceChargeInfo = seqSchemeFsDetails.find(_.index == sci.index) match {
+            case Some(foundOriginalCharge) =>
+              sci copy(
+                version = foundOriginalCharge.version,
+                receiptDate = foundOriginalCharge.receiptDate
               )
-          case _ => schemeFSDetail
-        }
+            case _ => sci
+          }
+          schemeFSDetail copy (
+            sourceChargeInfo = Some(newSourceChargeInfo)
+            )
+        case _ => schemeFSDetail
       }
-      schemeFS copy (
-        seqSchemeFSDetail = updatedSeqSchemeFSDetail
-        )
+    }
+    schemeFS copy (
+      seqSchemeFSDetail = updatedSeqSchemeFSDetail
+      )
+  }
+
+  // scalastyle:off method.length
+  private def supplementWithVersionAndReceiptDate(
+                                                   pstr: String,
+                                                   schemeFS: SchemeFS
+                                                 )(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
+    for {
+      updatedSeqSchemeFSDetail <- updateWithVersionAndReceiptDate(pstr, schemeFS.seqSchemeFSDetail)
+    } yield {
+      updateSourceChargeInfo(schemeFS, updatedSeqSchemeFSDetail)
     }
   }
 
