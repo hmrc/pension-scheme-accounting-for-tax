@@ -103,24 +103,15 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       )
   }
 
-  // scalastyle:off method.length
-  private def supplementWithVersionAndReceiptDate(
-                                                   pstr: String,
-                                                   schemeFS: SchemeFS
-                                                 )(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
-    for {
-      updatedSeqSchemeFSDetail <- updateWithVersionAndReceiptDate(pstr, schemeFS.seqSchemeFSDetail)
-    } yield {
-      updateSourceChargeInfo(schemeFS, updatedSeqSchemeFSDetail)
-    }
-  }
-
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
       get(key = "pstr") { pstr =>
         financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
           val updatedSchemeFS = featureToggleService.get(FinancialInformationAFT).flatMap {
-            case Enabled(_) => supplementWithVersionAndReceiptDate(pstr, data)
+            case Enabled(_) =>
+              for {
+                updatedSeqSchemeFSDetail <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+              } yield updateSourceChargeInfo(data, updatedSeqSchemeFSDetail)
             case _ => Future.successful(data)
           }
           updatedSchemeFS.map { sss =>
