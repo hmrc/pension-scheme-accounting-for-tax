@@ -16,12 +16,13 @@
 
 package repository.model
 
-import play.api.libs.functional.syntax.{toFunctionalBuilderOps, unlift}
+import play.api.libs.functional.syntax.toFunctionalBuilderOps
 import play.api.libs.json._
 
 import java.time.LocalDateTime
 
-case class FileUploadStatus(_type: String, failureReason: Option[String]=None, message: Option[String]=None, downloadUrl: Option[String] = None, mimeType: Option[String] = None,
+case class FileUploadStatus(_type: String, failureReason: Option[String]=None, message: Option[String]=None,
+                            downloadUrl: Option[String] = None, mimeType: Option[String] = None,
                             name: Option[String] = None, size: Option[Long] = None)
 
 object FileUploadStatus {

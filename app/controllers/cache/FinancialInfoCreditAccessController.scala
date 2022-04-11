@@ -73,7 +73,7 @@ class FinancialInfoCreditAccessController @Inject()(
       }
   }
 
-  private def getForPsaOrPsp(psaId: Option[String], pspId: Option[String], srn: String)(implicit request: Request[AnyContent]): Future[Result] = {
+  private def getForPsaOrPsp(psaId: Option[String], pspId: Option[String], srn: String): Future[Result] = {
     repository.get(srn).flatMap { response =>
       logger.debug(message = s"FinancialInfoCreditAccessController.getForPsaOrPsp: Response for request Id $srn is $response")
       response.flatMap(retrieveAccessInfo(_, psaId, pspId)) match {
