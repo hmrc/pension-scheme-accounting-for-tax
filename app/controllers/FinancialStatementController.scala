@@ -19,7 +19,7 @@ package controllers
 import connectors.{AFTConnector, FinancialStatementConnector}
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.FinancialInformationAFT
-import models.{SchemeFS, SchemeFSDetail}
+import models.SchemeFSDetail
 import play.api.libs.json._
 import play.api.mvc._
 import services.FeatureToggleService
@@ -78,29 +78,27 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     )
   }
 
-  private def updateSourceChargeInfo(schemeFS: SchemeFS,
-                                     seqSchemeFsDetails: Seq[SchemeFSDetail]
-                                    )(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): SchemeFS = {
-    val updatedSeqSchemeFSDetail = seqSchemeFsDetails.map { schemeFSDetail =>
+  private def updateSourceChargeInfo(seqSchemeFsDetail: Seq[SchemeFSDetail])(implicit hc: HeaderCarrier,
+                                                                              ec: ExecutionContext,
+                                                                              request: RequestHeader): Seq[SchemeFSDetail] = {
+    seqSchemeFsDetail.map { schemeFSDetail =>
       schemeFSDetail.sourceChargeInfo match {
         case Some(sci) =>
-          val newSourceChargeInfo = seqSchemeFsDetails.find(_.index == sci.index) match {
+          seqSchemeFsDetail.find(_.index == sci.index) match {
             case Some(foundOriginalCharge) =>
-              sci copy(
-                version = foundOriginalCharge.version,
-                receiptDate = foundOriginalCharge.receiptDate
-              )
-            case _ => sci
+              schemeFSDetail copy (
+                sourceChargeInfo = Some(
+                  sci copy(
+                    version = foundOriginalCharge.version,
+                    receiptDate = foundOriginalCharge.receiptDate
+                  )
+                )
+                )
+            case _ => schemeFSDetail
           }
-          schemeFSDetail copy (
-            sourceChargeInfo = Some(newSourceChargeInfo)
-            )
         case _ => schemeFSDetail
       }
     }
-    schemeFS copy (
-      seqSchemeFSDetail = updatedSeqSchemeFSDetail
-      )
   }
 
   def schemeStatement: Action[AnyContent] = Action.async {
@@ -110,8 +108,12 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
           val updatedSchemeFS = featureToggleService.get(FinancialInformationAFT).flatMap {
             case Enabled(_) =>
               for {
-                updatedSeqSchemeFSDetail <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
-              } yield updateSourceChargeInfo(data, updatedSeqSchemeFSDetail)
+                seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+              } yield {
+                data copy (
+                  seqSchemeFSDetail = updateSourceChargeInfo(seqSchemeFSDetailWithVersionAndReceiptDate)
+                )
+              }
             case _ => Future.successful(data)
           }
           updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
