@@ -26,8 +26,20 @@ case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: O
 object DocumentLineItemDetail {
   implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
 }
+case class SchemeSourceChargeInfo(
+                             index: Int,
+                             version: Option[Int] = None,
+                             receiptDate: Option[LocalDate] = None,
+                             periodStartDate: Option[LocalDate] = None,
+                             periodEndDate: Option[LocalDate] = None
+                           )
+
+object SchemeSourceChargeInfo {
+  implicit val formats: Format[SchemeSourceChargeInfo] = Json.format[SchemeSourceChargeInfo]
+}
 
 case class SchemeFSDetail(
+                           index: Int,
                            chargeReference: String,
                            chargeType: String,
                            dueDate: Option[LocalDate],
@@ -39,8 +51,11 @@ case class SchemeFSDetail(
                            periodStartDate: Option[LocalDate],
                            periodEndDate: Option[LocalDate],
                            formBundleNumber: Option[String] = None,
+                           version: Option[Int] = None,
+                           receiptDate: Option[LocalDate] = None,
                            aftVersion: Option[Int] = None,
                            sourceChargeRefForInterest: Option[String] = None,
+                           sourceChargeInfo: Option[SchemeSourceChargeInfo] = None,
                            documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil
                          )
 
@@ -75,6 +90,7 @@ object SchemeFS {
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt) =>
       SchemeFSDetail(
+        index = 0,
         chargeReference,
         SchemeChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
@@ -121,6 +137,7 @@ object SchemeFS {
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt,
      formBundleNumber, aftVersionOpt, sourceChargeRefForInterest, documentLineItemDetails) =>
       SchemeFSDetail(
+        index = 0,
         chargeReference,
         SchemeChargeType.valueWithName(chargeType),
         dueDateOpt.map(LocalDate.parse),
@@ -132,8 +149,11 @@ object SchemeFS {
         periodStartDateOpt.map(LocalDate.parse),
         periodEndDateOpt.map(LocalDate.parse),
         formBundleNumber,
+        None,
+        None,
         aftVersionOpt,
         sourceChargeRefForInterest,
+        None,
         documentLineItemDetails
       )
   )
@@ -144,13 +164,36 @@ object SchemeFS {
     }
   }
 
-  implicit val rdsSchemeFSMax: Reads[SchemeFS] =
+  implicit val rdsSchemeFSMax: Reads[SchemeFS] = {
+    def transformExtraFields(seqSchemeFSDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
+      val seqSchemeFSDetailWithIndexes = seqSchemeFSDetail.zipWithIndex.map { case (schemeFSDetail, i) =>
+        schemeFSDetail copy (index = i + 1)
+      }
+      seqSchemeFSDetailWithIndexes.map { schemeFSDetail =>
+        schemeFSDetail.sourceChargeRefForInterest match {
+          case Some(ref) => seqSchemeFSDetailWithIndexes.find(_.chargeReference == ref) match {
+            case Some(foundOriginalCharge) =>
+              schemeFSDetail copy (
+                sourceChargeInfo = Some(SchemeSourceChargeInfo(
+                  index = foundOriginalCharge.index,
+                  periodStartDate = foundOriginalCharge.periodStartDate,
+                  periodEndDate = foundOriginalCharge.periodEndDate
+                ))
+                )
+            case _ => schemeFSDetail
+          }
+          case _ => schemeFSDetail
+        }
+      }
+    }
+
     (
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
         (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsSchemeFSDetailMax))
       ) (
-      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFS(inhibitRefundSignal, seqSchemeFSDetail)
+      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFS(inhibitRefundSignal, transformExtraFields(seqSchemeFSDetail))
     )
+  }
 }
 
 object SchemeChargeType extends Enumeration {

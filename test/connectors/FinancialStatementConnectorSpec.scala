@@ -14,22 +14,6 @@
  * limitations under the License.
  */
 
-/*
- * Copyright 2022 HM Revenue & Customs
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package connectors
 
 import audit._
@@ -222,7 +206,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       }
     }
 
-    "return maximum answer json when successful response returned from ETMP when the financial statement toggle is switched on" in {
+    "return maximum answer json when successful response returned from ETMP when the financial statement toggle is on"in {
       when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
@@ -325,6 +309,8 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 }
 
 object FinancialStatementConnectorSpec {
+  private val receiptDate = LocalDate.of(2020, 12, 12)
+
   def errorResponse(code: String): String = {
     Json.stringify(
       Json.obj(
@@ -397,7 +383,7 @@ object FinancialStatementConnectorSpec {
         clearingDate = Some(LocalDate.parse("2020-06-30")),
         clearedAmountItem = BigDecimal(0.00))
       ))
-    )
+  )
   )
 
   private val psaFSMaxResponse: JsValue = Json.arr(
@@ -505,7 +491,7 @@ object FinancialStatementConnectorSpec {
       "pstr" -> "24000041IN"
     )
   )
-  private val psaModel: PsaFS = PsaFS( false, Seq(
+  private val psaModel: PsaFS = PsaFS(false, Seq(
     PsaFSDetail(
       index = 0,
       chargeReference = "XY002610150184",
@@ -559,15 +545,14 @@ object FinancialStatementConnectorSpec {
       "stoodOverAmount" -> 25089.08,
       "amountDue" -> 1029.05,
       "accruedInterestTotal" -> 100.05,
-      "periodStartDate" -> "2020-04-01",
-      "periodEndDate" -> "2020-06-30",
+      "periodStartDate" -> "2020-01-01",
+      "periodEndDate" -> "2020-03-31",
       "sapDocumentNumber" -> "123456789192",
       "postingDate" -> "<StartOfQ1LastYear>",
       "clearedAmountTotal" -> 7035.10,
-      "formbundleNumber" -> "123456789193",
-      "aftVersion" -> 0,
+      "formbundleNumber" -> "222",
+      "aftVersion" -> 1,
       "chargeClassification" -> "Charge",
-      "sourceChargeRefForInterest" -> "XY002610150181",
       "documentLineItemDetails" -> Json.arr(
         Json.obj(
           "clearedAmountItem" -> 0.00,
@@ -577,23 +562,23 @@ object FinancialStatementConnectorSpec {
       )
     ),
     Json.obj(
-      "chargeReference" -> s"XY002610150184",
-      "chargeType" -> "56001000",
-      "dueDate" -> "2020-02-15",
-      "totalAmount" -> 8000.00,
-      "outstandingAmount" -> 56049.08,
-      "stoodOverAmount" -> 25089.08,
-      "amountDue" -> 1029.05,
-      "accruedInterestTotal" -> 100.05,
+      "chargeReference" -> s"XY002610150185",
+      "chargeType" -> "56052000",
+      "dueDate" -> "2020-07-15",
+      "totalAmount" -> 129.00,
+      "outstandingAmount" -> 78.08,
+      "stoodOverAmount" -> 56.08,
+      "amountDue" -> 333.05,
+      "accruedInterestTotal" -> 22.05,
       "periodStartDate" -> "2020-04-01",
       "periodEndDate" -> "2020-06-30",
       "sapDocumentNumber" -> "123456789192",
       "postingDate" -> "<StartOfQ1LastYear>",
       "clearedAmountTotal" -> 7035.10,
       "formbundleNumber" -> "123456789183",
-      "aftVersion" -> 0,
+      "aftVersion" -> 1,
       "chargeClassification" -> "Charge",
-      "sourceChargeRefForInterest" -> "XY002610150181",
+      "sourceChargeRefForInterest" -> "XY002610150184",
       "documentLineItemDetails" -> Json.arr(
         Json.obj(
           "clearedAmountItem" -> 0.00,
@@ -606,6 +591,7 @@ object FinancialStatementConnectorSpec {
 
 
   private def schemeFSModel(chargeReference: String) = SchemeFSDetail(
+    index = 0,
     chargeReference = s"XY00261015018$chargeReference",
     chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -618,9 +604,11 @@ object FinancialStatementConnectorSpec {
     periodEndDate = Some(LocalDate.parse("2020-06-30"))
   )
 
+  //scalastyle:off method.length
   private def schemeFSMaxSeqModel: Seq[SchemeFSDetail] = Seq(
     SchemeFSDetail(
-      chargeReference = s"XY002610150184",
+      index = 1,
+      chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 80000.00,
@@ -628,11 +616,14 @@ object FinancialStatementConnectorSpec {
       outstandingAmount = 56049.08,
       accruedInterestTotal = 100.05,
       stoodOverAmount = 25089.08,
-      periodStartDate = Some(LocalDate.parse("2020-04-01")),
-      periodEndDate = Some(LocalDate.parse("2020-06-30")),
-      formBundleNumber = Some("123456789193"),
-      aftVersion = Some(0),
-      sourceChargeRefForInterest = Some("XY002610150181"),
+      periodStartDate = Some(LocalDate.parse("2020-01-01")),
+      periodEndDate = Some(LocalDate.parse("2020-03-31")),
+      formBundleNumber = Some("222"),
+      version = None,
+      receiptDate = None,
+      aftVersion = Some(1),
+      sourceChargeRefForInterest = None,
+      sourceChargeInfo = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -640,19 +631,31 @@ object FinancialStatementConnectorSpec {
       )
     ),
     SchemeFSDetail(
-      chargeReference = s"XY002610150184",
-      chargeType = "Accounting for Tax return",
-      dueDate = Some(LocalDate.parse("2020-02-15")),
-      totalAmount = 8000.00,
-      amountDue = 1029.05,
-      outstandingAmount = 56049.08,
-      accruedInterestTotal = 100.05,
-      stoodOverAmount = 25089.08,
+      index = 2,
+      chargeReference = "XY002610150185",
+      chargeType = "Interest on Accounting for Tax return",
+      dueDate = Some(LocalDate.parse("2020-07-15")),
+      totalAmount = 129.00,
+      amountDue = 333.05,
+      outstandingAmount = 78.08,
+      accruedInterestTotal = 22.05,
+      stoodOverAmount = 56.08,
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
       formBundleNumber = Some("123456789183"),
-      aftVersion = Some(0),
-      sourceChargeRefForInterest = Some("XY002610150181"),
+      version = None,
+      receiptDate = None,
+      aftVersion = Some(1),
+      sourceChargeRefForInterest = Some("XY002610150184"),
+      sourceChargeInfo = Some(
+        SchemeSourceChargeInfo(
+          index = 1,
+          version = None,
+          receiptDate = None,
+          periodStartDate = Some(LocalDate.parse("2020-01-01")),
+          periodEndDate = Some(LocalDate.parse("2020-03-31"))
+        )
+      ),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),

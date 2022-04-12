@@ -143,7 +143,7 @@ object SchemeFSDetailReadsSpec {
         )
       ),
       Json.obj(
-        "chargeReference" -> "XY002610150184",
+        "chargeReference" -> "XY002610150185",
         "chargeType" -> s"$chargeType",
         "dueDate" -> "2020-02-15",
         "totalAmount" -> 800.00,
@@ -153,9 +153,9 @@ object SchemeFSDetailReadsSpec {
         "stoodOverAmount" -> 508.18,
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
-        "formbundleNumber" -> "123456789193",
+        "formbundleNumber" -> "123456789194",
         "aftVersion" -> 0,
-        "sourceChargeRefForInterest" -> "XY002610150181",
+        "sourceChargeRefForInterest" -> "XY002610150184",
         "documentLineItemDetails" -> Json.arr(
           Json.obj(
             "clearingDate" -> "2020-06-30",
@@ -168,6 +168,7 @@ object SchemeFSDetailReadsSpec {
   )
 
   private def schemeFSModel = SchemeFSDetail(
+    index = 0,
     chargeReference = "XY002610150184",
     chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -181,6 +182,7 @@ object SchemeFSDetailReadsSpec {
   )
 
   private def schemeFSModelMax = SchemeFSDetail(
+    index = 0,
     chargeReference = "XY002610150184",
     chargeType = "Accounting for Tax return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -192,8 +194,11 @@ object SchemeFSDetailReadsSpec {
     periodStartDate = Some(LocalDate.parse("2020-04-01")),
     periodEndDate = Some(LocalDate.parse("2020-06-30")),
     formBundleNumber = Some("123456789193"),
+    version = None,
+    receiptDate = None,
     aftVersion = Some(0),
     sourceChargeRefForInterest = Some("XY002610150181"),
+    sourceChargeInfo = None,
     Seq(DocumentLineItemDetail(
       clearingReason = Some("C1"),
       clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -201,8 +206,11 @@ object SchemeFSDetailReadsSpec {
     )
   )
 
+
+  //scalastyle:off method.length
   private def schemeFSMaxSeqModel = Seq(
     SchemeFSDetail(
+      index = 1,
       chargeReference = "XY002610150184",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
@@ -214,8 +222,11 @@ object SchemeFSDetailReadsSpec {
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
       formBundleNumber = Some("123456789193"),
+      version = None,
+      receiptDate = None,
       aftVersion = Some(0),
       sourceChargeRefForInterest = Some("XY002610150181"),
+      sourceChargeInfo = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -223,7 +234,8 @@ object SchemeFSDetailReadsSpec {
       )
     ),
     SchemeFSDetail(
-      chargeReference = "XY002610150184",
+      index = 2,
+      chargeReference = "XY002610150185",
       chargeType = "Accounting for Tax return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 800.00,
@@ -233,9 +245,18 @@ object SchemeFSDetailReadsSpec {
       stoodOverAmount = 508.18,
       periodStartDate = Some(LocalDate.parse("2020-04-01")),
       periodEndDate = Some(LocalDate.parse("2020-06-30")),
-      formBundleNumber = Some("123456789193"),
+      formBundleNumber = Some("123456789194"),
+      version = None,
+      receiptDate = None,
       aftVersion = Some(0),
-      sourceChargeRefForInterest = Some("XY002610150181"),
+      sourceChargeRefForInterest = Some("XY002610150184"),
+      sourceChargeInfo = Some(
+        SchemeSourceChargeInfo(
+          index = 1,
+          periodStartDate = Some(LocalDate.parse("2020-04-01")),
+          periodEndDate = Some(LocalDate.parse("2020-06-30"))
+        )
+      ),
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),

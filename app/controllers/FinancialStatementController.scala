@@ -16,22 +16,30 @@
 
 package controllers
 
-import connectors.FinancialStatementConnector
-import javax.inject.{Inject, Singleton}
+import connectors.{AFTConnector, FinancialStatementConnector}
+import models.FeatureToggle.Enabled
+import models.FeatureToggleName.FinancialInformationAFT
+import models.SchemeFSDetail
 import play.api.libs.json._
 import play.api.mvc._
+import services.FeatureToggleService
+import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.HttpResponseHelper
 
+import java.time.LocalDate
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
 class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
-                                             val authConnector: AuthConnector
+                                             val authConnector: AuthConnector,
+                                             aftConnector: AFTConnector,
+                                             featureToggleService: FeatureToggleService
                                             )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -48,11 +56,69 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       }
   }
 
+  private def updateWithVersionAndReceiptDate(pstr: String,
+                                              seqSchemeFSDetails: Seq[SchemeFSDetail])(implicit hc: HeaderCarrier,
+                                                                                       ec: ExecutionContext,
+                                                                                       request: RequestHeader): Future[Seq[SchemeFSDetail]] = {
+    Future.sequence(
+      seqSchemeFSDetails.map { schemeFSDetail =>
+        schemeFSDetail.formBundleNumber match {
+          case Some(fb) =>
+            aftConnector.getAftDetails(pstr, fb).map {
+              case None => Seq(schemeFSDetail)
+              case Some(jsValue) =>
+                val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
+                val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
+                Seq(schemeFSDetail copy(
+                  receiptDate = optReceiptDate,
+                  version = optVersion
+                ))
+            }
+          case _ => Future.successful(Seq(schemeFSDetail))
+        }
+      }
+    ).map(_.flatten)
+  }
+
+  private def updateSourceChargeInfo(seqSchemeFsDetail: Seq[SchemeFSDetail])(implicit hc: HeaderCarrier,
+                                                                             ec: ExecutionContext,
+                                                                             request: RequestHeader): Seq[SchemeFSDetail] = {
+    seqSchemeFsDetail.map { schemeFSDetail =>
+      schemeFSDetail.sourceChargeInfo match {
+        case Some(sci) =>
+          seqSchemeFsDetail.find(_.index == sci.index) match {
+            case Some(foundOriginalCharge) =>
+              schemeFSDetail copy (
+                sourceChargeInfo = Some(
+                  sci copy(
+                    version = foundOriginalCharge.version,
+                    receiptDate = foundOriginalCharge.receiptDate
+                  )
+                )
+                )
+            case _ => schemeFSDetail
+          }
+        case _ => schemeFSDetail
+      }
+    }
+  }
+
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
       get(key = "pstr") { pstr =>
-        financialStatementConnector.getSchemeFS(pstr).map { data =>
-          Ok(Json.toJson(data))
+        financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
+          val updatedSchemeFS = featureToggleService.get(FinancialInformationAFT).flatMap {
+            case Enabled(_) =>
+              for {
+                seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+              } yield {
+                data copy (
+                  seqSchemeFSDetail = updateSourceChargeInfo(seqSchemeFSDetailWithVersionAndReceiptDate)
+                  )
+              }
+            case _ => Future.successful(data)
+          }
+          updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
         }
       }
   }
