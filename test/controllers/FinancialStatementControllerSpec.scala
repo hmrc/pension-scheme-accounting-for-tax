@@ -112,8 +112,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
   "schemeStatement" must {
 
-    "return OK when the details are returned based on pstr and toggle on" in {
-      // TODO
+    "return OK when the details are returned based on pstr and toggle on and aft details exist" in {
       when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
       val receiptDateFromIF = "2020-12-12T09:30:47Z"
       val aftDetailsJson = Json.obj(
@@ -132,7 +131,29 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       val result = controller.schemeStatement()(fakeRequestWithPstr)
 
       status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdate)
+      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
+    }
+
+    "return OK when the details are returned based on pstr and toggle on and aft details don't exist" in {
+      when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
+      val receiptDateFromIF = "2020-12-12T09:30:47Z"
+      val aftDetailsJson = Json.obj(
+        "aftDetails" -> Json.obj(
+          "aftVersion" -> 2,
+          "receiptDate" -> Json.toJson(receiptDateFromIF)
+        )
+      )
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(None))
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModel))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithNoAFTDetails)
     }
 
     "throw BadRequestException when PSTR is not present in the header" in {
@@ -223,7 +244,7 @@ object FinancialStatementControllerSpec {
     )
   )
 
-  private val schemeModelAfterUpdate: SchemeFS = SchemeFS(
+  private val schemeModelAfterUpdateWithAFTDetails: SchemeFS = SchemeFS(
     inhibitRefundSignal = false,
     seqSchemeFSDetail = Seq(
       SchemeFSDetail(
@@ -238,6 +259,28 @@ object FinancialStatementControllerSpec {
         formBundleNumber = Some("ww"),
         version = Some(2),
         receiptDate = Some(LocalDate.parse("2020-12-12")),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val schemeModelAfterUpdateWithNoAFTDetails: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = s"XY002610150184",
+        chargeType = "PSS AFT Return",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = 1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        version = None,
+        receiptDate = None,
         stoodOverAmount = 25089.08,
         periodStartDate = Some(LocalDate.parse("2020-04-01")),
         periodEndDate = Some(LocalDate.parse("2020-06-30"))
