@@ -351,7 +351,7 @@ object FinancialStatementConnectorSpec {
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
       sourceChargeRefForInterest = Some("XY002610150181"),
-      sourceChargeInfo = None,
+      psaSourceChargeInfo = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -372,7 +372,7 @@ object FinancialStatementConnectorSpec {
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
       sourceChargeRefForInterest = Some("XY002610150181"),
-      sourceChargeInfo = None,
+      psaSourceChargeInfo = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
@@ -393,7 +393,7 @@ object FinancialStatementConnectorSpec {
       periodEndDate = LocalDate.parse("2020-06-30"),
       pstr = "24000040IN",
       sourceChargeRefForInterest = Some("XY002610150181"),
-      sourceChargeInfo = None,
+      psaSourceChargeInfo = None,
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),

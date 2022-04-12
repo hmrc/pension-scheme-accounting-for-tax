@@ -33,22 +33,22 @@ case class PsaFSDetail(index: Int,
                        periodEndDate: LocalDate,
                        pstr: String,
                        sourceChargeRefForInterest: Option[String] = None,
-                       sourceChargeInfo: Option[SourceChargeInfo] = None,
+                       psaSourceChargeInfo: Option[PsaSourceChargeInfo] = None,
                        documentLineItemDetails: Seq[DocumentLineItemDetail] = Nil)
 
 object PsaFSDetail {
   implicit val formats: Format[PsaFSDetail] = Json.format[PsaFSDetail]
 }
 
-case class SourceChargeInfo(
+case class PsaSourceChargeInfo(
                              index: Int,
                              chargeType: String,
                              periodStartDate: LocalDate,
                              periodEndDate: LocalDate
                            )
 
-object SourceChargeInfo {
-  implicit val formats: Format[SourceChargeInfo] = Json.format[SourceChargeInfo]
+object PsaSourceChargeInfo {
+  implicit val formats: Format[PsaSourceChargeInfo] = Json.format[PsaSourceChargeInfo]
 }
 
   case class PsaFS(
@@ -162,7 +162,7 @@ object SourceChargeInfo {
             case Some(ref) => seqPsaFSDetailWithIndexes.find(_.chargeReference == ref) match {
               case Some(foundOriginalCharge) =>
                 psaFSDetail copy (
-                  sourceChargeInfo = Some(SourceChargeInfo(
+                  psaSourceChargeInfo = Some(PsaSourceChargeInfo(
                     index = foundOriginalCharge.index,
                     chargeType = foundOriginalCharge.chargeType,
                     periodStartDate = foundOriginalCharge.periodStartDate,
