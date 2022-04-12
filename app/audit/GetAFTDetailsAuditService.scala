@@ -37,6 +37,16 @@ class GetAFTDetailsAuditService @Inject()(auditService: AuditService) {
       sendEvent(pstr, startDate, error.responseCode, None)
   }
 
+  def sendOptionAFTDetailsAuditEvent(pstr: String, startDate: String)
+                              (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[Option[JsValue]], Unit] = {
+    case Success(response) =>
+      sendEvent(pstr, startDate, Status.OK, response)
+    case Failure(error: UpstreamErrorResponse) =>
+      sendEvent(pstr, startDate, error.statusCode, None)
+    case Failure(error: HttpException) =>
+      sendEvent(pstr, startDate, error.responseCode, None)
+  }
+
   private def sendEvent(pstr: String, startDate: String, status: Int, response: Option[JsValue])
                        (implicit ec: ExecutionContext, request: RequestHeader): Unit = {
     auditService.sendEvent(GetAFTDetails(

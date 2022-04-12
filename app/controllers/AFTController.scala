@@ -55,9 +55,8 @@ class AFTController @Inject()(
     with AuthorisedFunctions {
 
   private val logger = Logger(classOf[AFTController])
-  val basePath = System.getProperty("user.dir")
+  private val basePath = System.getProperty("user.dir")
 
-  //scalastyle:off cyclomatic.complexity
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
       post { (pstr, userAnswersJson) =>
@@ -65,7 +64,7 @@ class AFTController @Inject()(
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
-              val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(s"$basePath/conf/${ErrorDetailsExtractor.schemaPath}",dataToBeSendToETMP)
+              val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(s"$basePath/conf/${ErrorDetailsExtractor.schemaPath}", dataToBeSendToETMP)
               validationResult match {
                 case JsError(error) =>
                   val errors = ErrorDetailsExtractor.getErrors(error)
@@ -112,11 +111,10 @@ class AFTController @Inject()(
 
   def getDetails: Action[AnyContent] = Action.async {
     implicit request =>
-
-      getFbNumber { (pstr, fbn) =>
-        fbn match {
-          case Some(fbNumber) =>
-            aftConnector.getAftDetails(pstr, fbNumber).map {
+      get { (pstr, startDate) =>
+        request.headers.get("aftVersion") match {
+          case Some(aftVer) =>
+            aftConnector.getAftDetails(pstr, startDate, aftVer).map {
               etmpJson =>
                 etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
 
@@ -125,21 +123,7 @@ class AFTController @Inject()(
                 }
             }
           case _ =>
-            get { (pstr, startDate) =>
-              request.headers.get("aftVersion") match {
-                case Some(aftVer) =>
-                  aftConnector.getAftDetails(pstr, startDate, aftVer).map {
-                    etmpJson =>
-                      etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
-
-                        case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
-                        case JsError(errors) => throw JsResultException(errors)
-                      }
-                  }
-                case _ =>
-                  Future.failed(new BadRequestException("Bad Request with no AFT version"))
-              }
-            }
+            Future.failed(new BadRequestException("Bad Request with no AFT version"))
         }
       }
   }
@@ -232,27 +216,6 @@ class AFTController @Inject()(
             block(pstr, startDate)
           case _ =>
             Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
-        }
-      case _ =>
-        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
-    }
-  }
-
-  private def getFbNumber(block: (String, Option[String]) => Future[Result])
-                         (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(_) =>
-        (
-          request.headers.get("pstr"),
-          request.headers.get("fbNumber")
-        ) match {
-          case (Some(pstr), Some(fbNumber)) =>
-            block(pstr, Some(fbNumber))
-          case (Some(pstr), _) =>
-            block(pstr, Option.empty)
-          case _ =>
-            Future.failed(new BadRequestException("Bad Request with missing PSTR"))
         }
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))

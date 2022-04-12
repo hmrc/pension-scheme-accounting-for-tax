@@ -232,19 +232,6 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       contentAsJson(result) mustBe transformedAftDEtailsUAJson
     }
 
-    "return OK when the details are returned based on pstr, fbNumber" in {
-
-      val controller = application.injector.instanceOf[AFTController]
-
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(fbNumber))(any(), any(), any())).thenReturn(
-        Future.successful(etmpAFTDetailsResponse))
-
-      val result = controller.getDetails()(fakeRequestForGetDetailsWithFbNumber)
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe transformedAftDEtailsUAJson
-    }
-
     "throw BadRequestException when PSTR is not present in the header" in {
 
       val controller = application.injector.instanceOf[AFTController]
@@ -253,7 +240,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         controller.getDetails()(fakeRequest.withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing PSTR"
+        response.getMessage mustBe "Bad Request with missing PSTR/Quarter Start Date"
       }
     }
 

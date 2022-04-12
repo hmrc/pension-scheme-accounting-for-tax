@@ -129,7 +129,7 @@ class AFTConnector @Inject()(
   }
 
   def getAftDetails(pstr: String, fbNumber: String)
-                   (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[JsValue] = {
+                   (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Option[JsValue]] = {
 
     val getAftUrl: String = config.getAftFbnDetailsUrl.format(pstr, fbNumber)
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
@@ -137,10 +137,13 @@ class AFTConnector @Inject()(
     http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
       response =>
         response.status match {
-          case OK => Json.parse(response.body)
+          case OK => Some(Json.parse(response.body))
+          case NOT_FOUND =>
+          println(s"\nNOT FOUND**** pstr $pstr" + fbNumber)
+            None
           case _ => handleErrorResponse("GET", getAftUrl)(response)
         }
-    } andThen aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, fbNumber)
+    } andThen aftDetailsAuditEventService.sendOptionAFTDetailsAuditEvent(pstr, fbNumber)
   }
 
   def getAftVersions(pstr: String, startDate: String)

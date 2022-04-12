@@ -64,23 +64,25 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       seqSchemeFSDetails.map { schemeFSDetail =>
         schemeFSDetail.formBundleNumber match {
           case Some(fb) =>
-            aftConnector.getAftDetails(pstr, fb).map { jsValue =>
-              val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
-              val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
-              schemeFSDetail copy(
-                receiptDate = optReceiptDate,
-                version = optVersion
-              )
+            aftConnector.getAftDetails(pstr, fb).map {
+              case None => Seq(schemeFSDetail)
+              case Some(jsValue) =>
+                val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
+                val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
+                Seq(schemeFSDetail copy(
+                  receiptDate = optReceiptDate,
+                  version = optVersion
+                ))
             }
-          case _ => Future.successful(schemeFSDetail)
+          case _ => Future.successful(Seq(schemeFSDetail))
         }
       }
-    )
+    ).map(_.flatten)
   }
 
   private def updateSourceChargeInfo(seqSchemeFsDetail: Seq[SchemeFSDetail])(implicit hc: HeaderCarrier,
-                                                                              ec: ExecutionContext,
-                                                                              request: RequestHeader): Seq[SchemeFSDetail] = {
+                                                                             ec: ExecutionContext,
+                                                                             request: RequestHeader): Seq[SchemeFSDetail] = {
     seqSchemeFsDetail.map { schemeFSDetail =>
       schemeFSDetail.sourceChargeInfo match {
         case Some(sci) =>
@@ -112,7 +114,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
               } yield {
                 data copy (
                   seqSchemeFSDetail = updateSourceChargeInfo(seqSchemeFSDetailWithVersionAndReceiptDate)
-                )
+                  )
               }
             case _ => Future.successful(data)
           }

@@ -122,7 +122,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
           "receiptDate" -> Json.toJson(receiptDateFromIF)
         )
       )
-      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(aftDetailsJson))
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
 
       val controller = application.injector.instanceOf[FinancialStatementController]
 
