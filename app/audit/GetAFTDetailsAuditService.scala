@@ -27,8 +27,11 @@ import scala.util.{Failure, Success, Try}
 
 class GetAFTDetailsAuditService @Inject()(auditService: AuditService) {
 
+  type OptionalResultEvent = PartialFunction[Try[Option[JsValue]], Unit]
+  type MandatoryResultEvent = PartialFunction[Try[JsValue], Unit]
+
   def sendAFTDetailsAuditEvent(pstr: String, startDate: String)
-                              (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[JsValue], Unit] = {
+                              (implicit ec: ExecutionContext, request: RequestHeader): MandatoryResultEvent = {
     case Success(response) =>
       sendEvent(pstr, startDate, Status.OK, Some(response))
     case Failure(error: UpstreamErrorResponse) =>
@@ -38,7 +41,7 @@ class GetAFTDetailsAuditService @Inject()(auditService: AuditService) {
   }
 
   def sendOptionAFTDetailsAuditEvent(pstr: String, startDate: String)
-                              (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[Option[JsValue]], Unit] = {
+                              (implicit ec: ExecutionContext, request: RequestHeader): OptionalResultEvent = {
     case Success(response) =>
       sendEvent(pstr, startDate, Status.OK, response)
     case Failure(error: UpstreamErrorResponse) =>
