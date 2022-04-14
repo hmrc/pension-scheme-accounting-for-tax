@@ -155,7 +155,7 @@ class AftDataCacheController @Inject()(
         featureToggleService.get(BatchedRepositoryAFT).flatMap {
           case Enabled(_) =>
             batchedRepository.lockedBy(sessionId, id).map { response =>
-              logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
+              logger.warn(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
               response match {
                 case None => NotFound
                 case Some(lockDetail) => Ok(Json.toJson(lockDetail))
@@ -163,7 +163,7 @@ class AftDataCacheController @Inject()(
             }
           case _ =>
             unbatchedRepository.lockedBy(sessionId, id).map { response =>
-              logger.debug(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
+              logger.warn(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
               response match {
                 case None => NotFound
                 case Some(lockDetail) => Ok(Json.toJson(lockDetail))
@@ -180,7 +180,7 @@ class AftDataCacheController @Inject()(
         featureToggleService.get(BatchedRepositoryAFT).flatMap {
           case Enabled(_) =>
             batchedRepository.getSessionData(sessionId, id).map { response =>
-              logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
+              logger.warn(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
               response match {
                 case None => NotFound
                 case Some(sd) => Ok(Json.toJson(sd))
@@ -188,7 +188,7 @@ class AftDataCacheController @Inject()(
             }
           case _ =>
             unbatchedRepository.getSessionData(sessionId, id).map { response =>
-              logger.debug(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
+              logger.warn(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
               response match {
                 case None => NotFound
                 case Some(sd) => Ok(Json.toJson(sd))
@@ -204,14 +204,14 @@ class AftDataCacheController @Inject()(
         featureToggleService.get(BatchedRepositoryAFT).flatMap {
           case Enabled(_) =>
             batchedRepository.get(id, sessionId).map { response =>
-              logger.debug(message = s"DataCacheController.get: Response for request Id $id is $response")
+              logger.warn(message = s"DataCacheController.get: Response for request Id $id is $response")
               response.map {
                 Ok(_)
               } getOrElse NotFound
             }
           case _ =>
             unbatchedRepository.get(id, sessionId).map { response =>
-              logger.debug(message = s"DataCacheController.get: Response for request Id $id is $response")
+              logger.warn(message = s"DataCacheController.get: Response for request Id $id is $response")
               response.map {
                 Ok(_)
               } getOrElse NotFound
