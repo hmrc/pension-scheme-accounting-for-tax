@@ -20,18 +20,18 @@ import audit.{AuditEvent, AuditService}
 import com.google.inject.Inject
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.BatchedRepositoryAFT
-import models.{ChargeAndMember, ChargeType, LockDetail}
 import models.LockDetail.formats
+import models.{ChargeAndMember, ChargeType, LockDetail}
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
-import repository.{AftDataCacheRepository, AftBatchedDataCacheRepository}
 import repository.model.SessionData._
+import repository.{AftBatchedDataCacheRepository, AftDataCacheRepository}
 import services.FeatureToggleService
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
-import uk.gov.hmrc.auth.core.{AuthorisedFunctions, Enrolment, AuthConnector}
-import uk.gov.hmrc.http.{UnauthorizedException, BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,7 +50,7 @@ class AftDataCacheController @Inject()(
 
   private val logger = Logger(classOf[AftDataCacheController])
 
-  private def extractChargeAndMemberFromHeaders (implicit request: Request[AnyContent]):Option[ChargeAndMember] = {
+  private def extractChargeAndMemberFromHeaders(implicit request: Request[AnyContent]): Option[ChargeAndMember] = {
     request.headers.get("chargeType") match {
       case None => None
       case Some(ct) =>
@@ -93,6 +93,7 @@ class AftDataCacheController @Inject()(
 
   private case class RequestBodyAuditEvent(psaOrPspId: String, body: Option[String]) extends AuditEvent {
     override def auditType: String = "RequestBodyAuditEvent"
+
     override def details: JsObject =
       Json.obj(
         "psaOrPspId" -> psaOrPspId,
@@ -154,20 +155,14 @@ class AftDataCacheController @Inject()(
       getIdWithName { case (sessionId, id, _) =>
         featureToggleService.get(BatchedRepositoryAFT).flatMap {
           case Enabled(_) =>
-            batchedRepository.lockedBy(sessionId, id).map { response =>
-              logger.warn(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
-              response match {
-                case None => NotFound
-                case Some(lockDetail) => Ok(Json.toJson(lockDetail))
-              }
+            batchedRepository.lockedBy(sessionId, id).map {
+              case None => NotFound
+              case Some(lockDetail) => Ok(Json.toJson(lockDetail))
             }
           case _ =>
-            unbatchedRepository.lockedBy(sessionId, id).map { response =>
-              logger.warn(message = s"DataCacheController.lockedBy: Response for request Id $id is $response")
-              response match {
-                case None => NotFound
-                case Some(lockDetail) => Ok(Json.toJson(lockDetail))
-              }
+            unbatchedRepository.lockedBy(sessionId, id).map {
+              case None => NotFound
+              case Some(lockDetail) => Ok(Json.toJson(lockDetail))
             }
         }
       }
@@ -179,20 +174,14 @@ class AftDataCacheController @Inject()(
 
         featureToggleService.get(BatchedRepositoryAFT).flatMap {
           case Enabled(_) =>
-            batchedRepository.getSessionData(sessionId, id).map { response =>
-              logger.warn(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
-              response match {
-                case None => NotFound
-                case Some(sd) => Ok(Json.toJson(sd))
-              }
+            batchedRepository.getSessionData(sessionId, id).map {
+              case None => NotFound
+              case Some(sd) => Ok(Json.toJson(sd))
             }
           case _ =>
-            unbatchedRepository.getSessionData(sessionId, id).map { response =>
-              logger.warn(message = s"DataCacheController.getSessionData: Response for request Id $id is $response")
-              response match {
-                case None => NotFound
-                case Some(sd) => Ok(Json.toJson(sd))
-              }
+            unbatchedRepository.getSessionData(sessionId, id).map {
+              case None => NotFound
+              case Some(sd) => Ok(Json.toJson(sd))
             }
         }
       }
@@ -204,14 +193,12 @@ class AftDataCacheController @Inject()(
         featureToggleService.get(BatchedRepositoryAFT).flatMap {
           case Enabled(_) =>
             batchedRepository.get(id, sessionId).map { response =>
-              logger.warn(message = s"DataCacheController.get: Response for request Id $id is $response")
               response.map {
                 Ok(_)
               } getOrElse NotFound
             }
           case _ =>
             unbatchedRepository.get(id, sessionId).map { response =>
-              logger.warn(message = s"DataCacheController.get: Response for request Id $id is $response")
               response.map {
                 Ok(_)
               } getOrElse NotFound
