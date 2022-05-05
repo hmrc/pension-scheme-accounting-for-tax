@@ -23,7 +23,7 @@ import play.api.libs.json.{__, _}
 class ChargeETransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeEDetails).readNullable(__.read(readsChargeE)).map(_.getOrElse(Json.obj()))
+    (__ \ 'chargeEDetails).readNullable(__.read(readsChargeE)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
   def readsChargeE: Reads[JsObject] =
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>

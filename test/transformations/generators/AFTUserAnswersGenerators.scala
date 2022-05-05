@@ -19,6 +19,7 @@ package transformations.generators
 import java.time.{LocalDate, Year}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
+import org.scalacheck.rng.Seed
 import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json._
@@ -306,5 +307,9 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues {
 
   def updateJson(path: JsPath, name: String, value: Int): Reads[JsObject] = {
     path.json.update(__.read[JsObject].map(o => o ++ Json.obj(name -> value)))
+  }
+
+  implicit class GenOps[A](gen: Gen[A]){
+    val random: A = gen.pureApply(Gen.Parameters.default, Seed.random())
   }
 }

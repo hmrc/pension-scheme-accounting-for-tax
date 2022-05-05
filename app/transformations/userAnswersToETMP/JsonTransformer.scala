@@ -24,12 +24,29 @@ import scala.annotation.tailrec
 
 trait JsonTransformer {
 
+  private val pathMissingError = "error.path.missing"
+
   val doNothing: Reads[JsObject] = __.json.put(Json.obj())
 
+  implicit class JsObjectReadsOps(rds: Reads[JsObject]){
+    val orElseEmptyOnMissingFields: Reads[JsObject] = Reads[JsObject]( json =>
+      rds.reads(json) match {
+        case JsError(errs) if errs.forall{ case (_, jerrs) => jerrs.forall(_.message == pathMissingError) } =>
+          JsSuccess(JsObject.empty)
+        case other => other
+      }
+    )
+  }
+
+  def removeEmptyObjects(arr: JsArray): JsArray = JsArray(arr.value.filter{
+    case a: JsObject if a.keys.isEmpty => false
+    case _ => true
+  })
+
   def readsMemberDetails: Reads[JsObject] =
-    (__ \ 'individualsDetails \ 'firstName).json.copyFrom((__ \ 'memberDetails \ 'firstName).json.pick) and
+    ((__ \ 'individualsDetails \ 'firstName).json.copyFrom((__ \ 'memberDetails \ 'firstName).json.pick) and
       (__ \ 'individualsDetails \ 'lastName).json.copyFrom((__ \ 'memberDetails \ 'lastName).json.pick) and
-      (__ \ 'individualsDetails \ 'nino).json.copyFrom((__ \ 'memberDetails \ 'nino).json.pick) reduce
+      (__ \ 'individualsDetails \ 'nino).json.copyFrom((__ \ 'memberDetails \ 'nino).json.pick)).reduce
 
   def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T]): Reads[Seq[T]] = new Reads[Seq[T]] {
     override def reads(json: JsValue): JsResult[Seq[T]] = {

@@ -25,7 +25,7 @@ class ChargeCTransformer extends JsonTransformer {
   def transformToETMPData: Reads[JsObject] =
     (__ \ 'chargeCDetails).readNullable(__.read(readsChargeC)).map(_.getOrElse(Json.obj()))
 
-  def readsChargeC: Reads[JsObject] =
+  private def readsChargeC: Reads[JsObject] =
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>
         (((__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
           orElse doNothing) and
@@ -33,7 +33,7 @@ class ChargeCTransformer extends JsonTransformer {
           (__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
     }
 
-  def readsEmployers: Reads[JsArray] = {
+  private def readsEmployers: Reads[JsArray] =
     readsFiltered(_ \ "sponsoringIndividualDetails", readsEmployer).map(JsArray(_)).flatMap {
       filteredIndividuals =>
         readsFiltered(_ \ "sponsoringOrganisationDetails", readsEmployer).map(JsArray(_)).map {
@@ -41,9 +41,8 @@ class ChargeCTransformer extends JsonTransformer {
             filteredIndividuals ++ filteredOrganisations
         }
     }
-  }
 
-  def readsEmployer: Reads[JsObject] = (
+  private def readsEmployer: Reads[JsObject] = (
     ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
       orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
       ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
@@ -54,7 +53,7 @@ class ChargeCTransformer extends JsonTransformer {
         (__ \ 'totalAmountOfTaxDue).json.copyFrom((__ \ 'chargeDetails \ 'amountTaxDue).json.pick)).reduce
     ).reduce
 
-  def readsEmployerTypeDetails: Reads[JsObject] =
+  private def readsEmployerTypeDetails: Reads[JsObject] =
     (__ \ 'whichTypeOfSponsoringEmployer).read[String].flatMap {
       case "individual" =>
         ((__ \ 'memberTypeDetails \ 'memberType).json.put(JsString("Individual")) and
@@ -67,7 +66,7 @@ class ChargeCTransformer extends JsonTransformer {
           (__ \ 'memberTypeDetails \ 'crnNumber).json.copyFrom((__ \ 'sponsoringOrganisationDetails \ 'crn).json.pick)).reduce
     }
 
-  def readsCorrespondenceAddress: Reads[JsObject] =
+  private def readsCorrespondenceAddress: Reads[JsObject] =
     (
       readsPostalCode and
         (__ \ 'addressLine1).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'line1).json.pick) and
@@ -78,7 +77,7 @@ class ChargeCTransformer extends JsonTransformer {
         ((__ \ 'postalCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'postcode).json.pick) orElse doNothing)
       ).reduce
 
-  def readsPostalCode: Reads[JsObject] =
+  private def readsPostalCode: Reads[JsObject] =
     (__ \ 'sponsoringEmployerAddress \ 'country).read[String].flatMap {
       case "GB" =>
         (__ \ 'nonUKAddress).json.put(JsString("False"))

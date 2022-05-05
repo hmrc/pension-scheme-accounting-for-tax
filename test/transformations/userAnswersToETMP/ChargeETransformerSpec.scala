@@ -92,5 +92,17 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").asOpt[Int] mustBe None
       }
     }
+
+    "must return an empty JsObject when a mandatory field is missing from the UserAnswers json payload" in {
+      val transformer = new ChargeETransformer
+      val json = Json.obj(
+        fields = "chargeEDetails" ->
+          Json.obj(
+            "members" -> chargeEMember("testStatus").random
+          ))
+      val transformedJson = json.transform(transformer.transformToETMPData)
+
+      transformedJson mustBe JsSuccess(Json.obj())
+    }
   }
 }

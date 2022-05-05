@@ -18,7 +18,7 @@ package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.freespec.AnyFreeSpec
-import play.api.libs.json.__
+import play.api.libs.json.{JsSuccess, Json, __}
 import transformations.generators.AFTUserAnswersGenerators
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import org.scalatest.OptionValues
@@ -52,6 +52,20 @@ class ChargeBTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "amendedVersion").as[Int] mustBe
             (updatedJson \ "chargeBDetails" \ "amendedVersion").as[Int]
       }
+    }
+
+    "must return an empty JsObject when a mandatory field is missing from the UserAnswers json payload" in {
+      val transformer = new ChargeBTransformer
+      val json = Json.obj(
+        fields = "chargeBDetails" ->
+          Json.obj(
+            "chargeDetails" -> Json.obj(
+              "numberOfDeceased" -> 1
+            )
+          ))
+      val transformedJson = json.transform(transformer.transformToETMPData)
+
+      transformedJson mustBe JsSuccess(Json.obj())
     }
   }
 }
