@@ -99,66 +99,63 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
 
     "must remove any member nodes missing required fields" in {
       val transformer = new ChargeDTransformer
-//      val members = List(chargeDMember("testStatus").random)
-        val members = List(chargeDMember("testStatus").random - "chargeDetails", chargeDMember("testStatus").random)
 
+      val json = Json.obj(
+        "chargeDDetails" -> Json.obj(
+          "members" -> Json.arr(
+            Json.obj(
+              "memberStatus" -> "Changed",
+              "memberAFTVersion" -> 1,
+              "memberDetails" -> Json.obj(
+                "firstName" -> "Joy",
+                "lastName" -> "Kenneth",
+                "nino" -> "AA089000A"
+              )
+            ),
+            Json.obj(
+              "memberStatus" -> "Changed",
+              "memberAFTVersion" -> 1,
+              "memberDetails" -> Json.obj(
+                "firstName" -> "Roy",
+                "lastName" -> "Renneth",
+                "nino" -> "AA089000A"
+              ),
+              "chargeDetails" -> Json.obj(
+                "dateOfEvent" -> "2016-02-29",
+                "taxAt25Percent" -> 1.02,
+                "taxAt55Percent" -> 9.02
+              )
+            )
+          ),
+          "totalChargeAmount" -> 2345.02,
+          "amendedVersion" -> 1
+        )
+      )
 
-      val json = Json.parse(
-        """{
-          | "chargeDDetails": {
-          |    "members": [
-          |      {
-          |        "memberStatus": "Changed",
-          |        "memberAFTVersion": 1,
-          |        "memberDetails": {
-          |          "firstName": "Joy",
-          |          "lastName": "Kenneth",
-          |          "nino": "AA089000A"
-          |        }
-          |      },
-          |       {
-          |        "memberStatus": "Changed",
-          |        "memberAFTVersion": 1,
-          |        "memberDetails": {
-          |          "firstName": "Roy",
-          |          "lastName": "Renneth",
-          |          "nino": "AA089000A"
-          |        },
-          |        "chargeDetails": {
-          |          "dateOfEvent": "2016-02-29",
-          |          "taxAt25Percent": 1.02,
-          |          "taxAt55Percent": 9.02
-          |        }
-          |      }
-          |    ],
-          |    "totalChargeAmount": 2345.02,
-          |    "amendedVersion": 1
-          |  }
-          |}""".stripMargin)
       val transformedJson = json.transform(transformer.transformToETMPData)
 
-      val expectedJson = Json.parse("""{
-                                      |  "chargeDetails": {
-                                      |    "chargeTypeDDetails": {
-                                      |      "totalAmount": 2345.02,
-                                      |      "amendedVersion": 1,
-                                      |      "memberDetails": [
-                                      |        {
-                                      |          "totalAmtOfTaxDueAtHigherRate": 9.02,
-                                      |          "individualsDetails": {
-                                      |            "firstName": "Roy",
-                                      |            "lastName": "Renneth",
-                                      |            "nino": "AA089000A"
-                                      |          },
-                                      |          "memberStatus": "Changed",
-                                      |          "totalAmtOfTaxDueAtLowerRate": 1.02,
-                                      |          "memberAFTVersion": 1,
-                                      |          "dateOfBeneCrysEvent": "2016-02-29"
-                                      |        }
-                                      |      ]
-                                      |    }
-                                      |  }
-                                      |}""".stripMargin)
+      val expectedJson = Json.obj(
+        "chargeDetails" -> Json.obj(
+          "chargeTypeDDetails" -> Json.obj(
+            "memberDetails" -> Json.arr(
+              Json.obj(
+                "totalAmtOfTaxDueAtHigherRate" -> 9.02,
+                "individualsDetails" -> Json.obj(
+                  "firstName" -> "Roy",
+                  "lastName" -> "Renneth",
+                  "nino" -> "AA089000A"
+                ),
+                "memberStatus" -> "Changed",
+                "totalAmtOfTaxDueAtLowerRate" -> 1.02,
+                "memberAFTVersion" -> 1,
+                "dateOfBeneCrysEvent" -> "2016-02-29"
+              )
+            ),
+            "totalAmount" -> 2345.02,
+            "amendedVersion" -> 1,
+          )
+        )
+      )
 
       transformedJson mustBe JsSuccess(expectedJson, __ \ "chargeDDetails")
     }

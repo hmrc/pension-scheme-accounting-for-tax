@@ -23,7 +23,7 @@ import play.api.libs.json.{__, _}
 class ChargeGTransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeGDetails).readNullable(__.read(readsChargeG)).map(_.getOrElse(Json.obj()))
+    (__ \ 'chargeGDetails).readNullable(__.read(readsChargeG)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
   def readsChargeG: Reads[JsObject] =
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>
@@ -33,7 +33,7 @@ class ChargeGTransformer extends JsonTransformer {
         (__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
     }
 
-  def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_))
+  def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_)).map(removeEmptyObjects)
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
@@ -45,7 +45,7 @@ class ChargeGTransformer extends JsonTransformer {
       ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
         orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
       ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
-        orElse doNothing)).reduce
+        orElse doNothing)).reduce.orElseEmptyOnMissingFields
 
   def readsQrops: Reads[JsObject] = {
     (__ \ 'chargeDetails \ 'qropsReferenceNumber).read[String].flatMap { qropsReference =>
