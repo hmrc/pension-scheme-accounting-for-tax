@@ -33,6 +33,7 @@ class ChargeCTransformer extends JsonTransformer {
           (__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
     }
 
+
   private def readsEmployers: Reads[JsArray] =
     readsFiltered(_ \ "sponsoringIndividualDetails", readsEmployer).map(JsArray(_)).flatMap {
       filteredIndividuals =>

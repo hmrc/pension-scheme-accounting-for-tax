@@ -138,5 +138,72 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 4
       }
     }
+    "asda " in{
+      val transformer = new ChargeCTransformer
+
+
+
+
+      val json = Json.parse(
+        """{
+          | "chargeDDetails": {
+          |    "members": [
+          |      {
+          |        "memberStatus": "Changed",
+          |        "memberAFTVersion": 1,
+          |        "memberDetails": {
+          |          "firstName": "Joy",
+          |          "lastName": "Kenneth",
+          |          "nino": "AA089000A"
+          |        }
+          |      },
+          |       {
+          |        "memberStatus": "Changed",
+          |        "memberAFTVersion": 1,
+          |        "memberDetails": {
+          |          "firstName": "Roy",
+          |          "lastName": "Renneth",
+          |          "nino": "AA089000A"
+          |        },
+          |        "chargeDetails": {
+          |          "dateOfEvent": "2016-02-29",
+          |          "taxAt25Percent": 1.02,
+          |          "taxAt55Percent": 9.02
+          |        }
+          |      }
+          |    ],
+          |    "totalChargeAmount": 2345.02,
+          |    "amendedVersion": 1
+          |  }
+          |}""".stripMargin)
+
+
+
+      val transformedJson = json.transform(transformer.transformToETMPData)
+
+      val expectedJson = Json.parse("""{
+                                      |  "chargeDetails": {
+                                      |    "chargeTypeDDetails": {
+                                      |      "totalAmount": 2345.02,
+                                      |      "amendedVersion": 1,
+                                      |      "memberDetails": [
+                                      |        {
+                                      |          "totalAmtOfTaxDueAtHigherRate": 9.02,
+                                      |          "individualsDetails": {
+                                      |            "firstName": "Roy",
+                                      |            "lastName": "Renneth",
+                                      |            "nino": "AA089000A"
+                                      |          },
+                                      |          "memberStatus": "Changed",
+                                      |          "totalAmtOfTaxDueAtLowerRate": 1.02,
+                                      |          "memberAFTVersion": 1,
+                                      |          "dateOfBeneCrysEvent": "2016-02-29"
+                                      |        }
+                                      |      ]
+                                      |    }
+                                      |  }
+                                      |}""".stripMargin)
+      transformedJson mustBe JsSuccess(expectedJson, __ \ "chargeDDetails")
+    }
   }
 }
