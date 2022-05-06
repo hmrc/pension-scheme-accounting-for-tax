@@ -23,9 +23,9 @@ import play.api.libs.json.{__, _}
 class ChargeDTransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeDDetails).readNullable(__.read(readsChargeD)).map(_.getOrElse(Json.obj()))
+    (__ \ 'chargeDDetails).readNullable(__.read(readsChargeD)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
-  def readsChargeD: Reads[JsObject] =
+  private def readsChargeD: Reads[JsObject] =
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>
       (((__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
         orElse doNothing) and
@@ -33,9 +33,9 @@ class ChargeDTransformer extends JsonTransformer {
         (__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
     }
 
-  def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_))
+  private def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_)).map(removeEmptyObjects)
 
-  def readsMember: Reads[JsObject] = {
+  private def readsMember: Reads[JsObject] = {
     (readsMemberDetails and
       (__ \ 'dateOfBeneCrysEvent).json.copyFrom((__ \ 'chargeDetails \ 'dateOfEvent).json.pick) and
       (__ \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt25Percent).json.pick) and
@@ -43,6 +43,6 @@ class ChargeDTransformer extends JsonTransformer {
       ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
         orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
       ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
-        orElse doNothing)).reduce
+        orElse doNothing)).reduce.orElseEmptyOnMissingFields
   }
 }
