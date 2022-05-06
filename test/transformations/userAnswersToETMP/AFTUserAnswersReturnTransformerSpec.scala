@@ -35,7 +35,7 @@ class AFTUserAnswersReturnTransformerSpec extends AnyFreeSpec with AFTUserAnswer
         transformedEtmpJson mustBe etmpResponseJsonPSA
       }
 
-      "when a mandatory field in chargeC UserAnswers is missing" in {
+      "when a mandatory field in chargeD UserAnswers is missing" in {
         val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
           chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
 
@@ -57,7 +57,7 @@ class AFTUserAnswersReturnTransformerSpec extends AnyFreeSpec with AFTUserAnswer
       }
     }
 
-    "when a mandatory field in chargeC UserAnswers is missing" in {
+    "when a mandatory field in chargeD UserAnswers is missing" in {
       val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
         chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
 
