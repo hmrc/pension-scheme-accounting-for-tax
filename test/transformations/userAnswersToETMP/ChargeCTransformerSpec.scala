@@ -150,49 +150,49 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
       transformedJson mustBe JsSuccess(Json.obj())
     }
 
-    "must remove any member nodes missing required fields " in{
+    "must remove any member nodes missing required fields " in {
       val transformer = new ChargeCTransformer
 
       val json = Json.obj(
         "chargeCDetails" -> Json.obj(
-        "employers" -> Json.arr(
-        Json.obj(
-        "whichTypeOfSponsoringEmployer" -> "individual",
-          "memberStatus" -> "changed",
-          "memberAFTVersion" -> 1,
-          "chargeDetails" -> Json.obj(
-            fields = "paymentDate" -> "06/01/2022",
-            "amountTaxDue" -> 1.0
-          ),
-          "sponsoringIndividualDetails" -> Json.obj(
-            fields = "firstName" -> "Henry",
-            "lastName" -> "Cavill",
-            "nino" -> "AA089000A"
-          ),
-          "sponsoringEmployerAddress" ->  Json.obj(
-            "line1" -> "1",
-            "line2" -> "2",
-            "line3" -> "3",
-            "line4" -> "4",
-            "postcode" -> "m1111m",
-            "country" -> "GB"
-          )),
-          Json.obj(
-            "whichTypeOfSponsoringEmployer" -> "organisation",
-            "memberStatus" -> "Deleted",
-            "memberAFTVersion" -> 1,
-            "sponsoringOrganisationDetails" -> Json.obj(
-              fields = "name" -> "someOrg",
-              "crn" -> "SomeCRN",
-            ),
-            "sponsoringEmployerAddress" ->  Json.obj(
-              "line1" -> "1",
-              "line2" -> "2",
-              "line3" -> "3",
-              "line4" -> "4",
-              "postcode" -> "m1111m",
-              "country" -> "GB"
-            ))
+          "employers" -> Json.arr(
+            Json.obj(
+              "whichTypeOfSponsoringEmployer" -> "individual",
+              "memberStatus" -> "changed",
+              "memberAFTVersion" -> 1,
+              "chargeDetails" -> Json.obj(
+                fields = "paymentDate" -> "06/01/2022",
+                "amountTaxDue" -> 1.0
+              ),
+              "sponsoringIndividualDetails" -> Json.obj(
+                fields = "firstName" -> "Henry",
+                "lastName" -> "Cavill",
+                "nino" -> "AA089000A"
+              ),
+              "sponsoringEmployerAddress" -> Json.obj(
+                "line1" -> "1",
+                "line2" -> "2",
+                "line3" -> "3",
+                "line4" -> "4",
+                "postcode" -> "m1111m",
+                "country" -> "GB"
+              )),
+            Json.obj(
+              "whichTypeOfSponsoringEmployer" -> "organisation",
+              "memberStatus" -> "Deleted",
+              "memberAFTVersion" -> 1,
+              "sponsoringOrganisationDetails" -> Json.obj(
+                fields = "name" -> "someOrg",
+                "crn" -> "SomeCRN",
+              ),
+              "sponsoringEmployerAddress" -> Json.obj(
+                "line1" -> "1",
+                "line2" -> "2",
+                "line3" -> "3",
+                "line4" -> "4",
+                "postcode" -> "m1111m",
+                "country" -> "GB"
+              ))
           ),
           "totalChargeAmount" -> 100.00
         ))
@@ -201,32 +201,39 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
       val transformedJson = json.transform(transformer.transformToETMPData)
 
       val expectedJson = Json.obj(
-        "chargeDetails" -> Json.obj (
-        "chargeTypeDDetails" -> Json.obj(
-          "memberDetails" -> Json.arr(
-            Json.obj(
-              "totalAmtOfTaxDueAtHigherRate" -> 9.02,
-              "individualsDetails" -> Json.obj(
-                "firstName" -> "Henry",
-                "lastName" -> "Cavill",
-                "nino" -> "AA089000A"
-              ),
-              "memberStatus" -> "Changed",
-              "totalAmtOfTaxDueAtLowerRate" -> 1.02,
-              "memberAFTVersion" -> 1,
-              "dateOfBeneCrysEvent" -> "2016-02-29"
-            )
-          ),
-          "totalAmount" -> 100.00,
-          "amendedVersion" -> 1,
+        "chargeDetails" -> Json.obj(
+          "chargeTypeCDetails" -> Json.obj(
+            "memberDetails" -> Json.arr(
+              Json.obj(
+                "correspondenceAddressDetails" -> Json.obj(
+                  "addressLine1" -> "1",
+                  "addressLine2" -> "2",
+                  "addressLine3" -> "3",
+                  "addressLine4" -> "4",
+                  "countryCode" -> "GB",
+                  "nonUKAddress" -> "False",
+                  "postalCode" -> "m1111m"
+                ),
+                "memberTypeDetails" -> Json.obj(
+                  "memberType" -> "Individual",
+                  "individualDetails" -> Json.obj(
+                    "firstName" -> "Henry",
+                    "lastName" -> "Cavill",
+                    "nino" -> "AA089000A"
+                  )
+                ),
+                "dateOfPayment" -> "06/01/2022",
+                "memberAFTVersion" -> 1,
+                "memberStatus" -> "changed",
+                "totalAmountOfTaxDue" -> 1
+              )
+            ),
+            "totalAmount" -> 100.00
+          )
         )
       )
-      )
-//      "chargeDetails":{"chargeTypeCDetails":
-//      {"totalAmount":100,"memberDetails":
-//        [{"dateOfPayment":"06/01/2022","memberTypeDetails":{"individualDetails":{"firstName":"Henry","lastName":"Cavill","nino":"AA089000A"},
-//        "memberType":"Individual"},"totalAmountOfTaxDue":1,"memberStatus":"changed","memberAFTVersion":1,"correspondenceAddressDetails":{"countryCode":"GB","postalCode":"m1111m","addressLine1":"1","addressLine2":"2","addressLine3":"3","addressLine4":"4","nonUKAddress":"False"}},{"dateOfPayment":"06/01/2022","memberTypeDetails":{"crnNumber":"SomeCRN","memberType":"Organisation","comOrOrganisationName":"someOrg"},"totalAmountOfTaxDue":1,"memberStatus":"Deleted","memberAFTVersion":1,"correspondenceAddressDetails":{"countryCode":"GB","postalCode":"m1111m","addressLine1":"1","addressLine2":"2","addressLine3":"3","addressLine4":"4","nonUKAddress":"False"}}]}}},/chargeCDetails)
-    transformedJson mustBe JsSuccess(expectedJson, __ \ "chargeCDetails")
+
+      transformedJson mustBe JsSuccess(expectedJson, __ \ "chargeCDetails")
     }
   }
 }

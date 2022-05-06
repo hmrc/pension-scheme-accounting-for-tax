@@ -23,7 +23,7 @@ import play.api.libs.json.{__, _}
 class ChargeCTransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeCDetails).readNullable(__.read(readsChargeC)).map(_.getOrElse(Json.obj()))
+    (__ \ 'chargeCDetails).readNullable(__.read(readsChargeC)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
   private def readsChargeC: Reads[JsObject] =
     (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>
@@ -41,7 +41,7 @@ class ChargeCTransformer extends JsonTransformer {
           filteredOrganisations =>
             filteredIndividuals ++ filteredOrganisations
         }
-    }
+    }.map(removeEmptyObjects)
 
   private def readsEmployer: Reads[JsObject] = (
     ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
@@ -52,7 +52,7 @@ class ChargeCTransformer extends JsonTransformer {
       ((__ \ 'correspondenceAddressDetails).json.copyFrom(__.read(readsCorrespondenceAddress)) and
         (__ \ 'dateOfPayment).json.copyFrom((__ \ 'chargeDetails \ 'paymentDate).json.pick) and
         (__ \ 'totalAmountOfTaxDue).json.copyFrom((__ \ 'chargeDetails \ 'amountTaxDue).json.pick)).reduce
-    ).reduce
+    ).reduce.orElseEmptyOnMissingFields
 
   private def readsEmployerTypeDetails: Reads[JsObject] =
     (__ \ 'whichTypeOfSponsoringEmployer).read[String].flatMap {
