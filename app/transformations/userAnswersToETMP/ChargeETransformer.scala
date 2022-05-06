@@ -33,7 +33,7 @@ class ChargeETransformer extends JsonTransformer {
         (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
     }
 
-  def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_))
+  def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_)).map(removeEmptyObjects)
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
@@ -44,7 +44,7 @@ class ChargeETransformer extends JsonTransformer {
       ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
         orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
       ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
-        orElse doNothing)).reduce
+        orElse doNothing)).reduce.orElseEmptyOnMissingFields
 
   def getPaidUnder237b: Reads[JsObject] =
     (__ \ 'chargeDetails \ 'isPaymentMandatory).read[Boolean].flatMap { flag =>
