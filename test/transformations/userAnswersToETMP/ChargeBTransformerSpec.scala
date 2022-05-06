@@ -53,19 +53,5 @@ class ChargeBTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
             (updatedJson \ "chargeBDetails" \ "amendedVersion").as[Int]
       }
     }
-
-    "must return an empty JsObject when a mandatory field is missing from the UserAnswers json payload" in {
-      val transformer = new ChargeBTransformer
-      val json = Json.obj(
-        fields = "chargeBDetails" ->
-          Json.obj(
-            "chargeDetails" -> Json.obj(
-              "numberOfDeceased" -> 1
-            )
-          ))
-      val transformedJson = json.transform(transformer.transformToETMPData)
-
-      transformedJson mustBe JsSuccess(Json.obj())
-    }
   }
 }
