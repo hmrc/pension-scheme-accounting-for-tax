@@ -20,7 +20,7 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsDefined, JsError, JsObject, JsSuccess, JsValue, Json}
+import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import java.net.URL
 
@@ -57,6 +57,128 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
       result.isSuccess mustBe true
     }
+
+    "Validate full payload" in {
+      val schemaUrl: URL = getClass.getResource(ErrorDetailsExtractor.schemaPath)
+      val schemaPath = schemaUrl.getPath
+      val json = Json.parse(
+        """
+          |{
+          |  "aftDetails": {
+          |    "aftStatus": "Submitted",
+          |    "quarterEndDate": "2020-12-31",
+          |    "quarterStartDate": "2020-10-01"
+          |  },
+          |  "aftDeclarationDetails": {
+          |    "submittedBy": "PSA",
+          |    "submittedID": "A2100005",
+          |    "psaDeclarationDetails": {
+          |      "psaDeclaration1": true,
+          |      "psaDeclaration2": true
+          |    }
+          |  },
+          |  "chargeDetails": {
+          |    "chargeTypeCDetails": {
+          |      "totalAmount": 90.02,
+          |      "amendedVersion": 1,
+          |      "memberDetails": [
+          |        {
+          |          "dateOfPayment": "2020-10-18",
+          |          "memberTypeDetails": {
+          |            "individualDetails": {
+          |              "firstName": "Ray",
+          |              "lastName": "Golding",
+          |              "nino": "AA000020A"
+          |            },
+          |            "memberType": "Individual"
+          |          },
+          |          "totalAmountOfTaxDue": 2300.02,
+          |          "memberStatus": "New",
+          |          "memberAFTVersion": 1,
+          |          "correspondenceAddressDetails": {
+          |            "countryCode": "GB",
+          |            "postalCode": "TF3 4NT",
+          |            "addressLine1": "Plaza 2 ",
+          |            "addressLine2": "Ironmasters Way",
+          |            "addressLine3": "Telford",
+          |            "addressLine4": "Shropshire",
+          |            "nonUKAddress": "False"
+          |          }
+          |        },
+          |        {
+          |          "dateOfPayment": "2020-10-28",
+          |          "memberTypeDetails": {
+          |            "individualDetails": {
+          |              "firstName": "Craig",
+          |              "lastName": "McMillan",
+          |              "nino": "AA000620A"
+          |            },
+          |            "memberType": "Individual"
+          |          },
+          |          "totalAmountOfTaxDue": 12340.02,
+          |          "memberStatus": "New",
+          |          "memberAFTVersion": 1,
+          |          "correspondenceAddressDetails": {
+          |            "countryCode": "GB",
+          |            "postalCode": "B1 1LA",
+          |            "addressLine1": "45 UpperMarshall Street",
+          |            "addressLine2": "Post Box APTS",
+          |            "addressLine3": "Birmingham",
+          |            "addressLine4": "Warwickshire",
+          |            "nonUKAddress": "False"
+          |          }
+          |        }
+          |      ]
+          |    },
+          |    "chargeTypeDDetails": {
+          |      "totalAmount": 2345.02,
+          |      "amendedVersion": 1,
+          |      "memberDetails": [
+          |        {
+          |          "totalAmtOfTaxDueAtHigherRate": 9.02,
+          |          "individualsDetails": {
+          |            "firstName": "Joy",
+          |            "lastName": "Kenneth",
+          |            "nino": "AA089000A"
+          |          },
+          |          "memberStatus": "New",
+          |          "totalAmtOfTaxDueAtLowerRate": 1.02,
+          |          "memberAFTVersion": 1,
+          |          "dateOfBeneCrysEvent": "2020-10-18"
+          |        },
+          |        {
+          |          "totalAmtOfTaxDueAtHigherRate": 10.02,
+          |          "individualsDetails": {
+          |            "firstName": "Brian",
+          |            "lastName": "Lara",
+          |            "nino": "AA100000A"
+          |          },
+          |          "memberStatus": "New",
+          |          "totalAmtOfTaxDueAtLowerRate": 3.02,
+          |          "memberAFTVersion": 1,
+          |          "dateOfBeneCrysEvent": "2020-10-28"
+          |        }
+          |      ]
+          |    },
+          |    "chargeTypeADetails": {
+          |      "totalAmtOfTaxDueAtHigherRate": 2500.02,
+          |      "totalAmount": 4500.04,
+          |      "numberOfMembers": 2,
+          |      "amendedVersion": 1,
+          |      "totalAmtOfTaxDueAtLowerRate": 2000.02
+          |    },
+          |    "chargeTypeBDetails": {
+          |      "totalAmount": 100.02,
+          |      "numberOfMembers": 2,
+          |      "amendedVersion": 1
+          |    }
+          |  }
+          |}
+          |""".stripMargin)
+      val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
+      result.isSuccess mustBe true
+    }
+
 
     "Validate invalid payload with single error" in {
       val schemaUrl: URL = getClass.getResource(ErrorDetailsExtractor.schemaPath)
