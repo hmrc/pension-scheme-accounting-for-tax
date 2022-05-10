@@ -18,7 +18,7 @@ package transformations.userAnswersToETMP
 
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, __}
 import transformations.generators.AFTUserAnswersGenerators
 
 class AFTUserAnswersReturnTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
@@ -26,20 +26,46 @@ class AFTUserAnswersReturnTransformerSpec extends AnyFreeSpec with AFTUserAnswer
   import AFTUserAnswersReturnTransformerSpec._
 
   "An AFTReturn Transformer" - {
-    "must transform from UserAnswers to ETMP AFT Return format for PSA" in {
-      val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
-        chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+    "must transform from UserAnswers to ETMP AFT Return format for PSA" - {
+      "when all mandatory UserAnswers are present" in {
+        val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
+          chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
 
-      val transformedEtmpJson = userAnswersRequestJsonPSA.transform(transformer.transformToETMPFormat).asOpt.value
-      transformedEtmpJson mustBe etmpResponseJsonPSA
+        val transformedEtmpJson = userAnswersRequestJsonPSA.transform(transformer.transformToETMPFormat).asOpt.value
+        transformedEtmpJson mustBe etmpResponseJsonPSA
+      }
+
+      "when a mandatory field in chargeD UserAnswers is missing" in {
+        val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
+          chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+
+        val userAnswersMissingField = (__ \ "chargeDDetails" \ "totalChargeAmount").prune(userAnswersRequestJsonPSA).asOpt.value
+        val transformedEtmpJson = userAnswersMissingField.transform(transformer.transformToETMPFormat).asOpt.value
+
+        val etmpResponseWithoutChargeD = (__ \ "chargeDetails" \ "chargeTypeDDetails").prune(etmpResponseJsonPSA).asOpt.value
+        transformedEtmpJson mustBe etmpResponseWithoutChargeD
+      }
     }
 
-    "must transform from UserAnswers to ETMP AFT Return format for PSP" in {
+    "must transform from UserAnswers to ETMP AFT Return format for PSP" - {
+      "when all mandatory UserAnswers are present" - {
+        val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
+          chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+
+        val transformedEtmpJson = userAnswersRequestJsonPSP.transform(transformer.transformToETMPFormat).asOpt.value
+        transformedEtmpJson mustBe etmpResponseJsonPSP
+      }
+    }
+
+    "when a mandatory field in chargeD UserAnswers is missing" in {
       val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
         chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
 
-      val transformedEtmpJson = userAnswersRequestJsonPSP.transform(transformer.transformToETMPFormat).asOpt.value
-      transformedEtmpJson mustBe etmpResponseJsonPSP
+      val userAnswersMissingField = (__ \ "chargeDDetails" \ "totalChargeAmount").prune(userAnswersRequestJsonPSA).asOpt.value
+      val transformedEtmpJson = userAnswersMissingField.transform(transformer.transformToETMPFormat).asOpt.value
+
+      val etmpResponseWithoutChargeD = (__ \ "chargeDetails" \ "chargeTypeDDetails").prune(etmpResponseJsonPSA).asOpt.value
+      transformedEtmpJson mustBe etmpResponseWithoutChargeD
     }
   }
 }
@@ -318,8 +344,6 @@ object AFTUserAnswersReturnTransformerSpec {
       |  }
       |}
       |""".stripMargin)
-
-
 
 
   private val userAnswersRequestJsonPSP = Json.parse(

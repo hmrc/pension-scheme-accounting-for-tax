@@ -92,5 +92,81 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").asOpt[Int] mustBe None
       }
     }
+
+    "must return an empty JsObject when a mandatory field is missing from the UserAnswers json payload" in {
+      val transformer = new ChargeETransformer
+      val json = Json.obj(
+        fields = "chargeEDetails" ->
+          Json.obj(
+            "members" -> chargeEMember("testStatus").random
+          ))
+      val transformedJson = json.transform(transformer.transformToETMPData)
+
+      transformedJson mustBe JsSuccess(Json.obj())
+    }
+
+    "must remove any member nodes missing required fields" in {
+      val transformer = new ChargeETransformer
+
+      val json = Json.obj(
+        "chargeEDetails" -> Json.obj(
+          "members" -> Json.arr(
+            Json.obj(
+              "memberStatus" -> "Changed",
+              "memberAFTVersion" -> 1,
+              "annualAllowanceYear" -> "2020",
+              "memberDetails" -> Json.obj(
+                "firstName" -> "Joy",
+                "lastName" -> "Kenneth",
+                "nino" -> "AA089000A"
+              )
+            ),
+            Json.obj(
+              "memberStatus" -> "Changed",
+              "memberAFTVersion" -> 1,
+              "annualAllowanceYear" -> "2020",
+              "memberDetails" -> Json.obj(
+                "firstName" -> "Roy",
+                "lastName" -> "Renneth",
+                "nino" -> "AA089000A"
+              ),
+              "chargeDetails" -> Json.obj(
+                "dateNoticeReceived" -> "2020-01-11",
+                "chargeAmount" -> 200.02,
+                "isPaymentMandatory" -> true
+              )
+            )
+          ),
+          "totalChargeAmount" -> 2345.02
+        )
+      )
+
+      val transformedJson = json.transform(transformer.transformToETMPData)
+
+      val expectedJson = Json.obj(
+        "chargeDetails" -> Json.obj(
+          "chargeTypeEDetails" -> Json.obj(
+            "memberDetails" -> Json.arr(
+              Json.obj(
+                "individualsDetails" -> Json.obj(
+                  "firstName" -> "Roy",
+                  "lastName" -> "Renneth",
+                  "nino" -> "AA089000A"
+                ),
+                "dateOfNotice" -> "2020-01-11",
+                "taxYearEnding" -> "2020",
+                "amountOfCharge" -> 200.02,
+                "paidUnder237b" -> "Yes",
+                "memberStatus" -> "Changed",
+                "memberAFTVersion" -> 1,
+              )
+            ),
+            "totalAmount" -> 2345.02
+          )
+        )
+      )
+
+      transformedJson mustBe JsSuccess(expectedJson, __ \ "chargeEDetails")
+    }
   }
 }

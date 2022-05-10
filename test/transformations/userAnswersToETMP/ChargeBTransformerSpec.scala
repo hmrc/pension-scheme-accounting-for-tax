@@ -18,7 +18,7 @@ package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.freespec.AnyFreeSpec
-import play.api.libs.json.__
+import play.api.libs.json.{JsSuccess, Json, __}
 import transformations.generators.AFTUserAnswersGenerators
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import org.scalatest.OptionValues

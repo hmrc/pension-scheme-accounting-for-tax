@@ -18,7 +18,7 @@ package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.freespec.AnyFreeSpec
-import play.api.libs.json._
+import play.api.libs.json.{Json, _}
 import transformations.generators.AFTUserAnswersGenerators
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import org.scalatest.OptionValues
@@ -137,6 +137,103 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
 
           (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 4
       }
+    }
+    "must return an empty JsObject when a mandatory field is missing from the UserAnswers json payload" in {
+      val transformer = new ChargeCTransformer
+      val json = Json.obj(
+        fields = "chargeCDetails" ->
+          Json.obj(
+            "individualEmployers" -> List(chargeCIndividualEmployer.random)
+          ))
+
+      val transformedJson = json.transform(transformer.transformToETMPData)
+      transformedJson mustBe JsSuccess(Json.obj())
+    }
+
+    "must remove any member nodes missing required fields " in {
+      val transformer = new ChargeCTransformer
+
+      val json = Json.obj(
+        "chargeCDetails" -> Json.obj(
+          "employers" -> Json.arr(
+            Json.obj(
+              "whichTypeOfSponsoringEmployer" -> "individual",
+              "memberStatus" -> "changed",
+              "memberAFTVersion" -> 1,
+              "chargeDetails" -> Json.obj(
+                fields = "paymentDate" -> "06/01/2022",
+                "amountTaxDue" -> 1.0
+              ),
+              "sponsoringIndividualDetails" -> Json.obj(
+                fields = "firstName" -> "Henry",
+                "lastName" -> "Cavill",
+                "nino" -> "AA089000A"
+              ),
+              "sponsoringEmployerAddress" -> Json.obj(
+                "line1" -> "1",
+                "line2" -> "2",
+                "line3" -> "3",
+                "line4" -> "4",
+                "postcode" -> "m1111m",
+                "country" -> "GB"
+              )),
+            Json.obj(
+              "whichTypeOfSponsoringEmployer" -> "organisation",
+              "memberStatus" -> "Deleted",
+              "memberAFTVersion" -> 1,
+              "sponsoringOrganisationDetails" -> Json.obj(
+                fields = "name" -> "someOrg",
+                "crn" -> "SomeCRN",
+              ),
+              "sponsoringEmployerAddress" -> Json.obj(
+                "line1" -> "1",
+                "line2" -> "2",
+                "line3" -> "3",
+                "line4" -> "4",
+                "postcode" -> "m1111m",
+                "country" -> "GB"
+              ))
+          ),
+          "totalChargeAmount" -> 100.00
+        ))
+
+
+      val transformedJson = json.transform(transformer.transformToETMPData)
+
+      val expectedJson = Json.obj(
+        "chargeDetails" -> Json.obj(
+          "chargeTypeCDetails" -> Json.obj(
+            "memberDetails" -> Json.arr(
+              Json.obj(
+                "correspondenceAddressDetails" -> Json.obj(
+                  "addressLine1" -> "1",
+                  "addressLine2" -> "2",
+                  "addressLine3" -> "3",
+                  "addressLine4" -> "4",
+                  "countryCode" -> "GB",
+                  "nonUKAddress" -> "False",
+                  "postalCode" -> "m1111m"
+                ),
+                "memberTypeDetails" -> Json.obj(
+                  "memberType" -> "Individual",
+                  "individualDetails" -> Json.obj(
+                    "firstName" -> "Henry",
+                    "lastName" -> "Cavill",
+                    "nino" -> "AA089000A"
+                  )
+                ),
+                "dateOfPayment" -> "06/01/2022",
+                "memberAFTVersion" -> 1,
+                "memberStatus" -> "changed",
+                "totalAmountOfTaxDue" -> 1
+              )
+            ),
+            "totalAmount" -> 100.00
+          )
+        )
+      )
+
+      transformedJson mustBe JsSuccess(expectedJson, __ \ "chargeCDetails")
     }
   }
 }

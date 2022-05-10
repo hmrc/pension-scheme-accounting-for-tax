@@ -98,5 +98,87 @@ class ChargeGTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").asOpt[Int] mustBe None
       }
     }
+
+    "must return an empty JsObject when a mandatory field is missing from the UserAnswers json payload" in {
+      val transformer = new ChargeGTransformer
+      val json = Json.obj(
+        fields = "chargeDDetails" ->
+          Json.obj(
+            "members" -> List(chargeGMember("testStatus").random)
+          ))
+
+      val transformedJson = json.transform(transformer.transformToETMPData)
+      transformedJson mustBe JsSuccess(Json.obj())
+    }
+
+    "must remove any member nodes missing required fields" in {
+      val transformer = new ChargeGTransformer
+
+      val json = Json.obj(
+        "chargeGDetails" -> Json.obj(
+          "members" -> Json.arr(
+            Json.obj(
+              "memberStatus" -> "Changed",
+              "memberAFTVersion" -> 1,
+              "memberDetails" -> Json.obj(
+                "firstName" -> "Joy",
+                "lastName" -> "Kenneth",
+                "nino" -> "AA089000A",
+                "dob" -> "1980-02-29",
+              )
+            ),
+            Json.obj(
+              "memberStatus" -> "Changed",
+              "memberAFTVersion" -> 1,
+              "memberDetails" -> Json.obj(
+                "firstName" -> "Roy",
+                "lastName" -> "Renneth",
+                "nino" -> "AA089000A",
+                "dob" -> "1980-02-29",
+              ),
+              "chargeDetails" -> Json.obj(
+                "qropsReferenceNumber" -> "300000",
+                "qropsTransferDate" -> "2016-02-29"
+              ),
+              "chargeAmounts" -> Json.obj(
+                "amountTransferred" -> 45670.02,
+                "amountTaxDue" -> 4560.02
+            )
+            )
+          ),
+          "totalChargeAmount" -> 2345.02,
+          "amendedVersion" -> 1
+        )
+      )
+
+      val transformedJson = json.transform(transformer.transformToETMPData)
+
+      val expectedJson = Json.obj(
+        "chargeDetails" -> Json.obj(
+          "chargeTypeGDetails" -> Json.obj(
+            "memberDetails" -> Json.arr(
+              Json.obj(
+                "individualsDetails" -> Json.obj(
+                  "firstName" -> "Roy",
+                  "lastName" -> "Renneth",
+                  "nino" -> "AA089000A",
+                  "dateOfBirth" -> "1980-02-29"
+                ),
+                "dateOfTransfer" -> "2016-02-29",
+                "qropsReference" -> "Q300000",
+                "memberStatus" -> "Changed",
+                "memberAFTVersion" -> 1,
+                "amountOfTaxDeducted" -> 4560.02,
+                "amountTransferred" -> 45670.02
+              )
+            ),
+            "totalAmount" -> 2345.02,
+            "amendedVersion" -> 1,
+          )
+        )
+      )
+
+      transformedJson mustBe JsSuccess(expectedJson, __ \ "chargeGDetails")
+    }
   }
 }
