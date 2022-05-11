@@ -1,12 +1,13 @@
 Pensions Scheme Accounting For Tax
 ==================================
 
-Back-end microservice to support the file or amend an AFT Return //TOOO: Clarification on what support the file means?
+// TOOO: Clarification, what does support the file actually mean here?
+Back-end microservice to support the file or amend an AFT Return.
 
 API
 ---
 
-// TODO: Clarification on the dynamic parameters?
+// TODO: Clarification, on use of dynamic parameters in this table vs in routes/conf?
 
 | *Task* | *Supported Methods* | *Description* |
 |--------|----|----|
