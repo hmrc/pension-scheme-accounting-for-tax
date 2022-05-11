@@ -16,6 +16,7 @@
 
 package controllers
 
+import audit.FileAFTReturnAuditService
 import connectors.AFTConnector
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.AftOverviewCache
@@ -44,6 +45,7 @@ class AFTController @Inject()(
                                val authConnector: AuthConnector,
                                aftReturnTransformer: AFTReturnTransformer,
                                aftDetailsTransformer: AFTDetailsTransformer,
+                               fileAFTReturnAuditService: FileAFTReturnAuditService,
                                aftService: AFTService,
                                featureToggleService: FeatureToggleService,
                                aftOverviewCacheRepository: AftOverviewCacheRepository,
@@ -57,6 +59,7 @@ class AFTController @Inject()(
   private val logger = Logger(classOf[AFTController])
   private val basePath = System.getProperty("user.dir")
 
+  type SeqOfChargeType = Option[Seq[Option[String]]]
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
       post { (pstr, userAnswersJson) =>
@@ -67,7 +70,29 @@ class AFTController @Inject()(
               val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(s"$basePath/conf/${ErrorDetailsExtractor.schemaPath}", dataToBeSendToETMP)
               validationResult match {
                 case JsError(error) =>
+                  val psaOrPspId = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
+                    case value => value("submittedID").toString
+                    case _ => ""
+                  }
+                  val chargeType: SeqOfChargeType = dataToBeSendToETMP.value("chargeDetails").asOpt[JsValue].map {
+                    case value =>
+                      Seq(
+                        (value\"chargeTypeADetails").asOpt[JsValue].map(_ => "chargeTypeA" ),
+                        (value\"chargeTypeBDetails").asOpt[JsValue].map(_ => "chargeTypeB" ),
+                        (value\"chargeTypeCDetails").asOpt[JsValue].map(_ => "chargeTypeC" ),
+                        (value\"chargeTypeDDetails").asOpt[JsValue].map(_ => "chargeTypeD" ),
+                        (value\"chargeTypeEDetails").asOpt[JsValue].map(_ => "chargeTypeE" ),
+                        (value\"chargeTypeFDetails").asOpt[JsValue].map(_ => "chargeTypeF" ),
+                        (value\"chargeTypeGDetails").asOpt[JsValue].map(_ => "chargeTypeG" )
+                      )
+                    case _ => Seq.empty[Option[String]]
+                  }
+                  val chargeTypeList = chargeType match {
+                    case Some(list) => list.filter(_.nonEmpty).flatten
+                    case None => ""
+                  }
                   val errors = ErrorDetailsExtractor.getErrors(error)
+                  fileAFTReturnAuditService.sendFileAftReturnSchemaValidatorAuditEvent(psaOrPspId.getOrElse(""), pstr, chargeTypeList.toString, dataToBeSendToETMP, errors, error.size)
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n$errors")
                 case JsSuccess(_, _) =>
                   logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")

@@ -59,4 +59,40 @@ class FileAftReturnSpec extends AnyFlatSpec with Matchers {
 
   }
 
+  "FileAftReturnSchemaValidator.details" should "output the correct map of data" in {
+
+    val psaId = "psa"
+    val pstr = "test-pstr"
+    val noOfFailures = 1
+    val chargeType = "List(chargeTypeA, chargeTypeB, chargeTypeC, chargeTypeD)"
+    val request = Json.obj(
+      "name" -> "request",
+      "aftDeclarationDetails" -> Json.obj(
+          "submittedBy" -> "PSA",
+          "submittedID" -> psaId
+      ))
+    val response = "response"
+
+    val event = FileAftReturnSchemaValidator(
+      psaOrPspId = psaId,
+      pstr = pstr,
+      chargeType = chargeType,
+      numberOfFailures = noOfFailures,
+      request = request,
+      failureResponse = response
+    )
+
+    val expected: JsObject = Json.obj(
+      "psaOrPspId" -> psaId,
+      "pstr" -> pstr,
+      "chargeType" -> chargeType,
+      "request" -> request,
+      "failureResponse" -> response,
+      "numberOfFailures" -> noOfFailures.toString
+    )
+
+    event.details shouldBe expected
+
+  }
+
 }

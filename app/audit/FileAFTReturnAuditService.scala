@@ -46,6 +46,13 @@ class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
     case Failure(error: HttpException) =>
       auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, journeyType, error.responseCode, data, None))
   }
+
+  def sendFileAftReturnSchemaValidatorAuditEvent(psaOrPspId: String, pstr: String, chargeType: String, data: JsValue,
+                                                 failureResponse: String, numberOfFailures: Int)
+                                 (implicit ec: ExecutionContext, request: RequestHeader): Unit = {
+    auditService.sendEvent(FileAftReturnSchemaValidator(psaOrPspId, pstr, chargeType, data,
+        failureResponse, numberOfFailures))
+  }
 }
 
 case class FileAftReturn(
@@ -64,6 +71,26 @@ case class FileAftReturn(
     "status" -> status.toString,
     "request" -> request,
     "response" -> response
+  )
+}
+
+case class FileAftReturnSchemaValidator(
+                          psaOrPspId: String,
+                          pstr: String,
+                          chargeType: String,
+                          request: JsValue,
+                          failureResponse: String,
+                          numberOfFailures: Int
+                        ) extends AuditEvent {
+  override def auditType: String = "AFTSchemaValidationPostCheck"
+
+  override def details: JsObject = Json.obj(
+    "psaOrPspId" -> psaOrPspId,
+    "pstr" -> pstr,
+    "chargeType" -> chargeType,
+    "request" -> request,
+    "failureResponse" -> failureResponse,
+    "numberOfFailures" -> numberOfFailures.toString
   )
 }
 
