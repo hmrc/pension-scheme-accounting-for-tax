@@ -18,15 +18,13 @@ package controllers
 
 import audit.FileAFTReturnAuditService
 import connectors.AFTConnector
-import models.FeatureToggle.Enabled
-import models.FeatureToggleName.AftOverviewCache
 import models.enumeration.JourneyType
 import models.{AFTSubmitterDetails, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
 import repository.AftOverviewCacheRepository
-import services.{AFTService, FeatureToggleService}
+import services.AFTService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
@@ -47,7 +45,6 @@ class AFTController @Inject()(
                                aftDetailsTransformer: AFTDetailsTransformer,
                                fileAFTReturnAuditService: FileAFTReturnAuditService,
                                aftService: AFTService,
-                               featureToggleService: FeatureToggleService,
                                aftOverviewCacheRepository: AftOverviewCacheRepository,
                                jsonPayloadSchemaValidator: JSONPayloadSchemaValidator
                              )(implicit ec: ExecutionContext)
@@ -113,8 +110,6 @@ class AFTController @Inject()(
       get { (pstr, startDate) =>
         request.headers.get("endDate") match {
           case Some(endDate) =>
-            featureToggleService.get(AftOverviewCache).flatMap {
-              case Enabled(_) =>
                 aftOverviewCacheRepository.get(pstr).flatMap {
                   case Some(data) => Future.successful(Ok(data))
                   case _ => aftConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
@@ -122,10 +117,6 @@ class AFTController @Inject()(
                       Ok(Json.toJson(data))
                     }
                   }
-                }
-              case _ => aftConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
-                Future.successful(Ok(Json.toJson(data)))
-              }
             }
           case _ =>
             Future.failed(new BadRequestException("Bad Request with no endDate"))

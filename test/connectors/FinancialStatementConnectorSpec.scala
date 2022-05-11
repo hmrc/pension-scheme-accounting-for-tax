@@ -18,8 +18,6 @@ package connectors
 
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
-import models.FeatureToggle.{Disabled, Enabled}
-import models.FeatureToggleName.FinancialInformationAFT
 import models._
 import org.mockito.ArgumentMatchers.any
 import org.mockito._
@@ -30,7 +28,7 @@ import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
 import play.api.inject.guice.GuiceableModule
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import services.{AFTService, FeatureToggleService}
@@ -38,7 +36,6 @@ import uk.gov.hmrc.http._
 import utils.WireMockHelper
 
 import java.time.LocalDate
-import scala.concurrent.Future
 
 class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with MockitoSugar with BeforeAndAfterEach {
 
@@ -63,34 +60,16 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Disabled(FinancialInformationAFT)))
   }
 
   private val psaId = "test-psa-id"
   private val pstr = "test-pstr"
-  private val getPsaFSUrl = s"/pension-online/financial-statements/psaid/$psaId?dataset=medium"
   private val getPsaFSMaxUrl = s"/pension-online/financial-statements/psaid/$psaId?dataset=maximum"
-  private val getSchemeFSUrl = s"/pension-online/financial-statements/pstr/$pstr?dataset=medium"
   private val getSchemeFSMaxUrl = s"/pension-online/financial-statements/pstr/$pstr?dataset=maximum"
 
   "getPsaFS" must {
-    "return user answer json when successful response returned from ETMP ehen toggle is off" in {
-      server.stubFor(
-        get(urlEqualTo(getPsaFSUrl))
-          .willReturn(
-            ok
-              .withHeader("Content-Type", "application/json")
-              .withBody(psaFSResponse.toString())
-          )
-      )
 
-      connector.getPsaFS(psaId).map { response =>
-        response mustBe psaModel
-      }
-    }
-
-    "return user answer json when successful response returned from ETMP when toggle on" in {
-      when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
+    "return user answer json when successful response returned from ETMP" in {
       server.stubFor(
         get(urlEqualTo(getPsaFSMaxUrl))
           .willReturn(
@@ -107,24 +86,24 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     "send the GetPsaFS audit event when ETMP has returned OK" in {
       Mockito.reset(mockAuditService)
       server.stubFor(
-        get(urlEqualTo(getPsaFSUrl))
+        get(urlEqualTo(getPsaFSMaxUrl))
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
-              .withBody(psaFSResponse.toString())
+              .withBody(psaFSWrapperResponseMax.toString())
           )
       )
 
       val eventCaptor = ArgumentCaptor.forClass(classOf[GetPsaFS])
       connector.getPsaFS(psaId).map { _ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustEqual GetPsaFS(psaId, Status.OK, Some(Json.toJson(psaModel)))
+        eventCaptor.getValue mustEqual GetPsaFS(psaId, Status.OK, Some(Json.toJson(psaModelMax)))
       }
     }
 
     "return a BadRequestException for anything else" in {
       server.stubFor(
-        get(urlEqualTo(getPsaFSUrl))
+        get(urlEqualTo(getPsaFSMaxUrl))
           .willReturn(
             badRequest
               .withHeader("Content-Type", "application/json")
@@ -142,7 +121,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
     "return Empty sequence - 404" in {
       server.stubFor(
-        get(urlEqualTo(getPsaFSUrl))
+        get(urlEqualTo(getPsaFSMaxUrl))
           .willReturn(
             notFound
               .withBody(errorResponse("NOT_FOUND"))
@@ -158,7 +137,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     "throw UpstreamErrorResponse for server unavailable - 403" in {
 
       server.stubFor(
-        get(urlEqualTo(getPsaFSUrl))
+        get(urlEqualTo(getPsaFSMaxUrl))
           .willReturn(
             forbidden
               .withBody(errorResponse("FORBIDDEN"))
@@ -174,7 +153,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     "throw UpstreamErrorResponse for internal server error - 500 and log the event as error" in {
 
       server.stubFor(
-        get(urlEqualTo(getPsaFSUrl))
+        get(urlEqualTo(getPsaFSMaxUrl))
           .willReturn(
             serverError
               .withBody(errorResponse("SERVER_ERROR"))
@@ -191,23 +170,8 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
   }
 
   "getSchemeFS" must {
-    "return user answer json when successful response returned from ETMP when toggle is off" in {
-      server.stubFor(
-        get(urlEqualTo(getSchemeFSUrl))
-          .willReturn(
-            ok
-              .withHeader("Content-Type", "application/json")
-              .withBody(schemeFSResponse.toString())
-          )
-      )
 
-      connector.getSchemeFS(pstr).map { response =>
-        response mustBe schemeModel
-      }
-    }
-
-    "return maximum answer json when successful response returned from ETMP when the financial statement toggle is on"in {
-      when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
+    "return maximum answer json when successful response returned from ETMP "in {
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -225,24 +189,24 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     "send the GetSchemeFS audit event when ETMP has returned OK" in {
       Mockito.reset(mockAuditService)
       server.stubFor(
-        get(urlEqualTo(getSchemeFSUrl))
+        get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
             ok
               .withHeader("Content-Type", "application/json")
-              .withBody(schemeFSResponse.toString())
+              .withBody(schemeFSWrapperResponseMax.toString())
           )
       )
 
       val eventCaptor = ArgumentCaptor.forClass(classOf[GetSchemeFS])
       connector.getSchemeFS(pstr).map { _ =>
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustEqual GetSchemeFS(pstr, Status.OK, Some(Json.toJson(schemeModel)))
+        eventCaptor.getValue mustEqual GetSchemeFS(pstr, Status.OK, Some(Json.toJson(schemeFSWrapperModel)))
       }
     }
 
     "return a BadRequestException for a 400 INVALID_PSTR response" in {
       server.stubFor(
-        get(urlEqualTo(getSchemeFSUrl))
+        get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
             badRequest
               .withHeader("Content-Type", "application/json")
@@ -260,7 +224,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
     "return Empty sequence - 404" in {
       server.stubFor(
-        get(urlEqualTo(getSchemeFSUrl))
+        get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
             notFound
               .withBody(errorResponse("NOT_FOUND"))
@@ -275,7 +239,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     "throw UpstreamErrorResponse for server unavailable - 403" in {
 
       server.stubFor(
-        get(urlEqualTo(getSchemeFSUrl))
+        get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
             forbidden
               .withBody(errorResponse("FORBIDDEN"))
@@ -291,7 +255,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     "throw UpstreamErrorResponse for internal server error - 500 and log the event as error" in {
 
       server.stubFor(
-        get(urlEqualTo(getSchemeFSUrl))
+        get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
             serverError
               .withBody(errorResponse("SERVER_ERROR"))
@@ -309,7 +273,6 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 }
 
 object FinancialStatementConnectorSpec {
-  private val receiptDate = LocalDate.of(2020, 12, 12)
 
   def errorResponse(code: String): String = {
     Json.stringify(
@@ -320,7 +283,7 @@ object FinancialStatementConnectorSpec {
     )
   }
 
-  private val psaModelMax: PsaFS = PsaFS(true, Seq(
+  private val psaModelMax: PsaFS = PsaFS(inhibitRefundSignal = true, Seq(
     PsaFSDetail(
       index = 1,
       chargeReference = "Not Applicable",
@@ -461,80 +424,6 @@ object FinancialStatementConnectorSpec {
   private val psaFSWrapperResponseMax: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++
     Json.obj("documentHeaderDetails" -> psaFSMaxResponse)
 
-  private val psaFSResponse: JsValue = Json.arr(
-    Json.obj(
-      "index" -> 1,
-      "chargeReference" -> "XY002610150184",
-      "chargeType" -> "57001080",
-      "dueDate" -> "2020-02-15",
-      "totalAmount" -> 80000.00,
-      "outstandingAmount" -> 56049.08,
-      "stoodOverAmount" -> 25089.08,
-      "accruedInterestTotal" -> 123.00,
-      "amountDue" -> 1029.05,
-      "periodStartDate" -> "2020-04-01",
-      "periodEndDate" -> "2020-06-30",
-      "pstr" -> "24000040IN"
-    ),
-    Json.obj(
-      "index" -> 2,
-      "chargeReference" -> "XY002610150184",
-      "chargeType" -> "57001091",
-      "dueDate" -> "2020-02-15",
-      "totalAmount" -> 80000.00,
-      "outstandingAmount" -> 56049.08,
-      "stoodOverAmount" -> 25089.08,
-      "accruedInterestTotal" -> 123.00,
-      "amountDue" -> 1029.05,
-      "periodStartDate" -> "2020-04-01",
-      "periodEndDate" -> "2020-06-30",
-      "pstr" -> "24000041IN"
-    )
-  )
-  private val psaModel: PsaFS = PsaFS(false, Seq(
-    PsaFSDetail(
-      index = 0,
-      chargeReference = "XY002610150184",
-      chargeType = "Accounting for Tax late filing penalty",
-      dueDate = Some(LocalDate.parse("2020-02-15")),
-      totalAmount = 80000.00,
-      outstandingAmount = 56049.08,
-      stoodOverAmount = 25089.08,
-      accruedInterestTotal = 123.00,
-      amountDue = 1029.05,
-      periodStartDate = LocalDate.parse("2020-04-01"),
-      periodEndDate = LocalDate.parse("2020-06-30"),
-      pstr = "24000040IN"
-    ),
-    PsaFSDetail(
-      index = 0,
-      chargeReference = "XY002610150184",
-      chargeType = "Accounting for Tax further late filing penalty",
-      dueDate = Some(LocalDate.parse("2020-02-15")),
-      totalAmount = 80000.00,
-      outstandingAmount = 56049.08,
-      stoodOverAmount = 25089.08,
-      accruedInterestTotal = 123.00,
-      amountDue = 1029.05,
-      periodStartDate = LocalDate.parse("2020-04-01"),
-      periodEndDate = LocalDate.parse("2020-06-30"),
-      pstr = "24000041IN"
-    ))
-  )
-
-  private def schemeFSJsValue(chargeReference: String): JsObject = Json.obj(
-    "chargeReference" -> s"XY00261015018$chargeReference",
-    "chargeType" -> "56001000",
-    "dueDate" -> "2020-02-15",
-    "totalAmount" -> 80000.00,
-    "outstandingAmount" -> 56049.08,
-    "stoodOverAmount" -> 25089.08,
-    "amountDue" -> 1029.05,
-    "accruedInterestTotal" -> 100.05,
-    "periodStartDate" -> "2020-04-01",
-    "periodEndDate" -> "2020-06-30"
-  )
-
   private val schemeFSMaxSeqJson: JsValue = Json.arr(
     Json.obj(
       "chargeReference" -> s"XY002610150184",
@@ -587,21 +476,6 @@ object FinancialStatementConnectorSpec {
         )
       )
     )
-  )
-
-
-  private def schemeFSModel(chargeReference: String) = SchemeFSDetail(
-    index = 0,
-    chargeReference = s"XY00261015018$chargeReference",
-    chargeType = "Accounting for Tax return",
-    dueDate = Some(LocalDate.parse("2020-02-15")),
-    totalAmount = 80000.00,
-    amountDue = 1029.05,
-    outstandingAmount = 56049.08,
-    accruedInterestTotal = 100.05,
-    stoodOverAmount = 25089.08,
-    periodStartDate = Some(LocalDate.parse("2020-04-01")),
-    periodEndDate = Some(LocalDate.parse("2020-06-30"))
   )
 
   //scalastyle:off method.length
@@ -661,18 +535,6 @@ object FinancialStatementConnectorSpec {
         clearingDate = Some(LocalDate.parse("2020-06-30")),
         clearedAmountItem = BigDecimal(0.00))
       )
-    )
-  )
-
-  private val schemeFSResponse: JsValue = Json.arr(
-    schemeFSJsValue(chargeReference = "4"),
-    schemeFSJsValue(chargeReference = "5")
-  )
-  private val schemeModel: SchemeFS = SchemeFS(
-    inhibitRefundSignal = false,
-    seqSchemeFSDetail = Seq(
-      schemeFSModel(chargeReference = "4"),
-      schemeFSModel(chargeReference = "5")
     )
   )
 

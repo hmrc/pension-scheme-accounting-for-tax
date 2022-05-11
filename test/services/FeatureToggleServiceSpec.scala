@@ -97,21 +97,20 @@ class FeatureToggleServiceSpec
 
     when(adminDataRepository.getFeatureToggles).thenReturn(Future.successful(Seq.empty))
 
-    OUT.getAll.futureValue mustBe Seq(Disabled(MigrationTransferAft), Disabled(AftOverviewCache), Disabled(BatchedRepositoryAFT),
-      Disabled(AftBulkUpload), Disabled(FinancialInformationAFT))
+    OUT.getAll.futureValue mustBe Seq(Disabled(DummyToggle))
   }
 
   "When a toggle doesn't exist in the repo, return default" in {
     val adminDataRepository = mock[AdminDataRepository]
     when(adminDataRepository.getFeatureToggles).thenReturn(Future.successful(Seq.empty))
     val OUT = new FeatureToggleService(adminDataRepository, new FakeCache())
-    OUT.get(MigrationTransferAft).futureValue mustBe Disabled(MigrationTransferAft)
+    OUT.get(DummyToggle).futureValue mustBe Disabled(DummyToggle)
   }
 
   "When a toggle exists in the repo, override default" in {
     val adminDataRepository = mock[AdminDataRepository]
-    when(adminDataRepository.getFeatureToggles).thenReturn(Future.successful(Seq(Enabled(MigrationTransferAft))))
+    when(adminDataRepository.getFeatureToggles).thenReturn(Future.successful(Seq(Enabled(DummyToggle))))
     val OUT = new FeatureToggleService(adminDataRepository, new FakeCache())
-    OUT.get(MigrationTransferAft).futureValue mustBe Enabled(MigrationTransferAft)
+    OUT.get(DummyToggle).futureValue mustBe Enabled(DummyToggle)
   }
 }

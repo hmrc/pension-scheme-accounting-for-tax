@@ -17,8 +17,7 @@
 package controllers.cache
 
 import akka.util.ByteString
-import models.FeatureToggleName.BatchedRepositoryAFT
-import models.{FeatureToggle, LockDetail}
+import models.LockDetail
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.scalatest.BeforeAndAfter
@@ -32,7 +31,6 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository.{AftDataCacheRepository, AftBatchedDataCacheRepository}
 import repository.model.SessionData
-import services.FeatureToggleService
 import uk.gov.hmrc.auth.core.{Enrolments, EnrolmentIdentifier, Enrolment, AuthConnector}
 import uk.gov.hmrc.auth.core.retrieve.{~, Name}
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
@@ -55,19 +53,16 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   private val fakePostRequest = FakeRequest("POST", "/").withHeaders("X-Session-ID" -> sessionId, "id" -> id)
   private val psaId = "A2222222"
   private val pspId = "22222222"
-  private val mockFeatureToggleService = mock[FeatureToggleService]
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
     bind[AftBatchedDataCacheRepository].toInstance(repo),
-    bind[AftDataCacheRepository].toInstance(repoUnbatched),
-    bind[FeatureToggleService].toInstance(mockFeatureToggleService)
+    bind[AftDataCacheRepository].toInstance(repoUnbatched)
   )
 
   before {
     reset(repo, repoUnbatched)
     reset(authConnector)
-    when(mockFeatureToggleService.get(any())).thenReturn(Future.successful(FeatureToggle.Enabled(BatchedRepositoryAFT)))
   }
 
   "DataCacheController" when {
