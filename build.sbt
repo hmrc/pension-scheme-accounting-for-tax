@@ -33,7 +33,7 @@ lazy val microservice = Project(appName, file("."))
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true
   )
-  .settings(resolvers ++= Seq(Resolver.jcenterRepo, "emueller-bintray" at "http://dl.bintray.com/emueller/maven"))
+  .settings(resolvers += Resolver.jcenterRepo)
 
 
 lazy val silencerSettings: Seq[Setting[_]] = {
