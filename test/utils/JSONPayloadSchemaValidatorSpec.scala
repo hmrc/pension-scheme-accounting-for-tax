@@ -20,14 +20,14 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsError, JsSuccess, Json}
+import play.api.libs.json.Json
 
 import java.net.URL
 
 
 
 class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with Matchers with BeforeAndAfter {
-
+  val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
   private val app = new GuiceApplicationBuilder()
     .overrides(
     )
@@ -36,8 +36,6 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
   private lazy val jsonPayloadSchemaValidator: JSONPayloadSchemaValidator = app.injector.instanceOf[JSONPayloadSchemaValidator]
   "validateJson" must {
     "Validate payload" in {
-      val schemaUrl: URL = getClass.getResource(ErrorDetailsExtractor.schemaPath)
-      val schemaPath = schemaUrl.getPath
       val json = Json.parse(
         """
           |{
@@ -55,12 +53,10 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-      result.isSuccess mustBe true
+      result.isEmpty mustBe true
     }
 
     "Validate full payload" in {
-      val schemaUrl: URL = getClass.getResource(ErrorDetailsExtractor.schemaPath)
-      val schemaPath = schemaUrl.getPath
       val json = Json.parse(
         """
           |{
@@ -176,13 +172,11 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-      result.isSuccess mustBe true
+      result.isEmpty mustBe true
     }
 
 
     "Validate invalid payload with single error" in {
-      val schemaUrl: URL = getClass.getResource(ErrorDetailsExtractor.schemaPath)
-      val schemaPath = schemaUrl.getPath
       val json = Json.parse(
         """
           |{
@@ -200,19 +194,10 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-
-
-      result match {
-        case JsError(error) =>
-          val expectedMessage = "ErrorDetailsExtractor(Some(#/oneOf/0/definitions/totalAmountType),[\"Wrong type. Expected number, was string.\"])"
-          ErrorDetailsExtractor.getErrors(error) mustBe expectedMessage
-        case JsSuccess(s, x) =>
-      }
+      result.mkString mustBe "ValidationFailure(type,$.chargeDetails.chargeTypeFDetails.totalAmount: string found, number expected,None)ValidationFailure(required,$.aftDeclarationDetails: is missing but it is required,None)ValidationFailure(enum,$.aftDetails.aftStatus: does not have a value in the enumeration [Submitted],None)"
     }
 
     "Validate invalid payload with multiple errors" in {
-      val schemaUrl: URL = getClass.getResource(ErrorDetailsExtractor.schemaPath)
-      val schemaPath = schemaUrl.getPath
       val json = Json.parse(
         """
           |{
@@ -230,20 +215,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-
-
-      result match {
-        case JsError(error) =>
-          val expectedMessage = "ErrorDetailsExtractor(Some(#/oneOf/0/definitions/totalAmountType)," +
-            "[\"Wrong type. Expected number, was string.\"]) " +
-            "ErrorDetailsExtractor(Some(#/oneOf/0/definitions/dateType)," +
-            "[\"'XXXXXXXXXXXX' does not match pattern " +
-            "'^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-]" +
-            "(0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|" +
-            "(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$'.\"])"
-          ErrorDetailsExtractor.getErrors(error) mustBe expectedMessage
-        case JsSuccess(s, x) =>
-      }
+      result.mkString mustBe "ValidationFailure(pattern,$.aftDetails.quarterStartDate: does not match the regex pattern ^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$,None)ValidationFailure(type,$.chargeDetails.chargeTypeFDetails.totalAmount: string found, number expected,None)ValidationFailure(required,$.aftDeclarationDetails: is missing but it is required,None)ValidationFailure(enum,$.aftDetails.aftStatus: does not have a value in the enumeration [Submitted],None)"
     }
   }
 }

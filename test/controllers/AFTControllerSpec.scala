@@ -37,7 +37,7 @@ import repository.{AftDataCacheRepository, AftOverviewCacheRepository}
 import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
-import utils.{JSONPayloadSchemaValidator, JsonFileReader}
+import utils.{JSONPayloadSchemaValidator, JsonFileReader, ValidationFailure}
 
 import java.time.LocalDate
 import scala.concurrent.Future
@@ -57,7 +57,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   private val mockDataCacheRepository = mock[AftDataCacheRepository]
   private val mockFeatureToggleService = mock[FeatureToggleService]
   private val mockAftOverviewCacheRepository = mock[AftOverviewCacheRepository]
- private val mockJSONPayloadSchemaValidator = mock[JSONPayloadSchemaValidator]
+  private val mockJSONPayloadSchemaValidator = mock[JSONPayloadSchemaValidator]
 
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
@@ -93,7 +93,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   before {
     reset(mockDesConnector, mockAftService, authConnector, mockJSONPayloadSchemaValidator)
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
-    when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any())).thenReturn(JsSuccess(Json.parse("{}")))
+    val validationResponse = Set.empty[ValidationFailure]
+    when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any())).thenReturn(validationResponse)
   }
 
   "fileReturn" must {
@@ -128,11 +129,12 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       val controller = application.injector.instanceOf[AFTController]
 
       val GivingErrorPayload = "{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\"" +
-                      ",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\"," +
-                      "\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"]," +
-                      "\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}}"
+        ",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\"," +
+        "\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"]," +
+        "\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}}"
+      val validationResponse = Set(ValidationFailure("test", GivingErrorPayload, None))
       when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(),any()))
-        .thenReturn(JsError(JsonValidationError(Seq("test"), GivingErrorPayload)))
+        .thenReturn(validationResponse)
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaInvalidPayloadRequestJson.toString)))
@@ -142,9 +144,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaInvalidPayloadRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map { ex =>
-        val expectedErrorMessage = "Invalid AFT file AFT return:-" +
-                                   "\nErrorDetailsExtractor(Some(#/oneOf/0/definitions/totalAmountType),[\"Wrong type. Expected number, was string.\"])"
-        val expectedSchemaErrorMessage = "ErrorDetailsExtractor(Some(#/oneOf/0/definitions/totalAmountType),[\"Wrong type. Expected number, was string.\"])"
+        val expectedErrorMessage = "Invalid AFT file AFT return:-\nValidationFailure(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}},None)"
+        val expectedSchemaErrorMessage = "ValidationFailure(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}},None)"
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustBe FileAftReturnSchemaValidator(psaIdJsValue.toString(), pstr, expectedChargeType, invalidJson, expectedSchemaErrorMessage, 1)
         ex.exMessage mustBe expectedErrorMessage
