@@ -1,8 +1,8 @@
 Pensions Scheme Accounting For Tax
 ==================================
 
-// TOOO: Clarification, what does support the file actually mean here?
-Back-end microservice to support the file or amend an AFT Return.
+// TOOO: Clarification, is this description correct?
+Back-end microservice to support the bulk upload file or amend an AFT Return.
 
 API
 ---
