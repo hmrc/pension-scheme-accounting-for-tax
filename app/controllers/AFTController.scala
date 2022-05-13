@@ -68,43 +68,42 @@ class AFTController @Inject()(
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
               val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
-              if(validationResult.nonEmpty)
-              {
-                val psaOrPspId = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
+              validationResult match {
+                case Left(errors) =>                 val psaOrPspId = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
                   case value => value("submittedID").toString
                   case _ => ""
                 }
-                val chargeType: SeqOfChargeType = dataToBeSendToETMP.value("chargeDetails").asOpt[JsValue].map {
-                  case value =>
-                    Seq(
-                      (value\"chargeTypeADetails").asOpt[JsValue].map(_ => "chargeTypeA" ),
-                      (value\"chargeTypeBDetails").asOpt[JsValue].map(_ => "chargeTypeB" ),
-                      (value\"chargeTypeCDetails").asOpt[JsValue].map(_ => "chargeTypeC" ),
-                      (value\"chargeTypeDDetails").asOpt[JsValue].map(_ => "chargeTypeD" ),
-                      (value\"chargeTypeEDetails").asOpt[JsValue].map(_ => "chargeTypeE" ),
-                      (value\"chargeTypeFDetails").asOpt[JsValue].map(_ => "chargeTypeF" ),
-                      (value\"chargeTypeGDetails").asOpt[JsValue].map(_ => "chargeTypeG" )
-                    )
-                  case _ => Seq.empty[Option[String]]
-                }
-                val chargeTypeList = chargeType match {
-                  case Some(list) => list.filter(_.nonEmpty).flatten
-                  case None => ""
-                }
-                fileAFTReturnAuditService.sendFileAftReturnSchemaValidatorAuditEvent(psaOrPspId.getOrElse(""),
-                  pstr,
-                  chargeTypeList.toString,
-                  dataToBeSendToETMP,
-                  validationResult.mkString,
-                  validationResult.size)
-                throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${validationResult.mkString}")
+                  val chargeType: SeqOfChargeType = dataToBeSendToETMP.value("chargeDetails").asOpt[JsValue].map {
+                    case value =>
+                      Seq(
+                        (value\"chargeTypeADetails").asOpt[JsValue].map(_ => "chargeTypeA" ),
+                        (value\"chargeTypeBDetails").asOpt[JsValue].map(_ => "chargeTypeB" ),
+                        (value\"chargeTypeCDetails").asOpt[JsValue].map(_ => "chargeTypeC" ),
+                        (value\"chargeTypeDDetails").asOpt[JsValue].map(_ => "chargeTypeD" ),
+                        (value\"chargeTypeEDetails").asOpt[JsValue].map(_ => "chargeTypeE" ),
+                        (value\"chargeTypeFDetails").asOpt[JsValue].map(_ => "chargeTypeF" ),
+                        (value\"chargeTypeGDetails").asOpt[JsValue].map(_ => "chargeTypeG" )
+                      )
+                    case _ => Seq.empty[Option[String]]
+                  }
+                  val chargeTypeList = chargeType match {
+                    case Some(list) => list.filter(_.nonEmpty).flatten
+                    case None => ""
+                  }
+                  fileAFTReturnAuditService.sendFileAftReturnSchemaValidatorAuditEvent(psaOrPspId.getOrElse(""),
+                    pstr,
+                    chargeTypeList.toString,
+                    dataToBeSendToETMP,
+                    errors.mkString,
+                    errors.size)
+                  throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
+
+                case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                    Ok(response.body)
+                  }
               }
-              else {
-                logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-                aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                  Ok(response.body)
-                }
-              }
+
             case JsError(errors) =>
               throw JsResultException(errors)
           }

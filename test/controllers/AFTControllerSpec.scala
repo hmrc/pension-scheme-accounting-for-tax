@@ -37,7 +37,7 @@ import repository.{AftDataCacheRepository, AftOverviewCacheRepository}
 import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
-import utils.{JSONPayloadSchemaValidator, JsonFileReader, ValidationFailure}
+import utils.{ErrorReport, JSONPayloadSchemaValidator, JsonFileReader}
 
 import java.time.LocalDate
 import scala.concurrent.Future
@@ -93,7 +93,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   before {
     reset(mockDesConnector, mockAftService, authConnector, mockJSONPayloadSchemaValidator)
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
-    val validationResponse = Set.empty[ValidationFailure]
+    val validationResponse = Right(true)
     when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any())).thenReturn(validationResponse)
   }
 
@@ -132,7 +132,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         ",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\"," +
         "\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"]," +
         "\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}}"
-      val validationResponse = Set(ValidationFailure("test", GivingErrorPayload, None))
+      val validationResponse = Left(List(ErrorReport("test", GivingErrorPayload)))
       when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(),any()))
         .thenReturn(validationResponse)
 
@@ -144,8 +144,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaInvalidPayloadRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map { ex =>
-        val expectedErrorMessage = "Invalid AFT file AFT return:-\nValidationFailure(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}},None)"
-        val expectedSchemaErrorMessage = "ValidationFailure(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}},None)"
+        val expectedErrorMessage = "Invalid AFT file AFT return:-\nErrorReport(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}})"
+        val expectedSchemaErrorMessage = "ErrorReport(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}})"
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
         eventCaptor.getValue mustBe FileAftReturnSchemaValidator(psaIdJsValue.toString(), pstr, expectedChargeType, invalidJson, expectedSchemaErrorMessage, 1)
         ex.exMessage mustBe expectedErrorMessage
