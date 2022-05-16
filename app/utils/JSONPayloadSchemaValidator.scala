@@ -17,61 +17,47 @@
 package utils
 
 import play.api.libs.json._
+import com.github.fge.jackson.JsonLoader
+import com.github.fge.jsonschema.core.report.ListProcessingReport
+import com.github.fge.jsonschema.main.JsonSchemaFactory
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.networknt.schema.{JsonSchemaFactory, ValidationMessage}
-
-import scala.collection.JavaConverters.asScalaSetConverter
-
-case class ValidationFailure(failureType: String, message: String, value: Option[String])
-
-case class SchemaErrorPayload(errors: JsObject)
-
+case class ErrorReport(instance: String, errors: String)
 
 
 class JSONPayloadSchemaValidator {
+  type ValidationReport = Either[List[ErrorReport], Boolean]
+  val basePath = System.getProperty("user.dir")
 
-
-  def validateJsonPayload(jsonSchemaPath: String, data: JsValue): Set[ValidationFailure] = {
-    val schemaUrl = getClass.getResource(jsonSchemaPath)
-    val factory = JsonSchemaFactory.getInstance()
-    val schema = factory.getSchema(schemaUrl)
-
-    val mapper = new ObjectMapper()
-    val jsonNode = mapper.readTree(data.toString())
-
-    val set = schema.validate(jsonNode).asScala.toSet
-
-    set.map {
-      message =>
-        val value = valueFromJson(message, data)
-        ValidationFailure(message.getType, message.getMessage, value)
+  def validateJsonPayload(jsonSchemaPath: String, data: JsValue): ValidationReport = {
+    val deepValidationCheck = true
+    val index = 0
+    val factory = JsonSchemaFactory.byDefault()
+    val schemaPath = JsonLoader.fromPath(s"$basePath/conf/$jsonSchemaPath")
+    val schema = factory.getJsonSchema(schemaPath)
+    val jsonDataAsString = JsonLoader.fromString(data.toString())
+    val doValidation = schema.validate(jsonDataAsString, deepValidationCheck)
+    val isSuccess = doValidation.isSuccess
+    if(!isSuccess) {
+      val jsArray = Json.parse(doValidation.asInstanceOf[ListProcessingReport].asJson().toString).asInstanceOf[JsArray].value
+      val jsReport = Json.parse(jsArray.toList(index).toString()) \ "reports" \ "/oneOf/0"
+      val errors =  jsReport.asInstanceOf[JsDefined]
+     val convertedListOutput =  errors.get.asInstanceOf[JsArray].value.toList.map(element =>
+       ErrorReport((element \ "instance").get.toString(), removeInputData((element \ "message").get.toString())))
+      Left(convertedListOutput)
+    }
+    else {
+      Right(true)
     }
   }
 
-  private def valueFromJson(message: ValidationMessage, json: JsValue): Option[String] = {
-    message.getType match {
-      case "enum" | "format" | "maximum" | "maxLength" | "minimum" | "minLength" | "pattern" | "type" =>
-        (json \ message.getPath).toEither match {
-          case Right(jsValue) =>
-            jsValue match {
-              case JsBoolean(bool) => Some(bool.toString)
-              case JsNull => Some("null")
-              case JsNumber(n) => Some(depersonalise(n.toString))
-              case JsString(s) => Some(depersonalise(s))
-              case _ => None
-            }
-          case Left(_) => None
-        }
-      case _ => None
+  private def removeInputData(data: String): String = {
+    val index = data.indexOf("input")
+    if(index == -1) {
+      data
     }
-  }
-
-
-  private def depersonalise(value: String): String = {
-    value
-      .replaceAll("[a-zA-Z]", "x")
-      .replaceAll("[0-9]", "9")
+    else {
+      data.substring(0, index)
+    }
   }
 
 }
