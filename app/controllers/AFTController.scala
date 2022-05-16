@@ -31,7 +31,7 @@ import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import utils.{ErrorDetailsExtractor, JSONPayloadSchemaValidator}
+import utils.JSONPayloadSchemaValidator
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -54,7 +54,7 @@ class AFTController @Inject()(
     with AuthorisedFunctions {
 
   private val logger = Logger(classOf[AFTController])
-  private val basePath = System.getProperty("user.dir")
+  val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
 
   type SeqOfChargeType = Option[Seq[Option[String]]]
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
@@ -64,13 +64,12 @@ class AFTController @Inject()(
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
-              val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(s"$basePath/conf/${ErrorDetailsExtractor.schemaPath}", dataToBeSendToETMP)
+              val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
               validationResult match {
-                case JsError(error) =>
-                  val psaOrPspId = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
-                    case value => value("submittedID").toString
-                    case _ => ""
-                  }
+                case Left(errors) =>                 val psaOrPspId = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
+                  case value => value("submittedID").toString
+                  case _ => ""
+                }
                   val chargeType: SeqOfChargeType = dataToBeSendToETMP.value("chargeDetails").asOpt[JsValue].map {
                     case value =>
                       Seq(
@@ -88,15 +87,20 @@ class AFTController @Inject()(
                     case Some(list) => list.filter(_.nonEmpty).flatten
                     case None => ""
                   }
-                  val errors = ErrorDetailsExtractor.getErrors(error)
-                  fileAFTReturnAuditService.sendFileAftReturnSchemaValidatorAuditEvent(psaOrPspId.getOrElse(""), pstr, chargeTypeList.toString, dataToBeSendToETMP, errors, error.size)
-                  throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n$errors")
-                case JsSuccess(_, _) =>
-                  logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+                  fileAFTReturnAuditService.sendFileAftReturnSchemaValidatorAuditEvent(psaOrPspId.getOrElse(""),
+                    pstr,
+                    chargeTypeList.toString,
+                    dataToBeSendToETMP,
+                    errors.mkString,
+                    errors.size)
+                  throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
+
+                case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
                   aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     Ok(response.body)
                   }
               }
+
             case JsError(errors) =>
               throw JsResultException(errors)
           }
