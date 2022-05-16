@@ -17,3 +17,5 @@ API
 | ```/journey-cache/aft               ```                               | DELETE              | Removes the data from AFT Cache based on session id, quarter start date and PSTR                                       |      
 | ```/journey-cache/aft/lock   ```                                      | GET                 | Returns the locked by user name if the data for a given session id, quarter start date and PSTR is locked in AFT Cache |
 | ```/journey-cache/aft/lock                     ```                    | POST                | Saves the lock with the name of the user for a given session id, quarter start date and PSTR in AFT Cache              |   
+
+

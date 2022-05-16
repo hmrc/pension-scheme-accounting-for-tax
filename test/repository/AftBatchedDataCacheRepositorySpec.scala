@@ -282,21 +282,21 @@ class AftBatchedDataCacheRepositorySpec
         Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe Some(sessionData(sessionId, None))
       }
 
-      "return the session data batch with lock info if locked by another user" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId, None))
-        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
-        Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe Some(sessionData(sessionId))
-      }
-
-      "remove all documents and return None if there is no session data batch (i.e. it has expired)" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
-        Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe None
-        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {
-          _.isEmpty mustBe true
-        }
-      }
+//      "return the session data batch with lock info if locked by another user" in {
+//        mongoCollectionDrop()
+//        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId, None))
+//        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
+//        Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe Some(sessionData(sessionId))
+//      }
+//
+//      "remove all documents and return None if there is no session data batch (i.e. it has expired)" in {
+//        mongoCollectionDrop()
+//        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+//        Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe None
+//        whenReady(aftBatchedDataCacheRepository.find("uniqueAftId" -> uniqueAftId)) {
+//          _.isEmpty mustBe true
+//        }
+//      }
     }
 
 //    "lockedBy" must {

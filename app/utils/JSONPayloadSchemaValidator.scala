@@ -16,50 +16,48 @@
 
 package utils
 
-import com.eclipsesource.schema.{JsonSource, SchemaValidator}
 import play.api.libs.json._
+import com.github.fge.jackson.JsonLoader
+import com.github.fge.jsonschema.core.report.ListProcessingReport
+import com.github.fge.jsonschema.main.JsonSchemaFactory
 
-import java.io.{File, FileInputStream}
-import com.eclipsesource.schema.drafts.Version7._
-
-import scala.collection.Seq
-
-case class ErrorDetailsExtractor(schemaPath: Option[String], msgs: JsArray)
-
-case class SchemaErrorPayload(errors: JsObject)
-
-object ErrorDetailsExtractor {
-  val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
-  val key = "/oneOf/0"
-
-  def getErrors(error: Seq[(JsPath, Seq[JsonValidationError])]): String = {
-    implicit val readSchemaErrorPayload = Json.reads[SchemaErrorPayload]
-    implicit val readExtractErrorDetails = Json.reads[ErrorDetailsExtractor]
-
-    val message = new StringBuilder("")
-    error.flatMap(_._2).foldLeft(message){
-      (stringBuilder, validationErrors) =>
-        val errorAsJson: JsValue = Json.parse( validationErrors.args.mkString )
-        val errorPayload = errorAsJson.as[SchemaErrorPayload].errors.value(key).result.asInstanceOf[JsDefined].value
-        val errorsDetails = errorPayload.asInstanceOf[JsArray].value.map(element => Json.parse(element.toString()).as[ErrorDetailsExtractor])
-        stringBuilder.append(errorsDetails.mkString(" "))
-    }
-    message.toString()
-  }
-
-}
+case class ErrorReport(instance: String, errors: String)
 
 
 class JSONPayloadSchemaValidator {
+  type ValidationReport = Either[List[ErrorReport], Boolean]
+  val basePath = System.getProperty("user.dir")
 
+  def validateJsonPayload(jsonSchemaPath: String, data: JsValue): ValidationReport = {
+    val deepValidationCheck = true
+    val index = 0
+    val factory = JsonSchemaFactory.byDefault()
+    val schemaPath = JsonLoader.fromPath(s"$basePath/conf/$jsonSchemaPath")
+    val schema = factory.getJsonSchema(schemaPath)
+    val jsonDataAsString = JsonLoader.fromString(data.toString())
+    val doValidation = schema.validate(jsonDataAsString, deepValidationCheck)
+    val isSuccess = doValidation.isSuccess
+    if(!isSuccess) {
+      val jsArray = Json.parse(doValidation.asInstanceOf[ListProcessingReport].asJson().toString).asInstanceOf[JsArray].value
+      val jsReport = Json.parse(jsArray.toList(index).toString()) \ "reports" \ "/oneOf/0"
+      val errors =  jsReport.asInstanceOf[JsDefined]
+     val convertedListOutput =  errors.get.asInstanceOf[JsArray].value.toList.map(element =>
+       ErrorReport((element \ "instance").get.toString(), removeInputData((element \ "message").get.toString())))
+      Left(convertedListOutput)
+    }
+    else {
+      Right(true)
+    }
+  }
 
-  def validateJsonPayload(jsonSchemaPath: String, data: JsValue): JsResult[JsValue] = {
-    implicit val validator: SchemaValidator = SchemaValidator()
-    val initialFile = new File(jsonSchemaPath)
-    val targetStream = new FileInputStream(initialFile)
-    val jsonSchema = JsonSource.schemaFromStream(targetStream).get
-    validator.validate(jsonSchema, data)
+  private def removeInputData(data: String): String = {
+    val index = data.indexOf("input")
+    if(index == -1) {
+      data
+    }
+    else {
+      data.substring(0, index)
+    }
   }
 
 }
-
