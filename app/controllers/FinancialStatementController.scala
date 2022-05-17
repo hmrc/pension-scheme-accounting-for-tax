@@ -17,12 +17,9 @@
 package controllers
 
 import connectors.{AFTConnector, FinancialStatementConnector}
-import models.FeatureToggle.Enabled
-import models.FeatureToggleName.FinancialInformationAFT
 import models.SchemeFSDetail
 import play.api.libs.json._
 import play.api.mvc._
-import services.FeatureToggleService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
@@ -38,8 +35,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
                                              val authConnector: AuthConnector,
-                                             aftConnector: AFTConnector,
-                                             featureToggleService: FeatureToggleService
+                                             aftConnector: AFTConnector
                                             )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -107,16 +103,13 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     implicit request =>
       get(key = "pstr") { pstr =>
         financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
-          val updatedSchemeFS = featureToggleService.get(FinancialInformationAFT).flatMap {
-            case Enabled(_) =>
+          val updatedSchemeFS =
               for {
                 seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
               } yield {
                 data copy (
                   seqSchemeFSDetail = updateSourceChargeInfo(seqSchemeFSDetailWithVersionAndReceiptDate)
                   )
-              }
-            case _ => Future.successful(data)
           }
           updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
         }

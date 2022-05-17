@@ -19,14 +19,11 @@ package connectors
 import audit.FinancialInfoAuditService
 import com.google.inject.Inject
 import config.AppConfig
-import models.FeatureToggle.Enabled
-import models.FeatureToggleName.FinancialInformationAFT
 import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
 import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
-import services.FeatureToggleService
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
@@ -36,8 +33,7 @@ class FinancialStatementConnector @Inject()(
                                              http: HttpClient,
                                              config: AppConfig,
                                              headerUtils: HeaderUtils,
-                                             financialInfoAuditService: FinancialInfoAuditService,
-                                             featureToggleService : FeatureToggleService
+                                             financialInfoAuditService: FinancialInfoAuditService
                                            )
   extends HttpErrorFunctions with HttpResponseHelper {
 
@@ -46,28 +42,16 @@ class FinancialStatementConnector @Inject()(
   def getPsaFS(psaId: String)
               (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[PsaFS] = {
 
-    val psaInfoUrl = featureToggleService.get(FinancialInformationAFT).map {
-      case Enabled(_) => Tuple2(config.psaFinancialStatementMaxUrl.format(psaId), true)
-      case _ => Tuple2(config.psaFinancialStatementUrl.format(psaId), false)
-    }
-
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
 
-    psaInfoUrl.flatMap {
-      case (url, toggle) =>
-        transformPSAFS(psaId, url, toggle)(hc, implicitly, implicitly)
-    }
+    transformPSAFS(psaId, config.psaFinancialStatementMaxUrl.format(psaId))(hc, implicitly, implicitly)
   }
 
   //scalastyle:off cyclomatic.complexity
-  private def transformPSAFS(psaId: String, url: String, toggleValue: Boolean)
+  private def transformPSAFS(psaId: String, url: String)
                             (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[PsaFS] = {
 
-    val reads: Reads[PsaFS] = if (toggleValue) {
-      PsaFS.rdsPsaFSMax
-    } else {
-      PsaFS.rdsPsaFSMedium
-    }
+    val reads: Reads[PsaFS] = PsaFS.rdsPsaFSMax
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {
@@ -97,27 +81,16 @@ class FinancialStatementConnector @Inject()(
   def getSchemeFS(pstr: String)
                  (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
 
-    val futureURL = featureToggleService.get(FinancialInformationAFT).map {
-      case Enabled(_) => Tuple2(config.schemeFinancialStatementMaxUrl.format(pstr), true)
-      case _ => Tuple2(config.schemeFinancialStatementUrl.format(pstr), false)
-    }
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
 
-    futureURL.flatMap {
-      case (url, toggleValue) =>
-        transformSchemeFS(pstr, url, toggleValue)(hc, implicitly, implicitly)
-    }
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
+     transformSchemeFS(pstr, config.schemeFinancialStatementMaxUrl.format(pstr))(hc, implicitly, implicitly)
   }
 
   //scalastyle:off cyclomatic.complexity
-  private def transformSchemeFS(pstr: String, url: String, toggleValue: Boolean)
+  private def transformSchemeFS(pstr: String, url: String)
                                (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
 
-    val reads: Reads[SchemeFS] = if (toggleValue) {
-      SchemeFS.rdsSchemeFSMax
-    } else {
-      SchemeFS.rdsSchemeFSMedium
-    }
+    val reads: Reads[SchemeFS] = SchemeFS.rdsSchemeFSMax
 
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {

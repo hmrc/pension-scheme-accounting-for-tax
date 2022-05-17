@@ -17,8 +17,6 @@
 package controllers
 
 import connectors.{AFTConnector, FinancialStatementConnector}
-import models.FeatureToggle.{Disabled, Enabled}
-import models.FeatureToggleName.FinancialInformationAFT
 import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.{ArgumentMatchers, MockitoSugar}
@@ -31,7 +29,6 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import services.FeatureToggleService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
@@ -48,14 +45,12 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
   private val mockFSConnector = mock[FinancialStatementConnector]
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val mockAFTConnector = mock[AFTConnector]
-  private val mockFutureToggleService = mock[FeatureToggleService]
 
   private val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[FinancialStatementConnector].toInstance(mockFSConnector),
-      bind[AFTConnector].toInstance(mockAFTConnector),
-      bind[FeatureToggleService].toInstance(mockFutureToggleService)
+      bind[AFTConnector].toInstance(mockAFTConnector)
     )
 
   private val application: Application = new GuiceApplicationBuilder()
@@ -65,7 +60,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
   before {
     reset(mockFSConnector, authConnector)
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
-    when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Disabled(FinancialInformationAFT)))
   }
 
   "psaStatement" must {
@@ -112,8 +106,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
   "schemeStatement" must {
 
-    "return OK when the details are returned based on pstr and toggle on and aft details exist" in {
-      when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
+    "return OK when the details are returned based on pstr and aft details exist" in {
       val receiptDateFromIF = "2020-12-12T09:30:47Z"
       val aftDetailsJson = Json.obj(
         "aftDetails" -> Json.obj(
@@ -134,8 +127,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
     }
 
-    "return OK when the details are returned based on pstr and toggle on and aft details don't exist" in {
-      when(mockFutureToggleService.get(any())).thenReturn(Future.successful(Enabled(FinancialInformationAFT)))
+    "return OK when the details are returned based on pstr and aft details don't exist" in {
       val receiptDateFromIF = "2020-12-12T09:30:47Z"
       val aftDetailsJson = Json.obj(
         "aftDetails" -> Json.obj(

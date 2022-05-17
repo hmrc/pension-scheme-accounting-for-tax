@@ -18,16 +18,13 @@ package controllers.cache
 
 import audit.{AuditEvent, AuditService}
 import com.google.inject.Inject
-import models.FeatureToggle.Enabled
-import models.FeatureToggleName.BatchedRepositoryAFT
 import models.LockDetail.formats
 import models.{ChargeAndMember, ChargeType, LockDetail}
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
+import repository.AftBatchedDataCacheRepository
 import repository.model.SessionData._
-import repository.{AftBatchedDataCacheRepository, AftDataCacheRepository}
-import services.FeatureToggleService
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
@@ -39,11 +36,9 @@ import scala.concurrent.Future
 
 class AftDataCacheController @Inject()(
                                         batchedRepository: AftBatchedDataCacheRepository,
-                                        unbatchedRepository: AftDataCacheRepository,
                                         val authConnector: AuthConnector,
                                         cc: ControllerComponents,
-                                        auditService: AuditService,
-                                        featureToggleService: FeatureToggleService
+                                        auditService: AuditService
                                       ) extends BackendController(cc) with AuthorisedFunctions {
 
   import AftDataCacheController._
@@ -68,8 +63,6 @@ class AftDataCacheController @Inject()(
   def save: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
-        featureToggleService.get(BatchedRepositoryAFT).flatMap {
-          case Enabled(_) =>
             val optChargeAndMember = extractChargeAndMemberFromHeaders
             request.body.asJson.map {
               jsValue =>
@@ -81,13 +74,6 @@ class AftDataCacheController @Inject()(
                 )
                   .map(_ => Created)
             } getOrElse Future.successful(BadRequest)
-          case _ =>
-            request.body.asJson.map {
-              jsValue =>
-                unbatchedRepository.save(id, jsValue, sessionId)
-                  .map(_ => Created)
-            } getOrElse Future.successful(BadRequest)
-        }
       }
   }
 
@@ -112,8 +98,6 @@ class AftDataCacheController @Inject()(
               request.headers.get("areSubmittedVersionsAvailable")
             ) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
-                featureToggleService.get(BatchedRepositoryAFT).flatMap {
-                  case Enabled(_) =>
                     batchedRepository.setSessionData(id,
                       if (lock) Some(LockDetail(name, psaOrPspId)) else None,
                       jsValue,
@@ -122,16 +106,7 @@ class AftDataCacheController @Inject()(
                       accessMode,
                       areSubmittedVersionsAvailable.equals("true")
                     ).map(_ => Created)
-                  case _ =>
-                    unbatchedRepository.setSessionData(id,
-                      if (lock) Some(LockDetail(name, psaOrPspId)) else None,
-                      jsValue,
-                      sessionId,
-                      version.toInt,
-                      accessMode,
-                      areSubmittedVersionsAvailable.equals("true")
-                    ).map(_ => Created)
-                }
+
               case (v, am, asva) =>
                 logger.warn("BAD Request returned when setting session data " +
                   s"due to absence of version and/or access mode in request header. Version " +
@@ -153,72 +128,39 @@ class AftDataCacheController @Inject()(
   def lockedBy: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
-        featureToggleService.get(BatchedRepositoryAFT).flatMap {
-          case Enabled(_) =>
             batchedRepository.lockedBy(sessionId, id).map {
               case None => NotFound
               case Some(lockDetail) => Ok(Json.toJson(lockDetail))
             }
-          case _ =>
-            unbatchedRepository.lockedBy(sessionId, id).map {
-              case None => NotFound
-              case Some(lockDetail) => Ok(Json.toJson(lockDetail))
-            }
-        }
       }
   }
 
   def getSessionData: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
-
-        featureToggleService.get(BatchedRepositoryAFT).flatMap {
-          case Enabled(_) =>
             batchedRepository.getSessionData(sessionId, id).map {
               case None => NotFound
               case Some(sd) => Ok(Json.toJson(sd))
             }
-          case _ =>
-            unbatchedRepository.getSessionData(sessionId, id).map {
-              case None => NotFound
-              case Some(sd) => Ok(Json.toJson(sd))
-            }
-        }
       }
   }
 
   def get: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { (sessionId, id, _) =>
-        featureToggleService.get(BatchedRepositoryAFT).flatMap {
-          case Enabled(_) =>
             batchedRepository.get(id, sessionId).map { response =>
               response.map {
                 Ok(_)
               } getOrElse NotFound
             }
-          case _ =>
-            unbatchedRepository.get(id, sessionId).map { response =>
-              response.map {
-                Ok(_)
-              } getOrElse NotFound
-            }
-        }
       }
   }
 
   def remove: Action[AnyContent] = Action.async {
     implicit request =>
-      featureToggleService.get(BatchedRepositoryAFT).flatMap {
-        case Enabled(_) =>
           getIdWithName { (sessionId, id, _) =>
             batchedRepository.remove(id, sessionId).map(_ => Ok)
           }
-        case _ =>
-          getIdWithName { (sessionId, id, _) =>
-            unbatchedRepository.remove(id, sessionId).map(_ => Ok)
-          }
-      }
   }
 
   private def getIdWithName(block: (String, String, String) => Future[Result])
