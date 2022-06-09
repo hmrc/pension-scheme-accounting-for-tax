@@ -98,12 +98,14 @@ object PsaSourceChargeInfo {
     implicit val rdsDocumentLineItemDetail: Reads[DocumentLineItemDetail] = (
       (JsPath \ "clearedAmountItem").read[BigDecimal] and
         (JsPath \ "clearingDate").readNullable[LocalDate] and
+        (JsPath \ "paymDateOrCredDueDate").readNullable[LocalDate] and
         (JsPath \ "clearingReason").readNullable[String]
       ) (
-      (clearedAmountItem, clearingDate, clearingReason) =>
+      (clearedAmountItem, clearingDate, paymDateOrCredDueDate, clearingReason) =>
         DocumentLineItemDetail(
           clearedAmountItem,
           clearingDate,
+          paymDateOrCredDueDate,
           clearingReason
         )
     )

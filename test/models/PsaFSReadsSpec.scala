@@ -112,6 +112,7 @@ object PsaFSReadsSpec {
     "documentLineItemDetails"-> Json.arr(
       Json.obj(
         "clearingDate"-> "2020-06-30",
+        "paymDateOrCredDueDate" -> "2020-04-24",
         "clearingReason"-> "C1",
         "clearedAmountItem"-> 0.00
       )
@@ -138,6 +139,7 @@ object PsaFSReadsSpec {
         "documentLineItemDetails"-> Json.arr(
           Json.obj(
             "clearingDate"-> "2020-06-30",
+            "paymDateOrCredDueDate" -> "2020-04-24",
             "clearingReason"-> "C1",
             "clearedAmountItem"-> 0.00
           )
@@ -161,6 +163,7 @@ object PsaFSReadsSpec {
         "documentLineItemDetails"-> Json.arr(
           Json.obj(
             "clearingDate"-> "2020-06-30",
+            "paymDateOrCredDueDate" -> "2020-04-24",
             "clearingReason"-> "C1",
             "clearedAmountItem"-> 0.00
           )
@@ -202,6 +205,7 @@ object PsaFSReadsSpec {
     documentLineItemDetails = Seq(DocumentLineItemDetail(
       clearingReason= Some("C1"),
       clearingDate = Some(LocalDate.parse("2020-06-30")),
+      paymDateOrCredDueDate = Some(LocalDate.parse("2020-04-24")),
       clearedAmountItem = BigDecimal(0.00))
     )
   )
@@ -232,6 +236,7 @@ object PsaFSReadsSpec {
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
+        paymDateOrCredDueDate = Some(LocalDate.parse("2020-04-24")),
         clearedAmountItem = BigDecimal(0.00))
       )
     ),
@@ -253,6 +258,7 @@ object PsaFSReadsSpec {
       Seq(DocumentLineItemDetail(
         clearingReason = Some("C1"),
         clearingDate = Some(LocalDate.parse("2020-06-30")),
+        paymDateOrCredDueDate = Some(LocalDate.parse("2020-04-24")),
         clearedAmountItem = BigDecimal(0.00))
       )
     )
