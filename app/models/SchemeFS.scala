@@ -21,7 +21,7 @@ import play.api.libs.json._
 
 import java.time.LocalDate
 
-case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: Option[LocalDate], clearingReason: Option[String])
+case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: Option[LocalDate], paymDateOrCredDueDate: Option[LocalDate], clearingReason: Option[String])
 
 object DocumentLineItemDetail {
   implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
@@ -107,12 +107,14 @@ object SchemeFS {
   implicit val rdsDocumentLineItemDetail: Reads[DocumentLineItemDetail] = (
     (JsPath \ "clearedAmountItem").read[BigDecimal] and
       (JsPath \ "clearingDate").readNullable[LocalDate] and
+      (JsPath \ "paymDateOrCredDueDate").readNullable[LocalDate] and
       (JsPath \ "clearingReason").readNullable[String]
     ) (
-    (clearedAmountItem, clearingDate, clearingReason) =>
+    (clearedAmountItem, clearingDate, paymDateOrCredDueDate, clearingReason) =>
       DocumentLineItemDetail(
         clearedAmountItem,
         clearingDate,
+        paymDateOrCredDueDate,
         clearingReason
       )
   )
