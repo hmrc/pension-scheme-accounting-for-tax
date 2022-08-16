@@ -68,8 +68,6 @@ class CacheRepository @Inject()(collectionName: String,
     ()
   }) recoverWith {
     case t: Throwable => Future.successful(logger.error(s"Error creating indexes on collection ${collection.name}", t))
-  } andThen {
-    case _ => CollectionDiagnostics.logCollectionInfo(collection)
   }
 
 
