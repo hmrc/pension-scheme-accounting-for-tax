@@ -41,57 +41,56 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
     reset(mockConfiguration)
   }
 
-  withEmbedMongoFixture(port = 24680) { _ =>
 
-    "remove" must {
-      "remove item" in {
-        mongoCollectionDrop()
-        val result = Await.result(
-          for {
-            _ <- repository.save(id1, dummyData)
-            _ <- repository.remove(id1)
-            status <- repository.get(id1)
-          } yield {
-            status
-          },
-          Duration.Inf
-        )
-        result mustBe None
-      }
-    }
-
-    "get" must {
-      "return none when nothing present" in {
-        mongoCollectionDrop()
-        val result = Await.result(
-          for {
-            status <- repository.get(id1)
-          } yield {
-            status
-          },
-          Duration.Inf
-        )
-        result mustBe None
-      }
-    }
-
-    "save and get" must {
-      "save and get data correctly and have the correct collection name" in {
-        mongoCollectionDrop()
-        val result = Await.result(
-          for {
-            _ <- repository.save(id1, dummyData)
-            status <- repository.get(id1)
-          } yield {
-            status
-          },
-          Duration.Inf
-        )
-        result mustBe Some(dummyData)
-        repository.collectionName mustBe "test"
-      }
+  "remove" must {
+    "remove item" in {
+      mongoCollectionDrop()
+      val result = Await.result(
+        for {
+          _ <- repository.save(id1, dummyData)
+          _ <- repository.remove(id1)
+          status <- repository.get(id1)
+        } yield {
+          status
+        },
+        Duration.Inf
+      )
+      result mustBe None
     }
   }
+
+  "get" must {
+    "return none when nothing present" in {
+      mongoCollectionDrop()
+      val result = Await.result(
+        for {
+          status <- repository.get(id1)
+        } yield {
+          status
+        },
+        Duration.Inf
+      )
+      result mustBe None
+    }
+  }
+
+  "save and get" must {
+    "save and get data correctly and have the correct collection name" in {
+      mongoCollectionDrop()
+      val result = Await.result(
+        for {
+          _ <- repository.save(id1, dummyData)
+          status <- repository.get(id1)
+        } yield {
+          status
+        },
+        Duration.Inf
+      )
+      result mustBe Some(dummyData)
+      repository.collectionName mustBe collectionName
+    }
+  }
+
 }
 
 object CacheRepositorySpec extends AnyWordSpec with MockitoSugar {
@@ -107,8 +106,10 @@ object CacheRepositorySpec extends AnyWordSpec with MockitoSugar {
   private def mongoCollectionDrop(): Void = Await
     .result(repository.collection.drop().toFuture(), Duration.Inf)
 
+  private val collectionName = "test"
+
   private def repository = new CacheRepository(
-    collectionName = "test",
+    collectionName = collectionName,
     expireInSeconds = Some(60),
     expireInDays = None,
     mongoComponent = mongoComponent

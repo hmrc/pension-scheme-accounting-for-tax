@@ -78,7 +78,7 @@ class CacheRepository @Inject()(collectionName: String,
       filter = Filters.eq(idKey, id)
     ).toFuture().map {
       _.headOption.map { jsValue =>
-        (jsValue \ dataKey).as[JsObject]
+        (jsValue \ dataKey).as[JsValue]
       }
     }
   }
@@ -101,11 +101,11 @@ object CacheRepository {
 
   private val collectionIndexes: Seq[IndexModel] = Seq(
     IndexModel(
-      keys = Indexes.ascending("id"),
-      indexOptions = IndexOptions().name("id").unique(true).background(true)
+      keys = Indexes.ascending(idKey),
+      indexOptions = IndexOptions().name(idKey).unique(true).background(true)
     ),
     IndexModel(
-      keys = Indexes.ascending("expireAt"),
+      keys = Indexes.ascending(expireAtKey),
       indexOptions = IndexOptions().name("dataExpiry")
         .expireAfter(0, TimeUnit.SECONDS)
         .background(true)
