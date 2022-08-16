@@ -17,7 +17,7 @@
 package repository
 
 import com.github.simplyscala.MongoEmbedDatabase
-import org.mockito.{ArgumentMatchers, MockitoSugar}
+import org.mockito.MockitoSugar
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
@@ -42,37 +42,6 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
   }
 
   withEmbedMongoFixture(port = 24680) { _ =>
-    "save and get" must {
-      "save and get data correctly and have the correct collection name" in {
-        mongoCollectionDrop()
-        val result = Await.result(
-          for {
-            _ <- repository.save(id1, dummyData)
-            status <- repository.get(id1)
-          } yield {
-            status
-          },
-          Duration.Inf
-        )
-        result mustBe Some(dummyData)
-        repository.collectionName mustBe "test"
-      }
-    }
-
-    "get" must {
-      "return none when nothing present" in {
-        mongoCollectionDrop()
-        val result = Await.result(
-          for {
-            status <- repository.get(id1)
-          } yield {
-            status
-          },
-          Duration.Inf
-        )
-        result mustBe None
-      }
-    }
 
     "remove" must {
       "remove item" in {
@@ -91,6 +60,37 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
       }
     }
 
+    "get" must {
+      "return none when nothing present" in {
+        mongoCollectionDrop()
+        val result = Await.result(
+          for {
+            status <- repository.get(id1)
+          } yield {
+            status
+          },
+          Duration.Inf
+        )
+        result mustBe None
+      }
+    }
+
+    "save and get" must {
+      "save and get data correctly and have the correct collection name" in {
+        mongoCollectionDrop()
+        val result = Await.result(
+          for {
+            _ <- repository.save(id1, dummyData)
+            status <- repository.get(id1)
+          } yield {
+            status
+          },
+          Duration.Inf
+        )
+        result mustBe Some(dummyData)
+        repository.collectionName mustBe "test"
+      }
+    }
   }
 }
 
