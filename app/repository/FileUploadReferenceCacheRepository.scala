@@ -84,13 +84,7 @@ class FileUploadReferenceCacheRepository @Inject()(
         set(expireAtKey, Codecs.toBson(expireInSeconds))
       ),
       upsertOptions
-    ).toFuture().map(_ => (): Unit )
-
-    //    val document: JsValue = Json.toJson(FileUploadDataCache.applyDataCache(
-    //      uploadId = uploadId, status = FileUploadStatus("InProgress"), reference = reference, expireAt = expireInSeconds))
-    //    val selector = BSONDocument("uploadId" -> uploadId)
-    //    val modifier = BSONDocument("$set" -> document)
-    //    collection.update.one(selector, modifier, upsert = true).map(_.ok)
+    ).toFuture().map(_ => (): Unit)
   }
 
   def getUploadResult(uploadId: String)(implicit ec: ExecutionContext): Future[Option[FileUploadDataCache]] = {
@@ -99,7 +93,10 @@ class FileUploadReferenceCacheRepository @Inject()(
       filter = Filters.eq(uploadIdKey, uploadId)
     ).toFuture()
       .map(_.headOption)
-      .map { _.map { _.as[JsObject] }
+      .map {
+        _.map {
+          _.as[JsObject]
+        }
       }
       .map {
         _.map { data =>
@@ -113,13 +110,6 @@ class FileUploadReferenceCacheRepository @Inject()(
           )
         }
       }
-    //    collection.find(BSONDocument("uploadId" -> uploadId), projection = Option.empty[JsObject]).one[FileUploadDataCache].map {
-    //      _.map {
-    //        dataEntry =>
-    //          FileUploadDataCache.applyDataCache(
-    //            uploadId = dataEntry.uploadId, reference = dataEntry.reference, status = dataEntry.status, lastUpdated=expireInSeconds, expireAt = expireInSeconds)
-    //      }
-    //    }
   }
 
   def updateStatus(reference: String, newStatus: FileUploadStatus): Future[Unit] = {
@@ -132,13 +122,6 @@ class FileUploadReferenceCacheRepository @Inject()(
         set(statusKey, Codecs.toBson(newStatus))
       ),
       upsertOptions
-    ).toFuture().map { _ => ():Unit }
-    }
-    //    val selector = BSONDocument("reference" -> reference)
-    //    val modifier = BSONDocument("$set" -> BSONDocument("status" -> Json.toJson(newStatus)))
-    //    collection.findAndUpdate[BSONDocument, BSONDocument](selector, modifier, fetchNewObject = true, upsert = false, None, None,
-    //      bypassDocumentValidation = false, WriteConcern.Default, None, None, Seq.empty) map { response =>
-    //      response.value.flatMap(fileUploadDataCache => Json.fromJson[FileUploadDataCache](fileUploadDataCache).asOpt)
-    //    }
-
+    ).toFuture().map { _ => (): Unit }
+  }
 }
