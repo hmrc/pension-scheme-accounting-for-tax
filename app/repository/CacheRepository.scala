@@ -27,7 +27,7 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneId}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -48,10 +48,10 @@ class CacheRepository @Inject()(collectionName: String,
   private def getExpireAt: LocalDateTime =
     (expireInSeconds, expireInDays) match {
       case (Some(seconds), None) =>
-        LocalDateTime.now()
+        LocalDateTime.now(ZoneId.of("UTC"))
           .plusSeconds(seconds)
       case (None, Some(days)) =>
-        LocalDateTime.now()
+        LocalDateTime.now(ZoneId.of("UTC"))
           .toLocalDate
           .plusDays(days).atStartOfDay
       case _ => throw new RuntimeException("Missing config item for expire in days/ seconds: one and only one should be present")
@@ -65,7 +65,7 @@ class CacheRepository @Inject()(collectionName: String,
       update = Updates.combine(
         set(idKey, id),
         set(dataKey, Codecs.toBson(userData)),
-        set(lastUpdatedKey, Codecs.toBson(LocalDateTime.now())),
+        set(lastUpdatedKey, Codecs.toBson(LocalDateTime.now(ZoneId.of("UTC")))),
         set(expireAtKey, Codecs.toBson(getExpireAt))
       ),
       upsertOptions

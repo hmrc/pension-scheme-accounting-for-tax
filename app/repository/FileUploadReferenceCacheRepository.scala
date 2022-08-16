@@ -27,7 +27,7 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneId}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -56,7 +56,7 @@ class FileUploadReferenceCacheRepository @Inject()(
   ) with Logging {
 
 
-  private def expireInSeconds: LocalDateTime = LocalDateTime.now.
+  private def expireInSeconds: LocalDateTime = LocalDateTime.now(ZoneId.of("UTC")).
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.file-upload-response-cache.timeToLiveInSeconds"))
 
   private implicit val dateFormat: Format[LocalDateTime] = MongoJavatimeFormats.localDateTimeFormat
@@ -79,8 +79,8 @@ class FileUploadReferenceCacheRepository @Inject()(
         set(uploadIdKey, uploadId),
         set(referenceKey, Codecs.toBson(reference)),
         set(statusKey, Codecs.toBson(FileUploadStatus("InProgress"))),
-        set(createdKey, Codecs.toBson(LocalDateTime.now())),
-        set(lastUpdatedKey, Codecs.toBson(LocalDateTime.now())),
+        set(createdKey, Codecs.toBson(LocalDateTime.now(ZoneId.of("UTC")))),
+        set(lastUpdatedKey, Codecs.toBson(LocalDateTime.now(ZoneId.of("UTC")))),
         set(expireAtKey, Codecs.toBson(expireInSeconds))
       ),
       upsertOptions
