@@ -24,13 +24,12 @@ import play.api.libs.json._
 import play.api.{Configuration, Logging}
 import repository.model._
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 class FileUploadReferenceCacheRepository @Inject()(
                                                     mongoComponent: MongoComponent,
@@ -57,11 +56,10 @@ class FileUploadReferenceCacheRepository @Inject()(
   ) with Logging {
 
 
-  private def expireInSeconds = LocalDateTime.now.
+  private def expireInSeconds: LocalDateTime = LocalDateTime.now.
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.file-upload-response-cache.timeToLiveInSeconds"))
 
   private implicit val dateFormat: Format[LocalDateTime] = MongoJavatimeFormats.localDateTimeFormat
-
 
   private val uploadIdKey = "uploadId"
   private val referenceKey = "reference"
@@ -105,12 +103,13 @@ class FileUploadReferenceCacheRepository @Inject()(
       }
       .map {
         _.map { data =>
+          // TOOO: Not expiring for some reason
           FileUploadDataCache.applyDataCache(
             uploadId = (data \ uploadIdKey).as[String],
             reference = (data \ referenceKey).as[String],
             status = (data \ statusKey).as[FileUploadStatus],
-            lastUpdated = LocalDateTime.now,
-            expireAt = expireInSeconds
+            lastUpdated = (data \ lastUpdatedKey).as[LocalDateTime],
+            expireAt = (data \ expireAtKey).as[LocalDateTime]
           )
         }
       }
