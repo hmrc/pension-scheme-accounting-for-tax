@@ -31,7 +31,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.{AftDataCacheRepository, AftOverviewCacheRepository}
+import repository.AftOverviewCacheRepository
 import services.AFTService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
@@ -52,7 +52,6 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   private val mockDesConnector = mock[AFTConnector]
   private val mockAftService = mock[AFTService]
   private val authConnector: AuthConnector = mock[AuthConnector]
-  private val mockDataCacheRepository = mock[AftDataCacheRepository]
   private val mockAftOverviewCacheRepository = mock[AftOverviewCacheRepository]
   private val mockJSONPayloadSchemaValidator = mock[JSONPayloadSchemaValidator]
 
@@ -70,7 +69,6 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       bind[AFTConnector].toInstance(mockDesConnector),
       bind[AFTService].toInstance(mockAftService),
       bind[AftOverviewCacheRepository].toInstance(mockAftOverviewCacheRepository),
-      bind[AftDataCacheRepository].toInstance(mockDataCacheRepository),
       bind[JSONPayloadSchemaValidator].toInstance(mockJSONPayloadSchemaValidator)
     )
 
@@ -543,7 +541,6 @@ object AFTControllerSpec {
 
 
   private val fakeRequestForGetDetails = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("startDate", startDt), ("aftVersion", aftVer))
-  private val fakeRequestForGetDetailsWithFbNumber = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("fbNumber", fbNumber))
   private val json =
     """{
       |  "aftStatus": "Compiled",

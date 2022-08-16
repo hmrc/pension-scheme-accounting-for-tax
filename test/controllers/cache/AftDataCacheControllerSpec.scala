@@ -20,20 +20,20 @@ import akka.util.ByteString
 import models.LockDetail
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
+import org.mockito.{ArgumentMatchers, MockitoSugar}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.mockito.{MockitoSugar, ArgumentMatchers}
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.{AftDataCacheRepository, AftBatchedDataCacheRepository}
+import repository.AftBatchedDataCacheRepository
 import repository.model.SessionData
-import uk.gov.hmrc.auth.core.{Enrolments, EnrolmentIdentifier, Enrolment, AuthConnector}
-import uk.gov.hmrc.auth.core.retrieve.{~, Name}
+import uk.gov.hmrc.auth.core.retrieve.{Name, ~}
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
+import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
@@ -45,7 +45,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val repo = mock[AftBatchedDataCacheRepository]
-  private val repoUnbatched = mock[AftDataCacheRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val id = "id"
   private val sessionId = "sessionId"
@@ -57,11 +56,10 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
     bind[AftBatchedDataCacheRepository].toInstance(repo),
-    bind[AftDataCacheRepository].toInstance(repoUnbatched)
   )
 
   before {
-    reset(repo, repoUnbatched)
+    reset(repo)
     reset(authConnector)
   }
 
