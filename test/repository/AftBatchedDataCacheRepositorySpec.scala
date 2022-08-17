@@ -56,7 +56,7 @@ class AftBatchedDataCacheRepositorySpec
     when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(databaseName)
   }
 
-  withEmbedMongoFixture(port = 24680) { _ =>
+//  withEmbedMongoFixture(port = 24680) { _ =>
 //    "save" must {
 //      "save de-reg charge batch correctly in Mongo collection where there is some session data" in {
 //        mongoCollectionDrop()
@@ -340,7 +340,7 @@ class AftBatchedDataCacheRepositorySpec
         }
       }
     }
-  }
+ // }
 }
 
 object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
