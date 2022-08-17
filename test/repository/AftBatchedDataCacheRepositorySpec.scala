@@ -53,7 +53,7 @@ class AftBatchedDataCacheRepositorySpec
     when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(2)
     when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
     when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
-    when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(databaseName)
+    when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(collectionName)
   }
 
   withEmbedMongoFixture(port = 24680) { _ =>
@@ -419,7 +419,8 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
   private val uniqueAftId = id + sessionId
   private val lockDetail = Some(LockDetail(name = "Billy Wiggins", "A123456"))
   private val batchService = mock[BatchService]
-  private val databaseName = "aft-batches"
+  private val collectionName = "aft-batches"
+  private val databaseName = "pension-scheme-accounting-for-tax"
   private val mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
   private val mongoComponent = MongoComponent(mongoUri)
 

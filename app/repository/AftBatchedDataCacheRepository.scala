@@ -65,7 +65,6 @@ object AftBatchedDataCacheRepository {
       indexOptions = IndexOptions().name("dataExpiry")
         .expireAfter(0, TimeUnit.SECONDS)
         .unique(false)
-        .background(true)
     )
   )
 
