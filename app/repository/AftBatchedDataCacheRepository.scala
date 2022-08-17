@@ -30,7 +30,6 @@ import services.BatchService
 import services.BatchService.BatchType.Other
 import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import java.time.format.DateTimeFormatter
@@ -67,8 +66,6 @@ object AftBatchedDataCacheRepository {
         .unique(false)
     )
   )
-
-  private implicit val dateFormat: Format[LocalDateTime] = MongoJavatimeFormats.localDateTimeFormat
 }
 
 class AftBatchedDataCacheRepository @Inject()(
@@ -143,11 +140,6 @@ class AftBatchedDataCacheRepository @Inject()(
     logger.info(s"\n$s $now")
   }
 
-  private def logWithTime[A](s: String, a: A): A = {
-    logger.info(s"\n$s $now")
-    a
-  }
-
   private def saveToRepository(
                                 id: String,
                                 sessionId: String,
@@ -196,7 +188,7 @@ class AftBatchedDataCacheRepository @Inject()(
         }
       case _ =>
         logWithTime("Unable to save to Mongo repository as no session data found in repository or payload")
-        Future.successful(false)
+        Future.successful( ():Unit )
     }
   }
 

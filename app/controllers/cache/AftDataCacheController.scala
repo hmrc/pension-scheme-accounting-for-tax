@@ -24,7 +24,6 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
 import repository.AftBatchedDataCacheRepository
-import repository.model.SessionData._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
