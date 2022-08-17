@@ -30,8 +30,8 @@ import services.BatchService
 import services.BatchService.BatchType.Other
 import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, LocalTime, ZoneId}
@@ -304,7 +304,7 @@ class AftBatchedDataCacheRepository @Inject()(
     val selector = Filters.eq(uniqueAftIdKey, id + sessionId)
     collection.deleteMany(
       filter = selector
-    ).toFuture().map(_ => ():Unit)
+    ).toFuture().map(_ => (): Unit)
   }
 
   private def removeBatchesAfterBatchIdentifier(id: String, sessionId: String, batchIdentifier: BatchIdentifier)(implicit
@@ -312,23 +312,23 @@ class AftBatchedDataCacheRepository @Inject()(
     logWithTime(s"Removing document(s) for batch type ${batchIdentifier.batchType.toString} with batchNo greater " +
       s"than last batch no ${batchIdentifier.batchNo} from collection aft batched data cache id:$id")
 
-        val selector = batchIdentifier match {
-          case BatchIdentifier(batchType, 0) =>
-            Filters.and(
-              Filters.eq(uniqueAftIdKey, id + sessionId),
-              Filters.eq(batchTypeKey, batchType.toString)
-            )
-          case BatchIdentifier(batchType, batchNo) =>
-            Filters.and(
-              Filters.eq(uniqueAftIdKey, id + sessionId),
-              Filters.eq(batchTypeKey, batchType.toString),
-              Filters.gt(batchNoKey, batchNo)
-            )
-        }
+    val selector = batchIdentifier match {
+      case BatchIdentifier(batchType, 0) =>
+        Filters.and(
+          Filters.eq(uniqueAftIdKey, id + sessionId),
+          Filters.eq(batchTypeKey, batchType.toString)
+        )
+      case BatchIdentifier(batchType, batchNo) =>
+        Filters.and(
+          Filters.eq(uniqueAftIdKey, id + sessionId),
+          Filters.eq(batchTypeKey, batchType.toString),
+          Filters.gt(batchNoKey, batchNo)
+        )
+    }
 
     collection.deleteMany(
       filter = selector
-    ).toFuture().map(_ => ():Unit)
+    ).toFuture().map(_ => (): Unit)
   }
 
   private def transformToBatchInfo(batchJsValue: JsValue): Option[BatchInfo] = {
@@ -350,21 +350,6 @@ class AftBatchedDataCacheRepository @Inject()(
                            batchIdentifier: Option[BatchIdentifier],
                            excludeSessionDataBatch: Boolean = false
                          )(implicit ec: ExecutionContext): Future[List[JsValue]] = {
-
-//    val selector = batchIdentifier match {
-//      case BatchIdentifier(batchType, 0) =>
-//        Filters.and(
-//          Filters.eq(uniqueAftIdKey, id + sessionId),
-//          Filters.eq(batchTypeKey, batchType.toString)
-//        )
-//      case BatchIdentifier(batchType, batchNo) =>
-//        Filters.and(
-//          Filters.eq(uniqueAftIdKey, id + sessionId),
-//          Filters.eq(batchTypeKey, batchType.toString),
-//          Filters.gt(batchNoKey, batchNo)
-//        )
-//    }
-
     val selector = (optSessionId, batchIdentifier) match {
       case (Some(sessionId), Some(BatchIdentifier(bt, bn))) =>
         Filters.and(
@@ -372,51 +357,26 @@ class AftBatchedDataCacheRepository @Inject()(
           Filters.eq(batchTypeKey, bt.toString),
           Filters.eq(batchNoKey, bn)
         )
-        //find(uniqueAftIdKey -> (id + sessionId), batchTypeKey -> bt.toString, batchNoKey -> bn)
       case (None, Some(BatchIdentifier(bt, bn))) =>
         Filters.and(
           Filters.eq(idKey, id),
           Filters.eq(batchTypeKey, bt.toString),
           Filters.eq(batchNoKey, bn)
         )
-        //find(idKey -> id, batchTypeKey -> bt.toString, batchNoKey -> bn)
       case (Some(sessionId), None) if excludeSessionDataBatch =>
         Filters.and(
           Filters.eq(uniqueAftIdKey, id + sessionId),
           Filters.ne(batchTypeKey, BatchType.SessionData.toString)
         )
-//        find(uniqueAftIdKey -> (id + sessionId),
-//          batchTypeKey -> BSONDocument("$ne" -> BatchType.SessionData.toString))
       case (Some(sessionId), None) =>
         Filters.eq(uniqueAftIdKey, id + sessionId)
-        //find(uniqueAftIdKey -> (id + sessionId))
       case (None, None) =>
         Filters.eq(idKey, id)
-        //find(idKey -> id)
     }
     collection.find(
-      filter = Filters.eq(idKey, id)
+      filter = selector
     ).toFuture().map(_.toList)
   }
-
-//  private def findBatches(
-//                           id: String,
-//                           optSessionId: Option[String],
-//                           batchIdentifier: Option[BatchIdentifier],
-//                           excludeSessionDataBatch: Boolean = false
-//                         )(implicit ec: ExecutionContext): Future[List[JsValue]] = {
-//    (optSessionId, batchIdentifier) match {
-//      case (Some(sessionId), Some(BatchIdentifier(bt, bn))) =>
-//        find(uniqueAftIdKey -> (id + sessionId), batchTypeKey -> bt.toString, batchNoKey -> bn)
-//      case (None, Some(BatchIdentifier(bt, bn))) =>
-//        find(idKey -> id, batchTypeKey -> bt.toString, batchNoKey -> bn)
-//      case (Some(sessionId), None) if excludeSessionDataBatch =>
-//        find(uniqueAftIdKey -> (id + sessionId),
-//          batchTypeKey -> BSONDocument("$ne" -> BatchType.SessionData.toString))
-//      case (Some(sessionId), None) => find(uniqueAftIdKey -> (id + sessionId))
-//      case (None, None) => find(idKey -> id)
-//    }
-//  }
 
   private def getBatchesFromRepository(
                                         id: String,

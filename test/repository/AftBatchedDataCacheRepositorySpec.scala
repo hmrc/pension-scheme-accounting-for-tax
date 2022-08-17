@@ -35,8 +35,8 @@ import repository.model.SessionData
 import services.BatchService
 import services.BatchService.BatchType.{ChargeC, ChargeD, ChargeE, ChargeG}
 import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
+import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.Codecs
-import uk.gov.hmrc.mongo.{MongoComponent, MongoConnector}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -56,7 +56,7 @@ class AftBatchedDataCacheRepositorySpec
     when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(databaseName)
   }
 
-//  withEmbedMongoFixture(port = 24680) { _ =>
+  withEmbedMongoFixture(port = 24680) { _ =>
     "save" must {
       "save de-reg charge batch correctly in Mongo collection where there is some session data" in {
         mongoCollectionDrop()
@@ -134,39 +134,39 @@ class AftBatchedDataCacheRepositorySpec
         }
       }
 
-//      "re-size batches when batch size changed" in {
-//        mongoCollectionDrop()
-//        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-//        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
-//
-//        val biCaptor: ArgumentCaptor[Seq[BatchInfo]] = ArgumentCaptor.forClass(classOf[Seq[BatchInfo]])
-//        when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(4)
-//        when(batchService.createUserDataFullPayload(biCaptor.capture())).thenReturn(dummyJson)
-//        when(batchService.createBatches(any(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
-//        val fullPayload = payloadOther ++ payloadChargeTypeA
-//        when(batchService.lastBatchNo(any())).thenReturn(Set())
-//        when(batchService.batchIdentifierForChargeAndMember(any(), any()))
-//          .thenReturn(Some(BatchIdentifier(BatchType.Other, 1)))
-//        when(batchService.getOtherJsObject(ArgumentMatchers.eq(fullPayload))).thenReturn(dummyJson)
-//
-//        Await.result(aftBatchedDataCacheRepository
-//          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), fullPayload),
-//          Duration.Inf)
-//        biCaptor.getValue.size mustBe 11
-//        verify(batchService, times(1)).createUserDataFullPayload(any())
-//        verify(batchService, times(1)).createBatches(any(), any())
-//      }
+      "re-size batches when batch size changed" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
+        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
 
-//      "remove all documents if there is no session data batch (i.e. it has expired)" in {
-//        mongoCollectionDrop()
-//        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
-//        Await.result(aftBatchedDataCacheRepository
-//          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), payloadOther),
-//          Duration.Inf)
-//        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) {
-//          _.isEmpty mustBe true
-//        }
-//      }
+        val biCaptor: ArgumentCaptor[Seq[BatchInfo]] = ArgumentCaptor.forClass(classOf[Seq[BatchInfo]])
+        when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(4)
+        when(batchService.createUserDataFullPayload(biCaptor.capture())).thenReturn(dummyJson)
+        when(batchService.createBatches(any(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
+        val fullPayload = payloadOther ++ payloadChargeTypeA
+        when(batchService.lastBatchNo(any())).thenReturn(Set())
+        when(batchService.batchIdentifierForChargeAndMember(any(), any()))
+          .thenReturn(Some(BatchIdentifier(BatchType.Other, 1)))
+        when(batchService.getOtherJsObject(ArgumentMatchers.eq(fullPayload))).thenReturn(dummyJson)
+
+        Await.result(aftBatchedDataCacheRepository
+          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), fullPayload),
+          Duration.Inf)
+        biCaptor.getValue.size mustBe 11
+        verify(batchService, times(1)).createUserDataFullPayload(any())
+        verify(batchService, times(1)).createBatches(any(), any())
+      }
+
+      "remove all documents if there is no session data batch (i.e. it has expired)" in {
+        mongoCollectionDrop()
+        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+        Await.result(aftBatchedDataCacheRepository
+          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), payloadOther),
+          Duration.Inf)
+        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) {
+          _.isEmpty mustBe true
+        }
+      }
     }
 
     "setSessionData" must {
@@ -332,25 +332,16 @@ class AftBatchedDataCacheRepositorySpec
         mongoCollectionDrop()
         mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
 
-        printAll("BEFORE", Filters.eq("uniqueAftId", uniqueAftId))
-
         Await.result(aftBatchedDataCacheRepository.remove(id, sessionId), Duration.Inf)
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) { xx =>
-          printAll("AFTER", Filters.eq("uniqueAftId", uniqueAftId))
-          xx.isEmpty mustBe true
+        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) {
+          _.isEmpty mustBe true
         }
       }
     }
- // }
+  }
 }
 
 object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
-
-  def printAll(s:String, b:Bson) = {
-    val stuff = Await.result(aftBatchedDataCacheRepository.collection.find(b).toFuture(), Duration.Inf)
-    println(s"\n$s ALL DB (${stuff.size}) :-" + stuff)
-  }
-
   private val uniqueAftIdKey = "uniqueAftId"
   private val batchTypeKey = "batchType"
   private val batchNoKey = "batchNo"
@@ -361,21 +352,6 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
 
   private def mongoCollectionDrop(): Unit = Await
     .result(aftBatchedDataCacheRepository.collection.drop().toFuture(), Duration.Inf)
-
-  /*
-    private def mongoCollectionInsertBatches(id: String, sessionId: String, seqBatchInfo: Seq[BatchInfo]): Boolean = {
-    def selector(batchType: BatchType, batchNo: Int): BSONDocument = BSONDocument("uniqueAftId" -> (id + sessionId),
-      "batchType" -> batchType.toString, "batchNo" -> batchNo)
-
-    val seqFutureUpdateWriteResult = seqBatchInfo.map { bi =>
-      val modifier = BSONDocument.apply("$set" -> Json.obj("id" -> id, "id" -> sessionId, "data" -> bi.jsValue))
-      aftBatchedDataCacheRepository.collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
-    }
-    Await.result(Future.sequence(seqFutureUpdateWriteResult).map {
-      _.forall(_.ok)
-    }, Duration.Inf)
-  }
-   */
 
   private def mongoCollectionInsertBatches(id: String, sessionId: String, seqBatchInfo: Seq[BatchInfo]): Unit = {
 
@@ -393,7 +369,6 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
         set("id", sessionId),
         set("data", Codecs.toBson(bi.jsValue))
       )
-      //val modifier = BSONDocument.apply("$set" -> Json.obj("id" -> id, "id" -> sessionId, "data" -> bi.jsValue))
 
       val upsertOptions = new FindOneAndUpdateOptions().upsert(true)
       aftBatchedDataCacheRepository.collection.findOneAndUpdate(
@@ -402,15 +377,11 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
         upsertOptions
       ).toFuture().map(_ => (): Unit)
 
-      //aftBatchedDataCacheRepository.collection.update.one(selector(bi.batchType, bi.batchNo), modifier, upsert = true)
     }
     Await.result(Future.sequence(seqFutureUpdateWriteResult).map(_ => (): Unit), Duration.Inf)
   }
 
   private def mongoCollectionInsertSessionDataBatch(id: String, sessionId: String, sd: SessionData, batchSize: Int = 2): Unit = {
-    //    val selector: BSONDocument = BSONDocument("uniqueAftId" -> (id + sessionId),
-    //      "batchType" -> BatchType.SessionData.toString, "batchNo" -> 1)
-
     val selector: Bson = {
       Filters.and(
         Filters.eq(uniqueAftIdKey, (id + sessionId)),
@@ -433,13 +404,6 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
       ).toFuture().map(_ => (): Unit),
       Duration.Inf
     )
-
-    //    val modifier = BSONDocument
-    //      .apply("$set" -> Json.obj(
-    //        "id" -> id,
-    //        "data" -> Json.toJson(sd),
-    //        "batchSize" -> batchSize)
-    //      )
   }
 
   private val mockAppConfig = mock[AppConfig]
@@ -457,7 +421,6 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
   private val batchService = mock[BatchService]
   private val databaseName = "aft-batches"
   private val mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-  private val mongoConnectorForTest = MongoConnector(mongoUri)
   private val mongoComponent = MongoComponent(mongoUri)
 
 
