@@ -17,113 +17,98 @@
 package repository
 
 import com.google.inject.Inject
-import org.joda.time.{DateTime, DateTimeZone}
-import org.slf4j.{Logger, LoggerFactory}
+import com.mongodb.client.model.FindOneAndUpdateOptions
+import org.mongodb.scala.model.Updates.set
+import org.mongodb.scala.model._
+import play.api.Logging
 import play.api.libs.json._
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers._
-import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import repository.CacheRepository.collectionIndexes
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
+import java.time.{LocalDateTime, ZoneId}
+import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 
 class CacheRepository @Inject()(collectionName: String,
                                 expireInSeconds: Option[Int] = None,
                                 expireInDays: Option[Int] = None,
-                                mongoComponent: ReactiveMongoComponent
-                              )(implicit val ec: ExecutionContext)
-  extends ReactiveRepository[JsValue, BSONObjectID](
-    collectionName,
-    mongoComponent.mongoConnector.db,
-    implicitly
-  ) {
+                                mongoComponent: MongoComponent
+                               )(implicit val ec: ExecutionContext)
+  extends PlayMongoRepository[JsValue](
+    collectionName = collectionName,
+    mongoComponent = mongoComponent,
+    domainFormat = implicitly,
+    indexes = collectionIndexes
+  ) with Logging {
 
-  override val logger: Logger = LoggerFactory.getLogger("CacheRepository")
+  import CacheRepository._
 
-  private def getExpireAt: DateTime =
+  private def getExpireAt: LocalDateTime =
     (expireInSeconds, expireInDays) match {
       case (Some(seconds), None) =>
-          DateTime
-            .now(DateTimeZone.UTC)
-            .plusSeconds(seconds)
+        LocalDateTime.now(ZoneId.of("UTC"))
+          .plusSeconds(seconds)
       case (None, Some(days)) =>
-          DateTime
-            .now(DateTimeZone.UTC)
-            .toLocalDate
-            .plusDays(days).toDateTimeAtStartOfDay()
+        LocalDateTime.now(ZoneId.of("UTC"))
+          .toLocalDate
+          .plusDays(days).atStartOfDay
       case _ => throw new RuntimeException("Missing config item for expire in days/ seconds: one and only one should be present")
     }
 
-  val collectionIndexes = Seq(
-    Index(key = Seq(("id", IndexType.Ascending)), name = Some("id"), background = true, unique = true),
-    Index(key = Seq(("expireAt", IndexType.Ascending)), name = Some("dataExpiry"), background = true
-      , options = BSONDocument("expireAfterSeconds" -> 0))
-  )
-
-  (for {
-    _ <- createIndex(collectionIndexes)
-  } yield {
-    ()
-  }) recoverWith {
-    case t: Throwable => Future.successful(logger.error(s"Error creating indexes on collection ${collection.name}", t))
-  } andThen {
-    case _ => CollectionDiagnostics.logCollectionInfo(collection)
-  }
-
-
-  private def createIndex(indexes: Seq[Index]): Future[Seq[Boolean]] = {
-    Future.sequence(
-      indexes.map { index =>
-        collection.indexesManager.ensure(index) map { result =>
-          logger.debug(s"Index $index was created successfully and result is: $result")
-          result
-        } recover {
-          case e: Exception => logger.error(s"Failed to create index $index", e)
-            false
-        }
-      }
-    )
-  }
-
-  def save(id: String, userData: JsValue)(implicit ec: ExecutionContext): Future[Boolean] = {
+  def save(id: String, userData: JsValue)(implicit ec: ExecutionContext): Future[Unit] = {
     logger.debug(s"Calling save in $collectionName Cache")
-    val document: JsValue = Json.toJson(DataCache.applyDataCache(
-      id = id, data = userData, expireAt = getExpireAt))
-    val selector = BSONDocument("id" -> id)
-    val modifier = BSONDocument("$set" -> document)
-    collection.update.one(selector, modifier, upsert = true).map(_.ok)
+    val upsertOptions = new FindOneAndUpdateOptions().upsert(true)
+    collection.findOneAndUpdate(
+      filter = Filters.eq(idKey, id),
+      update = Updates.combine(
+        set(idKey, id),
+        set(dataKey, Codecs.toBson(userData)),
+        set(lastUpdatedKey, Codecs.toBson(LocalDateTime.now(ZoneId.of("UTC")))),
+        set(expireAtKey, Codecs.toBson(getExpireAt))
+      ),
+      upsertOptions
+    ).toFuture().map(_ => (): Unit)
   }
 
   def get(id: String)(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
     logger.debug(s"Calling get in $collectionName Cache")
-    collection.find(BSONDocument("id" -> id), projection = Option.empty[JsObject]).one[DataCache].map {
-      _.map {
-        dataEntry =>
-          dataEntry.data
+    collection.find(
+      filter = Filters.eq(idKey, id)
+    ).toFuture().map {
+      _.headOption.map { jsValue =>
+        (jsValue \ dataKey).as[JsValue]
       }
     }
   }
 
   def remove(id: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    logger.warn(s"Removing row from collection ${collection.name} id:$id")
-    val selector = BSONDocument("id" -> id)
-    collection.delete.one(selector).map(_.ok)
+    logger.warn(s"Removing row from collection from $collectionName Cache with id:$id")
+    collection.deleteOne(
+      filter = Filters.eq(idKey, id)
+    ).toFuture().map(_ => true)
   }
+}
 
-  private case class DataCache(id: String, data: JsValue, lastUpdated: DateTime, expireAt: DateTime)
 
-  private object DataCache {
-    implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-    implicit val format: Format[DataCache] = Json.format[DataCache]
+object CacheRepository {
+  private implicit val dateFormat: Format[LocalDateTime] = MongoJavatimeFormats.localDateTimeFormat
+  private val idKey = "id"
+  private val dataKey = "data"
+  private val expireAtKey = "expireAt"
+  private val lastUpdatedKey = "lastUpdated"
 
-    def applyDataCache(id: String,
-                       data: JsValue,
-                       lastUpdated: DateTime = DateTime.now(DateTimeZone.UTC),
-                       expireAt: DateTime): DataCache = {
-      DataCache(id, data, lastUpdated, expireAt)
-    }
-  }
-
+  private val collectionIndexes: Seq[IndexModel] = Seq(
+    IndexModel(
+      keys = Indexes.ascending(idKey),
+      indexOptions = IndexOptions().name(idKey).unique(true).background(true)
+    ),
+    IndexModel(
+      keys = Indexes.ascending(expireAtKey),
+      indexOptions = IndexOptions().name("dataExpiry")
+        .expireAfter(0, TimeUnit.SECONDS)
+        .background(true)
+    )
+  )
 }

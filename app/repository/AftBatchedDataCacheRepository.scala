@@ -17,83 +17,78 @@
 package repository
 
 import com.google.inject.Inject
+import com.mongodb.client.model.FindOneAndUpdateOptions
 import config.AppConfig
 import models.{ChargeAndMember, LockDetail}
-import org.joda.time.{DateTime, DateTimeZone}
-import org.slf4j.{Logger, LoggerFactory}
+import org.mongodb.scala.bson.conversions.Bson
+import org.mongodb.scala.model.Updates.set
+import org.mongodb.scala.model._
+import play.api.Logging
 import play.api.libs.json._
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.commands.WriteResult
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.play.json.ImplicitBSONHandlers._
 import repository.model.SessionData
 import services.BatchService
 import services.BatchService.BatchType.Other
 import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
-import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDateTime, LocalTime, ZoneId}
+import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 
+object AftBatchedDataCacheRepository {
+
+  private val uniqueAftIdKey = "uniqueAftId"
+  private val batchTypeKey = "batchType"
+  private val batchNoKey = "batchNo"
+  private val idKey = "id"
+  private val expireAtKey = "expireAt"
+
+  private val indexes = Seq(
+    IndexModel(
+      keys = Indexes.ascending(uniqueAftIdKey, batchTypeKey, batchNoKey),
+      indexOptions = IndexOptions().name("unique-aft-batch").unique(true)
+    ),
+    IndexModel(
+      keys = Indexes.ascending(uniqueAftIdKey)
+    ),
+    IndexModel(
+      keys = Indexes.ascending(uniqueAftIdKey, batchTypeKey)
+    ),
+    IndexModel(
+      keys = Indexes.ascending(idKey, batchTypeKey, batchNoKey)
+    ),
+    IndexModel(
+      keys = Indexes.ascending(expireAtKey),
+      indexOptions = IndexOptions().name("dataExpiry")
+        .expireAfter(0, TimeUnit.SECONDS)
+        .unique(false)
+    )
+  )
+}
+
 class AftBatchedDataCacheRepository @Inject()(
-                                               mongoComponent: ReactiveMongoComponent,
+                                               mongoComponent: MongoComponent,
                                                batchService: BatchService,
                                                appConfig: AppConfig
                                              )(implicit val ec: ExecutionContext)
-  extends ReactiveRepository[JsValue, BSONObjectID](
-    appConfig.mongoDBAFTBatchesCollectionName,
-    mongoComponent.mongoConnector.db,
-    implicitly
-  ) {
+  extends PlayMongoRepository[JsValue](
+    collectionName = appConfig.mongoDBAFTBatchesCollectionName,
+    mongoComponent = mongoComponent,
+    domainFormat = implicitly,
+    indexes = AftBatchedDataCacheRepository.indexes
+  ) with Logging {
 
-  override val logger: Logger = LoggerFactory.getLogger("AftBatchedDataCacheRepository")
+  import AftBatchedDataCacheRepository._
 
-  private implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-
-  private def expireInSeconds(batchType: BatchType): DateTime = {
+  private def expireInSeconds(batchType: BatchType): LocalDateTime = {
     val ttlConfigItem = batchType match {
       case BatchType.SessionData => appConfig.mongoDBAFTBatchesTTL
       case _ => appConfig.mongoDBAFTBatchesMaxTTL
     }
-    DateTime.now(DateTimeZone.UTC).plusSeconds(ttlConfigItem)
-  }
-
-  val collectionIndexes = Seq(
-    Index(
-      Seq(("uniqueAftId", IndexType.Ascending), ("batchType", IndexType.Ascending), ("batchNo", IndexType.Ascending)),
-      Some("unique-aft-batch"), unique = true
-    ),
-    Index(Seq(("uniqueAftId", IndexType.Ascending))),
-    Index(Seq(("uniqueAftId", IndexType.Ascending), ("batchType", IndexType.Ascending))),
-    Index(Seq(("id", IndexType.Ascending), ("batchType", IndexType.Ascending), ("batchNo", IndexType.Ascending))),
-    Index(Seq(("expireAt", IndexType.Ascending)), Some("dataExpiry"), unique = false, options = BSONDocument("expireAfterSeconds" -> 0))
-  )
-
-  (for {
-    _ <- createIndex(collectionIndexes)
-  } yield {
-    ()
-  }) recoverWith {
-    case t: Throwable => Future.successful(logger.error(s"Error creating indexes on collection ${collection.name}", t))
-  } andThen {
-    case _ => CollectionDiagnostics.logCollectionInfo(collection)
-  }
-
-  private def createIndex(indexes: Seq[Index]): Future[Seq[Boolean]] = {
-    Future.sequence(
-      indexes.map { index =>
-        collection.indexesManager.ensure(index) map { result =>
-          logger.debug(s"Index $index was created successfully and result is: $result")
-          result
-        } recover {
-          case e: Exception => logger.error(s"Failed to create index $index", e)
-            false
-        }
-      }
-    )
+    LocalDateTime.now(ZoneId.of("UTC"))
+      .plusSeconds(ttlConfigItem)
   }
 
   private def userDataBatchSize: Int = appConfig.mongoDBAFTBatchesUserDataBatchSize
@@ -132,9 +127,8 @@ class AftBatchedDataCacheRepository @Inject()(
         val userData = batchService.createUserDataFullPayload(seqBatchInfo)
         val sessionData = Some(sessionDataBatchInfo.jsValue.as[SessionData])
         remove(id, sessionId).flatMap { _ =>
-          saveToRepository(id, sessionId, None, userData, sessionData).map {
-            case true => Some(sessionDataBatchInfo)
-            case false => None
+          saveToRepository(id, sessionId, None, userData, sessionData).map { _ =>
+            Some(sessionDataBatchInfo)
           }
         }
     }
@@ -146,18 +140,13 @@ class AftBatchedDataCacheRepository @Inject()(
     logger.info(s"\n$s $now")
   }
 
-  private def logWithTime[A](s: String, a: A): A = {
-    logger.info(s"\n$s $now")
-    a
-  }
-
   private def saveToRepository(
                                 id: String,
                                 sessionId: String,
                                 batchIdentifier: Option[BatchIdentifier],
                                 userData: JsValue,
                                 sessionData: Option[SessionData]
-                              )(implicit ec: ExecutionContext): Future[Boolean] = {
+                              )(implicit ec: ExecutionContext): Future[Unit] = {
     require(batchIdentifier.forall(_.batchType != BatchType.SessionData))
     logWithTime(s"Calling SaveToRepository with batchIdentifier $batchIdentifier in AFTBatchedDataCacheRepository")
 
@@ -175,37 +164,51 @@ class AftBatchedDataCacheRepository @Inject()(
         val lastBatchNos = batchIdentifier.fold(batchService.lastBatchNo(batchesExcludingSessionData))(_ => Set())
         val batches = Set(sessionDataBatchInfo) ++ batchesExcludingSessionData
 
-        def selector(batchType: BatchType, batchNo: Int): BSONDocument =
-          BSONDocument("uniqueAftId" -> (id + sessionId), "batchType" -> batchType.toString, "batchNo" -> batchNo)
+        def selector(batchType: BatchType, batchNo: Int): Bson = {
+          Filters.and(
+            Filters.eq(uniqueAftIdKey, (id + sessionId)),
+            Filters.eq(batchTypeKey, batchType.toString),
+            Filters.eq(batchNoKey, batchNo)
+          )
+        }
 
         logWithTime(s"Updating/inserting batch(es) in AFTBatchedDataCacheRepository")
+
+        val upsertOptions = new FindOneAndUpdateOptions().upsert(true)
         val setFutures = batches.map { bi =>
-          collection.update.one(selector(bi.batchType, bi.batchNo), BSONDocument.apply("$set" -> jsonPayloadToSave(id, bi)), upsert = true)
+          collection.findOneAndUpdate(
+            filter = selector(bi.batchType, bi.batchNo),
+            update = jsonPayloadToSave(id, bi),
+            upsertOptions
+          ).toFuture().map(_ => (): Unit)
         }
         val allFutures = setFutures ++ lastBatchNos.map(removeBatchesAfterBatchIdentifier(id, sessionId, _))
-        Future.sequence(allFutures).map(_.forall(_.ok)).map { b =>
-          logWithTime(s"Finished updating/inserting batch(es)  in AFTBatchedDataCacheRepository", b)
+        Future.sequence(allFutures).map { _ =>
+          logWithTime(s"Finished updating/inserting batch(es)  in AFTBatchedDataCacheRepository")
         }
       case _ =>
         logWithTime("Unable to save to Mongo repository as no session data found in repository or payload")
-        Future.successful(false)
+        Future.successful( ():Unit )
     }
   }
 
-  private def jsonPayloadToSave(id: String, batchInfo: BatchInfo): JsObject = {
-    val userDataBatchSizeJson: JsObject = if (batchInfo.batchType == BatchType.SessionData) {
-      Json.obj(
-        "batchSize" -> userDataBatchSize
-      )
+  private def jsonPayloadToSave(id: String, batchInfo: BatchInfo): Bson = {
+    val userDataBatchSizeJson = if (batchInfo.batchType == BatchType.SessionData) {
+      Seq(set("batchSize", userDataBatchSize))
     } else {
-      Json.obj()
+      Nil
     }
-    Json.obj(
-      "id" -> id,
-      "data" -> batchInfo.jsValue,
-      "lastUpdated" -> DateTime.now(DateTimeZone.UTC),
-      "expireAt" -> expireInSeconds(batchInfo.batchType)
+
+    val seqUpdates = Seq(
+      set(idKey, id),
+      set("data", Codecs.toBson(batchInfo.jsValue)),
+      set("lastUpdated", LocalDateTime.now(ZoneId.of("UTC"))),
+      set(expireAtKey, expireInSeconds(batchInfo.batchType))
     ) ++ userDataBatchSizeJson
+
+    Updates.combine(
+      seqUpdates: _*
+    )
   }
 
   def save(
@@ -213,7 +216,7 @@ class AftBatchedDataCacheRepository @Inject()(
             sessionId: String,
             chargeAndMember: Option[ChargeAndMember],
             userData: JsValue
-          )(implicit ec: ExecutionContext): Future[Boolean] = {
+          )(implicit ec: ExecutionContext): Future[Unit] = {
     logWithTime("Calling save in AFTBatchedDataCacheRepository")
     saveToRepository(
       id = id,
@@ -232,7 +235,7 @@ class AftBatchedDataCacheRepository @Inject()(
                       version: Int,
                       accessMode: String,
                       areSubmittedVersionsAvailable: Boolean
-                    )(implicit ec: ExecutionContext): Future[Boolean] = {
+                    )(implicit ec: ExecutionContext): Future[Unit] = {
     logWithTime("Calling setSessionData in AFTBatchedDataCacheRepository")
     saveToRepository(
       id = id,
@@ -287,37 +290,41 @@ class AftBatchedDataCacheRepository @Inject()(
     }
   }
 
-  def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Boolean] = {
-    logWithTime(s"Removing document(s) from collection ${collection.name} id:$id")
-    val selector = BSONDocument("uniqueAftId" -> (id + sessionId))
-    collection.delete.one(selector).map(_.ok)
+  def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Unit] = {
+    logWithTime(s"Removing document(s) from collection aft batched data cache id:$id")
+    val selector = Filters.eq(uniqueAftIdKey, id + sessionId)
+    collection.deleteMany(
+      filter = selector
+    ).toFuture().map(_ => (): Unit)
   }
 
   private def removeBatchesAfterBatchIdentifier(id: String, sessionId: String, batchIdentifier: BatchIdentifier)(implicit
-                                                                                                                 ec: ExecutionContext): Future[WriteResult] = {
+                                                                                                                 ec: ExecutionContext): Future[Unit] = {
     logWithTime(s"Removing document(s) for batch type ${batchIdentifier.batchType.toString} with batchNo greater " +
-      s"than last batch no ${batchIdentifier.batchNo} from collection ${collection.name} id:$id")
+      s"than last batch no ${batchIdentifier.batchNo} from collection aft batched data cache id:$id")
 
     val selector = batchIdentifier match {
       case BatchIdentifier(batchType, 0) =>
-        BSONDocument(
-          "uniqueAftId" -> (id + sessionId),
-          "batchType" -> batchType.toString
+        Filters.and(
+          Filters.eq(uniqueAftIdKey, id + sessionId),
+          Filters.eq(batchTypeKey, batchType.toString)
         )
       case BatchIdentifier(batchType, batchNo) =>
-        BSONDocument(
-          "uniqueAftId" -> (id + sessionId),
-          "batchType" -> batchType.toString,
-          "batchNo" -> BSONDocument("$gt" -> batchNo)
+        Filters.and(
+          Filters.eq(uniqueAftIdKey, id + sessionId),
+          Filters.eq(batchTypeKey, batchType.toString),
+          Filters.gt(batchNoKey, batchNo)
         )
     }
 
-    collection.delete.one(selector)
+    collection.deleteMany(
+      filter = selector
+    ).toFuture().map(_ => (): Unit)
   }
 
   private def transformToBatchInfo(batchJsValue: JsValue): Option[BatchInfo] = {
-    val optBatchType = (batchJsValue \ "batchType").asOpt[String].flatMap(BatchType.getBatchType)
-    val optBatchNo = (batchJsValue \ "batchNo").asOpt[Int]
+    val optBatchType = (batchJsValue \ batchTypeKey).asOpt[String].flatMap(BatchType.getBatchType)
+    val optBatchNo = (batchJsValue \ batchNoKey).asOpt[Int]
     val optJsValue = (batchJsValue \ "data").asOpt[JsValue]
     (optBatchType, optBatchNo, optJsValue) match {
       case (Some(batchType), Some(batchNo), Some(jsValue)) =>
@@ -334,17 +341,32 @@ class AftBatchedDataCacheRepository @Inject()(
                            batchIdentifier: Option[BatchIdentifier],
                            excludeSessionDataBatch: Boolean = false
                          )(implicit ec: ExecutionContext): Future[List[JsValue]] = {
-    (optSessionId, batchIdentifier) match {
+    val selector = (optSessionId, batchIdentifier) match {
       case (Some(sessionId), Some(BatchIdentifier(bt, bn))) =>
-        find("uniqueAftId" -> (id + sessionId), "batchType" -> bt.toString, "batchNo" -> bn)
+        Filters.and(
+          Filters.eq(uniqueAftIdKey, id + sessionId),
+          Filters.eq(batchTypeKey, bt.toString),
+          Filters.eq(batchNoKey, bn)
+        )
       case (None, Some(BatchIdentifier(bt, bn))) =>
-        find("id" -> id, "batchType" -> bt.toString, "batchNo" -> bn)
+        Filters.and(
+          Filters.eq(idKey, id),
+          Filters.eq(batchTypeKey, bt.toString),
+          Filters.eq(batchNoKey, bn)
+        )
       case (Some(sessionId), None) if excludeSessionDataBatch =>
-        find("uniqueAftId" -> (id + sessionId),
-          "batchType" -> BSONDocument("$ne" -> BatchType.SessionData.toString))
-      case (Some(sessionId), None) => find("uniqueAftId" -> (id + sessionId))
-      case (None, None) => find("id" -> id)
+        Filters.and(
+          Filters.eq(uniqueAftIdKey, id + sessionId),
+          Filters.ne(batchTypeKey, BatchType.SessionData.toString)
+        )
+      case (Some(sessionId), None) =>
+        Filters.eq(uniqueAftIdKey, id + sessionId)
+      case (None, None) =>
+        Filters.eq(idKey, id)
     }
+    collection.find(
+      filter = selector
+    ).toFuture().map(_.toList)
   }
 
   private def getBatchesFromRepository(

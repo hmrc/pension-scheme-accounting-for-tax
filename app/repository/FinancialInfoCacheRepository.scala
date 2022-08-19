@@ -18,12 +18,12 @@ package repository
 
 import com.google.inject.Inject
 import play.api.Configuration
-import play.modules.reactivemongo.ReactiveMongoComponent
+import uk.gov.hmrc.mongo.MongoComponent
 
 import scala.concurrent.ExecutionContext
 
 class FinancialInfoCacheRepository @Inject()(
-                                              mongoComponent: ReactiveMongoComponent,
+                                              mongoComponent: MongoComponent,
                                               configuration: Configuration
                                             )(implicit val executionContext: ExecutionContext)
   extends CacheRepository(
