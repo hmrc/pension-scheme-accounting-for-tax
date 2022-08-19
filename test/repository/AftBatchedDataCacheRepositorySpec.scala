@@ -419,8 +419,7 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
   private val batchService = mock[BatchService]
   private val collectionName = "aft-batches"
   private val databaseName = "pension-scheme-accounting-for-tax"
-  private val portNo = 27017
-  private val mongoUri: String = s"mongodb://127.0.0.1:$portNo/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
+  private val mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
   private val mongoComponent = MongoComponent(mongoUri)
 
 
