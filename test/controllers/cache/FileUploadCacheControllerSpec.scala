@@ -34,7 +34,7 @@ import repository.model.{FileUploadDataCache, FileUploadStatus}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 
-import java.time.LocalDateTime
+import java.time.{LocalDateTime, ZoneId}
 import scala.concurrent.Future
 
 class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfter {
@@ -103,13 +103,21 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
-        val dateTimeNow = LocalDateTime.now()
+        val dateTimeNow = LocalDateTime.now(ZoneId.of("UTC"))
         val fileUploadDataCache = FileUploadDataCache(uploadId,referenceId,FileUploadStatus("InProgress"),dateTimeNow,dateTimeNow, dateTimeNow)
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
         val result = controller.getUploadResult(fakeRequest)
         status(result) mustEqual OK
-        contentAsJson(result) mustEqual Json.obj(fields = "uploadId" -> "uploadId", "reference" -> "reference","status" -> Json.obj("_type"-> "InProgress"), "created" -> dateTimeNow, "lastUpdated" -> dateTimeNow,"expireAt" -> dateTimeNow)
+        contentAsJson(result) mustEqual Json.obj(
+          fields = "uploadId" -> "uploadId",
+          "reference" -> "reference",
+          "status" -> Json.obj(
+            "_type"-> "InProgress"),
+          "created" -> dateTimeNow,
+          "lastUpdated" -> dateTimeNow,
+          "expireAt" -> dateTimeNow
+        )
       }
       "return NOT FOUND when the data doesn't exist" in {
         val app = new GuiceApplicationBuilder()
