@@ -296,7 +296,7 @@ class AftBatchedDataCacheRepository @Inject()(
   def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Unit] = {
     logWithTime(s"Removing document(s) from collection aft batched data cache id:$id")
     val selector = Filters.eq(uniqueAftIdKey, id + sessionId)
-    collection.deleteOne(
+    collection.deleteMany(
       filter = selector
     ).toFuture().map(_ => (): Unit)
   }
@@ -320,7 +320,7 @@ class AftBatchedDataCacheRepository @Inject()(
         )
     }
 
-    collection.deleteOne(
+    collection.deleteMany(
       filter = selector
     ).toFuture().map(_ => (): Unit)
   }
