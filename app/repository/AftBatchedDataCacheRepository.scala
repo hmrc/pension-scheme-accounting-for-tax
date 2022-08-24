@@ -51,13 +51,16 @@ object AftBatchedDataCacheRepository {
       indexOptions = IndexOptions().name("unique-aft-batch").unique(true)
     ),
     IndexModel(
-      keys = Indexes.ascending(uniqueAftIdKey)
+      keys = Indexes.ascending(uniqueAftIdKey),
+      indexOptions = IndexOptions().name("uniqueAftId_1")
     ),
     IndexModel(
-      keys = Indexes.ascending(uniqueAftIdKey, batchTypeKey)
+      keys = Indexes.ascending(uniqueAftIdKey, batchTypeKey),
+      indexOptions = IndexOptions().name("uniqueAftId_1_batchType_1")
     ),
     IndexModel(
-      keys = Indexes.ascending(idKey, batchTypeKey, batchNoKey)
+      keys = Indexes.ascending(idKey, batchTypeKey, batchNoKey),
+      indexOptions = IndexOptions().name("id_1_batchType_1_batchNo_1")
     ),
     IndexModel(
       keys = Indexes.ascending(expireAtKey),
