@@ -91,8 +91,7 @@ class FileUploadReferenceCacheRepository @Inject()(
     logger.debug("Calling getUploadResult in  FileUploadReferenceCache")
     collection.find(
       filter = Filters.eq(uploadIdKey, uploadId)
-    ).toFuture()
-      .map(_.headOption)
+    ).headOption()
       .map {
         _.map {
           _.as[JsObject]
@@ -100,13 +99,12 @@ class FileUploadReferenceCacheRepository @Inject()(
       }
       .map {
         _.map { data =>
-          // TOOO: Not expiring for some reason
           FileUploadDataCache.applyDataCache(
             uploadId = (data \ uploadIdKey).as[String],
             reference = (data \ referenceKey).as[String],
             status = (data \ statusKey).as[FileUploadStatus],
-            lastUpdated = (data \ lastUpdatedKey).as[LocalDateTime],
-            expireAt = (data \ expireAtKey).as[LocalDateTime]
+            lastUpdated = expireInSeconds,
+            expireAt = expireInSeconds
           )
         }
       }

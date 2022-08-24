@@ -51,13 +51,16 @@ object AftBatchedDataCacheRepository {
       indexOptions = IndexOptions().name("unique-aft-batch").unique(true)
     ),
     IndexModel(
-      keys = Indexes.ascending(uniqueAftIdKey)
+      keys = Indexes.ascending(uniqueAftIdKey),
+      indexOptions = IndexOptions().name("uniqueAftId_1")
     ),
     IndexModel(
-      keys = Indexes.ascending(uniqueAftIdKey, batchTypeKey)
+      keys = Indexes.ascending(uniqueAftIdKey, batchTypeKey),
+      indexOptions = IndexOptions().name("uniqueAftId_1_batchType_1")
     ),
     IndexModel(
-      keys = Indexes.ascending(idKey, batchTypeKey, batchNoKey)
+      keys = Indexes.ascending(idKey, batchTypeKey, batchNoKey),
+      indexOptions = IndexOptions().name("id_1_batchType_1_batchNo_1")
     ),
     IndexModel(
       keys = Indexes.ascending(expireAtKey),
@@ -293,7 +296,7 @@ class AftBatchedDataCacheRepository @Inject()(
   def remove(id: String, sessionId: String)(implicit ec: ExecutionContext): Future[Unit] = {
     logWithTime(s"Removing document(s) from collection aft batched data cache id:$id")
     val selector = Filters.eq(uniqueAftIdKey, id + sessionId)
-    collection.deleteMany(
+    collection.deleteOne(
       filter = selector
     ).toFuture().map(_ => (): Unit)
   }
@@ -317,7 +320,7 @@ class AftBatchedDataCacheRepository @Inject()(
         )
     }
 
-    collection.deleteMany(
+    collection.deleteOne(
       filter = selector
     ).toFuture().map(_ => (): Unit)
   }
