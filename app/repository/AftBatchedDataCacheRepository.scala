@@ -52,7 +52,7 @@ object AftBatchedDataCacheRepository {
     ),
     IndexModel(
       keys = Indexes.ascending(uniqueAftIdKey),
-      indexOptions = IndexOptions().name("uniqueAftId_1")
+      indexOptions = IndexOptions().name("unique_Aft_Id")
     ),
     IndexModel(
       keys = Indexes.ascending(uniqueAftIdKey, batchTypeKey),
@@ -80,7 +80,8 @@ class AftBatchedDataCacheRepository @Inject()(
     collectionName = appConfig.mongoDBAFTBatchesCollectionName,
     mongoComponent = mongoComponent,
     domainFormat = implicitly,
-    indexes = AftBatchedDataCacheRepository.indexes
+    indexes = AftBatchedDataCacheRepository.indexes,
+    replaceIndexes = true
   ) with Logging {
 
   import AftBatchedDataCacheRepository._
