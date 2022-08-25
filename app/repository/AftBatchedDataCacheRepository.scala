@@ -60,7 +60,7 @@ object AftBatchedDataCacheRepository {
     ),
     IndexModel(
       keys = Indexes.ascending(idKey, batchTypeKey, batchNoKey),
-      indexOptions = IndexOptions().name("id_1_batchType_1_bathcNo_1")
+      indexOptions = IndexOptions().name("id_1_batchType_1_batchNo_1")
     ),
     IndexModel(
       keys = Indexes.ascending(expireAtKey),
