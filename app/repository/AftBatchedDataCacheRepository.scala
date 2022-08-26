@@ -80,8 +80,7 @@ class AftBatchedDataCacheRepository @Inject()(
     collectionName = appConfig.mongoDBAFTBatchesCollectionName,
     mongoComponent = mongoComponent,
     domainFormat = implicitly,
-    indexes = AftBatchedDataCacheRepository.indexes,
-    replaceIndexes = true
+    indexes = AftBatchedDataCacheRepository.indexes
   ) with Logging {
 
   import AftBatchedDataCacheRepository._
