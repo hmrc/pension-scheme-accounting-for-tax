@@ -31,6 +31,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import repository._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
@@ -52,7 +53,14 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[FinancialStatementConnector].toInstance(mockFSConnector),
-      bind[AFTConnector].toInstance(mockAFTConnector)
+      bind[AFTConnector].toInstance(mockAFTConnector),
+      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
+      bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+      bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
     )
 
   private val application: Application = new GuiceApplicationBuilder()
@@ -209,7 +217,7 @@ object FinancialStatementControllerSpec {
     )
   )
   private val psaFSResponse: PsaFS =
-    PsaFS(false, psaFSDetailResponse)
+    PsaFS(inhibitRefundSignal = false, psaFSDetailResponse)
 
   private val schemeModel: SchemeFS = SchemeFS(
     inhibitRefundSignal = false,

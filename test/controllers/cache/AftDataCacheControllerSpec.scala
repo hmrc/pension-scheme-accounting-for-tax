@@ -26,12 +26,13 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.AftBatchedDataCacheRepository
+import repository._
 import repository.model.SessionData
 import uk.gov.hmrc.auth.core.retrieve.{Name, ~}
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
@@ -58,7 +59,26 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
     bind[AftBatchedDataCacheRepository].toInstance(repo),
+    bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
+    bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+    bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+    bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+    bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+    bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
   )
+
+  lazy val app: Application =
+    new GuiceApplicationBuilder()
+      .configure(
+        "auditing.enabled" -> false,
+        "metrics.enabled" -> false,
+        "metrics.jvm" -> false,
+        "run.mode" -> "Test"
+      )
+      .overrides(modules: _*)
+      .build()
+
+  val controller: AftDataCacheController = app.injector.instanceOf[AftDataCacheController]
 
   before {
     reset(repo)
@@ -68,10 +88,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   "DataCacheController" when {
     "calling get" must {
       "return OK with the data" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(repo.get(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
@@ -81,10 +97,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "return NOT FOUND when the data doesn't exist" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(repo.get(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful(None)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
@@ -93,10 +105,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "throw an exception when the repository call fails" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(repo.get(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.failed(new Exception())
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
@@ -105,10 +113,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "throw an exception when the call is not authorised" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
         val result = controller.get(fakeRequest)
@@ -120,10 +124,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "calling save" must {
 
       "return OK when the data is saved successfully" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
@@ -132,10 +132,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
@@ -144,10 +140,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "throw an exception when the call is not authorised" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
         val result = controller.save(fakePostRequest.withJsonBody(Json.obj(fields = "value" -> "data")))
@@ -157,10 +149,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
     "calling remove" must {
       "return OK when the data is removed successfully" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(repo.remove(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
@@ -169,10 +157,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "throw an exception when the call is not authorised" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
         val result = controller.remove(fakeRequest)
@@ -182,13 +166,9 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
     "calling getSessionData" must {
       "return OK with locked by user name" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
 
         val sd = SessionData("id", Some(LockDetail("test name", psaId)), 1, "", areSubmittedVersionsAvailable = false)
 
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(Some(sd))
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
@@ -198,10 +178,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "return Not Found when it is not locked" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[AftDataCacheController]
         when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(None)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
@@ -230,10 +206,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "return OK when the data is saved successfully for a PSA ID" in {
       val accessMode = "compile"
       val version = 1
-      val app = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-        .overrides(modules: _*).build()
-      val controller = app.injector.instanceOf[AftDataCacheController]
+
       when(repo.setSessionData(
         ArgumentMatchers.eq(id),
         ArgumentMatchers.eq(Some(LockDetail("test name", psaId))), any(), any(),
@@ -259,10 +232,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "return OK when the data is saved successfully for a PSP ID" in {
       val accessMode = "compile"
       val version = 1
-      val app = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-        .overrides(modules: _*).build()
-      val controller = app.injector.instanceOf[AftDataCacheController]
+
       when(repo.setSessionData(
         ArgumentMatchers.eq(id),
         ArgumentMatchers.eq(Some(LockDetail("test name", pspId))), any(), any(),
@@ -288,10 +258,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "return BAD REQUEST when header data is missing" in {
       val accessMode = "compile"
       val version = 1
-      val app = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-        .overrides(modules: _*).build()
-      val controller = app.injector.instanceOf[AftDataCacheController]
+
       when(repo.setSessionData(ArgumentMatchers.eq(id),
         ArgumentMatchers.eq(Some(LockDetail("test name", psaId))), any(), any(),
         ArgumentMatchers.eq(version), ArgumentMatchers.eq(accessMode), any())(any())) thenReturn Future.successful(true)
@@ -304,10 +271,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     }
 
     "return BAD REQUEST when the request body cannot be parsed" in {
-      val app = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-        .overrides(modules: _*).build()
-      val controller = app.injector.instanceOf[AftDataCacheController]
+
       when(repo.setSessionData(any(), any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful(true)
       when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(Future.successful(expectedAuthorisations(psaId)))
@@ -321,10 +285,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   "calling lockedBy" must {
     "return OK when the data is retrieved" in {
       val lockedByUser = LockDetail("bob", psaId)
-      val app = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-        .overrides(modules: _*).build()
-      val controller = app.injector.instanceOf[AftDataCacheController]
+
       when(repo.lockedBy(any(), any())(any())).thenReturn(Future.successful(Some(lockedByUser)))
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
@@ -334,10 +295,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     }
 
     "return NOT FOUND when not locked" in {
-      val app = new GuiceApplicationBuilder()
-        .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-        .overrides(modules: _*).build()
-      val controller = app.injector.instanceOf[AftDataCacheController]
+
       when(repo.lockedBy(any(), any())(any())).thenReturn(Future.successful(None))
       when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 

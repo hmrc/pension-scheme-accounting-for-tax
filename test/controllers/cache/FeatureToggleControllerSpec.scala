@@ -23,10 +23,12 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.inject.bind
+import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
-import repository.AdminDataRepository
+import repository._
 import services.FeatureToggleService
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -43,8 +45,21 @@ class FeatureToggleControllerSpec
 
   private val mockFeatureToggleService = mock[FeatureToggleService]
 
+  protected def bindings: Seq[GuiceableModule] =
+    Seq(
+      bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+      bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[AdminDataRepository].toInstance(mockAdminDataRepository),
+      bind[FeatureToggleService].toInstance(mockFeatureToggleService)
+    )
+
   override def beforeEach(): Unit = {
-    reset(mockAdminDataRepository, mockFeatureToggleService)
+    reset(mockAdminDataRepository)
+    reset(mockFeatureToggleService)
     when(mockAdminDataRepository.getFeatureToggles)
       .thenReturn(Future.successful(Seq(Enabled(DummyToggle))))
     when(mockFeatureToggleService.getAll)

@@ -55,11 +55,14 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
     reset(mockConfiguration)
   }
 
+  override def afterAll(): Unit =
+    stopMongoD()
 
   "updateStatus" must {
     "update status correctly" in {
 
       val result = for {
+        _ <- fileUploadReferenceCacheRepository.collection.drop().toFuture()
         _ <- fileUploadReferenceCacheRepository.requestUpload(id1, id2)
         _ <- fileUploadReferenceCacheRepository.updateStatus(id2, fileUploadStatusNotInProgress)
         status <- fileUploadReferenceCacheRepository.getUploadResult(id1)
@@ -79,6 +82,7 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
 
       val result = Await.result(
         for {
+          _ <- fileUploadReferenceCacheRepository.collection.drop().toFuture()
           _ <- fileUploadReferenceCacheRepository.requestUpload(id1, id2)
           status <- fileUploadReferenceCacheRepository.getUploadResult(id1)
         } yield {
@@ -93,6 +97,7 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
 
       val result = Await.result(
         for {
+          _ <- fileUploadReferenceCacheRepository.collection.drop().toFuture()
           _ <- fileUploadReferenceCacheRepository.requestUpload(id1, id2)
           status <- fileUploadReferenceCacheRepository.getUploadResult(id2)
         } yield {
@@ -109,6 +114,7 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
 
       val result = Await.result(
         for {
+          _ <- fileUploadReferenceCacheRepository.collection.drop().toFuture()
           _ <- fileUploadReferenceCacheRepository.requestUpload(id1, id2)
           status <- fileUploadReferenceCacheRepository.getUploadResult(id1)
         } yield {

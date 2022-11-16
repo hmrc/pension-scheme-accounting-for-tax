@@ -30,13 +30,13 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.FileUploadOutcomeRepository
+import repository._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
-class FileUploadOutcomeControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfter {
+class FileUploadOutcomeControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfter { // scalastyle:off magic.number
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
@@ -48,7 +48,12 @@ class FileUploadOutcomeControllerSpec extends AnyWordSpec with Matchers with Moc
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
-    bind[FileUploadOutcomeRepository].toInstance(repo)
+    bind[FileUploadOutcomeRepository].toInstance(repo),
+    bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
+    bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+    bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+    bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+    bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
   )
 
   before {

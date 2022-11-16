@@ -48,12 +48,16 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
     reset(mockConfiguration)
   }
 
+  override def afterAll(): Unit =
+    stopMongoD()
+
 
   "remove" must {
     "remove item" in {
 
       val result = Await.result(
         for {
+          _ <- cacheRepository.collection.drop().toFuture()
           _ <- cacheRepository.save(id1, dummyData)
           _ <- cacheRepository.remove(id1)
           status <- cacheRepository.get(id1)
@@ -71,6 +75,7 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
 
       val result = Await.result(
         for {
+          _ <- cacheRepository.collection.drop().toFuture()
           status <- cacheRepository.get(id1)
         } yield {
           status
@@ -86,6 +91,7 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
 
       val result = Await.result(
         for {
+          _ <- cacheRepository.collection.drop().toFuture()
           _ <- cacheRepository.save(id1, dummyData)
           status <- cacheRepository.get(id1)
         } yield {
