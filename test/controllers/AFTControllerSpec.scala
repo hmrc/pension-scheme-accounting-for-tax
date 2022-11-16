@@ -21,10 +21,12 @@ import connectors.AFTConnector
 import models.enumeration.JourneyType
 import models.{AFTOverview, AFTOverviewVersion, AFTVersion}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, ArgumentMatchers, Mockito, MockitoSugar}
+import org.mockito.Mockito.{reset, times, verify, when}
+import org.mockito.{ArgumentCaptor, ArgumentMatchers, Mockito}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
@@ -124,7 +126,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         "\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"]," +
         "\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}}"
       val validationResponse = Left(List(ErrorReport("test", GivingErrorPayload)))
-      when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(),any()))
+      when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any()))
         .thenReturn(validationResponse)
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
@@ -416,7 +418,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
 object AFTControllerSpec {
   private val pstr = "12345678RD"
-  private val psaIdJsValue =  Json.toJson("A2100005")
+  private val psaIdJsValue = Json.toJson("A2100005")
   private val startDt = "2020-01-01"
   private val endDate = "2020-12-31"
   private val aftVer = "99"

@@ -18,38 +18,39 @@ package transformations.userAnswersToETMP
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeGTransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeGDetails).readNullable(__.read(readsChargeG)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
+    (__ \ Symbol("chargeGDetails")).readNullable(__.read(readsChargeG)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
   def readsChargeG: Reads[JsObject] =
-    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>
-      (((__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
+    (__ \ Symbol("totalChargeAmount")).read[BigDecimal].flatMap { _ =>
+      (((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeGDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
         orElse doNothing) and
-        (__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-        (__ \ 'chargeDetails \ 'chargeTypeGDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
+        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeGDetails") \ Symbol("memberDetails")).json.copyFrom((__ \ Symbol("members")).read(readsMembers)) and
+        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeGDetails") \ Symbol("totalAmount"))
+          .json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)).reduce
     }
 
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_)).map(removeEmptyObjects)
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
-      (__ \ 'individualsDetails \ 'dateOfBirth).json.copyFrom((__ \ 'memberDetails \ 'dob).json.pick) and
+      (__ \ Symbol("individualsDetails") \ Symbol("dateOfBirth")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("dob")).json.pick) and
       readsQrops and
-      (__ \ 'dateOfTransfer).json.copyFrom((__ \ 'chargeDetails \ 'qropsTransferDate).json.pick) and
-      (__ \ 'amountTransferred).json.copyFrom((__ \ 'chargeAmounts \ 'amountTransferred).json.pick) and
-      (__ \ 'amountOfTaxDeducted).json.copyFrom((__ \ 'chargeAmounts \ 'amountTaxDue).json.pick) and
-      ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
-        orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
-      ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
+      (__ \ Symbol("dateOfTransfer")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("qropsTransferDate")).json.pick) and
+      (__ \ Symbol("amountTransferred")).json.copyFrom((__ \ Symbol("chargeAmounts") \ Symbol("amountTransferred")).json.pick) and
+      (__ \ Symbol("amountOfTaxDeducted")).json.copyFrom((__ \ Symbol("chargeAmounts") \ Symbol("amountTaxDue")).json.pick) and
+      ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
+        orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
+      ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
         orElse doNothing)).reduce.orElseEmptyOnMissingFields
 
   def readsQrops: Reads[JsObject] = {
-    (__ \ 'chargeDetails \ 'qropsReferenceNumber).read[String].flatMap { qropsReference =>
-      (__ \ 'qropsReference).json.put(JsString(s"Q$qropsReference"))
+    (__ \ Symbol("chargeDetails") \ Symbol("qropsReferenceNumber")).read[String].flatMap { qropsReference =>
+      (__ \ Symbol("qropsReference")).json.put(JsString(s"Q$qropsReference"))
     }
   }
 

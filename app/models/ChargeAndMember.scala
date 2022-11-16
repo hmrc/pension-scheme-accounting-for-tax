@@ -16,11 +16,11 @@
 
 package models
 
+import models.ChargeType.{ChargeTypeAnnualAllowance, ChargeTypeAuthSurplus, ChargeTypeLifetimeAllowance, ChargeTypeOverseasTransfer}
 import services.BatchService.BatchType
-import models.ChargeType.{ChargeTypeLifetimeAllowance, ChargeTypeOverseasTransfer, ChargeTypeAnnualAllowance, ChargeTypeAuthSurplus}
 
-case class ChargeAndMember(chargeType:ChargeType, memberNo:Option[Int]) {
-  def batchType:BatchType = {
+case class ChargeAndMember(chargeType: ChargeType, memberNo: Option[Int]) {
+  def batchType: BatchType = {
     (chargeType, memberNo) match {
       case (ChargeTypeAnnualAllowance, Some(_)) => BatchType.ChargeE
       case (ChargeTypeAuthSurplus, Some(_)) => BatchType.ChargeC

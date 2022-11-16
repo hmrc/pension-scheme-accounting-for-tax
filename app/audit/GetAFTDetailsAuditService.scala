@@ -41,7 +41,7 @@ class GetAFTDetailsAuditService @Inject()(auditService: AuditService) {
   }
 
   def sendOptionAFTDetailsAuditEvent(pstr: String, startDate: String)
-                              (implicit ec: ExecutionContext, request: RequestHeader): OptionalResultEvent = {
+                                    (implicit ec: ExecutionContext, request: RequestHeader): OptionalResultEvent = {
     case Success(response) =>
       sendEvent(pstr, startDate, Status.OK, response)
     case Failure(error: UpstreamErrorResponse) =>

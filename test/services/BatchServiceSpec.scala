@@ -16,15 +16,17 @@
 
 package services
 
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsArray, Json}
 import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 
 class BatchServiceSpec extends AnyWordSpec with Matchers {
   // scalastyle:off magic.number
+
   import BatchServiceSpec._
   import models.BatchedRepositorySampleData._
+
   "createBatches (with batch size set to 2)" must {
 
     "return correct batch info with empty userDataFullPayload" in {
@@ -134,8 +136,8 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
             payloadChargeTypeA ++
             concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 3)), nodeNameChargeC)
         ),
-        BatchInfo(BatchType.ChargeC, 1, JsArray( Seq(jsArray(0), jsArray(1)))),
-        BatchInfo(BatchType.ChargeC, 2, JsArray( Seq(jsArray(2))))
+        BatchInfo(BatchType.ChargeC, 1, JsArray(Seq(jsArray(0), jsArray(1)))),
+        BatchInfo(BatchType.ChargeC, 2, JsArray(Seq(jsArray(2))))
       )
     }
 
@@ -149,8 +151,8 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
             payloadChargeTypeA ++
             concatenateNodes(Seq(payloadChargeTypeDMinusMembers(numberOfItems = 3)), nodeNameChargeD)
         ),
-        BatchInfo(BatchType.ChargeD, 1, JsArray( Seq(jsArray(0), jsArray(1)))),
-        BatchInfo(BatchType.ChargeD, 2, JsArray( Seq(jsArray(2))))
+        BatchInfo(BatchType.ChargeD, 1, JsArray(Seq(jsArray(0), jsArray(1)))),
+        BatchInfo(BatchType.ChargeD, 2, JsArray(Seq(jsArray(2))))
       )
     }
 
@@ -164,8 +166,8 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
             payloadChargeTypeA ++
             concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 3)), nodeNameChargeE)
         ),
-        BatchInfo(BatchType.ChargeE, 1, JsArray( Seq(jsArray(0), jsArray(1)))),
-        BatchInfo(BatchType.ChargeE, 2, JsArray( Seq(jsArray(2))))
+        BatchInfo(BatchType.ChargeE, 1, JsArray(Seq(jsArray(0), jsArray(1)))),
+        BatchInfo(BatchType.ChargeE, 2, JsArray(Seq(jsArray(2))))
       )
     }
 
@@ -179,8 +181,8 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
             payloadChargeTypeA ++
             concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems = 3)), nodeNameChargeG)
         ),
-        BatchInfo(BatchType.ChargeG, 1, JsArray( Seq(jsArray(0), jsArray(1)))),
-        BatchInfo(BatchType.ChargeG, 2, JsArray( Seq(jsArray(2))))
+        BatchInfo(BatchType.ChargeG, 1, JsArray(Seq(jsArray(0), jsArray(1)))),
+        BatchInfo(BatchType.ChargeG, 2, JsArray(Seq(jsArray(2))))
       )
     }
 
@@ -207,19 +209,19 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
             concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 2)), nodeNameChargeE) ++
             concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems = 7)), nodeNameChargeG)
         ),
-        BatchInfo(BatchType.ChargeC, 1, JsArray( Seq(jsArrayChargeC(0), jsArrayChargeC(1)))),
-        BatchInfo(BatchType.ChargeC, 2, JsArray( Seq(jsArrayChargeC(2), jsArrayChargeC(3)))),
-        BatchInfo(BatchType.ChargeC, 3, JsArray( Seq(jsArrayChargeC(4)))),
+        BatchInfo(BatchType.ChargeC, 1, JsArray(Seq(jsArrayChargeC(0), jsArrayChargeC(1)))),
+        BatchInfo(BatchType.ChargeC, 2, JsArray(Seq(jsArrayChargeC(2), jsArrayChargeC(3)))),
+        BatchInfo(BatchType.ChargeC, 3, JsArray(Seq(jsArrayChargeC(4)))),
 
-        BatchInfo(BatchType.ChargeD, 1, JsArray( Seq(jsArrayChargeD(0), jsArrayChargeD(1)))),
-        BatchInfo(BatchType.ChargeD, 2, JsArray( Seq(jsArrayChargeD(2), jsArrayChargeD(3)))),
+        BatchInfo(BatchType.ChargeD, 1, JsArray(Seq(jsArrayChargeD(0), jsArrayChargeD(1)))),
+        BatchInfo(BatchType.ChargeD, 2, JsArray(Seq(jsArrayChargeD(2), jsArrayChargeD(3)))),
 
-        BatchInfo(BatchType.ChargeE, 1, JsArray( Seq(jsArrayChargeE(0), jsArrayChargeE(1)))),
+        BatchInfo(BatchType.ChargeE, 1, JsArray(Seq(jsArrayChargeE(0), jsArrayChargeE(1)))),
 
-        BatchInfo(BatchType.ChargeG, 1, JsArray( Seq(jsArrayChargeG(0), jsArrayChargeG(1)))),
-        BatchInfo(BatchType.ChargeG, 2, JsArray( Seq(jsArrayChargeG(2), jsArrayChargeG(3)))),
-        BatchInfo(BatchType.ChargeG, 3, JsArray( Seq(jsArrayChargeG(4), jsArrayChargeG(5)))),
-        BatchInfo(BatchType.ChargeG, 4, JsArray( Seq(jsArrayChargeG(6))))
+        BatchInfo(BatchType.ChargeG, 1, JsArray(Seq(jsArrayChargeG(0), jsArrayChargeG(1)))),
+        BatchInfo(BatchType.ChargeG, 2, JsArray(Seq(jsArrayChargeG(2), jsArrayChargeG(3)))),
+        BatchInfo(BatchType.ChargeG, 3, JsArray(Seq(jsArrayChargeG(4), jsArrayChargeG(5)))),
+        BatchInfo(BatchType.ChargeG, 4, JsArray(Seq(jsArrayChargeG(6))))
       )
     }
   }
@@ -352,7 +354,7 @@ class BatchServiceSpec extends AnyWordSpec with Matchers {
       val expectedPayload = payloadOther ++ concatenateNodes(
         Seq(
           Json.obj(
-        "members" -> payloadChargeTypeEMemberMinimal
+            "members" -> payloadChargeTypeEMemberMinimal
           )
         ), nodeNameChargeE
       )

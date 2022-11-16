@@ -17,13 +17,14 @@
 package controllers.cache
 
 import akka.util.ByteString
+import controllers.cache.FinancialInfoCacheController.IdNotFoundFromAuth
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
-
+import org.mockito.Mockito._
+import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.BeforeAndAfter
-import org.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
@@ -32,7 +33,6 @@ import play.api.test.Helpers._
 import repository.FinancialInfoCacheRepository
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http.HeaderCarrier
-import FinancialInfoCacheController.IdNotFoundFromAuth
 
 import scala.concurrent.Future
 

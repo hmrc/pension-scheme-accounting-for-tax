@@ -15,10 +15,11 @@
  */
 
 package utils
-import org.mockito.MockitoSugar
+
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 
@@ -49,7 +50,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-      result.right.get mustBe true
+      result mustBe true
     }
 
     "Validate Compiled payload" in {
@@ -231,7 +232,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin
       )
-      jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, validCompiledPayload).right.get mustBe true
+      jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, validCompiledPayload) mustBe true
     }
 
     "Validate Compiled invalid payload with multiple errors" in {
@@ -413,9 +414,15 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin
       )
-    val result =   jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, validCompiledPayload)
-      result.left.get.mkString mustBe "ErrorReport({\"pointer\":\"/aftDetails/quarterEndDate\"},\"ECMA 262 regex \\\"^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$\\\" does not match )" +
-                                      "ErrorReport({\"pointer\":\"/aftDetails/quarterStartDate\"},\"ECMA 262 regex \\\"^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$\\\" does not match )"
+      val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, validCompiledPayload)
+      result.left.get.mkString mustBe "ErrorReport({\"pointer\":\"/aftDetails/quarterEndDate\"},\"ECMA 262 regex" +
+        " \\\"^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)" +
+        "[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))" +
+        "$\\\" does not match )" +
+        "ErrorReport({\"pointer\":\"/aftDetails/quarterStartDate\"}," +
+        "\"ECMA 262 regex \\\"^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)[-]" +
+        "(0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))" +
+        "$\\\" does not match )"
     }
 
     "Validate full payload" in {
@@ -534,7 +541,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-      result.right.get mustBe true
+      result mustBe true
     }
 
 
@@ -556,7 +563,8 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-      val expectedError = "ErrorReport({\"pointer\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"},\"instance type (string) does not match any allowed primitive type (allowed: [\\\"integer\\\",\\\"number\\\"])\")"
+      val expectedError = "ErrorReport({\"pointer\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}," +
+        "\"instance type (string) does not match any allowed primitive type (allowed: [\\\"integer\\\",\\\"number\\\"])\")"
       result.left.get.mkString mustBe expectedError
     }
 
@@ -578,9 +586,15 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-       result.left.get.mkString mustBe "ErrorReport({\"pointer\":\"/aftDetails/quarterEndDate\"},\"ECMA 262 regex \\\"^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$\\\" does not match )" +
-                                       "ErrorReport({\"pointer\":\"/aftDetails/quarterStartDate\"},\"ECMA 262 regex \\\"^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$\\\" does not match )" +
-                                       "ErrorReport({\"pointer\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"},\"instance type (string) does not match any allowed primitive type (allowed: [\\\"integer\\\",\\\"number\\\"])\")"
+      result.swap.toOption.get.mkString mustBe "ErrorReport({\"pointer\":\"/aftDetails/quarterEndDate\"},\"" +
+        "ECMA 262 regex \\\"^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-]" +
+        "(0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])" +
+        "|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$\\\" does not match )" +
+        "ErrorReport({\"pointer\":\"/aftDetails/quarterStartDate\"},\"ECMA 262 regex \\\"^(((19|20)([2468][048]|[13579][26]|0[48])|2000)" +
+        "[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])" +
+        "[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))$\\\" does not match )" +
+        "ErrorReport({\"pointer\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}," +
+        "\"instance type (string) does not match any allowed primitive type (allowed: [\\\"integer\\\",\\\"number\\\"])\")"
     }
   }
 }

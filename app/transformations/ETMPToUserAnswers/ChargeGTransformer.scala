@@ -18,32 +18,32 @@ package transformations.ETMPToUserAnswers
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeGTransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ 'chargeTypeGDetails).readNullable(__.read(
-      ((__ \ 'chargeGDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
-        (__ \ 'chargeGDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
-        (__ \ 'chargeGDetails \ 'totalChargeAmount).json.copyFrom((__ \ 'totalOTCAmount).json.pick)).reduce
+    (__ \ Symbol("chargeTypeGDetails")).readNullable(__.read(
+      ((__ \ Symbol("chargeGDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
+        (__ \ Symbol("chargeGDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
+        (__ \ Symbol("chargeGDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalOTCAmount")).json.pick)).reduce
     )).map(_.getOrElse(Json.obj()))
 
   def readsMembers: Reads[JsArray] = __.read(Reads.seq(readsMember)).map(JsArray(_))
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
-      (__ \ 'memberDetails \ 'dob).json.copyFrom((__ \ 'individualsDetails \ 'dateOfBirth).json.pick) and
+      (__ \ Symbol("memberDetails") \ Symbol("dob")).json.copyFrom((__ \ Symbol("individualsDetails") \ Symbol("dateOfBirth")).json.pick) and
       readsQrops and
-      (__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick) and
-      (__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick) and
-      (__ \ 'chargeDetails \ 'qropsTransferDate).json.copyFrom((__ \ 'dateOfTransfer).json.pick) and
-      (__ \ 'chargeAmounts \ 'amountTransferred).json.copyFrom((__ \ 'amountTransferred).json.pick) and
-      (__ \ 'chargeAmounts \ 'amountTaxDue).json.copyFrom((__ \ 'amountOfTaxDeducted).json.pick)).reduce
+      (__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick) and
+      (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick) and
+      (__ \ Symbol("chargeDetails") \ Symbol("qropsTransferDate")).json.copyFrom((__ \ Symbol("dateOfTransfer")).json.pick) and
+      (__ \ Symbol("chargeAmounts") \ Symbol("amountTransferred")).json.copyFrom((__ \ Symbol("amountTransferred")).json.pick) and
+      (__ \ Symbol("chargeAmounts") \ Symbol("amountTaxDue")).json.copyFrom((__ \ Symbol("amountOfTaxDeducted")).json.pick)).reduce
 
   def readsQrops: Reads[JsObject] = {
-    (__ \ 'qropsReference).read[String].flatMap { qropsReference =>
-      (__ \ 'chargeDetails \ 'qropsReferenceNumber).json.put(JsString(qropsReference.substring(1)))
+    (__ \ Symbol("qropsReference")).read[String].flatMap { qropsReference =>
+      (__ \ Symbol("chargeDetails") \ Symbol("qropsReferenceNumber")).json.put(JsString(qropsReference.substring(1)))
     }
   }
 

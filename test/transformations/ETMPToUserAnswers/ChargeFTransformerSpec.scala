@@ -16,12 +16,12 @@
 
 package transformations.ETMPToUserAnswers
 
-import java.time.LocalDate
-
-import org.scalatest.freespec.AnyFreeSpec
-import transformations.generators.AFTETMPResponseGenerators
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import org.scalatest.OptionValues
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
+import transformations.generators.AFTETMPResponseGenerators
+
+import java.time.LocalDate
 
 class ChargeFTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
@@ -31,7 +31,7 @@ class ChargeFTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
         etmpResponseJson =>
           val transformer = new ChargeFTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value \ "chargeFDetails"
-          val chargeFResponse = etmpResponseJson  \ "chargeTypeFDetails"
+          val chargeFResponse = etmpResponseJson \ "chargeTypeFDetails"
 
           (transformedJson \ "amendedVersion").as[Int] mustBe (chargeFResponse \ "amendedVersion").as[Int]
           (transformedJson \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe (chargeFResponse \ "totalAmount").as[BigDecimal]

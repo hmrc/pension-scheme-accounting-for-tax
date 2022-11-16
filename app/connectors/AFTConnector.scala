@@ -39,7 +39,7 @@ class AFTConnector @Inject()(
                               aftVersionsAuditEventService: GetAFTVersionsAuditService,
                               aftDetailsAuditEventService: GetAFTDetailsAuditService,
                               aftService: AFTService,
-                              headerUtils:HeaderUtils
+                              headerUtils: HeaderUtils
                             )
   extends HttpErrorFunctions
     with HttpResponseHelper {
@@ -98,7 +98,7 @@ class AFTConnector @Inject()(
               logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
               Seq.empty[AFTOverview]
             case (_, Some(seqErr)) =>
-              val isAnyNoReportFound = seqErr.value.exists( jsValue => (jsValue \ "code").asOpt[String].contains("NO_REPORT_FOUND"))
+              val isAnyNoReportFound = seqErr.value.exists(jsValue => (jsValue \ "code").asOpt[String].contains("NO_REPORT_FOUND"))
               if (isAnyNoReportFound) {
                 logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
                 Seq.empty[AFTOverview]
@@ -175,8 +175,7 @@ class AFTConnector @Inject()(
     )
   }
 
-  private def integrationFrameworkHeader: Seq[(String, String)] =
-  {
+  private def integrationFrameworkHeader: Seq[(String, String)] = {
     Seq("Environment" -> config.integrationframeworkEnvironment,
       "Authorization" -> config.integrationframeworkAuthorization,
       "Content-Type" -> "application/json", "CorrelationId" -> headerUtils.getCorrelationId)

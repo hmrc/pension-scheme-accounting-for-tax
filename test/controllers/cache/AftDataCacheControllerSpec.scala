@@ -19,11 +19,13 @@ package controllers.cache
 import akka.util.ByteString
 import models.LockDetail
 import org.apache.commons.lang3.RandomUtils
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
-import org.mockito.{ArgumentMatchers, MockitoSugar}
+import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
@@ -209,7 +211,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     }
   }
 
-  private def expectedAuthorisations(id:String) = {
+  private def expectedAuthorisations(id: String) = {
     val (enrolmentId, idType) = if (id.startsWith("A")) {
       ("HMRC-PODS-ORG", "PSAID")
     } else {
@@ -245,11 +247,11 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       val result = controller.setSessionData(true)(fakePostRequest
         .withJsonBody(Json.obj("value" -> "data"))
-          .withHeaders(
-            "version" -> version.toString,
-            "accessMode" -> accessMode,
-            "areSubmittedVersionsAvailable" -> "true"
-          )
+        .withHeaders(
+          "version" -> version.toString,
+          "accessMode" -> accessMode,
+          "areSubmittedVersionsAvailable" -> "true"
+        )
       )
       status(result) mustEqual CREATED
     }

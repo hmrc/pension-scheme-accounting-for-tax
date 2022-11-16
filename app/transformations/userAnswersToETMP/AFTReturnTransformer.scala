@@ -19,10 +19,7 @@ package transformations.userAnswersToETMP
 import com.google.inject.Inject
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.JsObject
-import play.api.libs.json.Json
-import play.api.libs.json.Reads
-import play.api.libs.json.__
+import play.api.libs.json.{JsObject, Json, Reads, __}
 
 class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
                                      chargeBTransformer: ChargeBTransformer,
@@ -36,37 +33,41 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
   lazy val transformToETMPFormat: Reads[JsObject] =
     (
       transformToAFTDetails and
-      chargeATransformer.transformToETMPData and
-      chargeBTransformer.transformToETMPData and
-      chargeCTransformer.transformToETMPData and
-      chargeDTransformer.transformToETMPData and
-      chargeETransformer.transformToETMPData and
-      chargeFTransformer.transformToETMPData and
-      chargeGTransformer.transformToETMPData and
-      transformDeclaration and
-      ((__ \ 'aftDeclarationDetails \ 'psaid).json.copyFrom((__ \ 'enterPsaId).json.pick) orElse doNothing)
-    ).reduce
+        chargeATransformer.transformToETMPData and
+        chargeBTransformer.transformToETMPData and
+        chargeCTransformer.transformToETMPData and
+        chargeDTransformer.transformToETMPData and
+        chargeETransformer.transformToETMPData and
+        chargeFTransformer.transformToETMPData and
+        chargeGTransformer.transformToETMPData and
+        transformDeclaration and
+        ((__ \ Symbol("aftDeclarationDetails") \ Symbol("psaid")).json.copyFrom((__ \ Symbol("enterPsaId")).json.pick) orElse doNothing)
+      ).reduce
 
   private def transformToAFTDetails: Reads[JsObject] = {
-    ((__ \ 'aftDetails \ 'aftStatus).json.copyFrom((__ \ "aftStatus").json.pick) and
-      (__ \ 'aftDetails \ 'quarterStartDate).json.copyFrom((__ \ "quarter" \ "startDate").json.pick) and
-      (__ \ 'aftDetails \ 'quarterEndDate).json.copyFrom((__ \ "quarter" \ "endDate").json.pick)).reduce
+    ((__ \ Symbol("aftDetails") \ Symbol("aftStatus")).json.copyFrom((__ \ "aftStatus").json.pick) and
+      (__ \ Symbol("aftDetails") \ Symbol("quarterStartDate")).json.copyFrom((__ \ "quarter" \ "startDate").json.pick) and
+      (__ \ Symbol("aftDetails") \ Symbol("quarterEndDate")).json.copyFrom((__ \ "quarter" \ "endDate").json.pick)).reduce
   }
 
   private def transformDeclaration: Reads[JsObject] = {
-    (__ \ 'declaration).readNullable {
-      (__ \ 'submittedBy).read[String].flatMap {
+    (__ \ Symbol("declaration")).readNullable {
+      (__ \ Symbol("submittedBy")).read[String].flatMap {
         case "PSA" =>
-          ((__ \ 'aftDeclarationDetails \ 'submittedBy).json.copyFrom((__ \ 'submittedBy).json.pick) and
-            (__ \ 'aftDeclarationDetails \ 'submittedID).json.copyFrom((__ \ 'submittedID).json.pick) and
-            (__ \ 'aftDeclarationDetails \ 'psaDeclarationDetails \ 'psaDeclaration1).json.copyFrom((__ \ 'hasAgreed).json.pick) and
-            (__ \ 'aftDeclarationDetails \ 'psaDeclarationDetails \ 'psaDeclaration2).json.copyFrom((__ \ 'hasAgreed).json.pick)).reduce
+          ((__ \ Symbol("aftDeclarationDetails") \ Symbol("submittedBy")).json.copyFrom((__ \ Symbol("submittedBy")).json.pick) and
+            (__ \ Symbol("aftDeclarationDetails") \ Symbol("submittedID")).json.copyFrom((__ \ Symbol("submittedID")).json.pick) and
+            (__ \ Symbol("aftDeclarationDetails") \ Symbol("psaDeclarationDetails") \ Symbol("psaDeclaration1"))
+              .json.copyFrom((__ \ Symbol("hasAgreed")).json.pick) and
+            (__ \ Symbol("aftDeclarationDetails") \ Symbol("psaDeclarationDetails") \ Symbol("psaDeclaration2"))
+              .json.copyFrom((__ \ Symbol("hasAgreed")).json.pick)).reduce
         case "PSP" =>
           (
-            (__ \ 'aftDeclarationDetails \ 'submittedBy).json.copyFrom((__ \ 'submittedBy).json.pick) and
-              (__ \ 'aftDeclarationDetails \ 'submittedID).json.copyFrom((__ \ 'submittedID).json.pick) and
-              (__ \ 'aftDeclarationDetails \ 'pspDeclarationDetails \ 'pspDeclaration1).json.copyFrom((__ \ 'hasAgreed).json.pick) and
-              (__ \ 'aftDeclarationDetails \ 'pspDeclarationDetails \ 'pspDeclaration2).json.copyFrom((__ \ 'hasAgreed).json.pick)
+            (__ \ Symbol("aftDeclarationDetails") \ Symbol("submittedBy")).json.copyFrom((__ \ Symbol("submittedBy")).json.pick) and
+              (__ \ Symbol("aftDeclarationDetails") \ Symbol("submittedID")).json.copyFrom((__ \ Symbol("submittedID")).json.pick) and
+              (__ \ Symbol("aftDeclarationDetails") \ Symbol("pspDeclarationDetails") \ Symbol("pspDeclaration1"))
+                .json.copyFrom((__ \ Symbol("hasAgreed")).json.pick) and
+              (__ \ Symbol("aftDeclarationDetails") \ Symbol("pspDeclarationDetails") \ Symbol("pspDeclaration2"))
+                .json.copyFrom((__ \ Symbol("hasAgreed")).json.pick)
             ).reduce
         case _ => doNothing
       }

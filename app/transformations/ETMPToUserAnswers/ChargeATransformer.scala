@@ -23,16 +23,18 @@ import play.api.libs.json.{JsObject, Json, Reads, __}
 class ChargeATransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ 'chargeTypeADetails).readNullable {
-    __.read(
-      ((__ \ 'chargeADetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
-        (__ \ 'chargeADetails \ 'chargeDetails \ 'numberOfMembers).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
-        (__ \ 'chargeADetails \ 'chargeDetails \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'totalAmtOfTaxDueAtLowerRate).json.pick) and
-        (__ \ 'chargeADetails \ 'chargeDetails \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom((__ \ 'totalAmtOfTaxDueAtHigherRate).json.pick) and
-        (__ \ 'chargeADetails \ 'chargeDetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
-    )
-  }.map {
-    _.getOrElse(Json.obj())
-  }
+    (__ \ Symbol("chargeTypeADetails")).readNullable {
+      __.read(
+        ((__ \ Symbol("chargeADetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
+          (__ \ Symbol("chargeADetails") \ Symbol("chargeDetails") \ Symbol("numberOfMembers")).json.copyFrom((__ \ Symbol("numberOfMembers")).json.pick) and
+          (__ \ Symbol("chargeADetails") \ Symbol("chargeDetails") \ Symbol("totalAmtOfTaxDueAtLowerRate"))
+            .json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtLowerRate")).json.pick) and
+          (__ \ Symbol("chargeADetails") \ Symbol("chargeDetails") \ Symbol("totalAmtOfTaxDueAtHigherRate"))
+            .json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtHigherRate")).json.pick) and
+          (__ \ Symbol("chargeADetails") \ Symbol("chargeDetails") \ Symbol("totalAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce
+      )
+    }.map {
+      _.getOrElse(Json.obj())
+    }
 
 }

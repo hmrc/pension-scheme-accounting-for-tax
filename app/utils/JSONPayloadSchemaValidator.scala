@@ -16,17 +16,17 @@
 
 package utils
 
-import play.api.libs.json._
 import com.github.fge.jackson.JsonLoader
 import com.github.fge.jsonschema.core.report.ListProcessingReport
 import com.github.fge.jsonschema.main.JsonSchemaFactory
+import play.api.libs.json._
 
 case class ErrorReport(instance: String, errors: String)
 
 
 class JSONPayloadSchemaValidator {
   type ValidationReport = Either[List[ErrorReport], Boolean]
-  val basePath = System.getProperty("user.dir")
+  val basePath: String = System.getProperty("user.dir")
 
   def validateJsonPayload(jsonSchemaPath: String, data: JsValue): ValidationReport = {
     val deepValidationCheck = true
@@ -37,12 +37,12 @@ class JSONPayloadSchemaValidator {
     val jsonDataAsString = JsonLoader.fromString(data.toString())
     val doValidation = schema.validate(jsonDataAsString, deepValidationCheck)
     val isSuccess = doValidation.isSuccess
-    if(!isSuccess) {
+    if (!isSuccess) {
       val jsArray = Json.parse(doValidation.asInstanceOf[ListProcessingReport].asJson().toString).asInstanceOf[JsArray].value
       val jsReport = Json.parse(jsArray.toList(index).toString()) \ "reports" \ "/oneOf/0"
-      val errors =  jsReport.asInstanceOf[JsDefined]
-     val convertedListOutput =  errors.get.asInstanceOf[JsArray].value.toList.map(element =>
-       ErrorReport((element \ "instance").get.toString(), removeInputData((element \ "message").get.toString())))
+      val errors = jsReport.asInstanceOf[JsDefined]
+      val convertedListOutput = errors.get.asInstanceOf[JsArray].value.toList.map(element =>
+        ErrorReport((element \ "instance").get.toString(), removeInputData((element \ "message").get.toString())))
       Left(convertedListOutput)
     }
     else {
@@ -52,7 +52,7 @@ class JSONPayloadSchemaValidator {
 
   private def removeInputData(data: String): String = {
     val index = data.indexOf("input")
-    if(index == -1) {
+    if (index == -1) {
       data
     }
     else {

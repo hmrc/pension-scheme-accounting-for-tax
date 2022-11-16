@@ -16,12 +16,13 @@
 
 package models
 
-import java.time.LocalDate
-import java.util.NoSuchElementException
+import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.OptionValues
 import play.api.libs.json.{JsValue, Json}
+
+import java.time.LocalDate
+import java.util.NoSuchElementException
 
 class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
@@ -60,23 +61,24 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
   "rdsPsaFSMax" must {
     "format " when {
       "reading from json and inhibitRefundSignal is true" in {
-        val result = Json.fromJson[PsaFS](psaFSMaxSeqResponse("58001000", "58052000", true))(PsaFS.rdsPsaFSMax).asOpt.value
+        val result = Json.fromJson[PsaFS](psaFSMaxSeqResponse("58001000", "58052000", inhibitRefundSignal = true))(PsaFS.rdsPsaFSMax).asOpt.value
         result mustBe psaFSMaxTrue
       }
 
       "reading from json and inhibitRefundSignal is false" in {
-        val result = Json.fromJson[PsaFS](psaFSMaxSeqResponse("58001000", "58052000", false))(PsaFS.rdsPsaFSMax).asOpt.value
+        val result = Json.fromJson[PsaFS](psaFSMaxSeqResponse("58001000", "58052000", inhibitRefundSignal = false))(PsaFS.rdsPsaFSMax).asOpt.value
         result mustBe psaFSMaxFalse
       }
 
       "throw NoSuchElementException for invalid charge type" in {
         intercept[NoSuchElementException] {
-          Json.fromJson[PsaFS](psaFSMaxSeqResponse("56000000", "58001000",false))(PsaFS.rdsPsaFSMax).asOpt.value
+          Json.fromJson[PsaFS](psaFSMaxSeqResponse("56000000", "58001000", inhibitRefundSignal = false))(PsaFS.rdsPsaFSMax).asOpt.value
         }
       }
     }
   }
 }
+
 object PsaFSReadsSpec {
 
   private def psaFSResponseJson(chargeType: String): JsValue = Json.obj(
@@ -107,16 +109,16 @@ object PsaFSReadsSpec {
     "periodStartDate" -> "2020-04-01",
     "periodEndDate" -> "2020-06-30",
     "pstr" -> "24000040IN",
-    "sourceChargeRefForInterest"-> "XY002610150181",
+    "sourceChargeRefForInterest" -> "XY002610150181",
     "sourceChargeIndex" -> None,
-    "documentLineItemDetails"-> Json.arr(
+    "documentLineItemDetails" -> Json.arr(
       Json.obj(
-        "clearingDate"-> "2020-06-30",
+        "clearingDate" -> "2020-06-30",
         "paymDateOrCredDueDate" -> "2020-04-24",
-        "clearingReason"-> "C1",
-        "clearedAmountItem"-> 0.00
+        "clearingReason" -> "C1",
+        "clearedAmountItem" -> 0.00
       )
-  ))
+    ))
 
   private def psaFSMaxSeqResponse(chargeType1: String, chargeType2: String, inhibitRefundSignal: Boolean): JsValue = Json.obj(
     "accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> inhibitRefundSignal),
@@ -134,14 +136,14 @@ object PsaFSReadsSpec {
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
         "pstr" -> "24000040IN",
-        "sourceChargeRefForInterest"-> "XY002610150181",
+        "sourceChargeRefForInterest" -> "XY002610150181",
         "sourceChargeIndex" -> None,
-        "documentLineItemDetails"-> Json.arr(
+        "documentLineItemDetails" -> Json.arr(
           Json.obj(
-            "clearingDate"-> "2020-06-30",
+            "clearingDate" -> "2020-06-30",
             "paymDateOrCredDueDate" -> "2020-04-24",
-            "clearingReason"-> "C1",
-            "clearedAmountItem"-> 0.00
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
           )
         )
       ),
@@ -158,14 +160,14 @@ object PsaFSReadsSpec {
         "periodStartDate" -> "2020-04-01",
         "periodEndDate" -> "2020-06-30",
         "pstr" -> "24000040IN",
-        "sourceChargeRefForInterest"-> "XY002610150184",
+        "sourceChargeRefForInterest" -> "XY002610150184",
         "sourceChargeIndex" -> Some(1),
-        "documentLineItemDetails"-> Json.arr(
+        "documentLineItemDetails" -> Json.arr(
           Json.obj(
-            "clearingDate"-> "2020-06-30",
+            "clearingDate" -> "2020-06-30",
             "paymDateOrCredDueDate" -> "2020-04-24",
-            "clearingReason"-> "C1",
-            "clearedAmountItem"-> 0.00
+            "clearingReason" -> "C1",
+            "clearedAmountItem" -> 0.00
           )
         )
       )
@@ -203,14 +205,14 @@ object PsaFSReadsSpec {
     sourceChargeRefForInterest = Some("XY002610150181"),
     psaSourceChargeInfo = None,
     documentLineItemDetails = Seq(DocumentLineItemDetail(
-      clearingReason= Some("C1"),
+      clearingReason = Some("C1"),
       clearingDate = Some(LocalDate.parse("2020-06-30")),
       paymDateOrCredDueDate = Some(LocalDate.parse("2020-04-24")),
       clearedAmountItem = BigDecimal(0.00))
     )
   )
 
-  private val psaSourceChargeInfo : PsaSourceChargeInfo = PsaSourceChargeInfo(
+  private val psaSourceChargeInfo: PsaSourceChargeInfo = PsaSourceChargeInfo(
     index = 1,
     chargeType = "Contract settlement charge",
     periodStartDate = LocalDate.parse("2020-04-01"),

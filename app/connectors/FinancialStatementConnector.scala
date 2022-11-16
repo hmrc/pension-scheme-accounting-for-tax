@@ -83,7 +83,7 @@ class FinancialStatementConnector @Inject()(
 
 
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
-     transformSchemeFS(pstr, config.schemeFinancialStatementMaxUrl.format(pstr))(hc, implicitly, implicitly)
+    transformSchemeFS(pstr, config.schemeFinancialStatementMaxUrl.format(pstr))(hc, implicitly, implicitly)
   }
 
   //scalastyle:off cyclomatic.complexity

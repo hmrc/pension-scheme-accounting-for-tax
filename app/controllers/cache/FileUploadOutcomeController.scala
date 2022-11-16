@@ -32,7 +32,7 @@ class FileUploadOutcomeController @Inject()(
                                              repository: FileUploadOutcomeRepository,
                                              val authConnector: AuthConnector,
                                              cc: ControllerComponents
-                                            ) extends BackendController(cc) with AuthorisedFunctions {
+                                           ) extends BackendController(cc) with AuthorisedFunctions {
 
   import FileUploadOutcomeController._
 

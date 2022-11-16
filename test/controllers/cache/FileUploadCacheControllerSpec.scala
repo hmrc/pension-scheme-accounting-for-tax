@@ -20,10 +20,11 @@ import akka.util.ByteString
 import controllers.cache.FinancialInfoCacheController.IdNotFoundFromAuth
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
-import org.mockito.MockitoSugar
+import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
@@ -104,7 +105,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
         val dateTimeNow = LocalDateTime.now(ZoneId.of("UTC"))
-        val fileUploadDataCache = FileUploadDataCache(uploadId,referenceId,FileUploadStatus("InProgress"),dateTimeNow,dateTimeNow, dateTimeNow)
+        val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, FileUploadStatus("InProgress"), dateTimeNow, dateTimeNow, dateTimeNow)
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
         val result = controller.getUploadResult(fakeRequest)
@@ -113,7 +114,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           fields = "uploadId" -> "uploadId",
           "reference" -> "reference",
           "status" -> Json.obj(
-            "_type"-> "InProgress"),
+            "_type" -> "InProgress"),
           "created" -> dateTimeNow,
           "lastUpdated" -> dateTimeNow,
           "expireAt" -> dateTimeNow
@@ -160,8 +161,8 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
-        val uploadStatus=FileUploadStatus("Success",None, None, Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
-        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus,LocalDateTime.now, LocalDateTime.now,LocalDateTime.now)
+        val uploadStatus = FileUploadStatus("Success", None, None, Some("www.test.com"), Some("text/csv"), Some("test.csv"), Some("100".toLong))
+        val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, LocalDateTime.now, LocalDateTime.now, LocalDateTime.now)
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(referenceId))
 
@@ -174,8 +175,8 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
           .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FileUploadCacheController]
-        val uploadStatus=FileUploadStatus("Success",None, None, Some("www.test.com"),Some("text/csv"),Some("test.csv"),Some("100".toLong))
-        val fileUploadDataCache=FileUploadDataCache(uploadId,referenceId,uploadStatus, LocalDateTime.now, LocalDateTime.now,LocalDateTime.now)
+        val uploadStatus = FileUploadStatus("Success", None, None, Some("www.test.com"), Some("text/csv"), Some("test.csv"), Some("100".toLong))
+        val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, LocalDateTime.now, LocalDateTime.now, LocalDateTime.now)
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 

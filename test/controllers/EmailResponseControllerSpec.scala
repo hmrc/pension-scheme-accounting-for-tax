@@ -17,15 +17,17 @@
 package controllers
 
 import audit.{AuditService, EmailAuditEvent}
+import models._
 import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
 import models.enumeration.SchemeAdministratorType
-import models._
 import org.joda.time.DateTime
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, Mockito, MockitoSugar}
+import org.mockito.Mockito.{never, times, verify, when}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder

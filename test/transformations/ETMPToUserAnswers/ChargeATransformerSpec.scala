@@ -18,8 +18,8 @@ package transformations.ETMPToUserAnswers
 
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
-import transformations.generators.AFTETMPResponseGenerators
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
+import transformations.generators.AFTETMPResponseGenerators
 
 class ChargeATransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 

@@ -26,13 +26,14 @@ case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: O
 object DocumentLineItemDetail {
   implicit val formats: Format[DocumentLineItemDetail] = Json.format[DocumentLineItemDetail]
 }
+
 case class SchemeSourceChargeInfo(
-                             index: Int,
-                             version: Option[Int] = None,
-                             receiptDate: Option[LocalDate] = None,
-                             periodStartDate: Option[LocalDate] = None,
-                             periodEndDate: Option[LocalDate] = None
-                           )
+                                   index: Int,
+                                   version: Option[Int] = None,
+                                   receiptDate: Option[LocalDate] = None,
+                                   periodStartDate: Option[LocalDate] = None,
+                                   periodEndDate: Option[LocalDate] = None
+                                 )
 
 object SchemeSourceChargeInfo {
   implicit val formats: Format[SchemeSourceChargeInfo] = Json.format[SchemeSourceChargeInfo]

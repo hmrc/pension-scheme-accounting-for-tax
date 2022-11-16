@@ -18,31 +18,32 @@ package transformations.userAnswersToETMP
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeDTransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeDDetails).readNullable(__.read(readsChargeD)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
+    (__ \ Symbol("chargeDDetails")).readNullable(__.read(readsChargeD)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
   private def readsChargeD: Reads[JsObject] =
-    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>
-      (((__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
+    (__ \ Symbol("totalChargeAmount")).read[BigDecimal].flatMap { _ =>
+      (((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeDDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
         orElse doNothing) and
-        (__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-        (__ \ 'chargeDetails \ 'chargeTypeDDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
+        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeDDetails") \ Symbol("memberDetails")).json.copyFrom((__ \ Symbol("members")).read(readsMembers)) and
+        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeDDetails") \ Symbol("totalAmount"))
+          .json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)).reduce
     }
 
   private def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_)).map(removeEmptyObjects)
 
   private def readsMember: Reads[JsObject] = {
     (readsMemberDetails and
-      (__ \ 'dateOfBeneCrysEvent).json.copyFrom((__ \ 'chargeDetails \ 'dateOfEvent).json.pick) and
-      (__ \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt25Percent).json.pick) and
-      (__ \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom((__ \ 'chargeDetails \ 'taxAt55Percent).json.pick) and
-      ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
-        orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
-      ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
+      (__ \ Symbol("dateOfBeneCrysEvent")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("dateOfEvent")).json.pick) and
+      (__ \ Symbol("totalAmtOfTaxDueAtLowerRate")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("taxAt25Percent")).json.pick) and
+      (__ \ Symbol("totalAmtOfTaxDueAtHigherRate")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("taxAt55Percent")).json.pick) and
+      ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
+        orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
+      ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
         orElse doNothing)).reduce.orElseEmptyOnMissingFields
   }
 }

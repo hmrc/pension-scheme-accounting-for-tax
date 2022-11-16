@@ -20,8 +20,9 @@ import base.SpecBase
 import models.FeatureToggle.Enabled
 import models.FeatureToggleName.DummyToggle
 import org.mockito.ArgumentMatchers.any
-import org.mockito.MockitoSugar
+import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsBoolean, Json}
 import play.api.mvc.ControllerComponents
 import play.api.test.Helpers._
@@ -37,7 +38,9 @@ class FeatureToggleControllerSpec
     with BeforeAndAfterEach {
 
   private val mockAdminDataRepository = mock[AdminDataRepository]
+
   def controllerComponents: ControllerComponents = injector.instanceOf[ControllerComponents]
+
   private val mockFeatureToggleService = mock[FeatureToggleService]
 
   override def beforeEach(): Unit = {

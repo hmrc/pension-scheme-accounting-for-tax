@@ -16,11 +16,13 @@
 
 package audit
 
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, MockitoSugar}
+import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.Inside
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
@@ -51,7 +53,7 @@ class AuditServiceSpec extends AnyWordSpec with Matchers with Inside {
 
       verify(mockAuditConnector, times(1)).sendExtendedEvent(templateCaptor.capture())(any(), any())
       inside(templateCaptor.getValue) {
-        case ExtendedDataEvent(auditSource, auditType, _, _, detail, _) =>
+        case ExtendedDataEvent(auditSource, auditType, _, _, detail, _, _, _) =>
           auditSource mustBe appName
           auditType mustBe "TestAuditEvent"
           detail mustBe Json.obj(

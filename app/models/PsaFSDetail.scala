@@ -16,9 +16,10 @@
 
 package models
 
-import java.time.LocalDate
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, JsPath, Json, Reads, Writes}
+import play.api.libs.json._
+
+import java.time.LocalDate
 
 case class PsaFSDetail(index: Int,
                        chargeReference: String,
@@ -41,150 +42,151 @@ object PsaFSDetail {
 }
 
 case class PsaSourceChargeInfo(
-                             index: Int,
-                             chargeType: String,
-                             periodStartDate: LocalDate,
-                             periodEndDate: LocalDate
-                           )
+                                index: Int,
+                                chargeType: String,
+                                periodStartDate: LocalDate,
+                                periodEndDate: LocalDate
+                              )
 
 object PsaSourceChargeInfo {
   implicit val formats: Format[PsaSourceChargeInfo] = Json.format[PsaSourceChargeInfo]
 }
 
-  case class PsaFS(
-                    inhibitRefundSignal: Boolean,
-                    seqPsaFSDetail: Seq[PsaFSDetail]
-                  )
+case class PsaFS(
+                  inhibitRefundSignal: Boolean,
+                  seqPsaFSDetail: Seq[PsaFSDetail]
+                )
 
-  object PsaFS {
+object PsaFS {
 
-    implicit val writesPsaFS: Writes[PsaFS] = (
-      (JsPath \ "inhibitRefundSignal").write[Boolean] and
-        (JsPath \ "seqPsaFSDetail").write[Seq[PsaFSDetail]]) (x => (x.inhibitRefundSignal, x.seqPsaFSDetail))
+  implicit val writesPsaFS: Writes[PsaFS] = (
+    (JsPath \ "inhibitRefundSignal").write[Boolean] and
+      (JsPath \ "seqPsaFSDetail").write[Seq[PsaFSDetail]]) (x => (x.inhibitRefundSignal, x.seqPsaFSDetail))
 
-    implicit val rdsPsaFSDetailsMedium: Reads[PsaFSDetail] = (
-      (JsPath \ "chargeReference").read[String] and
-        (JsPath \ "chargeType").read[String] and
-        (JsPath \ "dueDate").readNullable[String] and
-        (JsPath \ "totalAmount").read[BigDecimal] and
-        (JsPath \ "amountDue").read[BigDecimal] and
-        (JsPath \ "outstandingAmount").read[BigDecimal] and
-        (JsPath \ "stoodOverAmount").read[BigDecimal] and
-        (JsPath \ "accruedInterestTotal").read[BigDecimal] and
-        //The following fields are optional in API but mandatory here based on comment added on PODS-5109
-        (JsPath \ "periodStartDate").read[String] and
-        (JsPath \ "periodEndDate").read[String] and
-        (JsPath \ "pstr").read[String]
-      ) (
-      (chargeReference, chargeType, dueDateOpt,
-       totalAmount, amountDue, outstandingAmount, stoodOverAmount, accruedInterestTotal,
-       periodStartDate, periodEndDate, pstr) =>
-        PsaFSDetail(
-          index = 0,
-          chargeReference,
-          PsaChargeType.valueWithName(chargeType),
-          dueDateOpt.map(LocalDate.parse),
-          totalAmount,
-          amountDue,
-          outstandingAmount,
-          stoodOverAmount,
-          accruedInterestTotal,
-          LocalDate.parse(periodStartDate),
-          LocalDate.parse(periodEndDate),
-          pstr
-        )
-    )
+  implicit val rdsPsaFSDetailsMedium: Reads[PsaFSDetail] = (
+    (JsPath \ "chargeReference").read[String] and
+      (JsPath \ "chargeType").read[String] and
+      (JsPath \ "dueDate").readNullable[String] and
+      (JsPath \ "totalAmount").read[BigDecimal] and
+      (JsPath \ "amountDue").read[BigDecimal] and
+      (JsPath \ "outstandingAmount").read[BigDecimal] and
+      (JsPath \ "stoodOverAmount").read[BigDecimal] and
+      (JsPath \ "accruedInterestTotal").read[BigDecimal] and
+      //The following fields are optional in API but mandatory here based on comment added on PODS-5109
+      (JsPath \ "periodStartDate").read[String] and
+      (JsPath \ "periodEndDate").read[String] and
+      (JsPath \ "pstr").read[String]
+    ) (
+    (chargeReference, chargeType, dueDateOpt,
+     totalAmount, amountDue, outstandingAmount, stoodOverAmount, accruedInterestTotal,
+     periodStartDate, periodEndDate, pstr) =>
+      PsaFSDetail(
+        index = 0,
+        chargeReference,
+        PsaChargeType.valueWithName(chargeType),
+        dueDateOpt.map(LocalDate.parse),
+        totalAmount,
+        amountDue,
+        outstandingAmount,
+        stoodOverAmount,
+        accruedInterestTotal,
+        LocalDate.parse(periodStartDate),
+        LocalDate.parse(periodEndDate),
+        pstr
+      )
+  )
 
-    implicit val rdsDocumentLineItemDetail: Reads[DocumentLineItemDetail] = (
-      (JsPath \ "clearedAmountItem").read[BigDecimal] and
-        (JsPath \ "clearingDate").readNullable[LocalDate] and
-        (JsPath \ "paymDateOrCredDueDate").readNullable[LocalDate] and
-        (JsPath \ "clearingReason").readNullable[String]
-      ) (
-      (clearedAmountItem, clearingDate, paymDateOrCredDueDate, clearingReason) =>
-        DocumentLineItemDetail(
-          clearedAmountItem,
-          clearingDate,
-          paymDateOrCredDueDate,
-          clearingReason
-        )
-    )
+  implicit val rdsDocumentLineItemDetail: Reads[DocumentLineItemDetail] = (
+    (JsPath \ "clearedAmountItem").read[BigDecimal] and
+      (JsPath \ "clearingDate").readNullable[LocalDate] and
+      (JsPath \ "paymDateOrCredDueDate").readNullable[LocalDate] and
+      (JsPath \ "clearingReason").readNullable[String]
+    ) (
+    (clearedAmountItem, clearingDate, paymDateOrCredDueDate, clearingReason) =>
+      DocumentLineItemDetail(
+        clearedAmountItem,
+        clearingDate,
+        paymDateOrCredDueDate,
+        clearingReason
+      )
+  )
 
-    implicit val rdsPsaFSDetailMax: Reads[PsaFSDetail] = (
-      (JsPath \ "chargeReference").read[String] and
-        (JsPath \ "chargeType").read[String] and
-        (JsPath \ "dueDate").readNullable[String] and
-        (JsPath \ "totalAmount").read[BigDecimal] and
-        (JsPath \ "amountDue").read[BigDecimal] and
-        (JsPath \ "outstandingAmount").read[BigDecimal] and
-        (JsPath \ "stoodOverAmount").read[BigDecimal] and
-        (JsPath \ "accruedInterestTotal").read[BigDecimal] and
-        //The following fields are optional in API but mandatory here based on comment added on PODS-5109
-        (JsPath \ "periodStartDate").read[String] and
-        (JsPath \ "periodEndDate").read[String] and
-        (JsPath \ "pstr").read[String] and
-        (JsPath \ "sourceChargeRefForInterest").readNullable[String] and
-        (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail))
-      ) (
-      (chargeReference, chargeType, dueDateOpt,
-       totalAmount, amountDue, outstandingAmount, stoodOverAmount, accruedInterestTotal,
-       periodStartDate, periodEndDate, pstr, sourceChargeRefForInterest, documentLineItemDetails) =>
-        PsaFSDetail(
-          index = 0,
-          chargeReference,
-          PsaChargeType.valueWithName(chargeType),
-          dueDateOpt.map(LocalDate.parse),
-          totalAmount,
-          amountDue,
-          outstandingAmount,
-          stoodOverAmount,
-          accruedInterestTotal,
-          LocalDate.parse(periodStartDate),
-          LocalDate.parse(periodEndDate),
-          pstr,
-          sourceChargeRefForInterest,
-          None,
-          documentLineItemDetails
-        )
-    )
+  implicit val rdsPsaFSDetailMax: Reads[PsaFSDetail] = (
+    (JsPath \ "chargeReference").read[String] and
+      (JsPath \ "chargeType").read[String] and
+      (JsPath \ "dueDate").readNullable[String] and
+      (JsPath \ "totalAmount").read[BigDecimal] and
+      (JsPath \ "amountDue").read[BigDecimal] and
+      (JsPath \ "outstandingAmount").read[BigDecimal] and
+      (JsPath \ "stoodOverAmount").read[BigDecimal] and
+      (JsPath \ "accruedInterestTotal").read[BigDecimal] and
+      //The following fields are optional in API but mandatory here based on comment added on PODS-5109
+      (JsPath \ "periodStartDate").read[String] and
+      (JsPath \ "periodEndDate").read[String] and
+      (JsPath \ "pstr").read[String] and
+      (JsPath \ "sourceChargeRefForInterest").readNullable[String] and
+      (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail))
+    ) (
+    (chargeReference, chargeType, dueDateOpt,
+     totalAmount, amountDue, outstandingAmount, stoodOverAmount, accruedInterestTotal,
+     periodStartDate, periodEndDate, pstr, sourceChargeRefForInterest, documentLineItemDetails) =>
+      PsaFSDetail(
+        index = 0,
+        chargeReference,
+        PsaChargeType.valueWithName(chargeType),
+        dueDateOpt.map(LocalDate.parse),
+        totalAmount,
+        amountDue,
+        outstandingAmount,
+        stoodOverAmount,
+        accruedInterestTotal,
+        LocalDate.parse(periodStartDate),
+        LocalDate.parse(periodEndDate),
+        pstr,
+        sourceChargeRefForInterest,
+        None,
+        documentLineItemDetails
+      )
+  )
 
-    implicit val rdsPsaFSMedium: Reads[PsaFS] = {
-      Reads.seq(rdsPsaFSDetailsMedium).map {
-        seqPsaFSDetail => PsaFS(inhibitRefundSignal = false, seqPsaFSDetail = seqPsaFSDetail)
-      }
-    }
-
-    implicit val rdsPsaFSMax: Reads[PsaFS] = {
-      def transformExtraFields(seqPsaFSDetail: Seq[PsaFSDetail]): Seq[PsaFSDetail] = {
-        val seqPsaFSDetailWithIndexes = seqPsaFSDetail.zipWithIndex.map { case (psaFSDetail, i) =>
-          psaFSDetail copy (index = i + 1)
-        }
-        seqPsaFSDetailWithIndexes.map { psaFSDetail =>
-          psaFSDetail.sourceChargeRefForInterest match {
-            case Some(ref) => seqPsaFSDetailWithIndexes.find(_.chargeReference == ref) match {
-              case Some(foundOriginalCharge) =>
-                psaFSDetail copy (
-                  psaSourceChargeInfo = Some(PsaSourceChargeInfo(
-                    index = foundOriginalCharge.index,
-                    chargeType = foundOriginalCharge.chargeType,
-                    periodStartDate = foundOriginalCharge.periodStartDate,
-                    periodEndDate = foundOriginalCharge.periodEndDate
-                  ))
-                  )
-              case _ => psaFSDetail
-            }
-            case _ => psaFSDetail
-          }
-        }
-      }
-        (
-          (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
-            (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsPsaFSDetailMax))
-          ) (
-          (inhibitRefundSignal, seqPsaFSDetail) => PsaFS(inhibitRefundSignal, transformExtraFields(seqPsaFSDetail))
-        )
+  implicit val rdsPsaFSMedium: Reads[PsaFS] = {
+    Reads.seq(rdsPsaFSDetailsMedium).map {
+      seqPsaFSDetail => PsaFS(inhibitRefundSignal = false, seqPsaFSDetail = seqPsaFSDetail)
     }
   }
+
+  implicit val rdsPsaFSMax: Reads[PsaFS] = {
+    def transformExtraFields(seqPsaFSDetail: Seq[PsaFSDetail]): Seq[PsaFSDetail] = {
+      val seqPsaFSDetailWithIndexes = seqPsaFSDetail.zipWithIndex.map { case (psaFSDetail, i) =>
+        psaFSDetail copy (index = i + 1)
+      }
+      seqPsaFSDetailWithIndexes.map { psaFSDetail =>
+        psaFSDetail.sourceChargeRefForInterest match {
+          case Some(ref) => seqPsaFSDetailWithIndexes.find(_.chargeReference == ref) match {
+            case Some(foundOriginalCharge) =>
+              psaFSDetail copy (
+                psaSourceChargeInfo = Some(PsaSourceChargeInfo(
+                  index = foundOriginalCharge.index,
+                  chargeType = foundOriginalCharge.chargeType,
+                  periodStartDate = foundOriginalCharge.periodStartDate,
+                  periodEndDate = foundOriginalCharge.periodEndDate
+                ))
+                )
+            case _ => psaFSDetail
+          }
+          case _ => psaFSDetail
+        }
+      }
+    }
+
+    (
+      (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
+        (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsPsaFSDetailMax))
+      ) (
+      (inhibitRefundSignal, seqPsaFSDetail) => PsaFS(inhibitRefundSignal, transformExtraFields(seqPsaFSDetail))
+    )
+  }
+}
 
 object PsaChargeType extends Enumeration {
 

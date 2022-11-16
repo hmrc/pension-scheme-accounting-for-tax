@@ -57,6 +57,7 @@ class AFTController @Inject()(
   val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
 
   type SeqOfChargeType = Option[Seq[Option[String]]]
+
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
       post { (pstr, userAnswersJson) =>
@@ -66,20 +67,20 @@ class AFTController @Inject()(
             case JsSuccess(dataToBeSendToETMP, _) =>
               val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
               validationResult match {
-                case Left(errors) =>                 val psaOrPspId = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
+                case Left(errors) => val psaOrPspId = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
                   case value => value("submittedID").toString
                   case _ => ""
                 }
                   val chargeType: SeqOfChargeType = dataToBeSendToETMP.value("chargeDetails").asOpt[JsValue].map {
                     case value =>
                       Seq(
-                        (value\"chargeTypeADetails").asOpt[JsValue].map(_ => "chargeTypeA" ),
-                        (value\"chargeTypeBDetails").asOpt[JsValue].map(_ => "chargeTypeB" ),
-                        (value\"chargeTypeCDetails").asOpt[JsValue].map(_ => "chargeTypeC" ),
-                        (value\"chargeTypeDDetails").asOpt[JsValue].map(_ => "chargeTypeD" ),
-                        (value\"chargeTypeEDetails").asOpt[JsValue].map(_ => "chargeTypeE" ),
-                        (value\"chargeTypeFDetails").asOpt[JsValue].map(_ => "chargeTypeF" ),
-                        (value\"chargeTypeGDetails").asOpt[JsValue].map(_ => "chargeTypeG" )
+                        (value \ "chargeTypeADetails").asOpt[JsValue].map(_ => "chargeTypeA"),
+                        (value \ "chargeTypeBDetails").asOpt[JsValue].map(_ => "chargeTypeB"),
+                        (value \ "chargeTypeCDetails").asOpt[JsValue].map(_ => "chargeTypeC"),
+                        (value \ "chargeTypeDDetails").asOpt[JsValue].map(_ => "chargeTypeD"),
+                        (value \ "chargeTypeEDetails").asOpt[JsValue].map(_ => "chargeTypeE"),
+                        (value \ "chargeTypeFDetails").asOpt[JsValue].map(_ => "chargeTypeF"),
+                        (value \ "chargeTypeGDetails").asOpt[JsValue].map(_ => "chargeTypeG")
                       )
                     case _ => Seq.empty[Option[String]]
                   }
@@ -114,13 +115,13 @@ class AFTController @Inject()(
       get { (pstr, startDate) =>
         request.headers.get("endDate") match {
           case Some(endDate) =>
-                aftOverviewCacheRepository.get(pstr).flatMap {
-                  case Some(data) => Future.successful(Ok(data))
-                  case _ => aftConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
-                    aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
-                      Ok(Json.toJson(data))
-                    }
-                  }
+            aftOverviewCacheRepository.get(pstr).flatMap {
+              case Some(data) => Future.successful(Ok(data))
+              case _ => aftConnector.getAftOverview(pstr, startDate, endDate).flatMap { data =>
+                aftOverviewCacheRepository.save(pstr, Json.toJson(data)).map { _ =>
+                  Ok(Json.toJson(data))
+                }
+              }
             }
           case _ =>
             Future.failed(new BadRequestException("Bad Request with no endDate"))

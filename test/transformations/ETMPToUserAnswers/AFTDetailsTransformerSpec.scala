@@ -23,7 +23,7 @@ import transformations.generators.AFTETMPResponseGenerators
 
 import java.time.LocalDate
 
-class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
+class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues { // scalastyle:off magic.number
 
   import AFTDetailsTransformerSpec._
 

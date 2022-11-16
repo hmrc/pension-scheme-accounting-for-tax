@@ -17,9 +17,9 @@
 package models
 
 import org.joda.time.DateTime
+import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.OptionValues
 import play.api.libs.json.{JsValue, Json}
 
 class EmailEventsSpec extends AnyWordSpec with OptionValues with Matchers {

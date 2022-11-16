@@ -17,11 +17,13 @@
 package controllers.cache
 
 import models.enumeration.CreditAccessType.{AccessedByLoggedInPsaOrPsp, AccessedByOtherPsa, AccessedByOtherPsp}
+import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.ArgumentMatchers._
-import org.mockito.{ArgumentCaptor, ArgumentMatchers, MockitoSugar}
+import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.{JsString, JsValue, Json}
@@ -61,7 +63,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> psaPspId)))
-        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn (Future.successful(()))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
         val result = controller.getForSchemePsa(psaPspId, srn)(fakeRequest)
         status(result) mustEqual OK
@@ -74,7 +76,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> otherPsaPspId)))
-        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn (Future.successful(()))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
         val result = controller.getForSchemePsa(psaPspId, srn)(fakeRequest)
         status(result) mustEqual OK
@@ -107,7 +109,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("pspId" -> psaPspId)))
-        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn (Future.successful(()))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
         val result = controller.getForSchemePsp(psaPspId, srn)(fakeRequest)
         status(result) mustEqual OK
@@ -120,7 +122,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("pspId" -> otherPsaPspId)))
-        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn (Future.successful(()))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
         val result = controller.getForSchemePsp(psaPspId, srn)(fakeRequest)
         status(result) mustEqual OK
@@ -153,7 +155,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
           .overrides(modules: _*).build()
         val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> psaPspId)))
-        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn (Future.successful(()))
+        when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
         val result = controller.getForPsa(psaPspId)(fakeRequest)
         status(result) mustEqual OK

@@ -16,26 +16,33 @@
 
 package models
 
-import models.enumeration.{WithName, Enumerable}
+import models.enumeration.{Enumerable, WithName}
 
 sealed trait ChargeType
 
 object ChargeType extends Enumerable.Implicits {
 
-  def isMemberBasedChargeType(chargeType: ChargeType) =
+  def isMemberBasedChargeType(chargeType: ChargeType): Boolean =
     chargeType == ChargeTypeAnnualAllowance ||
-    chargeType == ChargeTypeAuthSurplus ||
-    chargeType == ChargeTypeLifetimeAllowance ||
-    chargeType == ChargeTypeOverseasTransfer
+      chargeType == ChargeTypeAuthSurplus ||
+      chargeType == ChargeTypeLifetimeAllowance ||
+      chargeType == ChargeTypeOverseasTransfer
 
 
   case object ChargeTypeAnnualAllowance extends WithName("annualAllowance") with ChargeType
+
   case object ChargeTypeAuthSurplus extends WithName("authSurplus") with ChargeType
+
   case object ChargeTypeDeRegistration extends WithName("deRegistration") with ChargeType
+
   case object ChargeTypeLifetimeAllowance extends WithName("lifeTimeAllowance") with ChargeType
+
   case object ChargeTypeOverseasTransfer extends WithName("overseasTransfer") with ChargeType
+
   case object ChargeTypeShortService extends WithName("shortService") with ChargeType
+
   case object ChargeTypeLumpSumDeath extends WithName("lumpSumDeath") with ChargeType
+
   case object ChargeTypeNone extends WithName("none") with ChargeType
 
   val values: Seq[ChargeType] = Seq(
@@ -49,5 +56,5 @@ object ChargeType extends Enumerable.Implicits {
     ChargeTypeNone
   )
 
-  def getChargeType(s:String):Option[ChargeType] = values.find( _.toString == s)
+  def getChargeType(s: String): Option[ChargeType] = values.find(_.toString == s)
 }

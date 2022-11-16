@@ -16,7 +16,6 @@
 
 package transformations.generators
 
-import java.time.{LocalDate, Year}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.rng.Seed
@@ -24,7 +23,9 @@ import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json._
 
-trait AFTUserAnswersGenerators extends Matchers with OptionValues {
+import java.time.{LocalDate, Year}
+
+trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyle:off magic.number
   val ninoGen: Gen[String] = Gen.oneOf(Seq("AB123456C", "CD123456E"))
 
   val dateGenerator: Gen[LocalDate] = for {
@@ -102,9 +103,9 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues {
         Json.obj(
           fields = "chargeDetails" -> Json.obj(
             "numberOfMembers" -> numberOfMembers,
-          "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
-          "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate,
-          "totalAmount" -> totalAmount
+            "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
+            "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate,
+            "totalAmount" -> totalAmount
           )
         ))
 
@@ -117,7 +118,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues {
         Json.obj(
           fields = "chargeDetails" -> Json.obj(
             "totalAmount" -> totalAmount,
-          "numberOfDeceased" -> numberOfMembers
+            "numberOfDeceased" -> numberOfMembers
           )
         )
     )
@@ -303,13 +304,13 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues {
           "totalChargeAmount" -> totalChargeAmount
         ))
 
-  def nonEmptyString: Gen[String] = Gen.alphaStr.suchThat(!_.isEmpty)
+  def nonEmptyString: Gen[String] = Gen.alphaStr.suchThat(_.nonEmpty)
 
   def updateJson(path: JsPath, name: String, value: Int): Reads[JsObject] = {
     path.json.update(__.read[JsObject].map(o => o ++ Json.obj(name -> value)))
   }
 
-  implicit class GenOps[A](gen: Gen[A]){
+  implicit class GenOps[A](gen: Gen[A]) {
     val random: A = gen.pureApply(Gen.Parameters.default, Seed.random())
   }
 }

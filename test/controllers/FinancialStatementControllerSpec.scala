@@ -18,11 +18,13 @@ package controllers
 
 import connectors.{AFTConnector, FinancialStatementConnector}
 import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentMatchers, MockitoSugar}
+import org.mockito.Mockito.{reset, when}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
@@ -214,7 +216,7 @@ object FinancialStatementControllerSpec {
     )
   )
   private val psaFSResponse: PsaFS =
-    PsaFS (false, psaFSDetailResponse)
+    PsaFS(false, psaFSDetailResponse)
 
   private val schemeModel: SchemeFS = SchemeFS(
     inhibitRefundSignal = false,

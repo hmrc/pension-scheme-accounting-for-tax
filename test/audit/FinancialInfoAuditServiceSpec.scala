@@ -16,8 +16,8 @@
 
 package audit
 
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{JsObject, Json}
 
 class FinancialInfoAuditServiceSpec extends AnyFlatSpec with Matchers {
