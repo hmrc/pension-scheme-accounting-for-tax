@@ -422,7 +422,6 @@ object AFTControllerSpec {
   private val startDt = "2020-01-01"
   private val endDate = "2020-12-31"
   private val aftVer = "99"
-  private val fbNumber = "123456789123"
   private val etmpAFTDetailsResponse: JsValue = Json.obj(
     "schemeDetails" -> Json.obj(
       "pstr" -> "12345678AB",

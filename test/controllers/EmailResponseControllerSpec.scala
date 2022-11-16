@@ -60,7 +60,8 @@ class EmailResponseControllerSpec extends AsyncWordSpec with Matchers with Mocki
   private val encryptedEmail = injector.instanceOf[ApplicationCrypto].QueryParameterCrypto.encrypt(PlainText(email)).value
 
   override def beforeEach(): Unit = {
-    Mockito.reset(mockAuditService, mockAuthConnector)
+    Mockito.reset(mockAuditService)
+    Mockito.reset(mockAuthConnector)
     when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
       .thenReturn(Future.successful(enrolments))
   }

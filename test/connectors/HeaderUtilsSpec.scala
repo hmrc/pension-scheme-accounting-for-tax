@@ -22,7 +22,6 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.http.{HeaderCarrier, RequestId}
 
 class HeaderUtilsSpec extends AnyWordSpec with MockitoSugar with Matchers with BeforeAndAfterEach {
   private val mockConfig = mock[AppConfig]
@@ -42,7 +41,6 @@ class HeaderUtilsSpec extends AnyWordSpec with MockitoSugar with Matchers with B
   "desHeader" must {
 
     "return the correct headers" in {
-      val hc: HeaderCarrier = HeaderCarrier(requestId = Some(RequestId("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2df")))
       val result = headerUtils.desHeader
       result.head mustBe "Environment" -> desEnv
       result(1) mustBe "Authorization" -> desAuth
@@ -53,7 +51,6 @@ class HeaderUtilsSpec extends AnyWordSpec with MockitoSugar with Matchers with B
   "integrationFrameworkHeader" must {
 
     "return the correct headers" in {
-      val hc: HeaderCarrier = HeaderCarrier(requestId = Some(RequestId("govuk-tax-4725c811-9251-4c06-9b8f-f1d84659b2df")))
       val result = headerUtils.integrationFrameworkHeader
       result.head mustBe "Environment" -> ifEnv
       result(1) mustBe "Authorization" -> ifAuth

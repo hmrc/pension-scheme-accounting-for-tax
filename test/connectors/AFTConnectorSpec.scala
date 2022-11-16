@@ -33,7 +33,7 @@ import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.Json
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
-import repository.{AdminDataRepository, AftBatchedDataCacheRepository, CacheRepository, FileUploadReferenceCacheRepository}
+import repository._
 import services.AFTService
 import uk.gov.hmrc.http._
 import utils.{JsonFileReader, WireMockHelper}
@@ -60,8 +60,11 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       bind[HeaderUtils].toInstance(mockHeaderUtils),
       bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
       bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
-      bind[CacheRepository].toInstance(mock[CacheRepository]),
-      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository])
+      bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
     )
 
   private val pstr = "test-pstr"

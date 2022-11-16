@@ -130,13 +130,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     }
 
     "return OK when the details are returned based on pstr and aft details don't exist" in {
-      val receiptDateFromIF = "2020-12-12T09:30:47Z"
-      val aftDetailsJson = Json.obj(
-        "aftDetails" -> Json.obj(
-          "aftVersion" -> 2,
-          "receiptDate" -> Json.toJson(receiptDateFromIF)
-        )
-      )
       when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(None))
 
       val controller = application.injector.instanceOf[FinancialStatementController]

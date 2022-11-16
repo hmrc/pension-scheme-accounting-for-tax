@@ -20,17 +20,12 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 
 class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with Matchers with BeforeAndAfter {
   val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
-  private val app = new GuiceApplicationBuilder()
-    .overrides(
-    )
-    .build()
 
-  private lazy val jsonPayloadSchemaValidator: JSONPayloadSchemaValidator = app.injector.instanceOf[JSONPayloadSchemaValidator]
+  private val jsonPayloadSchemaValidator = new JSONPayloadSchemaValidator
   "validateJson" must {
     "Validate payload" in {
       val json = Json.parse(
@@ -50,7 +45,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-      result mustBe true
+      result.toOption.get mustBe true
     }
 
     "Validate Compiled payload" in {
@@ -232,7 +227,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin
       )
-      jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, validCompiledPayload) mustBe true
+      jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, validCompiledPayload).toOption.get mustBe true
     }
 
     "Validate Compiled invalid payload with multiple errors" in {
@@ -415,7 +410,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |""".stripMargin
       )
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, validCompiledPayload)
-      result.left.get.mkString mustBe "ErrorReport({\"pointer\":\"/aftDetails/quarterEndDate\"},\"ECMA 262 regex" +
+      result.swap.toOption.get.mkString mustBe "ErrorReport({\"pointer\":\"/aftDetails/quarterEndDate\"},\"ECMA 262 regex" +
         " \\\"^(((19|20)([2468][048]|[13579][26]|0[48])|2000)[-]02[-]29|((19|20)[0-9]{2}[-](0[469]|11)" +
         "[-](0[1-9]|1[0-9]|2[0-9]|30)|(19|20)[0-9]{2}[-](0[13578]|1[02])[-](0[1-9]|[12][0-9]|3[01])|(19|20)[0-9]{2}[-]02[-](0[1-9]|1[0-9]|2[0-8])))" +
         "$\\\" does not match )" +
@@ -541,7 +536,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
           |}
           |""".stripMargin)
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
-      result mustBe true
+      result.toOption.get mustBe true
     }
 
 
@@ -565,7 +560,7 @@ class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with 
       val result = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, json)
       val expectedError = "ErrorReport({\"pointer\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}," +
         "\"instance type (string) does not match any allowed primitive type (allowed: [\\\"integer\\\",\\\"number\\\"])\")"
-      result.left.get.mkString mustBe expectedError
+      result.swap.toOption.get.mkString mustBe expectedError
     }
 
     "Validate invalid payload with multiple errors" in {

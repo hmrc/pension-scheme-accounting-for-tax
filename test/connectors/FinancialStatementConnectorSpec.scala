@@ -33,6 +33,7 @@ import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
+import repository._
 import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.http._
 import utils.WireMockHelper
@@ -57,12 +58,15 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AFTService].toInstance(mockAftService),
-      bind[FeatureToggleService].toInstance(mockFutureToggleService)
+      bind[FeatureToggleService].toInstance(mockFutureToggleService),
+      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
+      bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+      bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
     )
-
-  override def beforeEach(): Unit = {
-    super.beforeEach()
-  }
 
   private val psaId = "test-psa-id"
   private val pstr = "test-pstr"

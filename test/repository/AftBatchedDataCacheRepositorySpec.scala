@@ -55,7 +55,7 @@ class AftBatchedDataCacheRepositorySpec
   var aftBatchedDataCacheRepository: AftBatchedDataCacheRepository = _
 
   override def beforeEach(): Unit = {
-    super.beforeEach
+    super.beforeEach()
     when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(2)
     when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
     when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
@@ -401,11 +401,11 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
 
     val upsertOptions = new FindOneAndUpdateOptions().upsert(true)
 
-      aftBatchedDataCacheRepository.collection.findOneAndUpdate(
-        filter = selector,
-        update = modifier,
-        upsertOptions
-      ).toFuture().map(_ => (): Unit)
+    aftBatchedDataCacheRepository.collection.findOneAndUpdate(
+      filter = selector,
+      update = modifier,
+      upsertOptions
+    ).toFuture().map(_ => (): Unit)
   }
 
   private val mockAppConfig = mock[AppConfig]
@@ -431,7 +431,7 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     sessionId = sessionId, lockDetail = lockDetail, version = version, accessMode = accessMode,
     areSubmittedVersionsAvailable = false)
 
-  private def sessionDataBatch(sessionId: String, lockDetail: Option[LockDetail] = lockDetail): Set[BatchInfo] = {
+  private def sessionDataBatch(sessionId: String, lockDetail: Option[LockDetail]): Set[BatchInfo] = {
     val json = Json.toJson(sessionData(sessionId, lockDetail))
     Set(BatchInfo(BatchType.SessionData, 1, json))
   }

@@ -26,12 +26,9 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
-import play.api.libs.json.Format
 import repository.model.FileUploadStatus
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-import java.time.LocalDateTime
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -126,8 +123,6 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
 }
 
 object FileUploadReferenceCacheRepositorySpec extends MockitoSugar {
-  private implicit val dateFormat: Format[LocalDateTime] = MongoJavatimeFormats.localDateTimeFormat
-
   private val mockConfiguration = mock[Configuration]
   private val mockAppConfig = mock[Configuration]
 
