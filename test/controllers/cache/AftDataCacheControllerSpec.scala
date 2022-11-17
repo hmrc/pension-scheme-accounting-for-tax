@@ -124,7 +124,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "calling save" must {
 
       "return OK when the data is saved successfully" in {
-        when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+        when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
         val result = controller.save(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
@@ -132,7 +132,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+        when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
         val result = controller.save(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
@@ -149,7 +149,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
     "calling remove" must {
       "return OK when the data is removed successfully" in {
-        when(repo.remove(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful(true)
+        when(repo.remove(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
         val result = controller.remove(fakeRequest)
@@ -213,7 +213,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
         ArgumentMatchers.eq(version),
         ArgumentMatchers.eq(accessMode),
         ArgumentMatchers.eq(true)
-      )(any())) thenReturn Future.successful(true)
+      )(any())) thenReturn Future.successful((): Unit)
 
       when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(Future.successful(expectedAuthorisations(psaId)))
@@ -239,7 +239,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
         ArgumentMatchers.eq(version),
         ArgumentMatchers.eq(accessMode),
         ArgumentMatchers.eq(true)
-      )(any())) thenReturn Future.successful(true)
+      )(any())) thenReturn Future.successful((): Unit)
 
       when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(Future.successful(expectedAuthorisations(pspId)))
@@ -261,7 +261,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       when(repo.setSessionData(ArgumentMatchers.eq(id),
         ArgumentMatchers.eq(Some(LockDetail("test name", psaId))), any(), any(),
-        ArgumentMatchers.eq(version), ArgumentMatchers.eq(accessMode), any())(any())) thenReturn Future.successful(true)
+        ArgumentMatchers.eq(version), ArgumentMatchers.eq(accessMode), any())(any())) thenReturn Future.successful((): Unit)
       when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(Future.successful(expectedAuthorisations(psaId)))
       val result = controller.setSessionData(true)(fakePostRequest
@@ -272,7 +272,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
     "return BAD REQUEST when the request body cannot be parsed" in {
 
-      when(repo.setSessionData(any(), any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful(true)
+      when(repo.setSessionData(any(), any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful((): Unit)
       when(authConnector.authorise[Option[Name] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(Future.successful(expectedAuthorisations(psaId)))
 

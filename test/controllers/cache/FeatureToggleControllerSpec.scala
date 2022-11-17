@@ -76,7 +76,7 @@ class FeatureToggleControllerSpec
   "FeatureToggleController.get" must {
     "get the feature toggle value and return OK" in {
       when(mockAdminDataRepository.setFeatureToggles(any()))
-        .thenReturn(Future.successful(true))
+        .thenReturn(Future.successful((): Unit))
 
       when(mockFeatureToggleService.get(any()))
         .thenReturn(Future.successful(Enabled(DummyToggle)))
@@ -93,7 +93,7 @@ class FeatureToggleControllerSpec
   "FeatureToggleController.put" must {
     "set the feature toggles and return NO_CONTENT" in {
       when(mockAdminDataRepository.setFeatureToggles(any()))
-        .thenReturn(Future.successful(true))
+        .thenReturn(Future.successful((): Unit))
 
       when(mockFeatureToggleService.set(any(), any()))
         .thenReturn(Future.successful(()))

@@ -359,7 +359,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   "getOverview" must {
     "return OK with the Seq of overview details and no data was found in cache" in {
       when(mockAftOverviewCacheRepository.get(any())(any())).thenReturn(Future.successful(None))
-      when(mockAftOverviewCacheRepository.save(any(), any())(any())).thenReturn(Future.successful(true))
+      when(mockAftOverviewCacheRepository.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
       when(mockDesConnector.getAftOverview(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(endDate))(any(), any()))
         .thenReturn(Future.successful(aftOverview))
 
