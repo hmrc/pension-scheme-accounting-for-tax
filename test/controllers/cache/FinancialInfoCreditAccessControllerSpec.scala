@@ -17,27 +17,25 @@
 package controllers.cache
 
 import models.enumeration.CreditAccessType.{AccessedByLoggedInPsaOrPsp, AccessedByOtherPsa, AccessedByOtherPsp}
-import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.scalatest.BeforeAndAfter
+import org.mockito.{ArgumentCaptor, ArgumentMatchers}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.{JsString, JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.FinancialInfoCreditAccessRepository
+import repository._
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
-class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfter {
-
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
 
   private val repo = mock[FinancialInfoCreditAccessRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
@@ -48,20 +46,28 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
-    bind[FinancialInfoCreditAccessRepository].toInstance(repo)
+    bind[FinancialInfoCreditAccessRepository].toInstance(repo),
+    bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+    bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
+    bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+    bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+    bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+    bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository])
   )
 
-  before {
+  val app: Application = new GuiceApplicationBuilder()
+    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+    .overrides(modules: _*).build()
+  val controller: FinancialInfoCreditAccessController = app.injector.instanceOf[FinancialInfoCreditAccessController]
+
+  override def beforeEach(): Unit = {
     reset(repo, authConnector)
+    super.beforeEach()
   }
 
   "FinancialInfoCreditAccessController" when {
     "calling getForSchemePsa" must {
       "when accessed by logged in PSA return OK with the accessedByCurrentPsa" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> psaPspId)))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
@@ -71,10 +77,6 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when accessed by different PSA return OK with the accessedByOtherPsa" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> otherPsaPspId)))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
@@ -84,10 +86,6 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when not accessed by any PSA or PSP return NOT_FOUND and update repo with psaId and srn" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(None)
         when(repo.save(any(), any())(any())).thenReturn(Future.successful(true))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
@@ -104,10 +102,6 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
     "calling getForSchemePsp" must {
       "when accessed by logged in PSA return OK with the accessedByCurrentPsp" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("pspId" -> psaPspId)))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
@@ -117,10 +111,6 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when accessed by different PSA return OK with the accessedByOtherPsp" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("pspId" -> otherPsaPspId)))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
@@ -130,10 +120,6 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when not accessed by any PSA or PSP return NOT_FOUND and update repo with pspId and srn" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(None)
         when(repo.save(any(), any())(any())).thenReturn(Future.successful(true))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
@@ -150,10 +136,6 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
     "calling getForPsa" must {
       "when accessed by logged in PSA return OK with the accessedByCurrentPsa" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> psaPspId)))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
@@ -163,10 +145,6 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when not accessed by any PSA  return NOT_FOUND and update repo with psaId" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FinancialInfoCreditAccessController]
         when(repo.get(any())(any())) thenReturn Future.successful(None)
         when(repo.save(any(), any())(any())).thenReturn(Future.successful(true))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
@@ -180,6 +158,5 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
         )
       }
     }
-
   }
 }
