@@ -101,7 +101,7 @@ class FeatureToggleServiceSpec
     val OUT = injector.instanceOf[FeatureToggleService]
 
     when(adminDataRepository.getFeatureToggles).thenReturn(Future.successful(Seq.empty))
-    when(adminDataRepository.setFeatureToggles(any())).thenReturn(Future.successful(false))
+    when(adminDataRepository.setFeatureToggles(any())).thenReturn(Future.successful((): Unit))
 
     whenReady(OUT.set(toggleName = toggleName, enabled = true))(_ mustBe ((): Unit))
   }

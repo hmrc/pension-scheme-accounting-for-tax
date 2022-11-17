@@ -108,7 +108,7 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
     "calling save" must {
 
       "return OK when the data is saved successfully" in {
-        when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
+        when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
         val result = controller.save(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
@@ -116,7 +116,7 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
+        when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
         val result = controller.save(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))

@@ -107,7 +107,7 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
     "calling save" must {
 
       "return OK when the data is saved successfully" in {
-        when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
+        when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
         val result = controller.post(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
@@ -115,7 +115,7 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        when(repo.save(any(), any())(any())) thenReturn Future.successful(true)
+        when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
         val result = controller.post(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))

@@ -87,8 +87,8 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when not accessed by any PSA or PSP return NOT_FOUND and update repo with psaId and srn" in {
-        when(repo.get(any())(any())) thenReturn Future.successful(None)
-        when(repo.save(any(), any())(any())).thenReturn(Future.successful(true))
+        when(repo.get(any())(any())).thenReturn(Future.successful(None))
+        when(repo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
         val result = controller.getForSchemePsa(psaPspId, srn)(fakeRequest)
@@ -122,7 +122,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
       "when not accessed by any PSA or PSP return NOT_FOUND and update repo with pspId and srn" in {
         when(repo.get(any())(any())) thenReturn Future.successful(None)
-        when(repo.save(any(), any())(any())).thenReturn(Future.successful(true))
+        when(repo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
         val result = controller.getForSchemePsp(psaPspId, srn)(fakeRequest)
@@ -147,7 +147,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
       "when not accessed by any PSA  return NOT_FOUND and update repo with psaId" in {
         when(repo.get(any())(any())) thenReturn Future.successful(None)
-        when(repo.save(any(), any())(any())).thenReturn(Future.successful(true))
+        when(repo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
         when(authConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.successful(())
 
         val result = controller.getForPsa(psaPspId)(fakeRequest)

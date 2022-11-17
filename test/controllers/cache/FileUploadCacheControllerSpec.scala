@@ -74,7 +74,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
   "FileUploadCacheController" when {
     "calling requestUpload" must {
       "return OK with the data" in {
-        when(repo.requestUpload(eqTo(uploadId), eqTo(referenceId))(any())) thenReturn Future.successful(true)
+        when(repo.requestUpload(eqTo(uploadId), eqTo(referenceId))(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 
         val result = controller.requestUpload(fakePostRequest.withJsonBody(Json.obj("reference" -> referenceId)))
@@ -82,7 +82,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        when(repo.requestUpload(any(), any())(any())) thenReturn Future.successful(true)
+        when(repo.requestUpload(any(), any())(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 
         val result = controller.requestUpload(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes("512001".toInt))))
