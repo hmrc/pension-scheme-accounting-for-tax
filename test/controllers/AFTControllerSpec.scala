@@ -33,7 +33,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.AftOverviewCacheRepository
+import repository._
 import services.AFTService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
@@ -71,7 +71,13 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       bind[AFTConnector].toInstance(mockDesConnector),
       bind[AFTService].toInstance(mockAftService),
       bind[AftOverviewCacheRepository].toInstance(mockAftOverviewCacheRepository),
-      bind[JSONPayloadSchemaValidator].toInstance(mockJSONPayloadSchemaValidator)
+      bind[JSONPayloadSchemaValidator].toInstance(mockJSONPayloadSchemaValidator),
+      bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[AdminDataRepository].toInstance(mock[AdminDataRepository])
     )
 
   val application: Application = new GuiceApplicationBuilder()
@@ -87,10 +93,12 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   }
 
   before {
-    reset(mockDesConnector, mockAftService, authConnector, mockJSONPayloadSchemaValidator)
+    reset(mockDesConnector)
+    reset(mockAftService)
+    reset(authConnector)
+    reset(mockJSONPayloadSchemaValidator)
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
-    val validationResponse = Right(true)
-    when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any())).thenReturn(validationResponse)
+    when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any())).thenReturn(Right(true))
   }
 
   "fileReturn" must {

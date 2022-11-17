@@ -21,26 +21,24 @@ import controllers.cache.FinancialInfoCacheController.IdNotFoundFromAuth
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
-import org.scalatest.BeforeAndAfter
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.FileUploadReferenceCacheRepository
+import repository._
 import repository.model.{FileUploadDataCache, FileUploadStatus}
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.http.HeaderCarrier
 
 import java.time.{LocalDateTime, ZoneId}
 import scala.concurrent.Future
 
-class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfter {
-
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
 
   private val repo = mock[FileUploadReferenceCacheRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
@@ -52,21 +50,30 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
-    bind[FileUploadReferenceCacheRepository].toInstance(repo)
+    bind[FileUploadReferenceCacheRepository].toInstance(repo),
+    bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
+    bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+    bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+    bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+    bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+    bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
   )
 
-  before {
+  val app: Application = new GuiceApplicationBuilder()
+    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
+    .overrides(modules: _*).build()
+  val controller: FileUploadCacheController = app.injector.instanceOf[FileUploadCacheController]
+
+  override protected def beforeEach(): Unit = {
     reset(repo)
     reset(authConnector)
+    super.beforeEach()
   }
+
 
   "FileUploadCacheController" when {
     "calling requestUpload" must {
       "return OK with the data" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FileUploadCacheController]
         when(repo.requestUpload(eqTo(uploadId), eqTo(referenceId))(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 
@@ -75,10 +82,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FileUploadCacheController]
         when(repo.requestUpload(any(), any())(any())) thenReturn Future.successful(true)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 
@@ -87,10 +90,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
       }
 
       "throw an exception when the call is not authorised" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FileUploadCacheController]
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
         val result = controller.requestUpload(fakePostRequest.withJsonBody(Json.obj(fields = "reference" -> "referenceId")))
@@ -100,10 +99,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
 
     "calling getUploadResult" must {
       "return OK with the data" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FileUploadCacheController]
         val dateTimeNow = LocalDateTime.now(ZoneId.of("UTC"))
         val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, FileUploadStatus("InProgress"), dateTimeNow, dateTimeNow, dateTimeNow)
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(Some(fileUploadDataCache))
@@ -121,10 +116,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
         )
       }
       "return NOT FOUND when the data doesn't exist" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FileUploadCacheController]
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(None)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 
@@ -133,10 +124,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
       }
 
       "throw an exception when the repository call fails" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FileUploadCacheController]
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.failed(new Exception())
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
         val result = controller.getUploadResult(fakeRequest)
@@ -144,10 +131,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
       }
 
       "throw an exception when the call is not authorised" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FileUploadCacheController]
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
 
         val result = controller.getUploadResult(fakeRequest)
@@ -157,10 +140,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
 
     "calling registerUploadResult" must {
       "return OK with the data" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FileUploadCacheController]
         val uploadStatus = FileUploadStatus("Success", None, None, Some("www.test.com"), Some("text/csv"), Some("test.csv"), Some("100".toLong))
         val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, LocalDateTime.now, LocalDateTime.now, LocalDateTime.now)
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
@@ -171,10 +150,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        val app = new GuiceApplicationBuilder()
-          .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-          .overrides(modules: _*).build()
-        val controller = app.injector.instanceOf[FileUploadCacheController]
         val uploadStatus = FileUploadStatus("Success", None, None, Some("www.test.com"), Some("text/csv"), Some("test.csv"), Some("100".toLong))
         val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, LocalDateTime.now, LocalDateTime.now, LocalDateTime.now)
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))

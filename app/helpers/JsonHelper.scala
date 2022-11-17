@@ -120,6 +120,7 @@ object JsonHelper {
         case ((n: IdxPathNode) :: Nil, value: JsArray) => removeIndexNode(n, value)
         case ((_: KeyPathNode) :: Nil, _) => JsError(s"cannot remove a key on $jsValue")
         case (first :: second :: rest, oldValue) => removeWithOldValue(first, second, rest, oldValue)
+        case _ => JsError("path and key cannot be empty")
       }
     }
 
