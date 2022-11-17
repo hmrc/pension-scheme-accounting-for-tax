@@ -130,7 +130,6 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
 
 object FileUploadReferenceCacheRepositorySpec extends MockitoSugar {
   private val mockConfiguration = mock[Configuration]
-  private val mockAppConfig = mock[Configuration]
 
   private val id1 = "id1"
   private val id2 = "id2"
@@ -141,6 +140,6 @@ object FileUploadReferenceCacheRepositorySpec extends MockitoSugar {
   private def buildFormRepository(mongoHost: String, mongoPort: Int): FileUploadReferenceCacheRepository = {
     val databaseName = "pension-scheme-accounting-for-tax"
     val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-    new FileUploadReferenceCacheRepository(MongoComponent(mongoUri), mockAppConfig)
+    new FileUploadReferenceCacheRepository(MongoComponent(mongoUri), mockConfiguration)
   }
 }

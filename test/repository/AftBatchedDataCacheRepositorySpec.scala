@@ -30,7 +30,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import repository.model.SessionData
@@ -46,7 +46,7 @@ import scala.concurrent.{Await, Future}
 
 class AftBatchedDataCacheRepositorySpec
   extends AnyWordSpec with MockitoSugar with Matchers with EmbeddedMongoDBSupport with BeforeAndAfter with
-    BeforeAndAfterEach with ScalaFutures { // scalastyle:off magic.number
+    BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
@@ -54,13 +54,16 @@ class AftBatchedDataCacheRepositorySpec
 
   var aftBatchedDataCacheRepository: AftBatchedDataCacheRepository = _
 
-  override def beforeEach(): Unit = {
-    super.beforeEach()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
     when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(2)
     when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
     when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
     when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(collectionName)
   }
+
+  override def afterAll(): Unit =
+    stopMongoD()
 
   "save" must {
     "save de-reg charge batch correctly in Mongo collection where there is some session data" in {

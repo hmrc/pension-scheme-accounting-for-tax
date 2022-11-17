@@ -61,7 +61,8 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
   val controller: FinancialInfoCreditAccessController = app.injector.instanceOf[FinancialInfoCreditAccessController]
 
   override def beforeEach(): Unit = {
-    reset(repo, authConnector)
+    reset(repo)
+    reset(authConnector)
     super.beforeEach()
   }
 
