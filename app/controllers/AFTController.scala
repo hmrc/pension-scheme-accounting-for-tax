@@ -58,6 +58,7 @@ class AFTController @Inject()(
 
   type SeqOfChargeType = Option[Seq[Option[String]]]
 
+  //scalastyle:off cyclomatic.complexity
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
       post { (pstr, userAnswersJson) =>
@@ -67,12 +68,12 @@ class AFTController @Inject()(
             case JsSuccess(dataToBeSendToETMP, _) =>
               val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
               validationResult match {
-                case Left(errors) => val psaOrPspId = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
-                  case value => value("submittedID").toString
+                case Left(errors) => val psaOrPspId: Option[String] = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
+                  case `value`: JsValue => value("submittedID").toString
                   case _ => ""
                 }
                   val chargeType: SeqOfChargeType = dataToBeSendToETMP.value("chargeDetails").asOpt[JsValue].map {
-                    case value =>
+                    case `value`: JsValue =>
                       Seq(
                         (value \ "chargeTypeADetails").asOpt[JsValue].map(_ => "chargeTypeA"),
                         (value \ "chargeTypeBDetails").asOpt[JsValue].map(_ => "chargeTypeB"),

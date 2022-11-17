@@ -48,14 +48,10 @@ trait JsonTransformer {
       (__ \ Symbol("individualsDetails") \ Symbol("lastName")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("lastName")).json.pick) and
       (__ \ Symbol("individualsDetails") \ Symbol("nino")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("nino")).json.pick)).reduce
 
-  def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T]): Reads[Seq[T]] = new Reads[Seq[T]] {
-    override def reads(json: JsValue): JsResult[Seq[T]] = {
-      json match {
-        case JsArray(members) =>
-          readFilteredSeq(JsSuccess(Nil), members.toSeq, isA, readsA)
-        case _ => JsSuccess(Nil)
-      }
-    }
+  def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T]): Reads[Seq[T]] = {
+    case JsArray(members) =>
+      readFilteredSeq(JsSuccess(Nil), members.toSeq, isA, readsA)
+    case _ => JsSuccess(Nil)
   }
 
   @tailrec
@@ -71,6 +67,7 @@ trait JsonTransformer {
           case _ => readFilteredSeq(result, t, isA, reads)
         }
       case Nil => result
+      case _ => result
     }
   }
 
