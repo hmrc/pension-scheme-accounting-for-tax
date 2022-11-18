@@ -28,34 +28,30 @@ trait JsonTransformer {
 
   val doNothing: Reads[JsObject] = __.json.put(Json.obj())
 
-  implicit class JsObjectReadsOps(rds: Reads[JsObject]){
-    val orElseEmptyOnMissingFields: Reads[JsObject] = Reads[JsObject]( json =>
+  implicit class JsObjectReadsOps(rds: Reads[JsObject]) {
+    val orElseEmptyOnMissingFields: Reads[JsObject] = Reads[JsObject](json =>
       rds.reads(json) match {
-        case JsError(errs) if errs.forall{ case (_, jerrs) => jerrs.forall(_.message == pathMissingError) } =>
+        case JsError(errs) if errs.forall { case (_, jerrs) => jerrs.forall(_.message == pathMissingError) } =>
           JsSuccess(JsObject.empty)
         case other => other
       }
     )
   }
 
-  def removeEmptyObjects(arr: JsArray): JsArray = JsArray(arr.value.filter{
+  def removeEmptyObjects(arr: JsArray): JsArray = JsArray(arr.value.filter {
     case a: JsObject if a.keys.isEmpty => false
     case _ => true
   })
 
   def readsMemberDetails: Reads[JsObject] =
-    ((__ \ 'individualsDetails \ 'firstName).json.copyFrom((__ \ 'memberDetails \ 'firstName).json.pick) and
-      (__ \ 'individualsDetails \ 'lastName).json.copyFrom((__ \ 'memberDetails \ 'lastName).json.pick) and
-      (__ \ 'individualsDetails \ 'nino).json.copyFrom((__ \ 'memberDetails \ 'nino).json.pick)).reduce
+    ((__ \ Symbol("individualsDetails") \ Symbol("firstName")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("firstName")).json.pick) and
+      (__ \ Symbol("individualsDetails") \ Symbol("lastName")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("lastName")).json.pick) and
+      (__ \ Symbol("individualsDetails") \ Symbol("nino")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("nino")).json.pick)).reduce
 
-  def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T]): Reads[Seq[T]] = new Reads[Seq[T]] {
-    override def reads(json: JsValue): JsResult[Seq[T]] = {
-      json match {
-        case JsArray(members) =>
-          readFilteredSeq(JsSuccess(Nil), members, isA, readsA)
-        case _ => JsSuccess(Nil)
-      }
-    }
+  def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T]): Reads[Seq[T]] = {
+    case JsArray(members) =>
+      readFilteredSeq(JsSuccess(Nil), members.toSeq, isA, readsA)
+    case _ => JsSuccess(Nil)
   }
 
   @tailrec
@@ -71,6 +67,7 @@ trait JsonTransformer {
           case _ => readFilteredSeq(result, t, isA, reads)
         }
       case Nil => result
+      case _ => result
     }
   }
 

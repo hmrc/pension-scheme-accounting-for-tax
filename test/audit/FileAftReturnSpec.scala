@@ -17,8 +17,8 @@
 package audit
 
 import models.enumeration.JourneyType
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import play.api.libs.json.{JsObject, Json}
 
 class FileAftReturnSpec extends AnyFlatSpec with Matchers {
@@ -68,8 +68,8 @@ class FileAftReturnSpec extends AnyFlatSpec with Matchers {
     val request = Json.obj(
       "name" -> "request",
       "aftDeclarationDetails" -> Json.obj(
-          "submittedBy" -> "PSA",
-          "submittedID" -> psaId
+        "submittedBy" -> "PSA",
+        "submittedID" -> psaId
       ))
     val response = "response"
 

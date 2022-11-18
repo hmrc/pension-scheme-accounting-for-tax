@@ -16,7 +16,7 @@
 
 package models
 
-import play.api.libs.json.{JsObject, Json, JsArray}
+import play.api.libs.json.{JsArray, JsObject, Json}
 
 object BatchedRepositorySampleData {
 
@@ -25,15 +25,16 @@ object BatchedRepositorySampleData {
   val nodeNameChargeE = "chargeEDetails"
   val nodeNameChargeG = "chargeGDetails"
 
-  def intToString(c:Int):String = ('A' + c - 1).toChar.toString
+  def intToString(c: Int): String = ('A' + c - 1).toChar.toString
 
-  def concatenateNodes(nodes: Seq[JsObject], nodeName:String): JsObject = {
-    val allNodes = nodes.foldLeft(Json.obj()) { (a,b) => a ++ b }
+  def concatenateNodes(nodes: Seq[JsObject], nodeName: String): JsObject = {
+    val allNodes = nodes.foldLeft(Json.obj()) { (a, b) => a ++ b }
     Json.obj(
       nodeName -> allNodes
     )
   }
-  val payloadOther = {
+
+  val payloadOther: JsObject = {
     Json.obj(
       "schemeStatus" -> "Open",
       "loggedInPersonEmail" -> "nigel@test.com",
@@ -53,60 +54,63 @@ object BatchedRepositorySampleData {
     )
   }
 
-  val payloadChargeTypeA = {
-    Json.parse("""
-                 | {
-                 |  "chargeADetails" : {
-                 |   "chargeDetails" : {
-                 |      "numberOfMembers" : 365,
-                 |      "totalAmtOfTaxDueAtLowerRate" : 983.67,
-                 |      "totalAmtOfTaxDueAtHigherRate" : 12.34,
-                 |      "totalAmount" : 996.01
-                 |    }
-                 |  }
-                 | }
-                 |""".stripMargin).as[JsObject]
+  val payloadChargeTypeA: JsObject = {
+    Json.parse(
+      """
+        | {
+        |  "chargeADetails" : {
+        |   "chargeDetails" : {
+        |      "numberOfMembers" : 365,
+        |      "totalAmtOfTaxDueAtLowerRate" : 983.67,
+        |      "totalAmtOfTaxDueAtHigherRate" : 12.34,
+        |      "totalAmount" : 996.01
+        |    }
+        |  }
+        | }
+        |""".stripMargin).as[JsObject]
   }
 
-  val payloadChargeTypeB:JsObject = Json.parse("""
-                                                         | {
-                                                         |  "chargeBDetails" : {
-                                                         |   "chargeDetails" : {
-                                                         |    "numberOfDeceased" : 74,
-                                                         |    "totalAmount" : 47.39
-                                                         |   }
-                                                         |  }
-                                                         | }
-                                                         |""".stripMargin).as[JsObject]
+  val payloadChargeTypeB: JsObject = Json.parse(
+    """
+      | {
+      |  "chargeBDetails" : {
+      |   "chargeDetails" : {
+      |    "numberOfDeceased" : 74,
+      |    "totalAmount" : 47.39
+      |   }
+      |  }
+      | }
+      |""".stripMargin).as[JsObject]
 
-  def payloadChargeTypeCEmployer(numberOfItems:Int, employerName:String = "ACME"):JsArray = {
+  def payloadChargeTypeCEmployer(numberOfItems: Int, employerName: String = "ACME"): JsArray = {
     JsArray(
       (1 to numberOfItems) map { item =>
-        Json.parse(s"""
-                      | {
-                      |  "whichTypeOfSponsoringEmployer" : "organisation",
-                      |  "sponsoringOrganisationDetails" : {
-                      |   "name" : "$employerName ${intToString(item)} Ltd",
-                      |   "crn" : "AB123456"
-                      |  },
-                      |  "sponsoringEmployerAddress" : {
-                      |   "line1" : "10 Other Place",
-                      |   "line2" : "Some District",
-                      |   "line3" : "Anytown",
-                      |   "country" : "GB",
-                      |   "postcode" : "ZZ1 1ZZ"
-                      |  },
-                      |  "chargeDetails" : {
-                      |   "paymentDate" : "2020-04-01",
-                      |   "amountTaxDue" : 33.00
-                      |  }
-                      | }
-                      |""".stripMargin).as[JsObject]
+        Json.parse(
+          s"""
+             | {
+             |  "whichTypeOfSponsoringEmployer" : "organisation",
+             |  "sponsoringOrganisationDetails" : {
+             |   "name" : "$employerName ${intToString(item)} Ltd",
+             |   "crn" : "AB123456"
+             |  },
+             |  "sponsoringEmployerAddress" : {
+             |   "line1" : "10 Other Place",
+             |   "line2" : "Some District",
+             |   "line3" : "Anytown",
+             |   "country" : "GB",
+             |   "postcode" : "ZZ1 1ZZ"
+             |  },
+             |  "chargeDetails" : {
+             |   "paymentDate" : "2020-04-01",
+             |   "amountTaxDue" : 33.00
+             |  }
+             | }
+             |""".stripMargin).as[JsObject]
       }
     )
   }
 
-  def payloadChargeTypeC(numberOfItems:Int):JsObject = {
+  def payloadChargeTypeC(numberOfItems: Int): JsObject = {
     val employersNode = if (numberOfItems > 0) {
       Json.obj(
         "employers" -> payloadChargeTypeCEmployer(numberOfItems)
@@ -117,35 +121,36 @@ object BatchedRepositorySampleData {
     concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems), employersNode), nodeNameChargeC)
   }
 
-  def payloadChargeTypeCMinusEmployers(numberOfItems:Int):JsObject = {
+  def payloadChargeTypeCMinusEmployers(numberOfItems: Int): JsObject = {
     Json.obj(
       "totalChargeAmount" -> 33 * numberOfItems,
       "addEmployers" -> false
     )
   }
 
-  def payloadChargeTypeDMember(numberOfItems:Int):JsArray = {
+  def payloadChargeTypeDMember(numberOfItems: Int): JsArray = {
     JsArray(
       (1 to numberOfItems) map { item =>
-        Json.parse(s"""
-                      | {
-                      |  "memberDetails": {
-                      |   "firstName" : "James ${intToString(item)}",
-                      |   "lastName" : "Hughes",
-                      |   "nino" : "CS454545C"
-                      |  },
-                      |  "chargeDetails" : {
-                      |   "dateOfEvent" : "2020-04-01",
-                      |   "taxAt25Percent" : 36.55,
-                      |   "taxAt55Percent" : 13.45
-                      |  }
-                      | }
-                      |""".stripMargin).as[JsObject]
+        Json.parse(
+          s"""
+             | {
+             |  "memberDetails": {
+             |   "firstName" : "James ${intToString(item)}",
+             |   "lastName" : "Hughes",
+             |   "nino" : "CS454545C"
+             |  },
+             |  "chargeDetails" : {
+             |   "dateOfEvent" : "2020-04-01",
+             |   "taxAt25Percent" : 36.55,
+             |   "taxAt55Percent" : 13.45
+             |  }
+             | }
+             |""".stripMargin).as[JsObject]
       }
     )
   }
 
-  def payloadChargeTypeD(numberOfItems:Int):JsObject = {
+  def payloadChargeTypeD(numberOfItems: Int): JsObject = {
     val membersNode = if (numberOfItems > 0) {
       Json.obj(
         "members" -> payloadChargeTypeDMember(numberOfItems)
@@ -156,75 +161,78 @@ object BatchedRepositorySampleData {
     concatenateNodes(Seq(payloadChargeTypeDMinusMembers(numberOfItems), membersNode), nodeNameChargeD)
   }
 
-  def payloadChargeTypeDMinusMembers(numberOfItems:Int):JsObject = {
+  def payloadChargeTypeDMinusMembers(numberOfItems: Int): JsObject = {
     Json.obj(
       "totalChargeAmount" -> 50 * numberOfItems,
       "addMembers" -> false
     )
   }
 
-  def payloadChargeTypeEMember(numberOfItems:Int):JsArray = {
+  def payloadChargeTypeEMember(numberOfItems: Int): JsArray = {
     JsArray(
       (1 to numberOfItems) map { item =>
-        Json.parse(s"""
-                      | {
-                      |  "memberDetails": {
-                      |   "firstName" : "Jack ${intToString(item)}",
-                      |   "lastName" : "Spratt",
-                      |   "nino" : "CS121212C"
-                      |  },
-                      |  "annualAllowanceYear" : "2020",
-                      |  "chargeDetails" : {
-                      |   "chargeAmount" : 100.00,
-                      |   "dateNoticeReceived" : "2020-01-01",
-                      |   "isPaymentMandatory" : true
-                      |  }
-                      | }
-                      |""".stripMargin).as[JsObject]
+        Json.parse(
+          s"""
+             | {
+             |  "memberDetails": {
+             |   "firstName" : "Jack ${intToString(item)}",
+             |   "lastName" : "Spratt",
+             |   "nino" : "CS121212C"
+             |  },
+             |  "annualAllowanceYear" : "2020",
+             |  "chargeDetails" : {
+             |   "chargeAmount" : 100.00,
+             |   "dateNoticeReceived" : "2020-01-01",
+             |   "isPaymentMandatory" : true
+             |  }
+             | }
+             |""".stripMargin).as[JsObject]
       }
     )
   }
 
-  def payloadChargeTypeCMemberMinimal:JsArray = {
+  def payloadChargeTypeCMemberMinimal: JsArray = {
     JsArray(
       Seq(
-        Json.parse(s"""
-                      | {
-                      |  "whichTypeOfSponsoringEmployer" : "organisation",
-                      |  "sponsoringOrganisationDetails" : {
-                      |   "name" : "ACME Ltd",
-                      |   "crn" : "AB123456"
-                      |  },
-                      |  "sponsoringEmployerAddress" : {
-                      |   "line1" : "10 Other Place",
-                      |   "line2" : "Some District",
-                      |   "line3" : "Anytown",
-                      |   "country" : "GB",
-                      |   "postcode" : "ZZ1 1ZZ"
-                      |  }
-                      | }
-                      |""".stripMargin).as[JsObject]
+        Json.parse(
+          s"""
+             | {
+             |  "whichTypeOfSponsoringEmployer" : "organisation",
+             |  "sponsoringOrganisationDetails" : {
+             |   "name" : "ACME Ltd",
+             |   "crn" : "AB123456"
+             |  },
+             |  "sponsoringEmployerAddress" : {
+             |   "line1" : "10 Other Place",
+             |   "line2" : "Some District",
+             |   "line3" : "Anytown",
+             |   "country" : "GB",
+             |   "postcode" : "ZZ1 1ZZ"
+             |  }
+             | }
+             |""".stripMargin).as[JsObject]
       )
     )
   }
 
-  def payloadChargeTypeEMemberMinimal:JsArray = {
+  def payloadChargeTypeEMemberMinimal: JsArray = {
     JsArray(
       Seq(
-        Json.parse(s"""
-                      | {
-                      |  "memberDetails": {
-                      |   "firstName" : "Jack",
-                      |   "lastName" : "Spratt",
-                      |   "nino" : "CS121212C"
-                      |  }
-                      | }
-                      |""".stripMargin).as[JsObject]
+        Json.parse(
+          s"""
+             | {
+             |  "memberDetails": {
+             |   "firstName" : "Jack",
+             |   "lastName" : "Spratt",
+             |   "nino" : "CS121212C"
+             |  }
+             | }
+             |""".stripMargin).as[JsObject]
       )
     )
   }
 
-  def payloadChargeTypeE(numberOfItems:Int):JsObject = {
+  def payloadChargeTypeE(numberOfItems: Int): JsObject = {
     val membersNode = if (numberOfItems > 0) {
       Json.obj(
         "members" -> payloadChargeTypeEMember(numberOfItems)
@@ -235,50 +243,52 @@ object BatchedRepositorySampleData {
     concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems), membersNode), nodeNameChargeE)
   }
 
-  def payloadChargeTypeEMinusMembers(numberOfItems:Int):JsObject = {
+  def payloadChargeTypeEMinusMembers(numberOfItems: Int): JsObject = {
     Json.obj(
       "totalChargeAmount" -> 100 * numberOfItems,
       "addMembers" -> false
     )
   }
 
-  val payloadChargeTypeF:JsObject = Json.parse("""
-                                                         | {
-                                                         |  "chargeFDetails" : {
-                                                         |   "chargeDetails" : {
-                                                         |    "deRegistrationDate" : "2020-04-01",
-                                                         |    "totalAmount" : 40.12
-                                                         |   }
-                                                         |  }
-                                                         | }
-                                                         |""".stripMargin).as[JsObject]
+  val payloadChargeTypeF: JsObject = Json.parse(
+    """
+      | {
+      |  "chargeFDetails" : {
+      |   "chargeDetails" : {
+      |    "deRegistrationDate" : "2020-04-01",
+      |    "totalAmount" : 40.12
+      |   }
+      |  }
+      | }
+      |""".stripMargin).as[JsObject]
 
-  def payloadChargeTypeGMember(numberOfItems:Int):JsArray = {
+  def payloadChargeTypeGMember(numberOfItems: Int): JsArray = {
     JsArray(
       (1 to numberOfItems) map { item =>
-        Json.parse(s"""
-                      | {
-                      |  "memberDetails": {
-                      |   "firstName" : "Sarah ${intToString(item)}",
-                      |   "lastName" : "Wabe",
-                      |   "dob" : "2020-05-12",
-                      |   "nino" : "CS787878C"
-                      |  },
-                      |  "chargeDetails" : {
-                      |   "qropsReferenceNumber" : "121212",
-                      |   "qropsTransferDate" : "2020-06-01"
-                      |  },
-                      |  "chargeAmounts" : {
-                      |   "amountTransferred" : 12.56,
-                      |   "amountTaxDue" : 90.00
-                      |  }
-                      | }
-                      |""".stripMargin).as[JsObject]
+        Json.parse(
+          s"""
+             | {
+             |  "memberDetails": {
+             |   "firstName" : "Sarah ${intToString(item)}",
+             |   "lastName" : "Wabe",
+             |   "dob" : "2020-05-12",
+             |   "nino" : "CS787878C"
+             |  },
+             |  "chargeDetails" : {
+             |   "qropsReferenceNumber" : "121212",
+             |   "qropsTransferDate" : "2020-06-01"
+             |  },
+             |  "chargeAmounts" : {
+             |   "amountTransferred" : 12.56,
+             |   "amountTaxDue" : 90.00
+             |  }
+             | }
+             |""".stripMargin).as[JsObject]
       }
     )
   }
 
-  def payloadChargeTypeG(numberOfItems:Int):JsObject = {
+  def payloadChargeTypeG(numberOfItems: Int): JsObject = {
     val membersNode = if (numberOfItems > 0) {
       Json.obj(
         "members" -> payloadChargeTypeGMember(numberOfItems)
@@ -289,7 +299,7 @@ object BatchedRepositorySampleData {
     concatenateNodes(Seq(payloadChargeTypeGMinusMembers(numberOfItems), membersNode), nodeNameChargeG)
   }
 
-  def payloadChargeTypeGMinusMembers(numberOfItems:Int):JsObject = {
+  def payloadChargeTypeGMinusMembers(numberOfItems: Int): JsObject = {
     Json.obj(
       "totalChargeAmount" -> 90 * numberOfItems,
       "addMembers" -> false

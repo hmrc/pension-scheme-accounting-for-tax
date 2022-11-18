@@ -18,16 +18,16 @@ package transformations.ETMPToUserAnswers
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeBTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ 'chargeTypeBDetails).readNullable {
+    (__ \ Symbol("chargeTypeBDetails")).readNullable {
       __.read(
-        ((__ \ 'chargeBDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
-          (__ \ 'chargeBDetails \ 'chargeDetails \ 'numberOfDeceased).json.copyFrom((__ \ 'numberOfMembers).json.pick) and
-          (__ \ 'chargeBDetails \ 'chargeDetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
+        ((__ \ Symbol("chargeBDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
+          (__ \ Symbol("chargeBDetails") \ Symbol("chargeDetails") \ Symbol("numberOfDeceased")).json.copyFrom((__ \ Symbol("numberOfMembers")).json.pick) and
+          (__ \ Symbol("chargeBDetails") \ Symbol("chargeDetails") \ Symbol("totalAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce
       )
     }.map {
       _.getOrElse(Json.obj())

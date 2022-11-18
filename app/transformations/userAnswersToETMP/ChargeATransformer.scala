@@ -18,21 +18,23 @@ package transformations.userAnswersToETMP
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeATransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeADetails).readNullable {
+    (__ \ Symbol("chargeADetails")).readNullable {
       __.read(
-        (((__ \ 'chargeDetails \ 'chargeTypeADetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
+        (((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeADetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
           orElse doNothing) and
-          (__ \ 'chargeDetails \ 'chargeTypeADetails \ 'numberOfMembers).json.copyFrom((__ \ 'chargeDetails \ 'numberOfMembers).json.pick) and
-          (__ \ 'chargeDetails \ 'chargeTypeADetails \ 'totalAmtOfTaxDueAtLowerRate).json.copyFrom(
-            (__ \ 'chargeDetails \ 'totalAmtOfTaxDueAtLowerRate).json.pick) and
-          (__ \ 'chargeDetails \ 'chargeTypeADetails \ 'totalAmtOfTaxDueAtHigherRate).json.copyFrom(
-            (__ \ 'chargeDetails \ 'totalAmtOfTaxDueAtHigherRate).json.pick) and
-          (__ \ 'chargeDetails \ 'chargeTypeADetails \ 'totalAmount).json.copyFrom((__ \ 'chargeDetails \ 'totalAmount).json.pick)).reduce
+          (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeADetails") \ Symbol("numberOfMembers"))
+            .json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("numberOfMembers")).json.pick) and
+          (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeADetails") \ Symbol("totalAmtOfTaxDueAtLowerRate")).json.copyFrom(
+            (__ \ Symbol("chargeDetails") \ Symbol("totalAmtOfTaxDueAtLowerRate")).json.pick) and
+          (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeADetails") \ Symbol("totalAmtOfTaxDueAtHigherRate")).json.copyFrom(
+            (__ \ Symbol("chargeDetails") \ Symbol("totalAmtOfTaxDueAtHigherRate")).json.pick) and
+          (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeADetails") \ Symbol("totalAmount"))
+            .json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("totalAmount")).json.pick)).reduce
       )
     }.map {
       _.getOrElse(Json.obj())

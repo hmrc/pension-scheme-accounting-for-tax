@@ -18,17 +18,19 @@ package transformations.userAnswersToETMP
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeBTransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeBDetails).readNullable {
+    (__ \ Symbol("chargeBDetails")).readNullable {
       __.read(
-        (((__ \ 'chargeDetails \ 'chargeTypeBDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
+        (((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeBDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
           orElse doNothing) and
-          (__ \ 'chargeDetails \ 'chargeTypeBDetails \ 'numberOfMembers).json.copyFrom((__ \ 'chargeDetails \ 'numberOfDeceased).json.pick) and
-          (__ \ 'chargeDetails \ 'chargeTypeBDetails \ 'totalAmount).json.copyFrom((__ \ 'chargeDetails \ 'totalAmount).json.pick)).reduce
+          (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeBDetails") \ Symbol("numberOfMembers"))
+            .json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("numberOfDeceased")).json.pick) and
+          (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeBDetails") \ Symbol("totalAmount"))
+            .json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("totalAmount")).json.pick)).reduce
       )
     }.map {
       _.getOrElse(Json.obj())

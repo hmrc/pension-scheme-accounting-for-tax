@@ -26,6 +26,7 @@ case class SessionData(
                         accessMode: String,
                         areSubmittedVersionsAvailable: Boolean
                       )
+
 object SessionData {
   implicit val format: Format[SessionData] = Json.format[SessionData]
 }

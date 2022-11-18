@@ -17,10 +17,9 @@
 package services
 
 
-
-import play.api.libs.json.{JsObject, Json}
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import play.api.libs.json.{JsObject, Json}
 
 class AFTServiceSpec extends AnyWordSpec with Matchers {
 

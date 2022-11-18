@@ -22,8 +22,7 @@ import play.api.libs.json._
 import java.time.LocalDateTime
 
 
-
-case class FileUploadStatus(_type: String, failureReason: Option[String]=None, message: Option[String]=None,
+case class FileUploadStatus(_type: String, failureReason: Option[String] = None, message: Option[String] = None,
                             downloadUrl: Option[String] = None, mimeType: Option[String] = None,
                             name: Option[String] = None, size: Option[Long] = None)
 
@@ -31,34 +30,34 @@ object FileUploadStatus {
   implicit val reads: OFormat[FileUploadStatus] = Json.format[FileUploadStatus]
 }
 
-case class FileUploadDataCache(uploadId: String, reference: String, status: FileUploadStatus,created: LocalDateTime,
+case class FileUploadDataCache(uploadId: String, reference: String, status: FileUploadStatus, created: LocalDateTime,
                                lastUpdated: LocalDateTime, expireAt: LocalDateTime)
 
 object FileUploadDataCache {
- implicit val reads : Reads[FileUploadDataCache] =(
-(JsPath \  'uploadId).read[String] and
-      (JsPath \ 'reference).read[String] and
-      (JsPath \  'status).read[FileUploadStatus] and
-        (JsPath \  'created).read[String] and
-        (JsPath \  'lastUpdated).read[String] and
-        (JsPath \  'expireAt).read[String]
+  implicit val reads: Reads[FileUploadDataCache] = (
+    (JsPath \ Symbol("uploadId")).read[String] and
+      (JsPath \ Symbol("reference")).read[String] and
+      (JsPath \ Symbol("status")).read[FileUploadStatus] and
+      (JsPath \ Symbol("created")).read[String] and
+      (JsPath \ Symbol("lastUpdated")).read[String] and
+      (JsPath \ Symbol("expireAt")).read[String]
 
-  )((uploadId, reference, status,created, lastUpdated, expireAt)=>
-  FileUploadDataCache(
-    uploadId,
-    reference,
-    status,
-    LocalDateTime.parse(created), LocalDateTime.parse(lastUpdated),
-    LocalDateTime.parse(expireAt)
-  ))
-  implicit val writes : Writes[FileUploadDataCache] =(
-    (JsPath \  'uploadId).write[String] and
-      (JsPath \ 'reference).write[String] and
-      (JsPath \  'status).write[FileUploadStatus] and
-      (JsPath \  'created).write[String] and
-      (JsPath \  'lastUpdated).write[String] and
-      (JsPath \  'expireAt).write[String]
-    )(FileUploadDataCache => (FileUploadDataCache.uploadId,
+    ) ((uploadId, reference, status, created, lastUpdated, expireAt) =>
+    FileUploadDataCache(
+      uploadId,
+      reference,
+      status,
+      LocalDateTime.parse(created), LocalDateTime.parse(lastUpdated),
+      LocalDateTime.parse(expireAt)
+    ))
+  implicit val writes: Writes[FileUploadDataCache] = (
+    (JsPath \ Symbol("uploadId")).write[String] and
+      (JsPath \ Symbol("reference")).write[String] and
+      (JsPath \ Symbol("status")).write[FileUploadStatus] and
+      (JsPath \ Symbol("created")).write[String] and
+      (JsPath \ Symbol("lastUpdated")).write[String] and
+      (JsPath \ Symbol("expireAt")).write[String]
+    ) (FileUploadDataCache => (FileUploadDataCache.uploadId,
     FileUploadDataCache.reference,
     FileUploadDataCache.status,
     FileUploadDataCache.created.toString,
@@ -71,7 +70,7 @@ object FileUploadDataCache {
                      created: LocalDateTime = LocalDateTime.now(),
                      lastUpdated: LocalDateTime = LocalDateTime.now(),
                      expireAt: LocalDateTime): FileUploadDataCache = {
-    FileUploadDataCache(uploadId, reference, status,created, lastUpdated, expireAt)
+    FileUploadDataCache(uploadId, reference, status, created, lastUpdated, expireAt)
   }
 }
 

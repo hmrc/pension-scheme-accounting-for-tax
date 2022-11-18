@@ -38,7 +38,8 @@ class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
   }
 
   def sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr: String, journeyType: String, data: JsValue)
-                                                              (implicit ec: ExecutionContext, request: RequestHeader): PartialFunction[Try[HttpResponse], Unit] = {
+                                                              (implicit ec: ExecutionContext,
+                                                               request: RequestHeader): PartialFunction[Try[HttpResponse], Unit] = {
     case Success(httpResponse) =>
       auditService.sendEvent(FileAFTReturnOneChargeAndNoValue(pstr, journeyType, Status.OK, data, Some(httpResponse.json)))
     case Failure(error: UpstreamErrorResponse) =>
@@ -49,9 +50,9 @@ class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
 
   def sendFileAftReturnSchemaValidatorAuditEvent(psaOrPspId: String, pstr: String, chargeType: String, data: JsValue,
                                                  failureResponse: String, numberOfFailures: Int)
-                                 (implicit ec: ExecutionContext, request: RequestHeader): Unit = {
+                                                (implicit ec: ExecutionContext, request: RequestHeader): Unit = {
     auditService.sendEvent(FileAftReturnSchemaValidator(psaOrPspId, pstr, chargeType, data,
-        failureResponse, numberOfFailures))
+      failureResponse, numberOfFailures))
   }
 }
 
@@ -75,13 +76,13 @@ case class FileAftReturn(
 }
 
 case class FileAftReturnSchemaValidator(
-                          psaOrPspId: String,
-                          pstr: String,
-                          chargeType: String,
-                          request: JsValue,
-                          failureResponse: String,
-                          numberOfFailures: Int
-                        ) extends AuditEvent {
+                                         psaOrPspId: String,
+                                         pstr: String,
+                                         chargeType: String,
+                                         request: JsValue,
+                                         failureResponse: String,
+                                         numberOfFailures: Int
+                                       ) extends AuditEvent {
   override def auditType: String = "AFTSchemaValidationPostCheck"
 
   override def details: JsObject = Json.obj(

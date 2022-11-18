@@ -23,9 +23,9 @@ import uk.gov.hmrc.mongo.MongoComponent
 import scala.concurrent.ExecutionContext
 
 class FileUploadOutcomeRepository @Inject()(
-                                              mongoComponent: MongoComponent,
-                                              configuration: Configuration
-                                            )(implicit val executionContext: ExecutionContext)
+                                             mongoComponent: MongoComponent,
+                                             configuration: Configuration
+                                           )(implicit val executionContext: ExecutionContext)
   extends CacheRepository(
     collectionName = configuration.get[String](path = "mongodb.aft-cache.file-upload-outcome.name"),
     expireInSeconds = Some(configuration.get[Int]("mongodb.aft-cache.file-upload-outcome.timeToLiveInSeconds")),

@@ -18,17 +18,20 @@ package controllers
 
 import connectors.{AFTConnector, FinancialStatementConnector}
 import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentMatchers, MockitoSugar}
+import org.mockito.Mockito.{reset, when}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
+import repository._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
@@ -50,7 +53,14 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[FinancialStatementConnector].toInstance(mockFSConnector),
-      bind[AFTConnector].toInstance(mockAFTConnector)
+      bind[AFTConnector].toInstance(mockAFTConnector),
+      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
+      bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+      bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
     )
 
   private val application: Application = new GuiceApplicationBuilder()
@@ -128,13 +138,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     }
 
     "return OK when the details are returned based on pstr and aft details don't exist" in {
-      val receiptDateFromIF = "2020-12-12T09:30:47Z"
-      val aftDetailsJson = Json.obj(
-        "aftDetails" -> Json.obj(
-          "aftVersion" -> 2,
-          "receiptDate" -> Json.toJson(receiptDateFromIF)
-        )
-      )
       when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(None))
 
       val controller = application.injector.instanceOf[FinancialStatementController]
@@ -214,7 +217,7 @@ object FinancialStatementControllerSpec {
     )
   )
   private val psaFSResponse: PsaFS =
-    PsaFS (false, psaFSDetailResponse)
+    PsaFS(inhibitRefundSignal = false, psaFSDetailResponse)
 
   private val schemeModel: SchemeFS = SchemeFS(
     inhibitRefundSignal = false,

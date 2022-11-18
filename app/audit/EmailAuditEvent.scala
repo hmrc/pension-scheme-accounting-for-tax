@@ -16,13 +16,13 @@
 
 package audit
 
-import models.enumeration.SchemeAdministratorType.SchemeAdministratorType
 import models.Event
+import models.enumeration.SchemeAdministratorType.SchemeAdministratorType
 import models.enumeration.{JourneyType, SchemeAdministratorType}
-import play.api.libs.json.{Json, JsObject}
+import play.api.libs.json.{JsObject, Json}
 
 case class EmailAuditEvent(psaOrPspId: String, submittedBy: SchemeAdministratorType, emailAddress: String, event: Event,
-  journeyType: JourneyType.Name, requestId: String) extends AuditEvent {
+                           journeyType: JourneyType.Name, requestId: String) extends AuditEvent {
 
   override def auditType: String = s"${journeyType.toString}EmailEvent"
 

@@ -16,20 +16,22 @@
 
 package repository
 
-import com.github.simplyscala.MongoEmbedDatabase
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import config.AppConfig
 import models.BatchedRepositorySampleData._
 import models.{ChargeAndMember, ChargeType, LockDetail}
 import org.mockito.ArgumentMatchers._
-import org.mockito.{ArgumentCaptor, ArgumentMatchers, MockitoSugar}
+import org.mockito.Mockito._
+import org.mockito.{ArgumentCaptor, ArgumentMatchers}
 import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{Filters, Updates}
-import org.scalatest.concurrent.ScalaFutures.whenReady
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import repository.model.SessionData
 import services.BatchService
@@ -43,303 +45,397 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 class AftBatchedDataCacheRepositorySpec
-  extends AnyWordSpec with MockitoSugar with Matchers with MongoEmbedDatabase with BeforeAndAfter with
-    BeforeAndAfterEach { // scalastyle:off magic.number
+  extends AnyWordSpec with MockitoSugar with Matchers with EmbeddedMongoDBSupport with BeforeAndAfter with
+    BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
+
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
   import AftBatchedDataCacheRepositorySpec._
 
-  override def beforeEach: Unit = {
-    super.beforeEach
-    when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(2)
+  var aftBatchedDataCacheRepository: AftBatchedDataCacheRepository = _
+
+  override def beforeAll(): Unit = {
     when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
     when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
     when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(collectionName)
+    initMongoDExecutable()
+    startMongoD()
+    aftBatchedDataCacheRepository = buildRepository(mongoHost, mongoPort)
+    super.beforeAll()
   }
 
-    "save" must {
-      "save de-reg charge batch correctly in Mongo collection where there is some session data" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+  override def beforeEach(): Unit = {
+    when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(2)
+    super.beforeEach()
+  }
 
-        val fullPayload = payloadOther ++ payloadChargeTypeA
-        when(batchService.batchIdentifierForChargeAndMember(any(), any()))
-          .thenReturn(Some(BatchIdentifier(BatchType.Other, 1)))
-        when(batchService.getOtherJsObject(ArgumentMatchers.eq(fullPayload))).thenReturn(dummyJson)
+  override def afterAll(): Unit =
+    stopMongoD()
 
-        Await.result(aftBatchedDataCacheRepository
-          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), fullPayload),
-          Duration.Inf)
+  "save" must {
+    "save de-reg charge batch correctly in Mongo collection where there is some session data" in {
+      val fullPayload = payloadOther ++ payloadChargeTypeA
+      when(batchService.batchIdentifierForChargeAndMember(any(), any()))
+        .thenReturn(Some(BatchIdentifier(BatchType.Other, 1)))
+      when(batchService.getOtherJsObject(ArgumentMatchers.eq(fullPayload))).thenReturn(dummyJson)
 
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) { documentsInDB =>
-          documentsInDB.size mustBe 12
-          val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
-            .filter(filterOnBatchTypeAndNo(batchType = BatchType.Other, batchNo = 1))
-          actualOtherBatch.nonEmpty mustBe true
-          actualOtherBatch.foreach {
-            _.jsValue mustBe dummyJson
-          }
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId))
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+        _ <- aftBatchedDataCacheRepository
+          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), fullPayload)
+        documentsInDB <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield documentsInDB
+
+      whenReady(documentsInDB) { documentsInDB =>
+        documentsInDB.size mustBe 12
+        val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
+          .filter(filterOnBatchTypeAndNo(batchType = BatchType.Other, batchNo = 1))
+        actualOtherBatch.nonEmpty mustBe true
+        actualOtherBatch.foreach {
+          _.jsValue mustBe dummyJson
         }
       }
+    }
 
-      "save member-based charge batch for a member correctly in Mongo collection where there is some session data" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+    "save member-based charge batch for a member correctly in Mongo collection where there is some session data" in {
+      val fullPayload = payloadOther ++ payloadChargeTypeC(5)
+      val amendedPayload = payloadChargeTypeCEmployer(numberOfItems = 5, employerName = "WIDGETS INC")
+      val amendedBatchInfo = Some(BatchInfo(BatchType.ChargeC, 2, amendedPayload))
+      when(batchService.batchIdentifierForChargeAndMember(any(), any()))
+        .thenReturn(Some(BatchIdentifier(BatchType.ChargeC, 4)))
+      when(batchService.getChargeTypeJsObjectForBatch(any(), any(), any(), any())).thenReturn(amendedBatchInfo)
 
-        val fullPayload = payloadOther ++ payloadChargeTypeC(5)
-        val amendedPayload = payloadChargeTypeCEmployer(numberOfItems = 5, employerName = "WIDGETS INC")
-        val amendedBatchInfo = Some(BatchInfo(BatchType.ChargeC, 2, amendedPayload))
-        when(batchService.batchIdentifierForChargeAndMember(any(), any()))
-          .thenReturn(Some(BatchIdentifier(BatchType.ChargeC, 4)))
-        when(batchService.getChargeTypeJsObjectForBatch(any(), any(), any(), any())).thenReturn(amendedBatchInfo)
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId))
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+        _ <- aftBatchedDataCacheRepository
+          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeAuthSurplus, Some(4))), fullPayload)
+        documentsInDB <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield documentsInDB
 
-        Await.result(aftBatchedDataCacheRepository
-          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeAuthSurplus, Some(4))), fullPayload),
-          Duration.Inf)
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) { documentsInDB =>
-          documentsInDB.size mustBe 12
-          val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
-            .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 2))
-          actualOtherBatch.nonEmpty mustBe true
-          actualOtherBatch.foreach {
-            _.jsValue.as[JsArray] mustBe amendedPayload
-          }
+      whenReady(documentsInDB) { documentsInDB =>
+        documentsInDB.size mustBe 12
+        val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
+          .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 2))
+        actualOtherBatch.nonEmpty mustBe true
+        actualOtherBatch.foreach {
+          _.jsValue.as[JsArray] mustBe amendedPayload
         }
       }
+    }
 
-      "save batch for a new member where member added is first in new batch (batch 3 where currently only 2 batches)" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-        mongoCollectionInsertBatches(id, sessionId, setOfFourChargeCMembersInTwoBatches.toSeq)
+    "save batch for a new member where member added is first in new batch (batch 3 where currently only 2 batches)" in {
+      val amendedPayload = payloadChargeTypeCEmployer(numberOfItems = 1, employerName = "WIDGETS INC")
+      val amendedBatchInfo = Some(BatchInfo(BatchType.ChargeC, 3, amendedPayload))
+      when(batchService.batchIdentifierForChargeAndMember(any(), any()))
+        .thenReturn(Some(BatchIdentifier(BatchType.ChargeC, 3)))
+      when(batchService.getChargeTypeJsObjectForBatch(any(), any(), any(), any())).thenReturn(amendedBatchInfo)
 
-        val amendedPayload = payloadChargeTypeCEmployer(numberOfItems = 1, employerName = "WIDGETS INC")
-        val amendedBatchInfo = Some(BatchInfo(BatchType.ChargeC, 3, amendedPayload))
-        when(batchService.batchIdentifierForChargeAndMember(any(), any()))
-          .thenReturn(Some(BatchIdentifier(BatchType.ChargeC, 3)))
-        when(batchService.getChargeTypeJsObjectForBatch(any(), any(), any(), any())).thenReturn(amendedBatchInfo)
-
-        Await.result(aftBatchedDataCacheRepository
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId))
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, setOfFourChargeCMembersInTwoBatches.toSeq)
+        _ <- aftBatchedDataCacheRepository
           .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeAuthSurplus, Some(5))),
-            payloadOther ++ payloadChargeTypeC(5)), Duration.Inf)
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) { documentsInDB =>
-          documentsInDB.size mustBe 5
-          val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
-            .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 3))
-          actualOtherBatch.nonEmpty mustBe true
-          actualOtherBatch.foreach {
-            _.jsValue.as[JsArray] mustBe amendedPayload
-          }
+            payloadOther ++ payloadChargeTypeC(5))
+        documentsInDB <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield documentsInDB
+
+      whenReady(documentsInDB) { documentsInDB =>
+        documentsInDB.size mustBe 5
+        val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
+          .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 3))
+        actualOtherBatch.nonEmpty mustBe true
+        actualOtherBatch.foreach {
+          _.jsValue.as[JsArray] mustBe amendedPayload
         }
       }
+    }
 
-      "re-size batches when batch size changed" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+    "re-size batches when batch size changed" in {
 
-        val biCaptor: ArgumentCaptor[Seq[BatchInfo]] = ArgumentCaptor.forClass(classOf[Seq[BatchInfo]])
-        when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(4)
-        when(batchService.createUserDataFullPayload(biCaptor.capture())).thenReturn(dummyJson)
-        when(batchService.createBatches(any(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
-        val fullPayload = payloadOther ++ payloadChargeTypeA
-        when(batchService.lastBatchNo(any())).thenReturn(Set())
-        when(batchService.batchIdentifierForChargeAndMember(any(), any()))
-          .thenReturn(Some(BatchIdentifier(BatchType.Other, 1)))
-        when(batchService.getOtherJsObject(ArgumentMatchers.eq(fullPayload))).thenReturn(dummyJson)
+      val biCaptor: ArgumentCaptor[Seq[BatchInfo]] = ArgumentCaptor.forClass(classOf[Seq[BatchInfo]])
+      when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(4)
+      when(batchService.createUserDataFullPayload(biCaptor.capture())).thenReturn(dummyJson)
+      when(batchService.createBatches(any(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
+      val fullPayload = payloadOther ++ payloadChargeTypeA
+      when(batchService.lastBatchNo(any())).thenReturn(Set())
+      when(batchService.batchIdentifierForChargeAndMember(any(), any()))
+        .thenReturn(Some(BatchIdentifier(BatchType.Other, 1)))
+      when(batchService.getOtherJsObject(ArgumentMatchers.eq(fullPayload))).thenReturn(dummyJson)
 
-        Await.result(aftBatchedDataCacheRepository
-          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), fullPayload),
-          Duration.Inf)
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId))
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+        res <- aftBatchedDataCacheRepository
+          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), fullPayload)
+      } yield res
+
+      whenReady(documentsInDB) { _ =>
         biCaptor.getValue.size mustBe 11
+
         verify(batchService, times(1)).createUserDataFullPayload(any())
         verify(batchService, times(1)).createBatches(any(), any())
       }
+    }
 
-      "remove all documents if there is no session data batch (i.e. it has expired)" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
-        Await.result(aftBatchedDataCacheRepository
-          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), payloadOther),
-          Duration.Inf)
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) {
-          _.isEmpty mustBe true
-        }
+    "remove all documents if there is no session data batch (i.e. it has expired)" in {
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+        _ <- aftBatchedDataCacheRepository
+          .save(id, sessionId, Option(ChargeAndMember(ChargeType.ChargeTypeDeRegistration, None)), payloadOther)
+        res <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield res
+
+      whenReady(documentsInDB) {
+        _.isEmpty mustBe true
+      }
+    }
+  }
+
+  "setSessionData" must {
+    "save all batches correctly in Mongo collection, lock return, and remove batches beyond last batch (charge G batch 3)" in {
+      val jsObjectCaptor: ArgumentCaptor[JsObject] = ArgumentCaptor.forClass(classOf[JsObject])
+      when(batchService.createBatches(jsObjectCaptor.capture(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
+      when(batchService.lastBatchNo(any())).thenReturn(Set(BatchIdentifier(BatchType.ChargeG, 3)))
+
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- aftBatchedDataCacheRepository
+          .setSessionData(id, lockDetail, dummyJson, sessionId, version = version, accessMode = accessMode,
+            areSubmittedVersionsAvailable = areSubmittedVersionsAvailable)
+        res <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield res
+
+      whenReady(documentsInDB) { documentsInDB =>
+        jsObjectCaptor.getValue mustBe dummyJson
+        documentsInDB.size mustBe 11
+        val expectedBatches =
+          fullSetOfBatchesToSaveToMongo.filterNot(bi => bi.batchType == BatchType.ChargeG && bi.batchNo == 4) ++
+            sessionDataBatch(sessionId, lockDetail)
+        dbDocumentsAsSeqBatchInfo(documentsInDB) mustBe expectedBatches
       }
     }
 
-    "setSessionData" must {
-      "save all batches correctly in Mongo collection, lock return, and remove batches beyond last batch (charge G batch 3)" in {
-        mongoCollectionDrop()
-        val jsObjectCaptor: ArgumentCaptor[JsObject] = ArgumentCaptor.forClass(classOf[JsObject])
-        when(batchService.createBatches(jsObjectCaptor.capture(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
-        when(batchService.lastBatchNo(any())).thenReturn(Set(BatchIdentifier(BatchType.ChargeG, 3)))
+    "save all batches correctly where one charge C batch and last member for last batch for charge E removed" in {
+      val jsArrayChargeC = payloadChargeTypeCEmployer(numberOfItems = 2)
+      val jsArrayChargeE = payloadChargeTypeEMember(numberOfItems = 1)
+      val batchInfoOtherInDB = BatchInfo(BatchType.Other, 1, payloadOther ++
+        concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 1)), nodeNameChargeE) ++
+        concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC))
+      val batchInfoOtherInPayload = BatchInfo(BatchType.Other, 1, payloadOther ++
+        concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC))
+      val batchInfoChargeC = BatchInfo(BatchType.ChargeC, 1, JsArray(Seq(jsArrayChargeC(0), jsArrayChargeC(1))))
+      val batchesToInsertIntoDB: Set[BatchInfo] =
+        Set(batchInfoOtherInDB, batchInfoChargeC, BatchInfo(BatchType.ChargeE, 1, JsArray(Seq(jsArrayChargeE(0)))))
 
-        Await.result(aftBatchedDataCacheRepository
+      val jsObjectCaptor: ArgumentCaptor[JsObject] = ArgumentCaptor.forClass(classOf[JsObject])
+      when(batchService.createBatches(jsObjectCaptor.capture(), any()))
+        .thenReturn(Set(batchInfoOtherInPayload, batchInfoChargeC))
+      when(batchService.lastBatchNo(any())).thenReturn(Set(
+        BatchIdentifier(ChargeC, 1),
+        BatchIdentifier(ChargeD, 0),
+        BatchIdentifier(ChargeE, 0),
+        BatchIdentifier(ChargeG, 0)
+      ))
+
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId), batchSize = 5)
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, batchesToInsertIntoDB.toSeq)
+        _ <- aftBatchedDataCacheRepository
           .setSessionData(id, lockDetail, dummyJson, sessionId, version = version, accessMode = accessMode,
-            areSubmittedVersionsAvailable = areSubmittedVersionsAvailable), Duration.Inf)
-        jsObjectCaptor.getValue mustBe dummyJson
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) { documentsInDB =>
-          documentsInDB.size mustBe 11
-          val expectedBatches =
-            fullSetOfBatchesToSaveToMongo.filterNot(bi => bi.batchType == BatchType.ChargeG && bi.batchNo == 4) ++
-              sessionDataBatch(sessionId, lockDetail)
-          dbDocumentsAsSeqBatchInfo(documentsInDB) mustBe expectedBatches
-        }
+            areSubmittedVersionsAvailable = areSubmittedVersionsAvailable)
+        res <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield res
+
+      whenReady(documentsInDB) { documentsInDB =>
+        documentsInDB.size mustBe 3
+        val actualSetBatchInfo = dbDocumentsAsSeqBatchInfo(documentsInDB)
+        actualSetBatchInfo.exists(_.batchType == BatchType.ChargeE) mustBe false
+        actualSetBatchInfo.count(_.batchType == BatchType.ChargeC) mustBe 1
       }
+    }
 
-      "save all batches correctly where one charge C batch and last member for last batch for charge E removed" in {
-        val jsArrayChargeC = payloadChargeTypeCEmployer(numberOfItems = 2)
-        val jsArrayChargeE = payloadChargeTypeEMember(numberOfItems = 1)
-        val batchInfoOtherInDB = BatchInfo(BatchType.Other, 1, payloadOther ++
-          concatenateNodes(Seq(payloadChargeTypeEMinusMembers(numberOfItems = 1)), nodeNameChargeE) ++
-          concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC))
-        val batchInfoOtherInPayload = BatchInfo(BatchType.Other, 1, payloadOther ++
-          concatenateNodes(Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 1)), nodeNameChargeC))
-        val batchInfoChargeC = BatchInfo(BatchType.ChargeC, 1, JsArray(Seq(jsArrayChargeC(0), jsArrayChargeC(1))))
-        val batchesToInsertIntoDB: Set[BatchInfo] =
-          Set(batchInfoOtherInDB, batchInfoChargeC, BatchInfo(BatchType.ChargeE, 1, JsArray(Seq(jsArrayChargeE(0)))))
+    "save all batches correctly in Mongo collection when there is no lock detail and not lock" in {
+      val jsObjectCaptor: ArgumentCaptor[JsObject] = ArgumentCaptor.forClass(classOf[JsObject])
+      when(batchService.createBatches(jsObjectCaptor.capture(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
+      when(batchService.lastBatchNo(any())).thenReturn(Set())
 
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId), batchSize = 5)
-        mongoCollectionInsertBatches(id, sessionId, batchesToInsertIntoDB.toSeq)
-
-        val jsObjectCaptor: ArgumentCaptor[JsObject] = ArgumentCaptor.forClass(classOf[JsObject])
-        when(batchService.createBatches(jsObjectCaptor.capture(), any()))
-          .thenReturn(Set(batchInfoOtherInPayload, batchInfoChargeC))
-        when(batchService.lastBatchNo(any())).thenReturn(Set(
-          BatchIdentifier(ChargeC, 1),
-          BatchIdentifier(ChargeD, 0),
-          BatchIdentifier(ChargeE, 0),
-          BatchIdentifier(ChargeG, 0)
-        ))
-
-        Await.result(aftBatchedDataCacheRepository
-          .setSessionData(id, lockDetail, dummyJson, sessionId, version = version, accessMode = accessMode,
-            areSubmittedVersionsAvailable = areSubmittedVersionsAvailable), Duration.Inf)
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) { documentsInDB =>
-          documentsInDB.size mustBe 3
-          val actualSetBatchInfo = dbDocumentsAsSeqBatchInfo(documentsInDB)
-          actualSetBatchInfo.exists(_.batchType == BatchType.ChargeE) mustBe false
-          actualSetBatchInfo.count(_.batchType == BatchType.ChargeC) mustBe 1
-        }
-      }
-
-      "save all batches correctly in Mongo collection when there is no lock detail and not lock" in {
-        mongoCollectionDrop()
-        val jsObjectCaptor: ArgumentCaptor[JsObject] = ArgumentCaptor.forClass(classOf[JsObject])
-        when(batchService.createBatches(jsObjectCaptor.capture(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
-        when(batchService.lastBatchNo(any())).thenReturn(Set())
-
-        Await.result(aftBatchedDataCacheRepository
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- aftBatchedDataCacheRepository
           .setSessionData(id, None, dummyJson, sessionId, version = version, accessMode = accessMode,
-            areSubmittedVersionsAvailable = areSubmittedVersionsAvailable), Duration.Inf)
+            areSubmittedVersionsAvailable = areSubmittedVersionsAvailable)
+        res <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield res
+
+      whenReady(documentsInDB) { documentsInDB =>
         jsObjectCaptor.getValue mustBe dummyJson
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) { documentsInDB =>
-          documentsInDB.size mustBe 12
-          val expectedBatches =
-            fullSetOfBatchesToSaveToMongo ++ sessionDataBatch(sessionId, None)
-          dbDocumentsAsSeqBatchInfo(documentsInDB) mustBe expectedBatches
-        }
+        documentsInDB.size mustBe 12
+        val expectedBatches =
+          fullSetOfBatchesToSaveToMongo ++ sessionDataBatch(sessionId, None)
+        dbDocumentsAsSeqBatchInfo(documentsInDB) mustBe expectedBatches
       }
     }
+  }
 
-    "get" must {
-      "return previously entered items minus the session data batch" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+  "get" must {
+    "return previously entered items minus the session data batch" in {
+      val biCaptor = ArgumentCaptor.forClass(classOf[Seq[BatchInfo]])
+      when(batchService.createUserDataFullPayload(biCaptor.capture())).thenReturn(dummyJson)
 
-        val biCaptor = ArgumentCaptor.forClass(classOf[Seq[BatchInfo]])
-        when(batchService.createUserDataFullPayload(biCaptor.capture())).thenReturn(dummyJson)
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId))
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+        res <- aftBatchedDataCacheRepository.get(id, sessionId)
+      } yield res
 
-        Await.result(aftBatchedDataCacheRepository.get(id, sessionId), Duration.Inf) mustBe Some(dummyJson)
+      whenReady(documentsInDB) { result =>
+        result mustBe Some(dummyJson)
         val capturedSeqBatchInfo: Seq[BatchInfo] = biCaptor.getValue
         capturedSeqBatchInfo.size mustBe 11
         capturedSeqBatchInfo.toSet mustBe fullSetOfBatchesToSaveToMongo
       }
+    }
 
-      "remove all documents and return None if there is no session data batch (i.e. it has expired)" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
-        Await.result(aftBatchedDataCacheRepository.get(id, sessionId), Duration.Inf) mustBe None
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) {
-          _.isEmpty mustBe true
-        }
-      }
+    "remove all documents and return None if there is no session data batch (i.e. it has expired)" in {
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+        res1 <- aftBatchedDataCacheRepository.get(id, sessionId)
+        res2 <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield (res1, res2)
 
-      "return None if there are no batches but there is a session data batch" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-        when(batchService.createUserDataFullPayload(any())).thenReturn(dummyJson)
-        Await.result(aftBatchedDataCacheRepository.get(id, sessionId), Duration.Inf) mustBe None
+      whenReady(documentsInDB) { result =>
+        result._1 mustBe None
+        result._2.isEmpty mustBe true
       }
     }
 
-    "getSessionData" must {
-      "return the session data batch with no lock info if not locked by another user" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId, None))
-        Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe Some(sessionData(sessionId, None))
+    "return None if there are no batches but there is a session data batch" in {
+      when(batchService.createUserDataFullPayload(any())).thenReturn(dummyJson)
+
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId))
+        res <- aftBatchedDataCacheRepository.get(id, sessionId)
+      } yield res
+
+      whenReady(documentsInDB) {
+        _ mustBe None
       }
+    }
+  }
 
-      "return the session data batch with lock info if locked by another user" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId, None))
-        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
-        Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe Some(sessionData(sessionId))
-      }
+  "getSessionData" must {
+    "return the session data batch with no lock info if not locked by another user" in {
+      Await.result(aftBatchedDataCacheRepository.collection.drop().toFuture(), Duration.Inf)
+      Await.result(mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId, None)), Duration.Inf)
+      Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe Some(sessionData(sessionId, None))
+    }
 
-      "remove all documents and return None if there is no session data batch (i.e. it has expired)" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
-        Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe None
+    "return the session data batch with lock info if locked by another user" in {
 
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) {
-          _.isEmpty mustBe true
-        }
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId, None))
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, anotherSessionId, sessionData(anotherSessionId))
+        res <- aftBatchedDataCacheRepository.getSessionData(sessionId, id)
+      } yield res
+
+      whenReady(documentsInDB) { res =>
+        res mustBe Some(sessionData(sessionId))
       }
     }
 
-    "lockedBy" must {
-      "return None if not locked by another user" in {
-        mongoCollectionDrop()
-        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
-      }
+    "remove all documents and return None if there is no session data batch (i.e. it has expired)" in {
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+        res1 <- aftBatchedDataCacheRepository.getSessionData(sessionId, id)
+        res2 <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield (res1, res2)
 
-      "return the lock info if same scheme is locked by another user" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
-        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe lockDetail
+      whenReady(documentsInDB) { result =>
+        result._1 mustBe None
+        result._2.isEmpty mustBe true
       }
+    }
+  }
 
-      "return None if different scheme is locked by another user" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, anotherSessionId, sessionData(anotherSessionId))
-        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, anotherSchemeId), Duration.Inf) mustBe None
-      }
+  "lockedBy" must {
+    "return None if not locked by another user" in {
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        res <- aftBatchedDataCacheRepository.lockedBy(sessionId, id)
+      } yield res
 
-      "return None if locked by current user" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertSessionDataBatch(id, sessionId, sessionData(sessionId))
-        Await.result(aftBatchedDataCacheRepository.lockedBy(sessionId, id), Duration.Inf) mustBe None
+      whenReady(documentsInDB) {
+        _ mustBe None
       }
     }
 
-    "remove" must {
-      "remove all documents for scheme if present" in {
-        mongoCollectionDrop()
-        mongoCollectionInsertBatches(id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+    "return the lock info if same scheme is locked by another user" in {
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, anotherSessionId, sessionData(anotherSessionId))
+        res <- aftBatchedDataCacheRepository.lockedBy(sessionId, id)
+      } yield res
 
-        Await.result(aftBatchedDataCacheRepository.remove(id, sessionId), Duration.Inf)
-        whenReady(aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()) {
-          _.isEmpty mustBe true
-        }
+      whenReady(documentsInDB) {
+        _ mustBe lockDetail
       }
     }
+
+    "return None if different scheme is locked by another user" in {
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, anotherSessionId, sessionData(anotherSessionId))
+        res <- aftBatchedDataCacheRepository.lockedBy(sessionId, anotherSchemeId)
+      } yield res
+
+      whenReady(documentsInDB) {
+        _ mustBe None
+      }
+    }
+
+    "return None if locked by current user" in {
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId))
+        res <- aftBatchedDataCacheRepository.lockedBy(sessionId, id)
+      } yield res
+
+      whenReady(documentsInDB) {
+        _ mustBe None
+      }
+    }
+  }
+
+  "remove" must {
+    "remove all documents for scheme if present" in {
+      val documentsInDB = for {
+        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
+        _ <- mongoCollectionInsertBatches(aftBatchedDataCacheRepository, id, sessionId, fullSetOfBatchesToSaveToMongo.toSeq)
+        _ <- aftBatchedDataCacheRepository.remove(id, sessionId)
+        res <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      } yield res
+
+      whenReady(documentsInDB) {
+        _.isEmpty mustBe true
+      }
+    }
+  }
 }
 
-object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
+object AftBatchedDataCacheRepositorySpec extends MockitoSugar {
   private val uniqueAftIdKey = "uniqueAftId"
   private val batchTypeKey = "batchType"
   private val batchNoKey = "batchNo"
@@ -347,11 +443,8 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
 
   import models.BatchedRepositorySampleData._
 
-
-  private def mongoCollectionDrop(): Unit = Await
-    .result(aftBatchedDataCacheRepository.collection.drop().toFuture(), Duration.Inf)
-
-  private def mongoCollectionInsertBatches(id: String, sessionId: String, seqBatchInfo: Seq[BatchInfo]): Unit = {
+  private def mongoCollectionInsertBatches(aftBatchedDataCacheRepository2: AftBatchedDataCacheRepository, id: String,
+                                           sessionId: String, seqBatchInfo: Seq[BatchInfo]): Future[Unit] = {
 
     def selector(batchType: BatchType, batchNo: Int): Bson = {
       Filters.and(
@@ -369,20 +462,21 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
       )
 
       val upsertOptions = new FindOneAndUpdateOptions().upsert(true)
-      aftBatchedDataCacheRepository.collection.findOneAndUpdate(
+      aftBatchedDataCacheRepository2.collection.findOneAndUpdate(
         filter = selector(bi.batchType, bi.batchNo),
         update = modifier,
         upsertOptions
       ).toFuture().map(_ => (): Unit)
 
     }
-    Await.result(Future.sequence(seqFutureUpdateWriteResult).map(_ => (): Unit), Duration.Inf)
+    Future.sequence(seqFutureUpdateWriteResult).map(_ => (): Unit)
   }
 
-  private def mongoCollectionInsertSessionDataBatch(id: String, sessionId: String, sd: SessionData, batchSize: Int = 2): Unit = {
+  private def mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository2: AftBatchedDataCacheRepository, id: String,
+                                                    sessionId: String, sd: SessionData, batchSize: Int = 2): Future[Unit] = {
     val selector: Bson = {
       Filters.and(
-        Filters.eq(uniqueAftIdKey, (id + sessionId)),
+        Filters.eq(uniqueAftIdKey, id + sessionId),
         Filters.eq(batchTypeKey, BatchType.SessionData.toString),
         Filters.eq(batchNoKey, 1)
       )
@@ -394,14 +488,12 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
     )
 
     val upsertOptions = new FindOneAndUpdateOptions().upsert(true)
-    Await.result(
-      aftBatchedDataCacheRepository.collection.findOneAndUpdate(
-        filter = selector,
-        update = modifier,
-        upsertOptions
-      ).toFuture().map(_ => (): Unit),
-      Duration.Inf
-    )
+
+    aftBatchedDataCacheRepository2.collection.findOneAndUpdate(
+      filter = selector,
+      update = modifier,
+      upsertOptions
+    ).toFuture().map(_ => (): Unit)
   }
 
   private val mockAppConfig = mock[AppConfig]
@@ -418,16 +510,12 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
   private val lockDetail = Some(LockDetail(name = "Billy Wiggins", "A123456"))
   private val batchService = mock[BatchService]
   private val collectionName = "aft-batches"
-  private val databaseName = "pension-scheme-accounting-for-tax"
-  private val mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-  private val mongoComponent = MongoComponent(mongoUri)
-
 
   private def sessionData(sessionId: String, lockDetail: Option[LockDetail] = lockDetail) = SessionData(
     sessionId = sessionId, lockDetail = lockDetail, version = version, accessMode = accessMode,
     areSubmittedVersionsAvailable = false)
 
-  private def sessionDataBatch(sessionId: String, lockDetail: Option[LockDetail] = lockDetail): Set[BatchInfo] = {
+  private def sessionDataBatch(sessionId: String, lockDetail: Option[LockDetail]): Set[BatchInfo] = {
     val json = Json.toJson(sessionData(sessionId, lockDetail))
     Set(BatchInfo(BatchType.SessionData, 1, json))
   }
@@ -485,5 +573,9 @@ object AftBatchedDataCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
       BatchInfo(BatchType.ChargeG, 4, JsArray(Seq(jsArrayChargeG(6)))))
   }
 
-  def aftBatchedDataCacheRepository = new AftBatchedDataCacheRepository(mongoComponent, batchService, mockAppConfig)
+  private def buildRepository(mongoHost: String, mongoPort: Int): AftBatchedDataCacheRepository = {
+    val databaseName = "pension-scheme-accounting-for-tax"
+    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
+    new AftBatchedDataCacheRepository(MongoComponent(mongoUri), batchService, mockAppConfig)
+  }
 }

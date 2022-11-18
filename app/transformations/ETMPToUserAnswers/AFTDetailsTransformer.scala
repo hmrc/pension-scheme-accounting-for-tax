@@ -42,17 +42,17 @@ class AFTDetailsTransformer @Inject()(
     ).reduce
 
   private def transformAFTDetails: Reads[JsObject] =
-    ((__ \ 'aftStatus).json.copyFrom((__ \ 'aftDetails \ 'aftStatus).json.pick) and
-      (__ \ 'aftVersion).json.copyFrom((__ \ 'aftDetails \ 'aftVersion).json.pick) and
-      (__ \ 'quarter \ 'startDate).json.copyFrom((__ \ 'aftDetails \ 'quarterStartDate).json.pick) and
-      (__ \ 'quarter \ 'endDate).json.copyFrom((__ \ 'aftDetails \ 'quarterEndDate).json.pick)).reduce
+    ((__ \ Symbol("aftStatus")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("aftStatus")).json.pick) and
+      (__ \ Symbol("aftVersion")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("aftVersion")).json.pick) and
+      (__ \ Symbol("quarter") \ Symbol("startDate")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("quarterStartDate")).json.pick) and
+      (__ \ Symbol("quarter") \ Symbol("endDate")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("quarterEndDate")).json.pick)).reduce
 
   private def transformSchemeDetails: Reads[JsObject] =
-    ((__ \ 'pstr).json.copyFrom((__ \ 'schemeDetails \ 'pstr).json.pick) and
-      (__ \ 'schemeName).json.copyFrom((__ \ 'schemeDetails \ 'schemeName).json.pick)).reduce
+    ((__ \ Symbol("pstr")).json.copyFrom((__ \ Symbol("schemeDetails") \ Symbol("pstr")).json.pick) and
+      (__ \ Symbol("schemeName")).json.copyFrom((__ \ Symbol("schemeDetails") \ Symbol("schemeName")).json.pick)).reduce
 
   private def transformChargeDetails: Reads[JsObject] =
-    (__ \ 'chargeDetails).read(
+    (__ \ Symbol("chargeDetails")).read(
       (chargeATransformer.transformToUserAnswers and
         chargeBTransformer.transformToUserAnswers and
         chargeCTransformer.transformToUserAnswers and
@@ -64,15 +64,15 @@ class AFTDetailsTransformer @Inject()(
 
   private def transformAftDeclarationDetails: Reads[JsObject] = (
     receiptDateReads and
-      (__ \ 'aftDeclarationDetails).readNullable(
-        ((__ \ 'submitterDetails \ 'submitterType).json.copyFrom((__ \ 'submittedBy).json.pick) and
-          (__ \ 'submitterDetails \ 'submitterName).json.copyFrom((__ \ 'submitterName).json.pick) and
+      (__ \ Symbol("aftDeclarationDetails")).readNullable(
+        ((__ \ Symbol("submitterDetails") \ Symbol("submitterType")).json.copyFrom((__ \ Symbol("submittedBy")).json.pick) and
+          (__ \ Symbol("submitterDetails") \ Symbol("submitterName")).json.copyFrom((__ \ Symbol("submitterName")).json.pick) and
 
-          (__ \ 'submittedBy).read[String].flatMap {
+          (__ \ Symbol("submittedBy")).read[String].flatMap {
             case "PSP" =>
-              ((__ \ 'submitterDetails \ 'submitterID).json.copyFrom((__ \ 'submitterId).json.pick) and
-              (__ \ 'submitterDetails \ 'authorisingPsaId).json.copyFrom((__ \ 'psaId).json.pick)).reduce
-            case _ => (__ \ 'submitterDetails \ 'submitterID).json.copyFrom((__ \ 'submitterID).json.pick)
+              ((__ \ Symbol("submitterDetails") \ Symbol("submitterID")).json.copyFrom((__ \ Symbol("submitterId")).json.pick) and
+                (__ \ Symbol("submitterDetails") \ Symbol("authorisingPsaId")).json.copyFrom((__ \ Symbol("psaId")).json.pick)).reduce
+            case _ => (__ \ Symbol("submitterDetails") \ Symbol("submitterID")).json.copyFrom((__ \ Symbol("submitterID")).json.pick)
           }).reduce
       ).map {
         _.getOrElse(Json.obj())
@@ -81,12 +81,12 @@ class AFTDetailsTransformer @Inject()(
 
   def receiptDateReads: Reads[JsObject] =
     (__ \ "aftDetails" \ "receiptDate").read[LocalDate](localDateDateReads).flatMap { receiptDate =>
-      (__ \ 'submitterDetails \ 'receiptDate).json.put(JsString(receiptDate.toString))
+      (__ \ Symbol("submitterDetails") \ Symbol("receiptDate")).json.put(JsString(receiptDate.toString))
     }
 }
 
 object AFTDetailsTransformer {
-  val localDateDateReads: Reads[LocalDate] = __.read[String].map{dateTime => LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate}
+  val localDateDateReads: Reads[LocalDate] = __.read[String].map { dateTime => LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate }
 }
 
 case object ReceiptDateNotInExpectedFormat extends Exception("Get AFT details returned a receipt date which was not in expected format")

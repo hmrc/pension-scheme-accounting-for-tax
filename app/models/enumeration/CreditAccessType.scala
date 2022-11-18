@@ -37,7 +37,9 @@ sealed trait CreditAccessType
 object CreditAccessType extends Enumerable.Implicits {
 
   case object AccessedByLoggedInPsaOrPsp extends WithName("accessedByLoggedInPsaOrPsp") with CreditAccessType
+
   case object AccessedByOtherPsa extends WithName("accessedByOtherPsa") with CreditAccessType
+
   case object AccessedByOtherPsp extends WithName("accessedByOtherPsp") with CreditAccessType
 
   val values: Seq[CreditAccessType] = Seq(

@@ -35,36 +35,34 @@ class EmailResponseController @Inject()(
                                          crypto: ApplicationCrypto,
                                          parser: PlayBodyParsers,
                                          val authConnector: AuthConnector
-
-
                                        ) extends BackendController(cc) with AuthorisedFunctions {
   private val logger = Logger(classOf[EmailResponseController])
 
   def sendAuditEvents(
-    requestId: String,
-    encryptedPsaOrPspId:String,
-    submittedBy:SchemeAdministratorType.SchemeAdministratorType,
-    email:String,
-    journeyType:JourneyType.Name):Action[JsValue] = Action(parser.tolerantJson) {
+                       requestId: String,
+                       encryptedPsaOrPspId: String,
+                       submittedBy: SchemeAdministratorType.SchemeAdministratorType,
+                       email: String,
+                       journeyType: JourneyType.Name): Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
 
-    decryptPsaOrPspIdAndEmail(encryptedPsaOrPspId, email) match {
-      case Right(Tuple2(psaOrPspId, emailAddress)) =>
-        request.body.validate[EmailEvents].fold(
-          _ => BadRequest("Bad request received for email call back event"),
-          valid => {
-            valid.events.filterNot(
-              _.event == Opened
-            ).foreach { event =>
-              logger.debug(s"Email Audit event coming from $journeyType is $event")
-              auditService.sendEvent(EmailAuditEvent(psaOrPspId, submittedBy, emailAddress, event.event, journeyType, requestId))(request, implicitly)
+      decryptPsaOrPspIdAndEmail(encryptedPsaOrPspId, email) match {
+        case Right(Tuple2(psaOrPspId, emailAddress)) =>
+          request.body.validate[EmailEvents].fold(
+            _ => BadRequest("Bad request received for email call back event"),
+            valid => {
+              valid.events.filterNot(
+                _.event == Opened
+              ).foreach { event =>
+                logger.debug(s"Email Audit event coming from $journeyType is $event")
+                auditService.sendEvent(EmailAuditEvent(psaOrPspId, submittedBy, emailAddress, event.event, journeyType, requestId))(request, implicitly)
+              }
+              Ok
             }
-            Ok
-          }
-        )
+          )
 
-      case Left(result) => result
-    }
+        case Left(result) => result
+      }
   }
 
   private def decryptPsaOrPspIdAndEmail(encryptedPsaOrPspId: String, email: String): Either[Result, (String, String)] = {

@@ -16,13 +16,13 @@
 
 package transformations.ETMPToUserAnswers
 
-import java.time.LocalDate
-
+import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import play.api.libs.json.{JsLookupResult, JsObject}
 import transformations.generators.AFTETMPResponseGenerators
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
-import org.scalatest.OptionValues
+
+import java.time.LocalDate
 
 class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
@@ -48,17 +48,17 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           (membersUAPath(0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean] mustBe (membersETMPPath(0) \ "paidUnder237b").get.as[String].equals("Yes")
 
 
-        (membersUAPath(0) \ "annualAllowanceYear").as[Int] mustBe (membersETMPPath(0) \ "taxYearEnding").as[Int]
+          (membersUAPath(0) \ "annualAllowanceYear").as[Int] mustBe (membersETMPPath(0) \ "taxYearEnding").as[Int]
 
-        (transformedJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
-          (etmpResponseJson \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal]
+          (transformedJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
+            (etmpResponseJson \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal]
 
           (transformedJson \ "chargeEDetails" \ "amendedVersion").as[Int] mustBe
             (etmpResponseJson \ "chargeTypeEDetails" \ "amendedVersion").as[Int]
 
-        (membersUAPath(1) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(1) \ "individualsDetails" \ "firstName").as[String]
+          (membersUAPath(1) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(1) \ "individualsDetails" \ "firstName").as[String]
 
-        (transformedJson \ "chargeEDetails" \ "members").as[Seq[JsObject]].size mustBe 2
+          (transformedJson \ "chargeEDetails" \ "members").as[Seq[JsObject]].size mustBe 2
       }
     }
   }

@@ -16,14 +16,15 @@
 
 package transformations.generators
 
-import java.time.{LocalDate, Year}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsObject, Json}
 
-trait AFTETMPResponseGenerators extends Matchers with OptionValues {
+import java.time.{LocalDate, Year}
+
+trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalastyle:off magic.number
   val ninoGen: Gen[String] = Gen.oneOf(Seq("AB123456C", "CD123456E"))
 
   val dateGenerator: Gen[LocalDate] = for {
@@ -44,7 +45,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
     )
   }
 
-  val addressGenerator : Gen[JsObject] = for {
+  val addressGenerator: Gen[JsObject] = for {
     nonUkAddress <- arbitrary[Boolean]
     line1 <- nonEmptyString
     line2 <- nonEmptyString
@@ -75,7 +76,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
     } yield Json.obj(
       fields =
         "aftVersion" -> aftVersion,
-        "aftStatus" -> aftStatus,
+      "aftStatus" -> aftStatus,
       "quarterStartDate" -> quarterStartDate,
       "quarterEndDate" -> quarterEndDate,
       "receiptDate" -> receiptDate,
@@ -102,7 +103,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
       fields = "chargeTypeADetails" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
-            "numberOfMembers" -> numberOfMembers,
+          "numberOfMembers" -> numberOfMembers,
           "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
           "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate,
           "totalAmount" -> totalAmount
@@ -117,7 +118,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
       fields = "chargeTypeBDetails" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
-            "numberOfMembers" -> numberOfMembers,
+          "numberOfMembers" -> numberOfMembers,
           "totalAmount" -> totalAmount
         ))
 
@@ -177,7 +178,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
       fields = "chargeTypeCDetails" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
-            "memberDetails" -> (indvMembers ++ orgMembers),
+          "memberDetails" -> (indvMembers ++ orgMembers),
           "totalAmount" -> totalAmount
         ))
 
@@ -209,7 +210,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
       fields = "chargeTypeDDetails" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
-            "memberDetails" -> members,
+          "memberDetails" -> members,
           "totalAmount" -> totalAmount
         ))
 
@@ -228,14 +229,14 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
       "memberStatus" -> memberStatus,
       "memberAFTVersion" -> memberAFTVersion,
       "individualsDetails" -> Json.obj(
-        fields =  "firstName" -> firstName,
+        fields = "firstName" -> firstName,
         "lastName" -> lastName,
         "nino" -> nino
       ),
       "taxYearEnding" -> taxYear,
       "amountOfCharge" -> chargeAmount,
-        "dateOfNotice" -> date,
-        "paidUnder237b" -> isMandatory
+      "dateOfNotice" -> date,
+      "paidUnder237b" -> isMandatory
 
     )
 
@@ -243,12 +244,12 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
     for {
       amendedVersion <- arbitrary[Int]
       members <- Gen.listOfN(2, chargeEMember)
-      totalAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      totalAmount <- arbitrary[BigDecimal] retryUntil (_ > 0)
     } yield Json.obj(
       fields = "chargeTypeEDetails" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
-            "memberDetails" -> members,
+          "memberDetails" -> members,
           "totalAmount" -> totalAmount
         ))
 
@@ -261,7 +262,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
       fields = "chargeTypeFDetails" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
-            "totalAmount" -> amountTaxDue,
+          "totalAmount" -> amountTaxDue,
           "dateRegiWithdrawn" -> deRegistrationDate
         ))
 
@@ -289,7 +290,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
       "memberStatus" -> memberStatus,
       "memberAFTVersion" -> memberAFTVersion,
       "individualsDetails" -> Json.obj(
-        fields =  "firstName" -> firstName,
+        fields = "firstName" -> firstName,
         "lastName" -> lastName,
         "dateOfBirth" -> dob,
         "nino" -> nino
@@ -305,15 +306,15 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues {
     for {
       amendedVersion <- arbitrary[Int]
       members <- Gen.listOfN(2, chargeGMember)
-      totalChargeAmount <- arbitrary[BigDecimal] retryUntil(_ > 0)
+      totalChargeAmount <- arbitrary[BigDecimal] retryUntil (_ > 0)
     } yield Json.obj(
       fields = "chargeTypeGDetails" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
-            "memberDetails" -> members,
+          "memberDetails" -> members,
           "totalOTCAmount" -> totalChargeAmount
         ))
 
-  def nonEmptyString: Gen[String] = Gen.alphaStr.suchThat(!_.isEmpty)
+  def nonEmptyString: Gen[String] = Gen.alphaStr.suchThat(_.nonEmpty)
 
 }

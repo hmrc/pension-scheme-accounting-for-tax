@@ -169,7 +169,7 @@ class AftBatchedDataCacheRepository @Inject()(
 
         def selector(batchType: BatchType, batchNo: Int): Bson = {
           Filters.and(
-            Filters.eq(uniqueAftIdKey, (id + sessionId)),
+            Filters.eq(uniqueAftIdKey, id + sessionId),
             Filters.eq(batchTypeKey, batchType.toString),
             Filters.eq(batchNoKey, batchNo)
           )
@@ -191,7 +191,7 @@ class AftBatchedDataCacheRepository @Inject()(
         }
       case _ =>
         logWithTime("Unable to save to Mongo repository as no session data found in repository or payload")
-        Future.successful( ():Unit )
+        Future.successful((): Unit)
     }
   }
 

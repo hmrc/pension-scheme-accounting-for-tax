@@ -17,11 +17,11 @@
 package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
-import play.api.libs.json.{JsObject, Json, __}
-import transformations.generators.AFTUserAnswersGenerators
+import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
-import org.scalatest.OptionValues
+import play.api.libs.json.{JsObject, Json, __}
+import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeFTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
   private val transformer = new ChargeFTransformer
@@ -46,8 +46,9 @@ class ChargeFTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
       forAll(chargeFUserAnswersGenerator, arbitrary[Int], arbitrary[String]) {
         (userAnswersJson, version, date) =>
           val updatedJson = userAnswersJson.transform(
-            (__ \ 'chargeFDetails \ 'chargeDetails).json.update(__.read[JsObject].map(o => o ++ Json.obj("deRegistrationDate" -> date)))).asOpt.value
-            .transform((__ \ 'chargeFDetails).json.update(__.read[JsObject].map(o => o ++ Json.obj("amendedVersion" -> version)))).asOpt.value
+            (__ \ Symbol("chargeFDetails") \ Symbol("chargeDetails")).json.update(__.read[JsObject]
+              .map(o => o ++ Json.obj("deRegistrationDate" -> date)))).asOpt.value
+            .transform((__ \ Symbol("chargeFDetails")).json.update(__.read[JsObject].map(o => o ++ Json.obj("amendedVersion" -> version)))).asOpt.value
 
           val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
 

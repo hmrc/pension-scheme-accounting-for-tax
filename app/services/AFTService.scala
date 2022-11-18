@@ -25,7 +25,7 @@ class AFTService {
     val schemeLevelCharges = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
 
     val allNonEmptyCharges: Seq[(Boolean, String)] =
-      (memberLevelCharges.map(chargeDetails => ((jsValue \ "chargeDetails"\ chargeDetails).isDefined, chargeDetails)) ++
+      (memberLevelCharges.map(chargeDetails => ((jsValue \ "chargeDetails" \ chargeDetails).isDefined, chargeDetails)) ++
         schemeLevelCharges.map(chargeDetails => ((jsValue \ "chargeDetails" \ chargeDetails).isDefined, chargeDetails)))
         .filter(_._1)
 
@@ -33,7 +33,7 @@ class AFTService {
       allNonEmptyCharges.headOption match {
         case Some((_, "chargeTypeGDetails")) => onlyLastZeroAmountMemberG(chargeType = "chargeTypeGDetails", jsValue)
         case Some((_, chargeType)) if memberLevelCharges.contains(chargeType) => onlyLastZeroAmountMember(chargeType, jsValue)
-        case Some((_, chargeType)) =>  (jsValue \ "chargeDetails" \ chargeType \ "totalAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
+        case Some((_, chargeType)) => (jsValue \ "chargeDetails" \ chargeType \ "totalAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
         case _ => false
       }
     } else {

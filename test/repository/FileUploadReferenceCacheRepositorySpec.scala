@@ -16,120 +16,120 @@
 
 package repository
 
-import com.github.simplyscala.MongoEmbedDatabase
-import org.mockito.{ArgumentMatchers, MockitoSugar}
+
+import org.mockito.ArgumentMatchers
+import org.mockito.Mockito._
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
-import play.api.libs.json.Format
 import repository.model.FileUploadStatus
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-import java.time.LocalDateTime
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 
-class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with MongoEmbedDatabase with BeforeAndAfter with
-  BeforeAndAfterEach { // scalastyle:off magic.number
+class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with EmbeddedMongoDBSupport with BeforeAndAfter with
+  BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
+
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
   import FileUploadReferenceCacheRepositorySpec._
 
-  override def beforeEach: Unit = {
-    super.beforeEach
-    reset(mockConfiguration)
+  var fileUploadReferenceCacheRepository: FileUploadReferenceCacheRepository = _
+
+  override def beforeAll(): Unit = {
     when(mockConfiguration.get[String](ArgumentMatchers.eq("mongodb.aft-cache.file-upload-response-cache.name"))(ArgumentMatchers.any()))
       .thenReturn("file-upload-response")
     when(mockConfiguration.get[Int](ArgumentMatchers.eq("mongodb.aft-cache.file-upload-response-cache.timeToLiveInSeconds"))(ArgumentMatchers.any()))
       .thenReturn(604800)
+    initMongoDExecutable()
+    startMongoD()
+    fileUploadReferenceCacheRepository = buildFormRepository(mongoHost, mongoPort)
+    super.beforeAll()
+    reset(mockConfiguration)
   }
 
-  withEmbedMongoFixture(port = 24680) { _ =>
+  override def afterAll(): Unit =
+    stopMongoD()
 
-    "updateStatus" must {
-      "update status correctly" in {
-        mongoCollectionDrop()
-        val result = for {
-          _ <- repository.requestUpload(id1, id2)
-          _ <- repository.updateStatus(id2, fileUploadStatusNotInProgress)
-          status <- repository.getUploadResult(id1)
+  "updateStatus" must {
+    "update status correctly" in {
+
+      val result = for {
+        _ <- fileUploadReferenceCacheRepository.collection.drop().toFuture()
+        _ <- fileUploadReferenceCacheRepository.requestUpload(id1, id2)
+        _ <- fileUploadReferenceCacheRepository.updateStatus(id2, fileUploadStatusNotInProgress)
+        status <- fileUploadReferenceCacheRepository.getUploadResult(id1)
+      } yield {
+        status
+      }
+
+      Await.result(result, Duration.Inf) match {
+        case status =>
+          status.map(_.status) mustBe Some(fileUploadStatusNotInProgress)
+      }
+    }
+  }
+
+  "getUploadResult" must {
+    "get result correctly when present" in {
+
+      val result = Await.result(
+        for {
+          _ <- fileUploadReferenceCacheRepository.collection.drop().toFuture()
+          _ <- fileUploadReferenceCacheRepository.requestUpload(id1, id2)
+          status <- fileUploadReferenceCacheRepository.getUploadResult(id1)
         } yield {
           status
-        }
-
-        Await.result(result, Duration.Inf) match {
-          case status =>
-            status.map(_.status) mustBe Some(fileUploadStatusNotInProgress)
-        }
-      }
+        },
+        Duration.Inf
+      )
+      result.map(_.status) mustBe Some(fileUploadStatusInProgress)
     }
 
-    "getUploadResult" must {
-      "get result correctly when present" in {
-        mongoCollectionDrop()
-        val result = Await.result(
-          for {
-            _ <- repository.requestUpload(id1, id2)
-            status <- repository.getUploadResult(id1)
-          } yield {
-            status
-          },
-          Duration.Inf
-        )
-        result.map(_.status) mustBe Some(fileUploadStatusInProgress)
-      }
+    "get none when not present" in {
 
-      "get none when not present" in {
-        mongoCollectionDrop()
-        val result = Await.result(
-          for {
-            _ <- repository.requestUpload(id1, id2)
-            status <- repository.getUploadResult(id2)
-          } yield {
-            status
-          },
-          Duration.Inf
-        )
-        result.map(_.status) mustBe None
-      }
+      val result = Await.result(
+        for {
+          _ <- fileUploadReferenceCacheRepository.collection.drop().toFuture()
+          _ <- fileUploadReferenceCacheRepository.requestUpload(id1, id2)
+          status <- fileUploadReferenceCacheRepository.getUploadResult(id2)
+        } yield {
+          status
+        },
+        Duration.Inf
+      )
+      result.map(_.status) mustBe None
     }
+  }
 
-    "requestUpload" must {
-      "upsert result correctly" in {
-        mongoCollectionDrop()
-        val result = Await.result(
-          for {
-            _ <- repository.requestUpload(id1, id2)
-            status <- repository.getUploadResult(id1)
-          } yield {
-            status
-          },
-          Duration.Inf
-        )
-        result.map(_.status) mustBe Some(fileUploadStatusInProgress)
-        result.map(_.reference) mustBe Some(id2)
-      }
+  "requestUpload" must {
+    "upsert result correctly" in {
+
+      val result = Await.result(
+        for {
+          _ <- fileUploadReferenceCacheRepository.collection.drop().toFuture()
+          _ <- fileUploadReferenceCacheRepository.requestUpload(id1, id2)
+          status <- fileUploadReferenceCacheRepository.getUploadResult(id1)
+        } yield {
+          status
+        },
+        Duration.Inf
+      )
+      result.map(_.status) mustBe Some(fileUploadStatusInProgress)
+      result.map(_.reference) mustBe Some(id2)
     }
   }
 }
 
-object FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSugar {
-  private implicit val dateFormat: Format[LocalDateTime] = MongoJavatimeFormats.localDateTimeFormat
-
-  import scala.concurrent.ExecutionContext.Implicits._
-
+object FileUploadReferenceCacheRepositorySpec extends MockitoSugar {
   private val mockConfiguration = mock[Configuration]
-  private val databaseName = "pension-scheme-accounting-for-tax"
-  private val mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-  private val mongoComponent = MongoComponent(mongoUri)
-
-  private def mongoCollectionDrop(): Void = Await
-    .result(repository.collection.drop().toFuture(), Duration.Inf)
-
-  private def repository = new FileUploadReferenceCacheRepository(mongoComponent, mockConfiguration)
 
   private val id1 = "id1"
   private val id2 = "id2"
@@ -137,4 +137,9 @@ object FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSu
   private val fileUploadStatusNotInProgress = FileUploadStatus("NotInProgress")
   private val fileUploadStatusInProgress = FileUploadStatus("InProgress")
 
+  private def buildFormRepository(mongoHost: String, mongoPort: Int): FileUploadReferenceCacheRepository = {
+    val databaseName = "pension-scheme-accounting-for-tax"
+    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
+    new FileUploadReferenceCacheRepository(MongoComponent(mongoUri), mockConfiguration)
+  }
 }

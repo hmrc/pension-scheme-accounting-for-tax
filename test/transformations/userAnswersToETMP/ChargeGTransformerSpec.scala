@@ -17,11 +17,11 @@
 package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
-import org.scalatest.OptionValues
 
 class ChargeGTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
   private def etmpMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeDetails" \ "chargeTypeGDetails" \ "memberDetails" \ i
@@ -76,13 +76,13 @@ class ChargeGTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
     "must transform optional element - amendedVersion, memberStatus and memberAFTVersion of" +
       "ChargeGDetails from UserAnswers to ETMP ChargeGDetails" in {
       forAll(chargeGUserAnswersGenerator, arbitrary[Int], arbitrary[String]) {
-        (userAnswersJson, version, status) =>
+        (userAnswersJson, version, _) =>
 
-          val jsonTransformer = (__ \ 'chargeGDetails).json.pickBranch(
+          val jsonTransformer = (__ \ Symbol("chargeGDetails")).json.pickBranch(
             __.json.update(
               __.read[JsObject].map(o => o ++ Json.obj("amendedVersion" -> version))
             ) andThen
-              (__ \ 'members).json.update(
+              (__ \ Symbol("members")).json.update(
                 __.read[JsArray].map {
                   case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] - "memberAFTVersion" - "memberStatus") ++ arr.tail)
                 })
@@ -143,7 +143,7 @@ class ChargeGTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
               "chargeAmounts" -> Json.obj(
                 "amountTransferred" -> 45670.02,
                 "amountTaxDue" -> 4560.02
-            )
+              )
             )
           ),
           "totalChargeAmount" -> 2345.02,

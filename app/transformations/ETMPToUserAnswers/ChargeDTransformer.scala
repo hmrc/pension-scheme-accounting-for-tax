@@ -18,24 +18,24 @@ package transformations.ETMPToUserAnswers
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeDTransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ 'chargeTypeDDetails).readNullable(__.read(
-      ((__ \ 'chargeDDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
-        (__ \ 'chargeDDetails \ 'members).json.copyFrom((__ \ 'memberDetails).read(readsMembers)) and
-        (__ \ 'chargeDDetails \ 'totalChargeAmount).json.copyFrom((__ \ 'totalAmount).json.pick)).reduce
+    (__ \ Symbol("chargeTypeDDetails")).readNullable(__.read(
+      ((__ \ Symbol("chargeDDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
+        (__ \ Symbol("chargeDDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
+        (__ \ Symbol("chargeDDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce
     )).map(_.getOrElse(Json.obj()))
 
   def readsMembers: Reads[JsArray] = __.read(Reads.seq(readsMember)).map(JsArray(_))
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
-      (__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick) and
-      (__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick) and
-      (__ \ 'chargeDetails \ 'dateOfEvent).json.copyFrom((__ \ 'dateOfBenefitCrystalizationEvent).json.pick) and
-      (__ \ 'chargeDetails \ 'taxAt25Percent).json.copyFrom((__ \ 'totalAmtOfTaxDueAtLowerRate).json.pick) and
-      (__ \ 'chargeDetails \ 'taxAt55Percent).json.copyFrom((__ \ 'totalAmtOfTaxDueAtHigherRate).json.pick)).reduce
+      (__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick) and
+      (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick) and
+      (__ \ Symbol("chargeDetails") \ Symbol("dateOfEvent")).json.copyFrom((__ \ Symbol("dateOfBenefitCrystalizationEvent")).json.pick) and
+      (__ \ Symbol("chargeDetails") \ Symbol("taxAt25Percent")).json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtLowerRate")).json.pick) and
+      (__ \ Symbol("chargeDetails") \ Symbol("taxAt55Percent")).json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtHigherRate")).json.pick)).reduce
 }

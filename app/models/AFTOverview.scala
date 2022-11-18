@@ -56,12 +56,11 @@ case class AFTOverview(
                       )
 
 
-
 object AFTOverview {
 
   implicit val rds: Reads[AFTOverview] = (
     (JsPath \ "periodStartDate").read[String] and
-    (JsPath \ "periodEndDate").read[String] and
+      (JsPath \ "periodEndDate").read[String] and
       (JsPath \ "tpssReportPresent").readNullable[String].flatMap {
         case Some("Yes") => Reads(_ => JsSuccess(true))
         case _ => Reads(_ => JsSuccess(false))
@@ -69,12 +68,12 @@ object AFTOverview {
       AFTOverviewVersion.rds
     ) (
     (startDate, endDate, tpssReport, versionDetails) =>
-    AFTOverview(
-      LocalDate.parse(startDate),
-      LocalDate.parse(endDate),
-      tpssReport,
-      versionDetails
-    )
+      AFTOverview(
+        LocalDate.parse(startDate),
+        LocalDate.parse(endDate),
+        tpssReport,
+        versionDetails
+      )
   )
 
   implicit val formats: Format[AFTOverview] = Json.format[AFTOverview]

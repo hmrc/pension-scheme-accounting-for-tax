@@ -21,9 +21,11 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import models.enumeration.JourneyType
 import models.{AFTOverview, AFTOverviewVersion}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, Mockito, MockitoSugar}
+import org.mockito.Mockito.{times, verify, when}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -31,13 +33,14 @@ import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.Json
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
+import repository._
 import services.AFTService
 import uk.gov.hmrc.http._
 import utils.{JsonFileReader, WireMockHelper}
 
 import java.time.LocalDate
 
-class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with JsonFileReader with MockitoSugar {
+class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with JsonFileReader with MockitoSugar { // scalastyle:off magic.number
 
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
   private implicit lazy val rh: RequestHeader = FakeRequest("", "")
@@ -54,32 +57,34 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AFTService].toInstance(mockAftService),
-      bind[HeaderUtils].toInstance(mockHeaderUtils)
+      bind[HeaderUtils].toInstance(mockHeaderUtils),
+      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
+      bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+      bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
     )
 
   private val pstr = "test-pstr"
   private val startDt = "2020-01-01"
   private val endDate = "2021-06-30"
-  private val aftVersion = "1"
-  private val fbNumber = "123456789123"
   private val aftSubmitUrl = s"/pension-online/$pstr/aft/return"
-  private val getAftUrl = s"/pension-online/aft-return/$pstr?startDate=$startDt&aftVersion=$aftVersion"
-  private val getAftFbNumberUrl = s"/pension-online/aft-return/$pstr?fbNumber=$fbNumber"
-  private val getAftVersionsUrl = s"/pension-online/reports/$pstr/AFT/versions?startDate=$startDt"
   private val getAftOverviewUrl = s"/pension-online/reports/overview/pods/$pstr/AFT?fromDate=$startDt&toDate=$endDate"
   private val testCorrelationId = "testCorrelationId"
   private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30),
     tpssReportPresent = false,
-    Some(AFTOverviewVersion(3, false, true)))
+    Some(AFTOverviewVersion(3, submittedVersionAvailable = false, compiledVersionAvailable = true)))
   private val overview2 = AFTOverview(LocalDate.of(2020, 7, 1), LocalDate.of(2020, 10, 31),
     tpssReportPresent = false,
-    Some(AFTOverviewVersion(2, true, true)))
+    Some(AFTOverviewVersion(2, submittedVersionAvailable = true, compiledVersionAvailable = true)))
   private val aftOverview = Seq(overview1, overview2)
   private val journeyType = JourneyType.AFT_SUBMIT_RETURN.toString
 
-  override def beforeEach(): Unit = {
+  override def beforeAll(): Unit = {
     when(mockHeaderUtils.getCorrelationId).thenReturn(testCorrelationId)
-    super.beforeEach()
+    super.beforeAll()
   }
 
 

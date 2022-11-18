@@ -18,19 +18,21 @@ package transformations.userAnswersToETMP
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeCTransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeCDetails).readNullable(__.read(readsChargeC)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
+    (__ \ Symbol("chargeCDetails")).readNullable(__.read(readsChargeC)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
   private def readsChargeC: Reads[JsObject] =
-    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>
-        (((__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
-          orElse doNothing) and
-          (__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'memberDetails).json.copyFrom((__ \ 'employers).read(readsEmployers)) and
-          (__ \ 'chargeDetails \ 'chargeTypeCDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
+    (__ \ Symbol("totalChargeAmount")).read[BigDecimal].flatMap { _ =>
+      (((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeCDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
+        orElse doNothing) and
+        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeCDetails") \ Symbol("memberDetails"))
+          .json.copyFrom((__ \ Symbol("employers")).read(readsEmployers)) and
+        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeCDetails") \ Symbol("totalAmount"))
+          .json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)).reduce
     }
 
 
@@ -44,46 +46,51 @@ class ChargeCTransformer extends JsonTransformer {
     }.map(removeEmptyObjects)
 
   private def readsEmployer: Reads[JsObject] = (
-    ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
-      orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
-      ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
+    ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
+      orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
+      ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
         orElse doNothing) and
       readsEmployerTypeDetails and
-      ((__ \ 'correspondenceAddressDetails).json.copyFrom(__.read(readsCorrespondenceAddress)) and
-        (__ \ 'dateOfPayment).json.copyFrom((__ \ 'chargeDetails \ 'paymentDate).json.pick) and
-        (__ \ 'totalAmountOfTaxDue).json.copyFrom((__ \ 'chargeDetails \ 'amountTaxDue).json.pick)).reduce
+      ((__ \ Symbol("correspondenceAddressDetails")).json.copyFrom(__.read(readsCorrespondenceAddress)) and
+        (__ \ Symbol("dateOfPayment")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("paymentDate")).json.pick) and
+        (__ \ Symbol("totalAmountOfTaxDue")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("amountTaxDue")).json.pick)).reduce
     ).reduce.orElseEmptyOnMissingFields
 
   private def readsEmployerTypeDetails: Reads[JsObject] =
-    (__ \ 'whichTypeOfSponsoringEmployer).read[String].flatMap {
+    (__ \ Symbol("whichTypeOfSponsoringEmployer")).read[String].flatMap {
       case "individual" =>
-        ((__ \ 'memberTypeDetails \ 'memberType).json.put(JsString("Individual")) and
-          (__ \ 'memberTypeDetails \ 'individualDetails \ 'firstName).json.copyFrom((__ \ 'sponsoringIndividualDetails \ 'firstName).json.pick) and
-          (__ \ 'memberTypeDetails \ 'individualDetails \ 'lastName).json.copyFrom((__ \ 'sponsoringIndividualDetails \ 'lastName).json.pick) and
-          (__ \ 'memberTypeDetails \ 'individualDetails \ 'nino).json.copyFrom((__ \ 'sponsoringIndividualDetails \ 'nino).json.pick)).reduce
+        ((__ \ Symbol("memberTypeDetails") \ Symbol("memberType")).json.put(JsString("Individual")) and
+          (__ \ Symbol("memberTypeDetails") \ Symbol("individualDetails") \ Symbol("firstName"))
+            .json.copyFrom((__ \ Symbol("sponsoringIndividualDetails") \ Symbol("firstName")).json.pick) and
+          (__ \ Symbol("memberTypeDetails") \ Symbol("individualDetails") \ Symbol("lastName"))
+            .json.copyFrom((__ \ Symbol("sponsoringIndividualDetails") \ Symbol("lastName")).json.pick) and
+          (__ \ Symbol("memberTypeDetails") \ Symbol("individualDetails") \ Symbol("nino"))
+            .json.copyFrom((__ \ Symbol("sponsoringIndividualDetails") \ Symbol("nino")).json.pick)).reduce
       case "organisation" =>
-        ((__ \ 'memberTypeDetails \ 'memberType).json.put(JsString("Organisation")) and
-          (__ \ 'memberTypeDetails \ 'comOrOrganisationName).json.copyFrom((__ \ 'sponsoringOrganisationDetails \ 'name).json.pick) and
-          (__ \ 'memberTypeDetails \ 'crnNumber).json.copyFrom((__ \ 'sponsoringOrganisationDetails \ 'crn).json.pick)).reduce
+        ((__ \ Symbol("memberTypeDetails") \ Symbol("memberType")).json.put(JsString("Organisation")) and
+          (__ \ Symbol("memberTypeDetails") \ Symbol("comOrOrganisationName"))
+            .json.copyFrom((__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("name")).json.pick) and
+          (__ \ Symbol("memberTypeDetails") \ Symbol("crnNumber")).
+            json.copyFrom((__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("crn")).json.pick)).reduce
     }
 
   private def readsCorrespondenceAddress: Reads[JsObject] =
     (
       readsPostalCode and
-        (__ \ 'addressLine1).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'line1).json.pick) and
-        (__ \ 'addressLine2).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'line2).json.pick) and
-        ((__ \ 'addressLine3).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'line3).json.pick) orElse doNothing) and
-        ((__ \ 'addressLine4).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'line4).json.pick) orElse doNothing) and
-        (__ \ 'countryCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'country).json.pick) and
-        ((__ \ 'postalCode).json.copyFrom((__ \ 'sponsoringEmployerAddress \ 'postcode).json.pick) orElse doNothing)
+        (__ \ Symbol("addressLine1")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line1")).json.pick) and
+        (__ \ Symbol("addressLine2")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line2")).json.pick) and
+        ((__ \ Symbol("addressLine3")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line3")).json.pick) orElse doNothing) and
+        ((__ \ Symbol("addressLine4")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line4")).json.pick) orElse doNothing) and
+        (__ \ Symbol("countryCode")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("country")).json.pick) and
+        ((__ \ Symbol("postalCode")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("postcode")).json.pick) orElse doNothing)
       ).reduce
 
   private def readsPostalCode: Reads[JsObject] =
-    (__ \ 'sponsoringEmployerAddress \ 'country).read[String].flatMap {
+    (__ \ Symbol("sponsoringEmployerAddress") \ Symbol("country")).read[String].flatMap {
       case "GB" =>
-        (__ \ 'nonUKAddress).json.put(JsString("False"))
+        (__ \ Symbol("nonUKAddress")).json.put(JsString("False"))
       case _ =>
-        (__ \ 'nonUKAddress).json.put(JsString("True"))
+        (__ \ Symbol("nonUKAddress")).json.put(JsString("True"))
     }
 }
 

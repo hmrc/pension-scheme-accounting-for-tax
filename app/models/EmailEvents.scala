@@ -19,7 +19,7 @@ package models
 import models.enumeration.{Enumerable, WithName}
 import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Json, Reads, _}
+import play.api.libs.json._
 
 sealed trait Event
 
@@ -33,9 +33,13 @@ object Event extends Enumerable.Implicits {
 }
 
 case object Sent extends WithName("Sent") with Event
+
 case object Delivered extends WithName("Delivered") with Event
+
 case object PermanentBounce extends WithName("PermanentBounce") with Event
+
 case object Opened extends WithName("Opened") with Event
+
 case object Complained extends WithName("Complained") with Event
 
 case class EmailEvent(event: Event, detected: DateTime)
@@ -45,18 +49,18 @@ object EmailEvent {
   import uk.gov.hmrc.http.controllers.RestFormats.dateTimeWrite
 
   implicit val read: Reads[EmailEvent] = {
-    ((JsPath \ "event").read[Event] and ((JsPath \ "detected").read[String] map DateTime.parse))(EmailEvent.apply _)
+    ((JsPath \ "event").read[Event] and ((JsPath \ "detected").read[String] map DateTime.parse)) (EmailEvent.apply _)
   }
 
   implicit val write: Writes[EmailEvent] = (
     (JsPath \ "event").write[Event] and (JsPath \ "detected").write[DateTime]
-    ) ( emailEvent => (emailEvent.event, emailEvent.detected) )
+    ) (emailEvent => (emailEvent.event, emailEvent.detected))
 
 }
 
 case class EmailEvents(events: Seq[EmailEvent])
 
 object EmailEvents {
-  implicit val format = Json.format[EmailEvents]
+  implicit val format: OFormat[EmailEvents] = Json.format[EmailEvents]
 }
 

@@ -16,16 +16,19 @@
 
 package audit
 
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, MockitoSugar}
+import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.Inside
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
+import repository._
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.Success
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
@@ -51,7 +54,7 @@ class AuditServiceSpec extends AnyWordSpec with Matchers with Inside {
 
       verify(mockAuditConnector, times(1)).sendExtendedEvent(templateCaptor.capture())(any(), any())
       inside(templateCaptor.getValue) {
-        case ExtendedDataEvent(auditSource, auditType, _, _, detail, _) =>
+        case ExtendedDataEvent(auditSource, auditType, _, _, detail, _, _, _) =>
           auditSource mustBe appName
           auditType mustBe "TestAuditEvent"
           detail mustBe Json.obj(
@@ -71,7 +74,13 @@ object AuditServiceSpec extends MockitoSugar {
   private val app = new GuiceApplicationBuilder()
     .overrides(
       bind[AuditConnector].toInstance(mockAuditConnector),
-    )
+      bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+      bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]))
     .build()
 
   def fakeRequest(): FakeRequest[AnyContentAsEmpty.type] = FakeRequest("", "")

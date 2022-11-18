@@ -16,22 +16,22 @@
 
 package transformations.ETMPToUserAnswers
 
-import play.api.libs.json.{JsObject, Json, Reads, __}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json.{JsObject, Json, Reads, __}
 
 class ChargeFTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ 'chargeTypeFDetails).readNullable {
-    __.read(
-      ((__ \ 'chargeFDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick) and
-        ( __ \ 'chargeFDetails \ 'chargeDetails \ 'totalAmount).json.copyFrom((__ \ 'totalAmount).json.pick) and
-        ( __ \ 'chargeFDetails \ 'chargeDetails \ 'deRegistrationDate).json.copyFrom((__ \ 'dateRegiWithdrawn).json.pick)).reduce
-    )
-  }.map {
-    _.getOrElse(Json.obj())
-  }
+    (__ \ Symbol("chargeTypeFDetails")).readNullable {
+      __.read(
+        ((__ \ Symbol("chargeFDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
+          (__ \ Symbol("chargeFDetails") \ Symbol("chargeDetails") \ Symbol("totalAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick) and
+          (__ \ Symbol("chargeFDetails") \ Symbol("chargeDetails") \ Symbol("deRegistrationDate"))
+            .json.copyFrom((__ \ Symbol("dateRegiWithdrawn")).json.pick)).reduce
+      )
+    }.map {
+      _.getOrElse(Json.obj())
+    }
 
 }

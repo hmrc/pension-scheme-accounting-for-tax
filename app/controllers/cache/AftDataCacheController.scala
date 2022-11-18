@@ -62,17 +62,17 @@ class AftDataCacheController @Inject()(
   def save: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
-            val optChargeAndMember = extractChargeAndMemberFromHeaders
-            request.body.asJson.map {
-              jsValue =>
-                batchedRepository.save(
-                  id = id,
-                  sessionId = sessionId,
-                  chargeAndMember = optChargeAndMember,
-                  userData = jsValue
-                )
-                  .map(_ => Created)
-            } getOrElse Future.successful(BadRequest)
+        val optChargeAndMember = extractChargeAndMemberFromHeaders
+        request.body.asJson.map {
+          jsValue =>
+            batchedRepository.save(
+              id = id,
+              sessionId = sessionId,
+              chargeAndMember = optChargeAndMember,
+              userData = jsValue
+            )
+              .map(_ => Created)
+        } getOrElse Future.successful(BadRequest)
       }
   }
 
@@ -97,14 +97,14 @@ class AftDataCacheController @Inject()(
               request.headers.get("areSubmittedVersionsAvailable")
             ) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
-                    batchedRepository.setSessionData(id,
-                      if (lock) Some(LockDetail(name, psaOrPspId)) else None,
-                      jsValue,
-                      sessionId,
-                      version.toInt,
-                      accessMode,
-                      areSubmittedVersionsAvailable.equals("true")
-                    ).map(_ => Created)
+                batchedRepository.setSessionData(id,
+                  if (lock) Some(LockDetail(name, psaOrPspId)) else None,
+                  jsValue,
+                  sessionId,
+                  version.toInt,
+                  accessMode,
+                  areSubmittedVersionsAvailable.equals("true")
+                ).map(_ => Created)
 
               case (v, am, asva) =>
                 logger.warn("BAD Request returned when setting session data " +
@@ -127,39 +127,39 @@ class AftDataCacheController @Inject()(
   def lockedBy: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
-            batchedRepository.lockedBy(sessionId, id).map {
-              case None => NotFound
-              case Some(lockDetail) => Ok(Json.toJson(lockDetail))
-            }
+        batchedRepository.lockedBy(sessionId, id).map {
+          case None => NotFound
+          case Some(lockDetail) => Ok(Json.toJson(lockDetail))
+        }
       }
   }
 
   def getSessionData: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { case (sessionId, id, _) =>
-            batchedRepository.getSessionData(sessionId, id).map {
-              case None => NotFound
-              case Some(sd) => Ok(Json.toJson(sd))
-            }
+        batchedRepository.getSessionData(sessionId, id).map {
+          case None => NotFound
+          case Some(sd) => Ok(Json.toJson(sd))
+        }
       }
   }
 
   def get: Action[AnyContent] = Action.async {
     implicit request =>
       getIdWithName { (sessionId, id, _) =>
-            batchedRepository.get(id, sessionId).map { response =>
-              response.map {
-                Ok(_)
-              } getOrElse NotFound
-            }
+        batchedRepository.get(id, sessionId).map { response =>
+          response.map {
+            Ok(_)
+          } getOrElse NotFound
+        }
       }
   }
 
   def remove: Action[AnyContent] = Action.async {
     implicit request =>
-          getIdWithName { (sessionId, id, _) =>
-            batchedRepository.remove(id, sessionId).map(_ => Ok)
-          }
+      getIdWithName { (sessionId, id, _) =>
+        batchedRepository.remove(id, sessionId).map(_ => Ok)
+      }
   }
 
   private def getIdWithName(block: (String, String, String) => Future[Result])

@@ -17,11 +17,11 @@
 package audit
 
 import models.Sent
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.flatspec.AnyFlatSpec
 import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
 import models.enumeration.SchemeAdministratorType
-import play.api.libs.json.{Json, JsObject}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import play.api.libs.json.{JsObject, Json}
 
 class EmailAuditEventSpec extends AnyFlatSpec with Matchers {
 

@@ -16,40 +16,51 @@
 
 package repository
 
-import com.github.simplyscala.MongoEmbedDatabase
-import org.mockito.MockitoSugar
+import org.mockito.Mockito._
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.Json
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-import java.time.LocalDateTime
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with MongoEmbedDatabase with BeforeAndAfter with
-  BeforeAndAfterEach { // scalastyle:off magic.number
+class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with EmbeddedMongoDBSupport with BeforeAndAfter with
+  BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
+
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
   import CacheRepositorySpec._
 
-  override def beforeEach: Unit = {
-    super.beforeEach
+  var cacheRepository: CacheRepository = _
+
+  override def beforeAll(): Unit = {
+    initMongoDExecutable()
+    startMongoD()
+    cacheRepository = buildFormRepository(mongoHost, mongoPort)
+    super.beforeAll()
     reset(mockConfiguration)
   }
+
+  override def afterAll(): Unit =
+    stopMongoD()
 
 
   "remove" must {
     "remove item" in {
-      mongoCollectionDrop()
+
       val result = Await.result(
         for {
-          _ <- repository.save(id1, dummyData)
-          _ <- repository.remove(id1)
-          status <- repository.get(id1)
+          _ <- cacheRepository.collection.drop().toFuture()
+          _ <- cacheRepository.save(id1, dummyData)
+          _ <- cacheRepository.remove(id1)
+          status <- cacheRepository.get(id1)
         } yield {
           status
         },
@@ -61,10 +72,11 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
 
   "get" must {
     "return none when nothing present" in {
-      mongoCollectionDrop()
+
       val result = Await.result(
         for {
-          status <- repository.get(id1)
+          _ <- cacheRepository.collection.drop().toFuture()
+          status <- cacheRepository.get(id1)
         } yield {
           status
         },
@@ -76,48 +88,38 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
 
   "save and get" must {
     "save and get data correctly and have the correct collection name" in {
-      mongoCollectionDrop()
+
       val result = Await.result(
         for {
-          _ <- repository.save(id1, dummyData)
-          status <- repository.get(id1)
+          _ <- cacheRepository.collection.drop().toFuture()
+          _ <- cacheRepository.save(id1, dummyData)
+          status <- cacheRepository.get(id1)
         } yield {
           status
         },
         Duration.Inf
       )
       result mustBe Some(dummyData)
-      repository.collectionName mustBe collectionName
+      cacheRepository.collectionName mustBe collectionName
     }
   }
 
 }
 
-object CacheRepositorySpec extends AnyWordSpec with MockitoSugar {
-  private implicit val dateFormat: Format[LocalDateTime] = MongoJavatimeFormats.localDateTimeFormat
-
-  import scala.concurrent.ExecutionContext.Implicits._
-
+object CacheRepositorySpec extends MockitoSugar {
   private val mockConfiguration = mock[Configuration]
-  private val databaseName = "pension-scheme-accounting-for-tax"
-  private val mongoUri: String = s"mongodb://127.0.0.1:27017/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-  private val mongoComponent = MongoComponent(mongoUri)
-
-  private def mongoCollectionDrop(): Void = Await
-    .result(repository.collection.drop().toFuture(), Duration.Inf)
 
   private val collectionName = "test"
-
-  private def repository = new CacheRepository(
-    collectionName = collectionName,
-    expireInSeconds = Some(60),
-    expireInDays = None,
-    mongoComponent = mongoComponent
-  )
 
   private val id1 = "id1"
 
   private val dummyData = Json.obj(
     "test" -> "test"
   )
+
+  private def buildFormRepository(mongoHost: String, mongoPort: Int): CacheRepository = {
+    val databaseName = "pension-scheme-accounting-for-tax"
+    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
+    new CacheRepository(collectionName, Some(60), None, MongoComponent(mongoUri))
+  }
 }

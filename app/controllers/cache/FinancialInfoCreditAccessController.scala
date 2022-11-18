@@ -43,11 +43,11 @@ class FinancialInfoCreditAccessController @Inject()(
     val foundOptPspId = (jsValue \ "pspId").asOpt[String]
     (foundOptPsaId, foundOptPspId, optLoggedInPsaId, optLoggedInPspId) match {
       case (Some(foundPsaId), _, Some(loggedInPsaId), _) if foundPsaId == loggedInPsaId => Some(AccessedByLoggedInPsaOrPsp)
-      case (Some(_), _, _, Some(_))  => Some(AccessedByOtherPsa)
+      case (Some(_), _, _, Some(_)) => Some(AccessedByOtherPsa)
       case (Some(_), _, Some(_), _) => Some(AccessedByOtherPsa)
       case (_, Some(foundPspId), _, Some(loggedInPspId)) if foundPspId == loggedInPspId => Some(AccessedByLoggedInPsaOrPsp)
       case (_, Some(_), _, Some(_)) => Some(AccessedByOtherPsp)
-      case (_, Some(_), Some(_),_) => Some(AccessedByOtherPsp)
+      case (_, Some(_), Some(_), _) => Some(AccessedByOtherPsp)
       case _ => None
     }
   }
@@ -69,7 +69,7 @@ class FinancialInfoCreditAccessController @Inject()(
   def getForPsa(psaId: String): Action[AnyContent] = Action.async {
     implicit request =>
       authorised(Enrolment("HMRC-PODS-ORG")) {
-        getForPsaOrPsp(Some(psaId), None,psaId)
+        getForPsaOrPsp(Some(psaId), None, psaId)
       }
   }
 

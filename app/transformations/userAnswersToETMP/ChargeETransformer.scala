@@ -18,37 +18,38 @@ package transformations.userAnswersToETMP
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeETransformer extends JsonTransformer {
 
   def transformToETMPData: Reads[JsObject] =
-    (__ \ 'chargeEDetails).readNullable(__.read(readsChargeE)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
+    (__ \ Symbol("chargeEDetails")).readNullable(__.read(readsChargeE)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
   def readsChargeE: Reads[JsObject] =
-    (__ \ 'totalChargeAmount).read[BigDecimal].flatMap { _ =>
-      (((__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'amendedVersion).json.copyFrom((__ \ 'amendedVersion).json.pick)
+    (__ \ Symbol("totalChargeAmount")).read[BigDecimal].flatMap { _ =>
+      (((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
         orElse doNothing) and
-        (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'memberDetails).json.copyFrom((__ \ 'members).read(readsMembers)) and
-        (__ \ 'chargeDetails \ 'chargeTypeEDetails \ 'totalAmount).json.copyFrom((__ \ 'totalChargeAmount).json.pick)).reduce
+        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("memberDetails")).json.copyFrom((__ \ Symbol("members")).read(readsMembers)) and
+        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("totalAmount"))
+          .json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)).reduce
     }
 
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_)).map(removeEmptyObjects)
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
-      (__ \ 'amountOfCharge).json.copyFrom((__ \ 'chargeDetails \ 'chargeAmount).json.pick) and
-      (__ \ 'dateOfNotice).json.copyFrom((__ \ 'chargeDetails \ 'dateNoticeReceived).json.pick) and
+      (__ \ Symbol("amountOfCharge")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("chargeAmount")).json.pick) and
+      (__ \ Symbol("dateOfNotice")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("dateNoticeReceived")).json.pick) and
       getPaidUnder237b and
-      (__ \ 'taxYearEnding).json.copyFrom((__ \ 'annualAllowanceYear).json.pick) and
-      ((__ \ 'memberStatus).json.copyFrom((__ \ 'memberStatus).json.pick)
-        orElse (__ \ 'memberStatus).json.put(JsString("New"))) and
-      ((__ \ 'memberAFTVersion).json.copyFrom((__ \ 'memberAFTVersion).json.pick)
+      (__ \ Symbol("taxYearEnding")).json.copyFrom((__ \ Symbol("annualAllowanceYear")).json.pick) and
+      ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
+        orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
+      ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
         orElse doNothing)).reduce.orElseEmptyOnMissingFields
 
   def getPaidUnder237b: Reads[JsObject] =
-    (__ \ 'chargeDetails \ 'isPaymentMandatory).read[Boolean].flatMap { flag =>
-      (__ \ 'paidUnder237b).json.put(if (flag) JsString("Yes") else JsString("No"))
+    (__ \ Symbol("chargeDetails") \ Symbol("isPaymentMandatory")).read[Boolean].flatMap { flag =>
+      (__ \ Symbol("paidUnder237b")).json.put(if (flag) JsString("Yes") else JsString("No"))
     } orElse doNothing
 
 }

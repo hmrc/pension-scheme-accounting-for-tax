@@ -25,9 +25,9 @@ trait JsonTransformer {
   val doNothing: Reads[JsObject] = __.json.put(Json.obj())
 
   def readsMemberDetails: Reads[JsObject] =
-    ((__ \ 'memberDetails \ 'firstName).json.copyFrom((__ \ 'individualsDetails \ 'firstName).json.pick) and
-      (__ \ 'memberDetails \ 'lastName).json.copyFrom((__ \ 'individualsDetails \ 'lastName).json.pick) and
-      (__ \ 'memberDetails \ 'nino).json.copyFrom((__ \ 'individualsDetails \ 'nino).json.pick)
+    ((__ \ Symbol("memberDetails") \ Symbol("firstName")).json.copyFrom((__ \ Symbol("individualsDetails") \ Symbol("firstName")).json.pick) and
+      (__ \ Symbol("memberDetails") \ Symbol("lastName")).json.copyFrom((__ \ Symbol("individualsDetails") \ Symbol("lastName")).json.pick) and
+      (__ \ Symbol("memberDetails") \ Symbol("nino")).json.copyFrom((__ \ Symbol("individualsDetails") \ Symbol("nino")).json.pick)
       ).reduce
 
 }

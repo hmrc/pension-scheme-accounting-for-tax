@@ -17,11 +17,11 @@
 package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalatest.freespec.AnyFreeSpec
-import play.api.libs.json.{Json, _}
-import transformations.generators.AFTUserAnswersGenerators
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import org.scalatest.OptionValues
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
+import play.api.libs.json._
+import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
 
@@ -50,7 +50,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
     "must transform optionalElement - amendedVersion, memberAFTVersion and memberStatus for ChargeCDetails from UserAnswers format to ETMP format" in {
       forAll(chargeCUserAnswersGenerator, arbitrary[Int]) {
         (userAnswersJson, version) =>
-          val updatedJson = userAnswersJson.transform(updateJson(__ \ 'chargeCDetails, name = "amendedVersion", version)).asOpt.value
+          val updatedJson = userAnswersJson.transform(updateJson(__ \ Symbol("chargeCDetails"), name = "amendedVersion", version)).asOpt.value
           val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
 
           val etmpMemberDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0

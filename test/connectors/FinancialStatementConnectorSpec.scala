@@ -20,10 +20,12 @@ import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models._
 import org.mockito.ArgumentMatchers.any
-import org.mockito._
+import org.mockito.Mockito.{times, verify}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -31,6 +33,7 @@ import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
+import repository._
 import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.http._
 import utils.WireMockHelper
@@ -55,12 +58,15 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AFTService].toInstance(mockAftService),
-      bind[FeatureToggleService].toInstance(mockFutureToggleService)
+      bind[FeatureToggleService].toInstance(mockFutureToggleService),
+      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
+      bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+      bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
     )
-
-  override def beforeEach(): Unit = {
-    super.beforeEach()
-  }
 
   private val psaId = "test-psa-id"
   private val pstr = "test-pstr"
@@ -171,7 +177,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
   "getSchemeFS" must {
 
-    "return maximum answer json when successful response returned from ETMP "in {
+    "return maximum answer json when successful response returned from ETMP " in {
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -353,78 +359,78 @@ object FinancialStatementConnectorSpec {
   )
 
   private val psaFSMaxResponse: JsValue = Json.arr(
-      Json.obj(
-        "index" -> 1,
-        "chargeReference" -> "Not Applicable",
-        "chargeType" -> "00600100",
-        "totalAmount" -> -15000.00,
-        "dueDate" -> "2020-06-25",
-        "amountDue" -> -15000.00,
-        "outstandingAmount" -> -15000.00,
-        "stoodOverAmount" -> 0.00,
-        "accruedInterestTotal" -> 0.00,
-        "periodStartDate" -> "2020-04-01",
-        "periodEndDate" -> "2020-06-30",
-        "pstr" -> "24000040IN",
-        "sourceChargeIndex" -> None,
-        "sourceChargeRefForInterest" -> "XY002610150181",
-        "documentLineItemDetails" -> Json.arr(
-          Json.obj(
-            "clearingDate" -> "2020-06-30",
-            "paymDateOrCredDueDate" -> "2020-04-24",
-            "clearingReason" -> "C1",
-            "clearedAmountItem" -> 0.00
-          )
-        )
-      ),
-      Json.obj(
-        "index" -> 2,
-        "chargeReference" -> "Not Applicable",
-        "chargeType" -> "57001080",
-        "dueDate" -> "2020-02-15",
-        "totalAmount" -> 80000.00,
-        "outstandingAmount" -> 56049.08,
-        "stoodOverAmount" -> 25089.08,
-        "accruedInterestTotal" -> 123.00,
-        "amountDue" -> 1029.05,
-        "periodStartDate" -> "2020-04-01",
-        "periodEndDate" -> "2020-06-30",
-        "pstr" -> "24000040IN",
-        "sourceChargeRefForInterest" -> "XY002610150181",
-        "sourceChargeIndex" -> None,
-        "documentLineItemDetails" -> Json.arr(
-          Json.obj(
-            "clearingDate" -> "2020-06-30",
-            "paymDateOrCredDueDate" -> "2020-04-24",
-            "clearingReason" -> "C1",
-            "clearedAmountItem" -> 0.00
-          )
-        )
-      ),
-      Json.obj(
-        "index" -> 3,
-        "chargeReference" -> "XY002610150184",
-        "chargeType" -> "57001091",
-        "dueDate" -> "2020-02-15",
-        "totalAmount" -> 80000.00,
-        "outstandingAmount" -> 56049.08,
-        "stoodOverAmount" -> 25089.08,
-        "accruedInterestTotal" -> 123.00,
-        "amountDue" -> 1029.05,
-        "periodStartDate" -> "2020-04-01",
-        "periodEndDate" -> "2020-06-30",
-        "pstr" -> "24000040IN",
-        "sourceChargeRefForInterest" -> "XY002610150181",
-        "sourceChargeIndex" -> None,
-        "documentLineItemDetails" -> Json.arr(
-          Json.obj(
-            "clearingDate" -> "2020-06-30",
-            "paymDateOrCredDueDate" -> "2020-04-24",
-            "clearingReason" -> "C1",
-            "clearedAmountItem" -> 0.00
-          )
+    Json.obj(
+      "index" -> 1,
+      "chargeReference" -> "Not Applicable",
+      "chargeType" -> "00600100",
+      "totalAmount" -> -15000.00,
+      "dueDate" -> "2020-06-25",
+      "amountDue" -> -15000.00,
+      "outstandingAmount" -> -15000.00,
+      "stoodOverAmount" -> 0.00,
+      "accruedInterestTotal" -> 0.00,
+      "periodStartDate" -> "2020-04-01",
+      "periodEndDate" -> "2020-06-30",
+      "pstr" -> "24000040IN",
+      "sourceChargeIndex" -> None,
+      "sourceChargeRefForInterest" -> "XY002610150181",
+      "documentLineItemDetails" -> Json.arr(
+        Json.obj(
+          "clearingDate" -> "2020-06-30",
+          "paymDateOrCredDueDate" -> "2020-04-24",
+          "clearingReason" -> "C1",
+          "clearedAmountItem" -> 0.00
         )
       )
+    ),
+    Json.obj(
+      "index" -> 2,
+      "chargeReference" -> "Not Applicable",
+      "chargeType" -> "57001080",
+      "dueDate" -> "2020-02-15",
+      "totalAmount" -> 80000.00,
+      "outstandingAmount" -> 56049.08,
+      "stoodOverAmount" -> 25089.08,
+      "accruedInterestTotal" -> 123.00,
+      "amountDue" -> 1029.05,
+      "periodStartDate" -> "2020-04-01",
+      "periodEndDate" -> "2020-06-30",
+      "pstr" -> "24000040IN",
+      "sourceChargeRefForInterest" -> "XY002610150181",
+      "sourceChargeIndex" -> None,
+      "documentLineItemDetails" -> Json.arr(
+        Json.obj(
+          "clearingDate" -> "2020-06-30",
+          "paymDateOrCredDueDate" -> "2020-04-24",
+          "clearingReason" -> "C1",
+          "clearedAmountItem" -> 0.00
+        )
+      )
+    ),
+    Json.obj(
+      "index" -> 3,
+      "chargeReference" -> "XY002610150184",
+      "chargeType" -> "57001091",
+      "dueDate" -> "2020-02-15",
+      "totalAmount" -> 80000.00,
+      "outstandingAmount" -> 56049.08,
+      "stoodOverAmount" -> 25089.08,
+      "accruedInterestTotal" -> 123.00,
+      "amountDue" -> 1029.05,
+      "periodStartDate" -> "2020-04-01",
+      "periodEndDate" -> "2020-06-30",
+      "pstr" -> "24000040IN",
+      "sourceChargeRefForInterest" -> "XY002610150181",
+      "sourceChargeIndex" -> None,
+      "documentLineItemDetails" -> Json.arr(
+        Json.obj(
+          "clearingDate" -> "2020-06-30",
+          "paymDateOrCredDueDate" -> "2020-04-24",
+          "clearingReason" -> "C1",
+          "clearedAmountItem" -> 0.00
+        )
+      )
+    )
   )
 
   private val psaFSWrapperResponseMax: JsValue = Json.obj("accountHeaderDetails" -> Json.obj("inhibitRefundSignal" -> true)) ++

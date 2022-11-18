@@ -70,13 +70,13 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
 
     "must transform optional elements - amendedVersion, memberStatus and memberAFTVersion of ChargeEDetails from UserAnswers to ETMP" in {
       forAll(chargeEUserAnswersGenerator, arbitrary[Int], arbitrary[String]) {
-        (userAnswersJson, version, status) =>
+        (userAnswersJson, version, _) =>
 
-          val jsonTransformer = (__ \ 'chargeEDetails).json.pickBranch(
+          val jsonTransformer = (__ \ Symbol("chargeEDetails")).json.pickBranch(
             __.json.update(
               __.read[JsObject].map(o => o ++ Json.obj("amendedVersion" -> version))
             ) andThen
-              (__ \ 'members).json.update(
+              (__ \ Symbol("members")).json.update(
                 __.read[JsArray].map {
                   case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] - "memberAFTVersion" - "memberStatus") ++ arr.tail)
                 })

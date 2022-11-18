@@ -91,7 +91,7 @@ class FileUploadCacheController @Inject()(
   }
 
   private def getReferenceId(block: String => Future[Result])
-                            (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+                            (implicit request: Request[AnyContent]): Future[Result] = {
     request.headers.get("reference") match {
       case Some(id) => block(id)
       case _ => Future.failed(new BadRequestException(s"Bad Request with missing reference"))

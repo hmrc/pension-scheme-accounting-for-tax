@@ -51,10 +51,16 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   def getAftOverviewUrl = s"$ifURL${config.get[String](path = "serviceUrls.get-aft-overview")}"
 
   def getAftDetailsUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-details")}"
+
   def getAftFbnDetailsUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-details-fbNumber")}"
+
   def getAftVersionUrl = s"$baseURL${config.get[String](path = "serviceUrls.get-aft-version")}"
+
   def psaFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.psa-financial-statement")}"
+
   def psaFinancialStatementMaxUrl = s"$ifURL${config.get[String](path = "serviceUrls.psa-financial-statement-max")}"
+
   def schemeFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement")}"
+
   def schemeFinancialStatementMaxUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement-max")}"
 }

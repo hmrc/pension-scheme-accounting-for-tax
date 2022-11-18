@@ -21,17 +21,19 @@ import connectors.AFTConnector
 import models.enumeration.JourneyType
 import models.{AFTOverview, AFTOverviewVersion, AFTVersion}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, ArgumentMatchers, Mockito, MockitoSugar}
+import org.mockito.Mockito.{reset, times, verify, when}
+import org.mockito.{ArgumentCaptor, ArgumentMatchers, Mockito}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import repository.AftOverviewCacheRepository
+import repository._
 import services.AFTService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
@@ -69,7 +71,13 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       bind[AFTConnector].toInstance(mockDesConnector),
       bind[AFTService].toInstance(mockAftService),
       bind[AftOverviewCacheRepository].toInstance(mockAftOverviewCacheRepository),
-      bind[JSONPayloadSchemaValidator].toInstance(mockJSONPayloadSchemaValidator)
+      bind[JSONPayloadSchemaValidator].toInstance(mockJSONPayloadSchemaValidator),
+      bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
+      bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
+      bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
+      bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[AdminDataRepository].toInstance(mock[AdminDataRepository])
     )
 
   val application: Application = new GuiceApplicationBuilder()
@@ -85,10 +93,12 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   }
 
   before {
-    reset(mockDesConnector, mockAftService, authConnector, mockJSONPayloadSchemaValidator)
+    reset(mockDesConnector)
+    reset(mockAftService)
+    reset(authConnector)
+    reset(mockJSONPayloadSchemaValidator)
     when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
-    val validationResponse = Right(true)
-    when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any())).thenReturn(validationResponse)
+    when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any())).thenReturn(Right(true))
   }
 
   "fileReturn" must {
@@ -124,7 +134,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         "\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"]," +
         "\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}}"
       val validationResponse = Left(List(ErrorReport("test", GivingErrorPayload)))
-      when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(),any()))
+      when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any()))
         .thenReturn(validationResponse)
 
       when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
@@ -349,7 +359,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   "getOverview" must {
     "return OK with the Seq of overview details and no data was found in cache" in {
       when(mockAftOverviewCacheRepository.get(any())(any())).thenReturn(Future.successful(None))
-      when(mockAftOverviewCacheRepository.save(any(), any())(any())).thenReturn(Future.successful(true))
+      when(mockAftOverviewCacheRepository.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
       when(mockDesConnector.getAftOverview(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(endDate))(any(), any()))
         .thenReturn(Future.successful(aftOverview))
 
@@ -416,11 +426,10 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
 object AFTControllerSpec {
   private val pstr = "12345678RD"
-  private val psaIdJsValue =  Json.toJson("A2100005")
+  private val psaIdJsValue = Json.toJson("A2100005")
   private val startDt = "2020-01-01"
   private val endDate = "2020-12-31"
   private val aftVer = "99"
-  private val fbNumber = "123456789123"
   private val etmpAFTDetailsResponse: JsValue = Json.obj(
     "schemeDetails" -> Json.obj(
       "pstr" -> "12345678AB",

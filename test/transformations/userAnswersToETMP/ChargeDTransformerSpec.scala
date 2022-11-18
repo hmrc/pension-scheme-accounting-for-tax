@@ -17,12 +17,12 @@
 package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalatest.freespec.AnyFreeSpec
-import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
-import transformations.generators.AFTUserAnswersGenerators
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import org.scalatest.OptionValues
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
+import play.api.libs.json.Reads._
+import play.api.libs.json._
+import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeDTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
 
@@ -63,11 +63,11 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
     "must transform optional element - amendedVersion, memberStatus and memberAFTVersion of ChargeDDetails from UserAnswers to ETMP" in {
       forAll(chargeDUserAnswersGenerator, arbitrary[Int]) {
         (userAnswersJson, version) =>
-          val jsonTransformer = (__ \ 'chargeDDetails).json.pickBranch(
+          val jsonTransformer = (__ \ Symbol("chargeDDetails")).json.pickBranch(
             __.json.update(
               __.read[JsObject].map(o => o ++ Json.obj("amendedVersion" -> version))
             ) andThen
-              (__ \ 'members).json.update(
+              (__ \ Symbol("members")).json.update(
                 __.read[JsArray].map {
                   case JsArray(arr) => JsArray(Seq(arr.head.as[JsObject] - "memberAFTVersion" - "memberStatus") ++ arr.tail)
                 })

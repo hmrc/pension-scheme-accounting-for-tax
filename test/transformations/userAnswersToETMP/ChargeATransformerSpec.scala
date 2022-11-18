@@ -17,11 +17,11 @@
 package transformations.userAnswersToETMP
 
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
-import org.scalatest.freespec.AnyFreeSpec
-import play.api.libs.json.{__, _}
-import transformations.generators.AFTUserAnswersGenerators
 import org.scalatest.OptionValues
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
+import play.api.libs.json._
+import transformations.generators.AFTUserAnswersGenerators
 
 class ChargeATransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
 
@@ -52,7 +52,7 @@ class ChargeATransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
     "must transform optional elements - amendedVersion of ChargeADetails from UserAnswers to ETMP" in {
       forAll(chargeAUserAnswersGenerator, arbitrary[Int]) {
         (userAnswersJson, version) =>
-          val updatedJson = userAnswersJson.transform(updateJson(__ \ 'chargeADetails, name = "amendedVersion", version)).asOpt.value
+          val updatedJson = userAnswersJson.transform(updateJson(__ \ Symbol("chargeADetails"), name = "amendedVersion", version)).asOpt.value
           val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
 
           (etmpPath(transformedJson) \ "amendedVersion").as[Int] mustBe (uaPath(updatedJson) \ "amendedVersion").as[Int]

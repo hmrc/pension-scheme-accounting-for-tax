@@ -65,7 +65,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
               case Some(jsValue) =>
                 val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
                 val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
-                Seq(schemeFSDetail copy(
+                Seq(schemeFSDetail.copy(
                   receiptDate = optReceiptDate,
                   version = optVersion
                 ))
@@ -76,9 +76,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     ).map(_.flatten)
   }
 
-  private def updateSourceChargeInfo(seqSchemeFsDetail: Seq[SchemeFSDetail])(implicit hc: HeaderCarrier,
-                                                                             ec: ExecutionContext,
-                                                                             request: RequestHeader): Seq[SchemeFSDetail] = {
+  private def updateSourceChargeInfo(seqSchemeFsDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
     seqSchemeFsDetail.map { schemeFSDetail =>
       schemeFSDetail.sourceChargeInfo match {
         case Some(sci) =>
@@ -86,7 +84,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
             case Some(foundOriginalCharge) =>
               schemeFSDetail copy (
                 sourceChargeInfo = Some(
-                  sci copy(
+                  sci.copy(
                     version = foundOriginalCharge.version,
                     receiptDate = foundOriginalCharge.receiptDate
                   )
@@ -104,13 +102,13 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       get(key = "pstr") { pstr =>
         financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
           val updatedSchemeFS =
-              for {
-                seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
-              } yield {
-                data copy (
-                  seqSchemeFSDetail = updateSourceChargeInfo(seqSchemeFSDetailWithVersionAndReceiptDate)
-                  )
-          }
+            for {
+              seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+            } yield {
+              data copy (
+                seqSchemeFSDetail = updateSourceChargeInfo(seqSchemeFSDetailWithVersionAndReceiptDate)
+                )
+            }
           updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
         }
       }
