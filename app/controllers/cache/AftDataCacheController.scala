@@ -30,15 +30,14 @@ import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class AftDataCacheController @Inject()(
                                         batchedRepository: AftBatchedDataCacheRepository,
                                         val authConnector: AuthConnector,
                                         cc: ControllerComponents,
                                         auditService: AuditService
-                                      ) extends BackendController(cc) with AuthorisedFunctions {
+                                      )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
 
   import AftDataCacheController._
 

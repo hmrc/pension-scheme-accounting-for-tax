@@ -27,7 +27,7 @@ import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Crypted}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 
 class EmailResponseController @Inject()(
                                          auditService: AuditService,
@@ -35,7 +35,7 @@ class EmailResponseController @Inject()(
                                          crypto: ApplicationCrypto,
                                          parser: PlayBodyParsers,
                                          val authConnector: AuthConnector
-                                       ) extends BackendController(cc) with AuthorisedFunctions {
+                                       )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
   private val logger = Logger(classOf[EmailResponseController])
 
   def sendAuditEvents(

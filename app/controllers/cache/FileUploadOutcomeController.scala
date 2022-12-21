@@ -25,14 +25,13 @@ import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{HeaderCarrier, UnauthorizedException}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class FileUploadOutcomeController @Inject()(
                                              repository: FileUploadOutcomeRepository,
                                              val authConnector: AuthConnector,
                                              cc: ControllerComponents
-                                           ) extends BackendController(cc) with AuthorisedFunctions {
+                                           )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
 
   import FileUploadOutcomeController._
 

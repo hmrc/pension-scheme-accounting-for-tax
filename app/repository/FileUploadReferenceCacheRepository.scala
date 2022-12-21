@@ -29,8 +29,10 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import java.time.{LocalDateTime, ZoneId}
 import java.util.concurrent.TimeUnit
+import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 
+@Singleton
 class FileUploadReferenceCacheRepository @Inject()(
                                                     mongoComponent: MongoComponent,
                                                     configuration: Configuration

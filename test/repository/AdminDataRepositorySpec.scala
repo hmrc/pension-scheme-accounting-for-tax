@@ -40,7 +40,7 @@ class AdminDataRepositorySpec extends AnyWordSpec with MockitoSugar with Matcher
 
   import AdminDataRepositorySpec._
 
-  var adminDataRepository: AdminDataRepositoryImpl = _
+  var adminDataRepository: AdminDataRepository = _
 
   override def beforeAll(): Unit = {
     when(mockAppConfig.get[String](path = "mongodb.aft-cache.admin-data.name")).thenReturn("admin-data")
@@ -102,10 +102,10 @@ object AdminDataRepositorySpec extends MockitoSugar {
 
   private val mockAppConfig = mock[Configuration]
 
-  private def buildFormRepository(mongoHost: String, mongoPort: Int): AdminDataRepositoryImpl = {
+  private def buildFormRepository(mongoHost: String, mongoPort: Int): AdminDataRepository = {
     val databaseName = "pension-scheme-accounting-for-tax"
     val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-    new AdminDataRepositoryImpl(MongoComponent(mongoUri), mockAppConfig)
+    new AdminDataRepository(MongoComponent(mongoUri), mockAppConfig)
   }
 }
 
