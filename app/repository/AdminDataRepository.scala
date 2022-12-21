@@ -16,7 +16,7 @@
 
 package repository
 
-import com.google.inject.{ImplementedBy, Inject}
+import com.google.inject.Inject
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import models.FeatureToggle
 import org.mongodb.scala.model.Updates.set
@@ -27,6 +27,7 @@ import repository.FeatureToggleMongoFormatter.{FeatureToggles, featureToggles, i
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
+import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 
 object FeatureToggleMongoFormatter {
@@ -38,17 +39,11 @@ object FeatureToggleMongoFormatter {
   val featureToggles = "toggles"
 }
 
-@ImplementedBy(classOf[AdminDataRepositoryImpl])
-trait AdminDataRepository {
-  def getFeatureToggles: Future[Seq[FeatureToggle]]
-
-  def setFeatureToggles(toggles: Seq[FeatureToggle]): Future[Unit]
-}
-
-class AdminDataRepositoryImpl @Inject()(
-                                         mongoComponent: MongoComponent,
-                                         configuration: Configuration
-                                       )(implicit val ec: ExecutionContext)
+@Singleton
+class AdminDataRepository @Inject()(
+                                     mongoComponent: MongoComponent,
+                                     configuration: Configuration
+                                   )(implicit val ec: ExecutionContext)
   extends PlayMongoRepository[FeatureToggles](
     collectionName = configuration.get[String](path = "mongodb.aft-cache.admin-data.name"),
     mongoComponent = mongoComponent,
@@ -58,7 +53,7 @@ class AdminDataRepositoryImpl @Inject()(
         Indexes.ascending(featureToggles),
         IndexOptions().name(featureToggles).unique(true).background(true))
     )
-  ) with AdminDataRepository with Logging {
+  ) with Logging {
 
 
   def getFeatureToggles: Future[Seq[FeatureToggle]] = {

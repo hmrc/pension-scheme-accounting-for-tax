@@ -35,6 +35,7 @@ import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, LocalTime, ZoneId}
 import java.util.concurrent.TimeUnit
+import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 
 object AftBatchedDataCacheRepository {
@@ -71,6 +72,7 @@ object AftBatchedDataCacheRepository {
   )
 }
 
+@Singleton
 class AftBatchedDataCacheRepository @Inject()(
                                                mongoComponent: MongoComponent,
                                                batchService: BatchService,
