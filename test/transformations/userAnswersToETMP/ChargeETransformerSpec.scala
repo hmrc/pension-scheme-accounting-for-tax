@@ -65,6 +65,12 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "amendedVersion").asOpt[Int] mustBe None
 
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 6
+
+//          // MCCLOUD
+//
+//          (etmpMemberPath(transformedJson, 0) \ "anAllowanceChgPblSerRem").as[String] mustBe
+//            (if ((uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]) "Yes" else "No")
+
       }
     }
 

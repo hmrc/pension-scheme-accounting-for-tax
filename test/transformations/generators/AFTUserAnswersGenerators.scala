@@ -16,6 +16,7 @@
 
 package transformations.generators
 
+import org.eclipse.jetty.util.ajax.JSONCollectionConvertor
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.rng.Seed
@@ -216,6 +217,83 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
           "totalChargeAmount" -> totalChargeAmount
         ))
 
+  /*
+  "mccloudRemedy" : {
+      "isPublicServicePensionsRemedy" : true,
+      "isChargeInAdditionReported" : true,
+      "wasAnotherPensionScheme" : true,
+      "schemes" : [
+          {
+              "pstr" : "20123456RQ",
+              "taxYearReportedAndPaidPage" : "2022",
+              "taxQuarterReportedAndPaid" : {
+                  "startDate" : "2022-01-01",
+                  "endDate" : "2022-03-31"
+              },
+              "chargeAmountReported" : 12
+          },
+          {
+              "pstr" : "20123456RQ",
+              "taxYearReportedAndPaidPage" : "2018",
+              "taxQuarterReportedAndPaid" : {
+                  "startDate" : "2018-04-01",
+                  "endDate" : "2018-06-30"
+              },
+              "chargeAmountReported" : 44
+          }
+      ]
+  }
+   */
+
+  private case class TaxQuarter(startDate: String, endDate: String)
+
+  private object TaxQuarter {
+    implicit val formats: Format[TaxQuarter] = Json.format[TaxQuarter]
+  }
+
+  private case class Scheme(pstr: String, taxYearReportedAndPaidPage: String,
+                            taxQuarterReportedAndPaid: TaxQuarter,
+                            chargeAmountReported: BigDecimal)
+
+  private object Scheme {
+    implicit val formats: Format[Scheme] = Json.format[Scheme]
+  }
+
+  private def genSeqOfSchemes(howManySchemes: Int): Gen[Seq[Scheme]] = {
+    val seqInt: Seq[Int] = (1 to howManySchemes)
+    val seqGenScheme = seqInt.map { _ =>
+      for {
+        pstr <- Gen.alphaStr
+        taxYearReportedAndPaidPage <- Gen.alphaStr
+        taxQuarterStartDate <- Gen.alphaStr
+        taxQuarterEndDate <- Gen.alphaStr
+        chargeAmountReported <- arbitrary[BigDecimal]
+      } yield {
+        Scheme(pstr, taxYearReportedAndPaidPage, TaxQuarter(taxQuarterStartDate, taxQuarterEndDate), chargeAmountReported)
+      }
+    }
+
+    Gen.sequence[Seq[Scheme], Scheme](seqGenScheme)
+  }
+
+  def mccloudRemedy: Gen[JsObject] = {
+    for {
+      isPublicServicePensionsRemedy <- arbitrary[Boolean]
+      isChargeInAdditionReported <- arbitrary[Boolean]
+      wasAnotherPensionScheme <- arbitrary[Boolean]
+//      howManySchemes <- Gen.chooseNum(minT = 1, maxT = 5)
+//      schemes <- genSeqOfSchemes(howManySchemes)
+    } yield {
+      Json.obj(
+        "isPublicServicePensionsRemedy" -> isPublicServicePensionsRemedy,
+        "isChargeInAdditionReported" -> isChargeInAdditionReported,
+        "wasAnotherPensionScheme" -> wasAnotherPensionScheme
+//        ,
+//        "schemes" -> Json.arr(schemes.map(Json.toJson(_).as[JsObject]))
+      )
+    }
+  }
+
   def chargeEMember(status: String): Gen[JsObject] =
     for {
       memberDetails <- memberDetailsGen
@@ -224,6 +302,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
       date <- dateGenerator
       isMandatory <- arbitrary[Boolean]
       taxYear <- Gen.choose(1990, Year.now.getValue)
+      mccloud <- mccloudRemedy
     } yield Json.obj(
       "memberDetails" -> memberDetails,
       "memberAFTVersion" -> memberVersion,
@@ -233,7 +312,8 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
         "chargeAmount" -> chargeAmount,
         "dateNoticeReceived" -> date,
         "isPaymentMandatory" -> isMandatory
-      )
+      ),
+      "mccloudRemedy" -> mccloud
     )
 
   val chargeEUserAnswersGenerator: Gen[JsObject] =

@@ -27,11 +27,12 @@ class ChargeETransformer extends JsonTransformer {
 
   def readsChargeE: Reads[JsObject] =
     (__ \ Symbol("totalChargeAmount")).read[BigDecimal].flatMap { _ =>
-      (((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
-        orElse doNothing) and
-        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("memberDetails")).json.copyFrom((__ \ Symbol("members")).read(readsMembers)) and
-        (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("totalAmount"))
-          .json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)).reduce
+      (
+        ((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
+          orElse doNothing) and
+          (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("memberDetails")).json.copyFrom((__ \ Symbol("members")).read(readsMembers)) and
+          (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("totalAmount")).json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)
+        ).reduce
     }
 
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_)).map(removeEmptyObjects)
@@ -45,11 +46,18 @@ class ChargeETransformer extends JsonTransformer {
       ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
         orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
       ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
-        orElse doNothing)).reduce.orElseEmptyOnMissingFields
+        orElse doNothing) and (readsMccloud orElse doNothing)
+      ).reduce.orElseEmptyOnMissingFields
 
   def getPaidUnder237b: Reads[JsObject] =
     (__ \ Symbol("chargeDetails") \ Symbol("isPaymentMandatory")).read[Boolean].flatMap { flag =>
       (__ \ Symbol("paidUnder237b")).json.put(if (flag) JsString("Yes") else JsString("No"))
     } orElse doNothing
+
+
+  def readsMccloud: Reads[JsObject] =
+  (__ \ Symbol("mccloudRemedy") \ Symbol("anAllowanceChgPblSerRem"))
+    .json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).json.pick)
+
 
 }
