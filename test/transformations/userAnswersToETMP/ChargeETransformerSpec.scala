@@ -28,6 +28,8 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
 
   private def uaMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeEDetails" \ "members" \ i
 
+  private def booleanToString(b:Boolean): String = if (b) "Yes" else "No"
+
   private val transformer = new ChargeETransformer
 
   "A Charge E Transformer" - {
@@ -53,7 +55,7 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (etmpMemberPath(transformedJson, 0) \ "dateOfNotice").as[String] mustBe
             (uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "dateNoticeReceived").as[String]
           (etmpMemberPath(transformedJson, 0) \ "paidUnder237b").as[String] mustBe
-            (if ((uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean]) "Yes" else "No")
+            booleanToString ((uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean])
           (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String]
 
           (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "memberStatus").as[String]
@@ -66,10 +68,9 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
 
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 6
 
-//          // MCCLOUD
-//
-//          (etmpMemberPath(transformedJson, 0) \ "anAllowanceChgPblSerRem").as[String] mustBe
-//            (if ((uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]) "Yes" else "No")
+          // MCCLOUD
+          (etmpMemberPath(transformedJson, 0) \ "anAllowanceChgPblSerRem").as[String] mustBe
+            booleanToString ((uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean])
 
       }
     }
