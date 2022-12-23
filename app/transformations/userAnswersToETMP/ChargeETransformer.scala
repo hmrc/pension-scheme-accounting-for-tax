@@ -56,43 +56,37 @@ class ChargeETransformer extends JsonTransformer {
       (__ \ Symbol("paidUnder237b")).json.put(if (flag) JsString("Yes") else JsString("No"))
     } orElse doNothing
 
-  private def schemePeriodAndAmountToJsObject(scheme: Scheme): JsObject =
-    Json.obj(
-      "repPeriodForAac" -> scheme.taxQuarterReportedAndPaid.endDate,
-      "amtOrRepAaChg" -> scheme.chargeAmountReported
-    )
-
-  private def schemeToJsObject(scheme: Scheme): JsObject =
-    Json.obj(
-      "pstr" -> scheme.pstr
-    ) ++ schemePeriodAndAmountToJsObject(scheme)
-
-  private val readsAllSchemes: Reads[JsArray] = (__ \ Symbol("mccloudRemedy") \ "schemes").readNullable(Reads.seq(Scheme.formats)).flatMap {
-    case None => Reads.failed("no schemes")
-    case Some(seqScheme) => Reads.pure(JsArray(seqScheme.map(scheme => schemeToJsObject(scheme))))
-  }
-
-  private val readsSingleScheme: Reads[Scheme] = (
-    (__ \ Symbol("taxYearReportedAndPaidPage")).read[String] and
-      (__ \ Symbol("taxQuarterReportedAndPaid") \ "startDate").read[String] and
-      (__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").read[String] and
-      (__ \ Symbol("chargeAmountReported")).read[BigDecimal]
-    ) (
-    (taxYear, startDate, endDate, chargeAmount) =>
-      Scheme(pstr = "", taxYear, TaxQuarter(startDate, endDate), chargeAmount)
-  )
-
-  private def readsSingleSchemeAsArray: Reads[JsArray] = {
-    readsSingleScheme.flatMap { scheme =>
-      Reads.pure(JsArray(Seq(scheme).map(scheme => schemePeriodAndAmountToJsObject(scheme))))
-    }
-  }
-
   private def readsPensionSchemeDetails(isAnother: Boolean): Reads[JsObject] = {
+    def schemePeriodAndAmountToJsObject(scheme: Scheme): JsObject =
+      Json.obj(
+        "repPeriodForAac" -> scheme.taxQuarterReportedAndPaid.endDate,
+        "amtOrRepAaChg" -> scheme.chargeAmountReported
+      )
+    def schemeToJsObject(scheme: Scheme): JsObject =
+      Json.obj(
+        "pstr" -> scheme.pstr
+      ) ++ schemePeriodAndAmountToJsObject(scheme)
     if (isAnother) {
+      val readsAllSchemes: Reads[JsArray] = (__ \ Symbol("mccloudRemedy") \ "schemes")
+        .readNullable(Reads.seq(Scheme.formats)).flatMap {
+        case None => Reads.failed("no schemes")
+        case Some(seqScheme) => Reads.pure(JsArray(seqScheme.map(scheme => schemeToJsObject(scheme))))
+      }
       (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsAllSchemes)
     } else {
-      __.json.copyFrom(readsSingleSchemeAsArray)
+      val readsSingleScheme: Reads[Scheme] = (
+        (__ \ Symbol("taxYearReportedAndPaidPage")).read[String] and
+          (__ \ Symbol("taxQuarterReportedAndPaid") \ "startDate").read[String] and
+          (__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").read[String] and
+          (__ \ Symbol("chargeAmountReported")).read[BigDecimal]
+        ) (
+        (taxYear, startDate, endDate, chargeAmount) =>
+          Scheme(pstr = "", taxYear, TaxQuarter(startDate, endDate), chargeAmount)
+      )
+      __.json.copyFrom(
+        readsSingleScheme
+          .flatMap(scheme => Reads.pure(JsArray(Seq(scheme).map(scheme => schemePeriodAndAmountToJsObject(scheme)))))
+      )
     }
   }
 
