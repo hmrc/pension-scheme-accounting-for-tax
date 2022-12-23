@@ -19,7 +19,7 @@ package transformations.userAnswersToETMP
 import models.Scheme
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json.{__, _}
+import play.api.libs.json._
 
 class ChargeETransformer extends JsonTransformer {
   private def booleanToJsString(b: Boolean): JsString = if (b) JsString("Yes") else JsString("No")
@@ -51,7 +51,7 @@ class ChargeETransformer extends JsonTransformer {
         orElse doNothing) and (readsMccloud orElse doNothing)
       ).reduce.orElseEmptyOnMissingFields
 
-  def getPaidUnder237b: Reads[JsObject] =
+  private def getPaidUnder237b: Reads[JsObject] =
     (__ \ Symbol("chargeDetails") \ Symbol("isPaymentMandatory")).read[Boolean].flatMap { flag =>
       (__ \ Symbol("paidUnder237b")).json.put(if (flag) JsString("Yes") else JsString("No"))
     } orElse doNothing
@@ -68,20 +68,26 @@ class ChargeETransformer extends JsonTransformer {
       )))
   }
 
+  private def readsPensionSchemeDetails(isAnother: Boolean): Reads[JsObject] = {
+    if (isAnother) {
+      (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSchemes)
+    } else {
+      doNothing
+    }
+  }
+
   // TODO: PODS-7854 - only when orChgPaidbyAnoPS is true should it try to generate pensionSchemeDetails node
   // TODO: PODS-7854 - when orChgPaidbyAnoPS is false it should generate repPeriodForAac/ amtOrRepAaChg but not clear from API doc 1538 how (blocked ticket)
   def readsMccloud: Reads[JsObject] = {
-
     (for {
+      isPensionRemedy <- (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
       isAnother <- (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).read[Boolean]
     } yield {
       (
-        (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
-          .flatMap(flag => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(flag))) and
-          (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
-          // TODO: PODS-7854 Only parse scheme list if isAnother is true:-
-          (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSchemes)
-        ).reduce
+        (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(isPensionRemedy)) and
+        (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
+        readsPensionSchemeDetails(isAnother)
+      ).reduce
     }).flatMap(identity)
 
   }
