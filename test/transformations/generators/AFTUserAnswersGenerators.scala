@@ -218,36 +218,6 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
           "totalChargeAmount" -> totalChargeAmount
         ))
 
-  /*
-  "mccloudRemedy" : {
-      "isPublicServicePensionsRemedy" : true,
-      "isChargeInAdditionReported" : true,
-      "wasAnotherPensionScheme" : true,
-      "schemes" : [
-          {
-              "pstr" : "20123456RQ",
-              "taxYearReportedAndPaidPage" : "2022",
-              "taxQuarterReportedAndPaid" : {
-                  "startDate" : "2022-01-01",
-                  "endDate" : "2022-03-31"
-              },
-              "chargeAmountReported" : 12
-          },
-          {
-              "pstr" : "20123456RQ",
-              "taxYearReportedAndPaidPage" : "2018",
-              "taxQuarterReportedAndPaid" : {
-                  "startDate" : "2018-04-01",
-                  "endDate" : "2018-06-30"
-              },
-              "chargeAmountReported" : 44
-          }
-      ]
-  }
-   */
-
-
-
   private def genSeqOfSchemes(howManySchemes: Int): Gen[Seq[Scheme]] = {
     val seqInt: Seq[Int] = (1 to howManySchemes)
     val seqGenScheme = seqInt.map { _ =>
@@ -268,14 +238,13 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
   def mccloudRemedy: Gen[JsObject] = {
     for {
       isPublicServicePensionsRemedy <- arbitrary[Boolean]
-      wwasAnotherPensionScheme <- arbitrary[Boolean]
       howManySchemes <- Gen.chooseNum(minT = 1, maxT = 5)
       schemes <- genSeqOfSchemes(howManySchemes)
     } yield {
       val wasAnotherPensionScheme = true
       val schemeSection = if (wasAnotherPensionScheme) {
         Json.obj(
-          "schemes" -> Json.toJson(schemes)  //Json.arr(schemes.map(Json.toJson(_).as[JsObject]))
+          "schemes" -> Json.toJson(schemes)
         )
       } else {
         Json.obj()

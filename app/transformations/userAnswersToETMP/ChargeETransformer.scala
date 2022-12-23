@@ -48,7 +48,7 @@ class ChargeETransformer extends JsonTransformer {
       ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
         orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
       ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
-        orElse doNothing) and (readsMccloud /*orElse doNothing*/)
+        orElse doNothing) and (readsMccloud orElse doNothing)
       ).reduce.orElseEmptyOnMissingFields
 
   def getPaidUnder237b: Reads[JsObject] =
@@ -61,7 +61,9 @@ class ChargeETransformer extends JsonTransformer {
     case Some(seqScheme) =>
       Reads.pure(JsArray(seqScheme.map(scheme =>
         Json.obj(
-          "pstr" -> scheme.pstr
+          "pstr" -> scheme.pstr,
+          "repPeriodForAac" -> scheme.taxQuarterReportedAndPaid.endDate,
+          "amtOrRepAaChg" -> scheme.chargeAmountReported
         )
       )))
   }
