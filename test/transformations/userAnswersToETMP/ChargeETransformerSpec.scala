@@ -78,8 +78,8 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (etmpMemberPath(transformedJson, 0) \ "orChgPaidbyAnoPS").as[String] mustBe
             booleanToString(isOtherSchemes)
 
+          val uaSeqSchemes = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "schemes").as[Seq[Scheme]]
           if (isOtherSchemes) {
-            val uaSeqSchemes = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "schemes").as[Seq[Scheme]]
             val transformedSchemes = (etmpMemberPath(transformedJson, 0) \ "pensionSchemeDetails").as[JsArray].value.toSeq
             uaSeqSchemes.zipWithIndex.foreach { case (uaScheme, i) =>
               (transformedSchemes(i) \ "pstr").asOpt[String] mustBe Some(uaScheme.pstr)
@@ -87,7 +87,10 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
               (transformedSchemes(i) \ "amtOrRepAaChg").asOpt[BigDecimal] mustBe Some(uaScheme.chargeAmountReported)
             }
           } else {
-            assert(true)
+            // TODO: PODS-7854 - Not clear from API 1854 docs where to store the below fields in transformed message when orChgPaidbyAnoPS is "No".
+//            val uaScheme = uaSeqSchemes.head
+//            (etmpMemberPath(transformedJson, 0) \ "repPeriodForAac").asOpt[String] mustBe Some(uaScheme.taxQuarterReportedAndPaid.endDate)
+//            (etmpMemberPath(transformedJson, 0) \ "amtOrRepAaChg").asOpt[BigDecimal] mustBe Some(uaScheme.chargeAmountReported)
           }
 
       }

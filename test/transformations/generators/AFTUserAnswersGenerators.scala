@@ -247,7 +247,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
           "schemes" -> Json.toJson(schemes)
         )
       } else {
-        Json.obj()
+          Json.toJson(schemes.head).as[JsObject]
       }
 
       Json.obj(

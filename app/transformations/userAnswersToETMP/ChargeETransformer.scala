@@ -68,6 +68,8 @@ class ChargeETransformer extends JsonTransformer {
       )))
   }
 
+  // TODO: PODS-7854 - only when orChgPaidbyAnoPS is true should it try to generate pensionSchemeDetails node
+  // TODO: PODS-7854 - when orChgPaidbyAnoPS is false it should generate repPeriodForAac/ amtOrRepAaChg but not clear from API doc 1538 how (blocked ticket)
   def readsMccloud: Reads[JsObject] = {
     (
       (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
