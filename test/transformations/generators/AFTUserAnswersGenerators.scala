@@ -16,6 +16,7 @@
 
 package transformations.generators
 
+import models.{Scheme, TaxQuarter}
 import org.eclipse.jetty.util.ajax.JSONCollectionConvertor
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
@@ -245,19 +246,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
   }
    */
 
-  private case class TaxQuarter(startDate: String, endDate: String)
 
-  private object TaxQuarter {
-    implicit val formats: Format[TaxQuarter] = Json.format[TaxQuarter]
-  }
-
-  private case class Scheme(pstr: String, taxYearReportedAndPaidPage: String,
-                            taxQuarterReportedAndPaid: TaxQuarter,
-                            chargeAmountReported: BigDecimal)
-
-  private object Scheme {
-    implicit val formats: Format[Scheme] = Json.format[Scheme]
-  }
 
   private def genSeqOfSchemes(howManySchemes: Int): Gen[Seq[Scheme]] = {
     val seqInt: Seq[Int] = (1 to howManySchemes)
@@ -279,17 +268,23 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
   def mccloudRemedy: Gen[JsObject] = {
     for {
       isPublicServicePensionsRemedy <- arbitrary[Boolean]
-      isChargeInAdditionReported <- arbitrary[Boolean]
-      wasAnotherPensionScheme <- arbitrary[Boolean]
-//      howManySchemes <- Gen.chooseNum(minT = 1, maxT = 5)
-//      schemes <- genSeqOfSchemes(howManySchemes)
+      wwasAnotherPensionScheme <- arbitrary[Boolean]
+      howManySchemes <- Gen.chooseNum(minT = 1, maxT = 5)
+      schemes <- genSeqOfSchemes(howManySchemes)
     } yield {
+      val wasAnotherPensionScheme = true
+      val schemeSection = if (wasAnotherPensionScheme) {
+        Json.obj(
+          "schemes" -> Json.toJson(schemes)  //Json.arr(schemes.map(Json.toJson(_).as[JsObject]))
+        )
+      } else {
+        Json.obj()
+      }
+
       Json.obj(
         "isPublicServicePensionsRemedy" -> isPublicServicePensionsRemedy,
         "wasAnotherPensionScheme" -> wasAnotherPensionScheme
-//        ,
-//        "schemes" -> Json.arr(schemes.map(Json.toJson(_).as[JsObject]))
-      )
+      ) ++ schemeSection
     }
   }
 

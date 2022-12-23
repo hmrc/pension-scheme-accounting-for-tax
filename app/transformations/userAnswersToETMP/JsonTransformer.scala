@@ -32,6 +32,7 @@ trait JsonTransformer {
     val orElseEmptyOnMissingFields: Reads[JsObject] = Reads[JsObject](json =>
       rds.reads(json) match {
         case JsError(errs) if errs.forall { case (_, jerrs) => jerrs.forall(_.message == pathMissingError) } =>
+          println("\n>>>>ERR:" + errs)
           JsSuccess(JsObject.empty)
         case other => other
       }

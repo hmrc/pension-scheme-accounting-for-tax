@@ -16,11 +16,13 @@
 
 package transformations.userAnswersToETMP
 
+import models.Scheme
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
 class ChargeETransformer extends JsonTransformer {
+  private def booleanToJsString(b: Boolean): JsString = if (b) JsString("Yes") else JsString("No")
 
   def transformToETMPData: Reads[JsObject] =
     (__ \ Symbol("chargeEDetails")).readNullable(__.read(readsChargeE)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
@@ -46,7 +48,7 @@ class ChargeETransformer extends JsonTransformer {
       ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
         orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
       ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
-        orElse doNothing) and (readsMccloud orElse doNothing)
+        orElse doNothing) and (readsMccloud /*orElse doNothing*/)
       ).reduce.orElseEmptyOnMissingFields
 
   def getPaidUnder237b: Reads[JsObject] =
@@ -54,15 +56,23 @@ class ChargeETransformer extends JsonTransformer {
       (__ \ Symbol("paidUnder237b")).json.put(if (flag) JsString("Yes") else JsString("No"))
     } orElse doNothing
 
+  private val readsSchemes: Reads[JsArray] = (__ \ Symbol("mccloudRemedy") \ "schemes").readNullable(Reads.seq(Scheme.formats)).flatMap {
+    case None => Reads.failed("no schemes")
+    case Some(seqScheme) =>
+      Reads.pure(JsArray(seqScheme.map(scheme =>
+        Json.obj(
+          "pstr" -> scheme.pstr
+        )
+      )))
+  }
 
-  def readsMccloud: Reads[JsObject] =
+  def readsMccloud: Reads[JsObject] = {
     (
-    (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
-      .flatMap( flag => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(flag))) and
-      (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).read[Boolean]
-        .flatMap(flag => (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(flag)))
+      (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
+        .flatMap(flag => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(flag))) and
+        (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).read[Boolean]
+          .flatMap(flag => (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(flag))) and
+        (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSchemes)
       ).reduce
-
-  private def booleanToJsString(b:Boolean): JsString = if (b) JsString("Yes") else JsString("No")
-
+  }
 }
