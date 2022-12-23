@@ -72,6 +72,9 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (etmpMemberPath(transformedJson, 0) \ "anAllowanceChgPblSerRem").as[String] mustBe
             booleanToString ((uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean])
 
+          (etmpMemberPath(transformedJson, 0) \ "orChgPaidbyAnoPS").as[String] mustBe
+            booleanToString((uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").as[Boolean])
+
       }
     }
 

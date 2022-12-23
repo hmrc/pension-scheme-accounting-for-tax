@@ -56,9 +56,12 @@ class ChargeETransformer extends JsonTransformer {
 
 
   def readsMccloud: Reads[JsObject] =
+    (
     (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
-      .flatMap( flag => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(flag)))
-
+      .flatMap( flag => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(flag))) and
+      (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).read[Boolean]
+        .flatMap(flag => (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(flag)))
+      ).reduce
 
   private def booleanToJsString(b:Boolean): JsString = if (b) JsString("Yes") else JsString("No")
 

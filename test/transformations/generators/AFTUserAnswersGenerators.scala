@@ -286,7 +286,6 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
     } yield {
       Json.obj(
         "isPublicServicePensionsRemedy" -> isPublicServicePensionsRemedy,
-        "isChargeInAdditionReported" -> isChargeInAdditionReported,
         "wasAnotherPensionScheme" -> wasAnotherPensionScheme
 //        ,
 //        "schemes" -> Json.arr(schemes.map(Json.toJson(_).as[JsObject]))
