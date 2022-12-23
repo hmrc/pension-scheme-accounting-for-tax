@@ -19,7 +19,7 @@ package transformations.userAnswersToETMP
 import models.Scheme
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
-import play.api.libs.json._
+import play.api.libs.json.{__, _}
 
 class ChargeETransformer extends JsonTransformer {
   private def booleanToJsString(b: Boolean): JsString = if (b) JsString("Yes") else JsString("No")
@@ -71,12 +71,18 @@ class ChargeETransformer extends JsonTransformer {
   // TODO: PODS-7854 - only when orChgPaidbyAnoPS is true should it try to generate pensionSchemeDetails node
   // TODO: PODS-7854 - when orChgPaidbyAnoPS is false it should generate repPeriodForAac/ amtOrRepAaChg but not clear from API doc 1538 how (blocked ticket)
   def readsMccloud: Reads[JsObject] = {
-    (
-      (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
-        .flatMap(flag => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(flag))) and
-        (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).read[Boolean]
-          .flatMap(flag => (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(flag))) and
-        (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSchemes)
-      ).reduce
+
+    (for {
+      isAnother <- (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).read[Boolean]
+    } yield {
+      (
+        (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
+          .flatMap(flag => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(flag))) and
+          (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
+          // TODO: PODS-7854 Only parse scheme list if isAnother is true:-
+          (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSchemes)
+        ).reduce
+    }).flatMap(identity)
+
   }
 }
