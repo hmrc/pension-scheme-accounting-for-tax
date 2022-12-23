@@ -16,7 +16,7 @@
 
 package transformations.userAnswersToETMP
 
-import models.Scheme
+import models.{Scheme, TaxQuarter}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
@@ -56,22 +56,43 @@ class ChargeETransformer extends JsonTransformer {
       (__ \ Symbol("paidUnder237b")).json.put(if (flag) JsString("Yes") else JsString("No"))
     } orElse doNothing
 
+  private def ook(scheme: Scheme): JsObject = {
+    Json.obj(
+      "pstr" -> scheme.pstr,
+      "repPeriodForAac" -> scheme.taxQuarterReportedAndPaid.endDate,
+      "amtOrRepAaChg" -> scheme.chargeAmountReported
+    )
+  }
+
   private val readsSchemes: Reads[JsArray] = (__ \ Symbol("mccloudRemedy") \ "schemes").readNullable(Reads.seq(Scheme.formats)).flatMap {
     case None => Reads.failed("no schemes")
-    case Some(seqScheme) =>
-      Reads.pure(JsArray(seqScheme.map(scheme =>
-        Json.obj(
-          "pstr" -> scheme.pstr,
-          "repPeriodForAac" -> scheme.taxQuarterReportedAndPaid.endDate,
-          "amtOrRepAaChg" -> scheme.chargeAmountReported
-        )
-      )))
+    case Some(seqScheme) => Reads.pure(JsArray(seqScheme.map(scheme => ook(scheme))))
+  }
+
+  private def readsScheme: Reads[JsArray] = {
+    val tt = (
+      (__ \ Symbol("taxYearReportedAndPaidPage")).read[String] and
+        (__ \ Symbol("taxQuarterReportedAndPaid") \ "startDate").read[String] and
+        (__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").read[String] and
+        (__ \ Symbol("chargeAmountReported")).read[BigDecimal]
+      ) (
+      (taxYear, startDate, endDate, chargeAmount) =>
+        Scheme(pstr = "", taxYear, TaxQuarter(startDate, endDate), chargeAmount)
+    )
+
+    tt.flatMap { f =>
+      Reads.pure(
+        JsArray(Seq(f).map(scheme => ook(scheme)))
+      )
+    }
+
   }
 
   private def readsPensionSchemeDetails(isAnother: Boolean): Reads[JsObject] = {
     if (isAnother) {
       (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSchemes)
     } else {
+     // __.json.copyFrom(readsScheme)
       doNothing
     }
   }
@@ -85,9 +106,9 @@ class ChargeETransformer extends JsonTransformer {
     } yield {
       (
         (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(isPensionRemedy)) and
-        (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
-        readsPensionSchemeDetails(isAnother)
-      ).reduce
+          (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
+          readsPensionSchemeDetails(isAnother)
+        ).reduce
     }).flatMap(identity)
 
   }
