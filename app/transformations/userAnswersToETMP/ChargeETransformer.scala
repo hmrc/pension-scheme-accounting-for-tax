@@ -56,44 +56,43 @@ class ChargeETransformer extends JsonTransformer {
       (__ \ Symbol("paidUnder237b")).json.put(if (flag) JsString("Yes") else JsString("No"))
     } orElse doNothing
 
-  private def ook(scheme: Scheme): JsObject = {
+  private def schemePeriodAndAmountToJsObject(scheme: Scheme): JsObject =
     Json.obj(
-      "pstr" -> scheme.pstr,
       "repPeriodForAac" -> scheme.taxQuarterReportedAndPaid.endDate,
       "amtOrRepAaChg" -> scheme.chargeAmountReported
     )
-  }
 
-  private val readsSchemes: Reads[JsArray] = (__ \ Symbol("mccloudRemedy") \ "schemes").readNullable(Reads.seq(Scheme.formats)).flatMap {
+  private def schemeToJsObject(scheme: Scheme): JsObject =
+    Json.obj(
+      "pstr" -> scheme.pstr
+    ) ++ schemePeriodAndAmountToJsObject(scheme)
+
+  private val readsAllSchemes: Reads[JsArray] = (__ \ Symbol("mccloudRemedy") \ "schemes").readNullable(Reads.seq(Scheme.formats)).flatMap {
     case None => Reads.failed("no schemes")
-    case Some(seqScheme) => Reads.pure(JsArray(seqScheme.map(scheme => ook(scheme))))
+    case Some(seqScheme) => Reads.pure(JsArray(seqScheme.map(scheme => schemeToJsObject(scheme))))
   }
 
-  private def readsScheme: Reads[JsArray] = {
-    val tt = (
-      (__ \ Symbol("taxYearReportedAndPaidPage")).read[String] and
-        (__ \ Symbol("taxQuarterReportedAndPaid") \ "startDate").read[String] and
-        (__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").read[String] and
-        (__ \ Symbol("chargeAmountReported")).read[BigDecimal]
-      ) (
-      (taxYear, startDate, endDate, chargeAmount) =>
-        Scheme(pstr = "", taxYear, TaxQuarter(startDate, endDate), chargeAmount)
-    )
+  private val readsSingleScheme: Reads[Scheme] = (
+    (__ \ Symbol("taxYearReportedAndPaidPage")).read[String] and
+      (__ \ Symbol("taxQuarterReportedAndPaid") \ "startDate").read[String] and
+      (__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").read[String] and
+      (__ \ Symbol("chargeAmountReported")).read[BigDecimal]
+    ) (
+    (taxYear, startDate, endDate, chargeAmount) =>
+      Scheme(pstr = "", taxYear, TaxQuarter(startDate, endDate), chargeAmount)
+  )
 
-    tt.flatMap { f =>
-      Reads.pure(
-        JsArray(Seq(f).map(scheme => ook(scheme)))
-      )
+  private def readsSingleSchemeAsArray: Reads[JsArray] = {
+    readsSingleScheme.flatMap { scheme =>
+      Reads.pure(JsArray(Seq(scheme).map(scheme => schemePeriodAndAmountToJsObject(scheme))))
     }
-
   }
 
   private def readsPensionSchemeDetails(isAnother: Boolean): Reads[JsObject] = {
     if (isAnother) {
-      (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSchemes)
+      (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsAllSchemes)
     } else {
-     // __.json.copyFrom(readsScheme)
-      doNothing
+      __.json.copyFrom(readsSingleSchemeAsArray)
     }
   }
 
