@@ -16,7 +16,6 @@
 
 package transformations.userAnswersToETMP
 
-import models.Scheme
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
@@ -56,31 +55,28 @@ class ChargeETransformer extends JsonTransformer {
       (__ \ Symbol("paidUnder237b")).json.put(if (flag) JsString("Yes") else JsString("No"))
     } orElse doNothing
 
+  private val readsScheme: Reads[JsObject] = (
+    (__ \ Symbol("pstr")).json.copyFrom((__ \ Symbol("pstr")).json.pick) and
+      (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
+      (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("chargeAmountReported")).json.pick)
+    ).reduce
+
+  private val readsAllSchemes: Reads[JsArray] =
+    (__ \ Symbol("mccloudRemedy") \ "schemes").readNullable(Reads.seq(readsScheme)).flatMap {
+      case None => Reads.failed("No schemes specified")
+      case Some(seqScheme) => Reads.pure(JsArray(seqScheme))
+    }
+
+  private val readsSingleScheme: Reads[JsArray] =
+    (
+      (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
+        (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("chargeAmountReported")).json.pick)
+      ).reduce.map(jsObject => Json.arr(jsObject))
+
   private def readsPensionSchemeDetails(isAnother: Boolean): Reads[JsObject] = {
-    def schemePeriodAndAmountToJsObject(scheme: Scheme): JsObject =
-      Json.obj(
-        "repPeriodForAac" -> scheme.taxQuarterReportedAndPaid.endDate,
-        "amtOrRepAaChg" -> scheme.chargeAmountReported
-      )
-
-    def schemeToJsObject(scheme: Scheme): JsObject =
-      Json.obj(
-        "pstr" -> scheme.pstr
-      ) ++ schemePeriodAndAmountToJsObject(scheme)
-
     if (isAnother) {
-      val readsAllSchemes: Reads[JsArray] = (__ \ Symbol("mccloudRemedy") \ "schemes")
-        .readNullable(Reads.seq(Scheme.formats)).flatMap {
-        case None => Reads.failed("no schemes")
-        case Some(seqScheme) => Reads.pure(JsArray(seqScheme.map(scheme => schemeToJsObject(scheme))))
-      }
       (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsAllSchemes)
     } else {
-      val readsSingleScheme: Reads[JsArray] =
-        (
-          (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
-            (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("chargeAmountReported")).json.pick)
-          ).reduce.map(jsObject => Json.arr(jsObject))
       (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSingleScheme)
     }
   }

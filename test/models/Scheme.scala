@@ -27,7 +27,6 @@ object TaxQuarter {
 case class Scheme(pstr: Option[String], taxYearReportedAndPaidPage: String,
                   taxQuarterReportedAndPaid: TaxQuarter,
                   chargeAmountReported: BigDecimal)
-
 object Scheme {
   implicit val formats: Format[Scheme] = Json.format[Scheme]
 }

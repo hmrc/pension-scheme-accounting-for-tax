@@ -17,7 +17,6 @@
 package transformations.generators
 
 import models.{Scheme, TaxQuarter}
-import org.eclipse.jetty.util.ajax.JSONCollectionConvertor
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.rng.Seed
