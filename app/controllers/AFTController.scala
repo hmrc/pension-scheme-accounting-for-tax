@@ -54,7 +54,6 @@ class AFTController @Inject()(
     with AuthorisedFunctions {
 
   private val logger = Logger(classOf[AFTController])
-  //val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
   val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-2.1.0.json"
 
   type SeqOfChargeType = Option[Seq[Option[String]]]
