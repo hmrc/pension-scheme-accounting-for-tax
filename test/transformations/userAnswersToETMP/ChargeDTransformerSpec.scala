@@ -180,7 +180,8 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
                 "memberStatus" -> "Changed",
                 "totalAmtOfTaxDueAtLowerRate" -> 1.02,
                 "memberAFTVersion" -> 1,
-                "dateOfBeneCrysEvent" -> "2016-02-29"
+                "dateOfBeneCrysEvent" -> "2016-02-29",
+                "lfAllowanceChgPblSerRem" -> "No"
               )
             ),
             "totalAmount" -> 2345.02,
