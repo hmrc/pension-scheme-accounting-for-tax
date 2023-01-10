@@ -186,6 +186,7 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
                   "nino" -> "AA089000A"
                 ),
                 "dateOfNotice" -> "2020-01-11",
+                "anAllowanceChgPblSerRem" -> "No",
                 "taxYearEnding" -> "2020",
                 "amountOfCharge" -> 200.02,
                 "paidUnder237b" -> "Yes",
