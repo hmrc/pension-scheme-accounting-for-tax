@@ -54,7 +54,8 @@ class AFTController @Inject()(
     with AuthorisedFunctions {
 
   private val logger = Logger(classOf[AFTController])
-  val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
+  //val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
+  val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-2.1.0.json"
 
   type SeqOfChargeType = Option[Seq[Option[String]]]
 
@@ -66,9 +67,12 @@ class AFTController @Inject()(
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
+              println("\nDATA:" + dataToBeSendToETMP)
               val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
               validationResult match {
-                case Left(errors) => val psaOrPspId: Option[String] = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
+                case Left(errors) =>
+                println("\nERRS:" + errors)
+                  val psaOrPspId: Option[String] = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
                   case `value`: JsValue => value("submittedID").toString
                   case _ => ""
                 }
