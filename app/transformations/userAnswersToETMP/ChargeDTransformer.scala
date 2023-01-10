@@ -49,8 +49,8 @@ class ChargeDTransformer extends JsonTransformer {
 
   private val readsScheme: Reads[JsObject] = (
     (__ \ Symbol("pstr")).json.copyFrom((__ \ Symbol("pstr")).json.pick) and
-      (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
-      (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("chargeAmountReported")).json.pick)
+      (__ \ Symbol("repPeriodForLtac")).json.copyFrom((__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
+      (__ \ Symbol("amtOrRepLtaChg")).json.copyFrom((__ \ Symbol("chargeAmountReported")).json.pick)
     ).reduce
 
   private val readsAllSchemes: Reads[JsArray] =
@@ -61,8 +61,8 @@ class ChargeDTransformer extends JsonTransformer {
 
   private val readsSingleScheme: Reads[JsArray] =
     (
-      (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
-        (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("chargeAmountReported")).json.pick)
+      (__ \ Symbol("repPeriodForLtac")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
+        (__ \ Symbol("amtOrRepLtaChg")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("chargeAmountReported")).json.pick)
       ).reduce.map(jsObject => Json.arr(jsObject))
 
   private def readsPensionSchemeDetails(isAnother: Boolean): Reads[JsObject] = {

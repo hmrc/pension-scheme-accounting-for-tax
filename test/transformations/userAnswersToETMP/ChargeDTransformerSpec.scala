@@ -64,30 +64,30 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           val isMcCloudRemedyUA = (uaMemberPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
 
           // MCCLOUD REMEDY
-          (etmpMemberPath(0) \ "anAllowanceChgPblSerRem").as[String] mustBe booleanToString(isMcCloudRemedyUA)
-//          if (isMcCloudRemedyUA) {
-//            val isOtherSchemes = (uaMemberPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").as[Boolean]
-//            (etmpMemberPath(0) \ "orChgPaidbyAnoPS").as[String] mustBe booleanToString(isOtherSchemes)
-//
-//            if (isOtherSchemes) {
-//              val uaSeqSchemes = (uaMemberPath(0) \ "mccloudRemedy" \ "schemes").as[Seq[Scheme]]
-//              val transformedSchemes: Seq[JsValue] = (etmpMemberPath(0) \ "pensionSchemeDetails").as[JsArray].value.toSeq
-//              uaSeqSchemes.zipWithIndex.foreach { case (uaScheme, i) =>
-//                (transformedSchemes(i) \ "pstr").asOpt[String] mustBe uaScheme.pstr
-//                (transformedSchemes(i) \ "repPeriodForAac").asOpt[String] mustBe Some(uaScheme.taxQuarterReportedAndPaid.endDate)
-//                (transformedSchemes(i) \ "amtOrRepAaChg").asOpt[BigDecimal] mustBe Some(uaScheme.chargeAmountReported)
-//              }
-//            } else {
-//              val uaScheme = (uaMemberPath(0) \ "mccloudRemedy").as[Scheme]
-//              val transformedSchemes = (etmpMemberPath(0) \ "pensionSchemeDetails").as[JsArray].value.toSeq
-//              transformedSchemes.headOption.flatMap(jsValue =>
-//                (jsValue \ "repPeriodForAac").asOpt[String]) mustBe Some(uaScheme.taxQuarterReportedAndPaid.endDate)
-//              transformedSchemes.headOption.flatMap(jsValue =>
-//                (jsValue \ "amtOrRepAaChg").asOpt[BigDecimal]) mustBe Some(uaScheme.chargeAmountReported)
-//            }
-//          } else {
-//            assert(true)
-//          }
+          (etmpMemberPath(0) \ "lfAllowanceChgPblSerRem").as[String] mustBe booleanToString(isMcCloudRemedyUA)
+          if (isMcCloudRemedyUA) {
+            val isOtherSchemes = (uaMemberPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").as[Boolean]
+            (etmpMemberPath(0) \ "orLfChgPaidbyAnoPS").as[String] mustBe booleanToString(isOtherSchemes)
+
+            if (isOtherSchemes) {
+              val uaSeqSchemes = (uaMemberPath(0) \ "mccloudRemedy" \ "schemes").as[Seq[Scheme]]
+              val transformedSchemes: Seq[JsValue] = (etmpMemberPath(0) \ "pensionSchemeDetails").as[JsArray].value.toSeq
+              uaSeqSchemes.zipWithIndex.foreach { case (uaScheme, i) =>
+                (transformedSchemes(i) \ "pstr").asOpt[String] mustBe uaScheme.pstr
+                (transformedSchemes(i) \ "repPeriodForLtac").asOpt[String] mustBe Some(uaScheme.taxQuarterReportedAndPaid.endDate)
+                (transformedSchemes(i) \ "amtOrRepLtaChg").asOpt[BigDecimal] mustBe Some(uaScheme.chargeAmountReported)
+              }
+            } else {
+              val uaScheme = (uaMemberPath(0) \ "mccloudRemedy").as[Scheme]
+              val transformedSchemes = (etmpMemberPath(0) \ "pensionSchemeDetails").as[JsArray].value.toSeq
+              transformedSchemes.headOption.flatMap(jsValue =>
+                (jsValue \ "repPeriodForLtac").asOpt[String]) mustBe Some(uaScheme.taxQuarterReportedAndPaid.endDate)
+              transformedSchemes.headOption.flatMap(jsValue =>
+                (jsValue \ "amtOrRepLtaChg").asOpt[BigDecimal]) mustBe Some(uaScheme.chargeAmountReported)
+            }
+          } else {
+            assert(true)
+          }
 
       }
     }
