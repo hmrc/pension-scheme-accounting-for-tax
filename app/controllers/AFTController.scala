@@ -66,11 +66,9 @@ class AFTController @Inject()(
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
             case JsSuccess(dataToBeSendToETMP, _) =>
-              println("\nDATA:" + dataToBeSendToETMP)
               val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
               validationResult match {
                 case Left(errors) =>
-                println("\nERRS:" + errors)
                   val psaOrPspId: Option[String] = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
                   case `value`: JsValue => value("submittedID").toString
                   case _ => ""
