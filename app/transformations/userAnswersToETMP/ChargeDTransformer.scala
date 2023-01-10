@@ -21,7 +21,7 @@ import play.api.libs.json.Reads._
 import play.api.libs.json._
 
 class ChargeDTransformer extends JsonTransformer {
-
+  private def booleanToJsString(b: Boolean): JsString = if (b) JsString("Yes") else JsString("No")
   def transformToETMPData: Reads[JsObject] =
     (__ \ Symbol("chargeDDetails")).readNullable(__.read(readsChargeD)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
@@ -44,6 +44,48 @@ class ChargeDTransformer extends JsonTransformer {
       ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
         orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
       ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
-        orElse doNothing)).reduce.orElseEmptyOnMissingFields
+        orElse doNothing) and (readsMccloud orElse doNothing)).reduce.orElseEmptyOnMissingFields
+  }
+
+  private val readsScheme: Reads[JsObject] = (
+    (__ \ Symbol("pstr")).json.copyFrom((__ \ Symbol("pstr")).json.pick) and
+      (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
+      (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("chargeAmountReported")).json.pick)
+    ).reduce
+
+  private val readsAllSchemes: Reads[JsArray] =
+    (__ \ Symbol("mccloudRemedy") \ "schemes").readNullable(Reads.seq(readsScheme)).flatMap {
+      case None => Reads.failed("No schemes specified")
+      case Some(seqScheme) => Reads.pure(JsArray(seqScheme))
+    }
+
+  private val readsSingleScheme: Reads[JsArray] =
+    (
+      (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
+        (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("chargeAmountReported")).json.pick)
+      ).reduce.map(jsObject => Json.arr(jsObject))
+
+  private def readsPensionSchemeDetails(isAnother: Boolean): Reads[JsObject] = {
+    if (isAnother) {
+      (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsAllSchemes)
+    } else {
+      (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSingleScheme)
+    }
+  }
+
+  def readsMccloud: Reads[JsObject] = {
+    (for {
+      isPensionRemedy <- (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
+      optIsAnother <- (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).readNullable[Boolean]
+    } yield {
+      val readsMcCloudBody: Reads[JsObject] = (isPensionRemedy, optIsAnother) match {
+        case (true, Some(isAnother)) =>
+          ((__ \ Symbol("orLfChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
+            readsPensionSchemeDetails(isAnother)).reduce
+        case (false, _) => Reads.pure(Json.obj())
+        case _ => fail("Missing field wasAnotherPensionScheme when isPublicServicePensionsRemedy true")
+      }
+      ((__ \ Symbol("lfAllowanceChgPblSerRem")).json.put(booleanToJsString(isPensionRemedy)) and readsMcCloudBody).reduce
+    }).flatMap(identity)
   }
 }
