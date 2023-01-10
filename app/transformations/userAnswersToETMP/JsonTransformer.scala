@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@ trait JsonTransformer {
   private val pathMissingError = "error.path.missing"
 
   val doNothing: Reads[JsObject] = __.json.put(Json.obj())
+
+  protected def fail[A](s:String): Reads[A] = Reads.failed[A](s)
+
 
   implicit class JsObjectReadsOps(rds: Reads[JsObject]) {
     val orElseEmptyOnMissingFields: Reads[JsObject] = Reads[JsObject](json =>

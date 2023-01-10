@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package transformations.userAnswersToETMP
 
-import models.{Scheme, TaxQuarter}
+import models.Scheme
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
@@ -62,10 +62,12 @@ class ChargeETransformer extends JsonTransformer {
         "repPeriodForAac" -> scheme.taxQuarterReportedAndPaid.endDate,
         "amtOrRepAaChg" -> scheme.chargeAmountReported
       )
+
     def schemeToJsObject(scheme: Scheme): JsObject =
       Json.obj(
         "pstr" -> scheme.pstr
       ) ++ schemePeriodAndAmountToJsObject(scheme)
+
     if (isAnother) {
       val readsAllSchemes: Reads[JsArray] = (__ \ Symbol("mccloudRemedy") \ "schemes")
         .readNullable(Reads.seq(Scheme.formats)).flatMap {
@@ -74,35 +76,28 @@ class ChargeETransformer extends JsonTransformer {
       }
       (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsAllSchemes)
     } else {
-      val readsSingleScheme: Reads[Scheme] = (
-        (__ \ Symbol("taxYearReportedAndPaidPage")).read[String] and
-          (__ \ Symbol("taxQuarterReportedAndPaid") \ "startDate").read[String] and
-          (__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").read[String] and
-          (__ \ Symbol("chargeAmountReported")).read[BigDecimal]
-        ) (
-        (taxYear, startDate, endDate, chargeAmount) =>
-          Scheme(pstr = "", taxYear, TaxQuarter(startDate, endDate), chargeAmount)
-      )
-      __.json.copyFrom(
-        readsSingleScheme
-          .flatMap(scheme => Reads.pure(JsArray(Seq(scheme).map(scheme => schemePeriodAndAmountToJsObject(scheme)))))
-      )
+      val readsSingleScheme: Reads[JsArray] =
+        (
+          (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
+            (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("chargeAmountReported")).json.pick)
+          ).reduce.map(jsObject => Json.arr(jsObject))
+      (__ \ Symbol("pensionSchemeDetails")).json.copyFrom(readsSingleScheme)
     }
   }
 
-  // TODO: PODS-7854 - only when orChgPaidbyAnoPS is true should it try to generate pensionSchemeDetails node
-  // TODO: PODS-7854 - when orChgPaidbyAnoPS is false it should generate repPeriodForAac/ amtOrRepAaChg but not clear from API doc 1538 how (blocked ticket)
   def readsMccloud: Reads[JsObject] = {
     (for {
       isPensionRemedy <- (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).read[Boolean]
-      isAnother <- (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).read[Boolean]
+      optIsAnother <- (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).readNullable[Boolean]
     } yield {
-      (
-        (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(isPensionRemedy)) and
-          (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
-          readsPensionSchemeDetails(isAnother)
-        ).reduce
+      val readsMcCloudBody: Reads[JsObject] = (isPensionRemedy, optIsAnother) match {
+        case (true, Some(isAnother)) =>
+          ((__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
+            readsPensionSchemeDetails(isAnother)).reduce
+        case (false, _) => Reads.pure(Json.obj())
+        case _ => fail("Missing field wasAnotherPensionScheme when isPublicServicePensionsRemedy true")
+      }
+      ((__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(isPensionRemedy)) and readsMcCloudBody).reduce
     }).flatMap(identity)
-
   }
 }

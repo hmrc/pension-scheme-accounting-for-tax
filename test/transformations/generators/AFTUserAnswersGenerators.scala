@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -218,8 +218,8 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
           "totalChargeAmount" -> totalChargeAmount
         ))
 
-  private def genSeqOfSchemes(howManySchemes: Int): Gen[Seq[Scheme]] = {
-    val seqInt: Seq[Int] = (1 to howManySchemes)
+  private def genSeqOfSchemes(howManySchemes: Int, wasAnotherPensionScheme: Boolean): Gen[Seq[Scheme]] = {
+    val seqInt: Seq[Int] = 1 to howManySchemes
     val seqGenScheme = seqInt.map { _ =>
       for {
         pstr <- Gen.alphaStr
@@ -228,7 +228,8 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
         taxQuarterEndDate <- Gen.alphaStr
         chargeAmountReported <- arbitrary[BigDecimal]
       } yield {
-        Scheme(pstr, taxYearReportedAndPaidPage, TaxQuarter(taxQuarterStartDate, taxQuarterEndDate), chargeAmountReported)
+        Scheme(if (wasAnotherPensionScheme) Some(pstr) else None,
+          taxYearReportedAndPaidPage, TaxQuarter(taxQuarterStartDate, taxQuarterEndDate), chargeAmountReported)
       }
     }
 
@@ -238,10 +239,10 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
   def mccloudRemedy: Gen[JsObject] = {
     for {
       isPublicServicePensionsRemedy <- arbitrary[Boolean]
-      howManySchemes <- Gen.chooseNum(minT = 1, maxT = 5)
-      schemes <- genSeqOfSchemes(howManySchemes)
+      wasAnotherPensionScheme <-  arbitrary[Boolean]
+      howManySchemes <- Gen.chooseNum(minT = 1, maxT = if(wasAnotherPensionScheme) 5 else 1)
+      schemes <- genSeqOfSchemes(howManySchemes, wasAnotherPensionScheme)
     } yield {
-      val wasAnotherPensionScheme = true
       val schemeSection = if (wasAnotherPensionScheme) {
         Json.obj(
           "schemes" -> Json.toJson(schemes)
