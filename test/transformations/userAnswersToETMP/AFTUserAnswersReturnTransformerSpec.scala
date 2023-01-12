@@ -305,6 +305,7 @@ object AFTUserAnswersReturnTransformerSpec {
       |          "amountOfCharge": 200.02,
       |          "taxYearEnding": "2020",
       |          "dateOfNotice": "2020-01-11",
+      |          "anAllowanceChgPblSerRem": "No",
       |          "paidUnder237b": "Yes"
       |        }
       |      ]
@@ -575,6 +576,7 @@ object AFTUserAnswersReturnTransformerSpec {
       |          "amountOfCharge": 200.02,
       |          "taxYearEnding": "2020",
       |          "dateOfNotice": "2020-01-11",
+      |          "anAllowanceChgPblSerRem": "No",
       |          "paidUnder237b": "Yes"
       |        }
       |      ]
