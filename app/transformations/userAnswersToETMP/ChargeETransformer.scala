@@ -84,17 +84,24 @@ class ChargeETransformer extends JsonTransformer {
   def readsMccloud: Reads[JsObject] = {
     (for {
       isPensionRemedy <- (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).readNullable[Boolean]
+      isInAddition <- (__ \ Symbol("mccloudRemedy") \ Symbol("isChargeInAdditionReported")).readNullable[Boolean]
       optIsAnother <- (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).readNullable[Boolean]
     } yield {
-      val readsMcCloudBody: Reads[JsObject] = (isPensionRemedy, optIsAnother) match {
-        case (Some(true), Some(isAnother)) =>
-          ((__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
-            readsPensionSchemeDetails(isAnother)).reduce
-        case (Some(false) | None, _) => Reads.pure(Json.obj())
-        case _ => fail("Missing field wasAnotherPensionScheme when isPublicServicePensionsRemedy true")
+      (isPensionRemedy, isInAddition, optIsAnother) match {
+        case (Some(true), Some(true), Some(isAnother)) =>
+          (
+            (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(true)) and
+              (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
+              readsPensionSchemeDetails(isAnother)
+            ).reduce
+        case (Some(true), Some(false), _) => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(false))
+        case (Some(false) | None, _, _) => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(false))
+        case (a, b, c) =>
+          fail[JsObject](s"Invalid values entered:- isPublicServicePensionsRemedy: $a isChargeInAdditionReported: $b wasAnotherPensionScheme: $c")
       }
-      ((__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(isPensionRemedy.getOrElse(false))) and
-        readsMcCloudBody).reduce
+
     }).flatMap(identity)
   }
+
+
 }
