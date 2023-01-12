@@ -221,6 +221,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
   def mccloudRemedy: Gen[JsObject] = {
     for {
       isPublicServicePensionsRemedy <- arbitrary[Boolean]
+      isInAddition <- arbitrary[Boolean]
       wasAnotherPensionScheme <-  arbitrary[Boolean]
       howManySchemes <- Gen.chooseNum(minT = 1, maxT = if(wasAnotherPensionScheme) 5 else 1)
       schemes <- genSeqOfSchemes(howManySchemes, wasAnotherPensionScheme)
@@ -235,6 +236,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
 
       Json.obj(
         "isPublicServicePensionsRemedy" -> isPublicServicePensionsRemedy,
+        "isChargeInAdditionReported" -> isInAddition,
         "wasAnotherPensionScheme" -> wasAnotherPensionScheme
       ) ++ schemeSection
     }
