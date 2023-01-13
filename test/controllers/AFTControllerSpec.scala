@@ -911,6 +911,7 @@ object AFTControllerSpec {
       |            "nino": "AA089000A"
       |          },
       |          "memberStatus": "New",
+      |          "lfAllowanceChgPblSerRem": "No",
       |          "totalAmtOfTaxDueAtLowerRate": 1.02,
       |          "memberAFTVersion": 1,
       |          "dateOfBeneCrysEvent": "2020-10-18"
@@ -925,6 +926,7 @@ object AFTControllerSpec {
       |          "memberStatus": "New",
       |          "totalAmtOfTaxDueAtLowerRate": 3.02,
       |          "memberAFTVersion": 1,
+      |          "lfAllowanceChgPblSerRem": "No",
       |          "dateOfBeneCrysEvent": "2020-10-28"
       |        }
       |      ]

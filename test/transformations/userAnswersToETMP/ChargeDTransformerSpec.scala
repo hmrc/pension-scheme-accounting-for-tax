@@ -16,6 +16,7 @@
 
 package transformations.userAnswersToETMP
 
+import models.Scheme
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
@@ -27,6 +28,7 @@ import transformations.generators.AFTUserAnswersGenerators
 class ChargeDTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
 
   private val transformer = new ChargeDTransformer
+  private def booleanToString(b: Boolean): String = if (b) "Yes" else "No"
 
   "A Charge D Transformer" - {
     "must filter out the members with memberStatus not Deleted" +
@@ -57,6 +59,41 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "amendedVersion").asOpt[Int] mustBe None
 
           (transformedJson \ "chargeDetails" \ "chargeTypeDDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 6
+
+
+          val isMcCloudRemedyUA = {
+            val isMcCloud = (uaMemberPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
+            val isInAddition = (uaMemberPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean]
+            isMcCloud && isInAddition
+          }
+
+
+          // MCCLOUD REMEDY
+          (etmpMemberPath(0) \ "lfAllowanceChgPblSerRem").as[String] mustBe booleanToString(isMcCloudRemedyUA)
+          if (isMcCloudRemedyUA) {
+            val isOtherSchemes = (uaMemberPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").as[Boolean]
+            (etmpMemberPath(0) \ "orLfChgPaidbyAnoPS").as[String] mustBe booleanToString(isOtherSchemes)
+
+            if (isOtherSchemes) {
+              val uaSeqSchemes = (uaMemberPath(0) \ "mccloudRemedy" \ "schemes").as[Seq[Scheme]]
+              val transformedSchemes: Seq[JsValue] = (etmpMemberPath(0) \ "pensionSchemeDetails").as[JsArray].value.toSeq
+              uaSeqSchemes.zipWithIndex.foreach { case (uaScheme, i) =>
+                (transformedSchemes(i) \ "pstr").asOpt[String] mustBe uaScheme.pstr
+                (transformedSchemes(i) \ "repPeriodForLtac").asOpt[String] mustBe Some(uaScheme.taxQuarterReportedAndPaid.endDate)
+                (transformedSchemes(i) \ "amtOrRepLtaChg").asOpt[BigDecimal] mustBe Some(uaScheme.chargeAmountReported)
+              }
+            } else {
+              val uaScheme = (uaMemberPath(0) \ "mccloudRemedy").as[Scheme]
+              val transformedSchemes = (etmpMemberPath(0) \ "pensionSchemeDetails").as[JsArray].value.toSeq
+              transformedSchemes.headOption.flatMap(jsValue =>
+                (jsValue \ "repPeriodForLtac").asOpt[String]) mustBe Some(uaScheme.taxQuarterReportedAndPaid.endDate)
+              transformedSchemes.headOption.flatMap(jsValue =>
+                (jsValue \ "amtOrRepLtaChg").asOpt[BigDecimal]) mustBe Some(uaScheme.chargeAmountReported)
+            }
+          } else {
+            assert(true)
+          }
+
       }
     }
 
@@ -148,7 +185,8 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
                 "memberStatus" -> "Changed",
                 "totalAmtOfTaxDueAtLowerRate" -> 1.02,
                 "memberAFTVersion" -> 1,
-                "dateOfBeneCrysEvent" -> "2016-02-29"
+                "dateOfBeneCrysEvent" -> "2016-02-29",
+                "lfAllowanceChgPblSerRem" -> "No"
               )
             ),
             "totalAmount" -> 2345.02,

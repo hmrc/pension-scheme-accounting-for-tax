@@ -70,7 +70,11 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
 
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 6
 
-          val isMcCloudRemedyUA = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
+          val isMcCloudRemedyUA = {
+            val isMcCloud = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
+            val isInAddition = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean]
+            isMcCloud && isInAddition
+          }
 
           // MCCLOUD REMEDY
           (etmpMemberPath(transformedJson, 0) \ "anAllowanceChgPblSerRem").as[String] mustBe booleanToString(isMcCloudRemedyUA)

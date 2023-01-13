@@ -34,7 +34,7 @@ class AFTUserAnswersReturnTransformerSpec extends AnyFreeSpec with AFTUserAnswer
         transformedEtmpJson mustBe etmpResponseJsonPSA
       }
 
-      "must transform from UserAnswers to ETMP AFT Return format when a mandatory field in chargeD UserAnswers is missing" in {
+    "must transform from UserAnswers to ETMP AFT Return format for PSA when a mandatory field in chargeD UserAnswers is missing" in {
         val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
           chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
 
@@ -45,17 +45,15 @@ class AFTUserAnswersReturnTransformerSpec extends AnyFreeSpec with AFTUserAnswer
         transformedEtmpJson mustBe etmpResponseWithoutChargeD
       }
 
-
     "must transform from UserAnswers to ETMP AFT Return format for PSP when all mandatory UserAnswers are present" in {
         val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
           chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
 
         val transformedEtmpJson = userAnswersRequestJsonPSP.transform(transformer.transformToETMPFormat).asOpt.value
         transformedEtmpJson mustBe etmpResponseJsonPSP
-      }
+    }
 
-
-    "must transform from UserAnswers to ETMP AFT Return format for PSP when a mandatory field in chargeD UserAnswers is missing" in {
+    "must transform from UserAnswers to ETMP AFT Return format when a mandatory field in chargeD UserAnswers is missing" in {
       val transformer = new AFTReturnTransformer(chargeATransformer, chargeBTransformer,
         chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
 
@@ -273,6 +271,7 @@ object AFTUserAnswersReturnTransformerSpec {
       |                 "nino": "AC100100A"
       |             },
       |             "memberAFTVersion": 1,
+      |             "lfAllowanceChgPblSerRem":"No",
       |             "memberStatus": "Deleted",
       |             "totalAmtOfTaxDueAtHigherRate": 100.02,
       |             "totalAmtOfTaxDueAtLowerRate": 100
@@ -285,6 +284,7 @@ object AFTUserAnswersReturnTransformerSpec {
       |                 "nino": "AC100100A"
       |             },
       |             "memberAFTVersion": 1,
+      |             "lfAllowanceChgPblSerRem":"No",
       |             "memberStatus": "New",
       |             "totalAmtOfTaxDueAtHigherRate": 100.02,
       |             "totalAmtOfTaxDueAtLowerRate": 100
@@ -542,6 +542,7 @@ object AFTUserAnswersReturnTransformerSpec {
       |                 "nino": "AC100100A"
       |             },
       |             "memberAFTVersion": 1,
+      |             "lfAllowanceChgPblSerRem":"No",
       |             "memberStatus": "Deleted",
       |             "totalAmtOfTaxDueAtHigherRate": 100.02,
       |             "totalAmtOfTaxDueAtLowerRate": 100
@@ -554,6 +555,7 @@ object AFTUserAnswersReturnTransformerSpec {
       |                 "nino": "AC100100A"
       |             },
       |             "memberAFTVersion": 1,
+      |             "lfAllowanceChgPblSerRem":"No",
       |             "memberStatus": "New",
       |             "totalAmtOfTaxDueAtHigherRate": 100.02,
       |             "totalAmtOfTaxDueAtLowerRate": 100

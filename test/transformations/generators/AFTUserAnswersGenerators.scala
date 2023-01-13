@@ -186,23 +186,6 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
           "totalChargeAmount" -> totalChargeAmount
         ))
 
-  def chargeDMember(status: String): Gen[JsObject] =
-    for {
-      memberDetails <- memberDetailsGen
-      memberVersion <- arbitrary[Int]
-      date <- dateGenerator
-      taxAt25Percent <- arbitrary[BigDecimal]
-      taxAt55Percent <- arbitrary[BigDecimal]
-    } yield Json.obj(
-      "memberDetails" -> memberDetails,
-      "memberAFTVersion" -> memberVersion,
-      "memberStatus" -> status,
-      "chargeDetails" -> Json.obj(
-        "dateOfEvent" -> date,
-        "taxAt25Percent" -> taxAt25Percent,
-        "taxAt55Percent" -> taxAt55Percent
-      )
-    )
 
   val chargeDUserAnswersGenerator: Gen[JsObject] =
     for {
@@ -238,6 +221,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
   def mccloudRemedy: Gen[JsObject] = {
     for {
       isPublicServicePensionsRemedy <- arbitrary[Boolean]
+      isInAddition <- arbitrary[Boolean]
       wasAnotherPensionScheme <-  arbitrary[Boolean]
       howManySchemes <- Gen.chooseNum(minT = 1, maxT = if(wasAnotherPensionScheme) 5 else 1)
       schemes <- genSeqOfSchemes(howManySchemes, wasAnotherPensionScheme)
@@ -252,10 +236,32 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
 
       Json.obj(
         "isPublicServicePensionsRemedy" -> isPublicServicePensionsRemedy,
+        "isChargeInAdditionReported" -> isInAddition,
         "wasAnotherPensionScheme" -> wasAnotherPensionScheme
       ) ++ schemeSection
     }
   }
+
+
+  def chargeDMember(status: String): Gen[JsObject] =
+    for {
+      memberDetails <- memberDetailsGen
+      memberVersion <- arbitrary[Int]
+      date <- dateGenerator
+      taxAt25Percent <- arbitrary[BigDecimal]
+      taxAt55Percent <- arbitrary[BigDecimal]
+      mccloud <- mccloudRemedy
+    } yield Json.obj(
+      "memberDetails" -> memberDetails,
+      "memberAFTVersion" -> memberVersion,
+      "memberStatus" -> status,
+      "chargeDetails" -> Json.obj(
+        "dateOfEvent" -> date,
+        "taxAt25Percent" -> taxAt25Percent,
+        "taxAt55Percent" -> taxAt55Percent
+      ),
+      "mccloudRemedy" -> mccloud
+    )
 
   def chargeEMember(status: String): Gen[JsObject] =
     for {
