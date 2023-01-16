@@ -35,6 +35,7 @@ import utils.JSONPayloadSchemaValidator
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton()
 class AFTController @Inject()(
@@ -69,7 +70,7 @@ class AFTController @Inject()(
               val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
               validationResult match {
                 case Left(errors) =>
-                  val psaOrPspId: Option[String] = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
+                  val psaOrPspId: Option[String] = Try(dataToBeSendToETMP.value("aftDeclarationDetails")).toOption.map {
                   case `value`: JsValue => value("submittedID").toString
                   case _ => ""
                 }
