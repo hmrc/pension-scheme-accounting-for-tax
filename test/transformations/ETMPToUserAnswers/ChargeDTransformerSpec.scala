@@ -29,6 +29,7 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     "must transform ChargeDDetails from ETMP format to UserAnswers format" in {
       forAll(chargeDETMPGenerator) {
         etmpResponseJson =>
+            println("\n\n\n Generated " + etmpResponseJson)
           val transformer = new ChargeDTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
 

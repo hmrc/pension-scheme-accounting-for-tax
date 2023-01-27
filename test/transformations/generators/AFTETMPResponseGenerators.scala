@@ -20,7 +20,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, Json}
 
 import java.time.{LocalDate, Year}
 
@@ -182,6 +182,47 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "totalAmount" -> totalAmount
         ))
 
+  private def genSeqOfSchemes(howManySchemes: Int, wasAnotherPensionScheme: Boolean, isPublicServiceRem: Boolean): Gen[JsObject] = {
+    if (wasAnotherPensionScheme & isPublicServiceRem) {
+      val seqInt: Seq[Int] = 1 to howManySchemes
+      val seqGenScheme = seqInt.map { _ =>
+        for {
+          pstr <- Gen.alphaStr
+          date <- dateGenerator
+          chargeAmountReported <- arbitrary[BigDecimal]
+        } yield {
+          Json.obj(
+            "pstr" -> pstr,
+            "repPeriodForLtac" -> date,
+            "amtOrRepLtaChg" -> chargeAmountReported
+          )
+        }
+      }
+      val x = Gen.sequence[Seq[JsObject], JsObject](seqGenScheme)
+      x.map { t =>
+        Json.obj(
+          "pensionSchemeDetails" -> JsArray(t)
+        )
+      }
+    } else {
+      Gen.oneOf(Seq(Json.obj()))
+    }
+  }
+
+  private def mccloudRemedy: Gen[JsObject] = {
+    for {
+      isPublicServicePensionsRemedy <- arbitrary[Boolean]
+      wasAnotherPensionScheme <- arbitrary[Boolean]
+      howManySchemes <- Gen.chooseNum(minT = 1, maxT = if (wasAnotherPensionScheme) 5 else 1)
+      schemes <- genSeqOfSchemes(howManySchemes, wasAnotherPensionScheme, isPublicServicePensionsRemedy)
+    } yield {
+      Json.obj(
+        "lfAllowanceChgPblSerRem" -> isPublicServicePensionsRemedy,
+        "orLfChgPaidbyAnoPS" -> wasAnotherPensionScheme
+      ) ++ schemes
+    }
+  }
+
   val chargeDMember: Gen[JsObject] =
     for {
       memberStatus <- arbitrary[String]
@@ -190,6 +231,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       dateOfBenefitCrystalizationEvent <- dateGenerator
       totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
       totalAmtOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
+      mccloud <- mccloudRemedy
     } yield {
       Json.obj(
         "memberStatus" -> memberStatus,
@@ -198,7 +240,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         "dateOfBenefitCrystalizationEvent" -> dateOfBenefitCrystalizationEvent,
         "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
         "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate
-      )
+      ) ++ mccloud
     }
 
   val chargeDETMPGenerator: Gen[JsObject] =
