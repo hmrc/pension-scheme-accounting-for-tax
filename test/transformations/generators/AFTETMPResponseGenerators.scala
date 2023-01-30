@@ -182,30 +182,60 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "totalAmount" -> totalAmount
         ))
 
-  private def genSeqOfSchemes(howManySchemes: Int, wasAnotherPensionScheme: Boolean, isPublicServiceRem: Boolean): Gen[JsObject] = {
-    if (wasAnotherPensionScheme & isPublicServiceRem) {
-      val seqInt: Seq[Int] = 1 to howManySchemes
-      val seqGenScheme = seqInt.map { _ =>
-        for {
-          pstr <- Gen.alphaStr
-          date <- dateGenerator
-          chargeAmountReported <- arbitrary[BigDecimal]
-        } yield {
-          Json.obj(
-            "pstr" -> pstr,
-            "repPeriodForLtac" -> date,
-            "amtOrRepLtaChg" -> chargeAmountReported
-          )
+//  private def test(howManySchemes: Int) = {
+//    val seqInt: Seq[Int] = 1 to howManySchemes
+//    val seqGenScheme = seqInt.map { _ =>
+//      for {
+//        pstr <- Gen.alphaStr
+//        date <- dateGenerator
+//        chargeAmountReported <- arbitrary[BigDecimal]
+//      } yield {
+//        Json.obj(
+//          "pstr" -> pstr,
+//          "repPeriodForLtac" -> date,
+//          "amtOrRepLtaChg" -> chargeAmountReported
+//        )
+//      }
+//    }
+//    val x = Gen.sequence[Seq[JsObject], JsObject](seqGenScheme)
+//    x.map { t =>
+//      Json.obj(
+//        "pensionSchemeDetails" -> JsArray(t)
+//      )
+//    }
+//  }
+
+  private def test(howManySchemes: Int, optPstrGen: Gen[Option[String]]) = {
+    val seqInt: Seq[Int] = 1 to howManySchemes
+    val seqGenScheme = seqInt.map { _ =>
+      for {
+        optPstr <- optPstrGen
+        date <- dateGenerator
+        chargeAmountReported <- arbitrary[BigDecimal]
+      } yield {
+        val moreThanOneScheme = optPstr match {
+          case Some(pstr) => Json.obj("pstr" -> pstr)
+          case None => Json.obj()
         }
-      }
-      val x = Gen.sequence[Seq[JsObject], JsObject](seqGenScheme)
-      x.map { t =>
         Json.obj(
-          "pensionSchemeDetails" -> JsArray(t)
-        )
+          "repPeriodForLtac" -> date,
+          "amtOrRepLtaChg" -> chargeAmountReported
+        ) ++ moreThanOneScheme
       }
-    } else {
-      Gen.oneOf(Seq(Json.obj()))
+    }
+    val x = Gen.sequence[Seq[JsObject], JsObject](seqGenScheme)
+    x.map { t =>
+      Json.obj(
+        "pensionSchemeDetails" -> JsArray(t)
+      )
+    }
+  }
+
+  private def genSeqOfSchemes(howManySchemes: Int, wasAnotherPensionScheme: Boolean, isPublicServiceRem: Boolean): Gen[JsObject] = {
+    (isPublicServiceRem, wasAnotherPensionScheme) match {
+      case (true, true) => test(howManySchemes, Gen.alphaStr.map(Some(_)))
+      case (true, false) => test(1, Gen.oneOf(Seq(None)))
+      case _ => Gen.oneOf(Seq(Json.obj()))
     }
   }
 
@@ -216,10 +246,14 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       howManySchemes <- Gen.chooseNum(minT = 1, maxT = if (wasAnotherPensionScheme) 5 else 1)
       schemes <- genSeqOfSchemes(howManySchemes, wasAnotherPensionScheme, isPublicServicePensionsRemedy)
     } yield {
+      val a = if (isPublicServicePensionsRemedy) {
+        Json.obj("orLfChgPaidbyAnoPS" -> wasAnotherPensionScheme) ++ schemes
+      } else {
+        Json.obj()
+      }
       Json.obj(
-        "lfAllowanceChgPblSerRem" -> isPublicServicePensionsRemedy,
-        "orLfChgPaidbyAnoPS" -> wasAnotherPensionScheme
-      ) ++ schemes
+        "lfAllowanceChgPblSerRem" -> isPublicServicePensionsRemedy
+      ) ++ a
     }
   }
 

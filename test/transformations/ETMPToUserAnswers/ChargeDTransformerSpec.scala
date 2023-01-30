@@ -33,6 +33,8 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val transformer = new ChargeDTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
 
+            println("\n\n\n userAnswers " + transformedJson)
+
           def membersUAPath(i: Int): JsLookupResult = transformedJson \ "chargeDDetails" \ "members" \ i
 
           def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeDDetails" \ "memberDetails" \ i
@@ -46,6 +48,13 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           (membersUAPath(0) \ "chargeDetails" \ "dateOfEvent").as[String] mustBe (membersETMPPath(0) \ "dateOfBenefitCrystalizationEvent").as[String]
           (membersUAPath(0) \ "chargeDetails" \ "taxAt25Percent").as[BigDecimal] mustBe (membersETMPPath(0) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
           (membersUAPath(0) \ "chargeDetails" \ "taxAt55Percent").as[BigDecimal] mustBe (membersETMPPath(0) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
+
+          val isMcCloudRem = (membersUAPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
+          isMcCloudRem mustBe (membersETMPPath(0) \ "lfAllowanceChgPblSerRem").as[Boolean]
+          if (isMcCloudRem) {
+            (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").as[Boolean] mustBe (membersETMPPath(0) \ "orLfChgPaidbyAnoPS").as[Boolean]
+          }
+          //TODO : isChargeInAdditionReported boolean check
 
           (transformedJson \ "chargeDDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
             (etmpResponseJson \ "chargeTypeDDetails" \ "totalAmount").as[BigDecimal]
