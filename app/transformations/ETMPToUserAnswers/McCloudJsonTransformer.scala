@@ -22,20 +22,6 @@ import play.api.libs.json._
 
 trait McCloudJsonTransformer extends JsonTransformer {
 
-  //  private def readsScheme: Reads[JsObject] = {
-  //    (__ \ Symbol("orLfChgPaidbyAnoPS")).read[Boolean].flatMap { areMoreSchemes =>
-  //       if (areMoreSchemes) {
-  //         ((__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).json.put(JsTrue) and
-  //           (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).json.put(JsBoolean(areMoreSchemes))).reduce
-  //         //(__ \ Symbol("mccloudRemedy") \ Symbol("schemes") \ Symbol("taxYearReportedAndPaid") \ Symbol("endDate")).json.copyFrom((__ \ "pensionSchemeDetails" \ "repPeriodForLtac").json.pick)
-  //         //         (__ \ Symbol("mccloudRemedy") \ Symbol("schemes") \ Symbol("chargeAmountReported")).json.copyFrom((__ \ "pensionSchemeDetails" \ "amtOrRepLtaChg").json.pick)
-  //       } else {
-  //         ((__ \ Symbol("mccloudRemedy") \ Symbol("taxYearReportedAndPaid") \ Symbol("endDate")).json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").json.pick) and
-  //         (__ \ Symbol("mccloudRemedy") \ Symbol("chargeAmountReported")).json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").json.pick)).reduce
-  //       }
-  //    }
-  //  }
-
   private def calculateMax: Int = {
     //    val max = (0 to 4).takeWhile { i =>
     //      val h = (__ \ "pensionSchemeDetails" \ i \ "repPeriodForLtac").readNullable[String].map{ value =>
@@ -46,44 +32,31 @@ trait McCloudJsonTransformer extends JsonTransformer {
   }
 
   private def readsScheme: Reads[JsObject] = {
-    (__ \ Symbol("orLfChgPaidbyAnoPS")).read[Boolean].flatMap { areMoreSchemes =>
-      val mcCloud: Reads[JsObject] = ((__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).json.put(JsTrue) and
-        (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).json.put(JsBoolean(areMoreSchemes))).reduce
+    (__ \ "orLfChgPaidbyAnoPS").read[Boolean].flatMap { areMoreSchemes =>
+      val mcCloud: Reads[JsObject] = ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
+        (__ \ "mccloudRemedy" \ "wasAnotherPensionScheme").json.put(JsBoolean(areMoreSchemes))).reduce
       val schemeObj = if (areMoreSchemes) {
        val arrayOfItems = (0 to calculateMax).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
-          val currentJsObj = ((__ \ Symbol("taxYearReportedAndPaid") \ Symbol("endDate"))
-            .json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "repPeriodForLtac").json.pick) and
-            (__ \ Symbol("chargeAmountReported"))
-              .json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "amtOrRepLtaChg").json.pick) and
-            (__ \ Symbol("pstr"))
-              .json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)
+          val currentJsObj = (
+            (__ \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "repPeriodForLtac").json.pick) and
+            (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "amtOrRepLtaChg").json.pick) and
+            (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)
             ).reduce orElse doNothing
           acc.flatMap(jsArray => currentJsObj.map (jsObject => jsArray :+ jsObject))
         }
-         arrayOfItems.flatMap { schemeNode => (__ \ Symbol("mccloudRemedy") \ Symbol("schemes")).json.put(schemeNode) }
+         arrayOfItems.flatMap { schemeNode => (__ \ "mccloudRemedy" \ "schemes").json.put(schemeNode) }
       } else {
-        (__ \ Symbol("mccloudRemedy") \ Symbol("taxYearReportedAndPaid") \ Symbol("endDate"))
-          .json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").json.pick)
-        (__ \ Symbol("mccloudRemedy") \ Symbol("chargeAmountReported"))
-          .json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").json.pick)
+        (__ \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").json.pick)
+        (__ \ "mccloudRemedy" \ "chargeAmountReported" ).json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").json.pick)
       }
       (mcCloud and schemeObj).reduce
     }
   }
 
   def readsMcCloudDetails: Reads[JsObject] = {
-    (__ \ Symbol("lfAllowanceChgPblSerRem")).read[Boolean].flatMap { isMcCloud =>
-      if (isMcCloud) {
-        readsScheme
-      } else {
-        (__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).json.put(JsFalse)
-      }
+    (__ \ "lfAllowanceChgPblSerRem").read[Boolean].flatMap { isMcCloud =>
+      if (isMcCloud) { readsScheme }
+      else { (__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsFalse) }
     }
   }
-
-  //    ((__ \ Symbol("memberDetails") \ Symbol("firstName")).json.copyFrom((__ \ Symbol("individualsDetails") \ Symbol("firstName")).json.pick) and
-  //      (__ \ Symbol("memberDetails") \ Symbol("lastName")).json.copyFrom((__ \ Symbol("individualsDetails") \ Symbol("lastName")).json.pick) and
-  //      (__ \ Symbol("memberDetails") \ Symbol("nino")).json.copyFrom((__ \ Symbol("individualsDetails") \ Symbol("nino")).json.pick)
-  //      ).reduce
-
 }
