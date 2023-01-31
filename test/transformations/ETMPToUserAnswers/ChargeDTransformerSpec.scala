@@ -55,10 +55,21 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
             areMorePensions mustBe (membersETMPPath(0) \ "orLfChgPaidbyAnoPS").as[Boolean]
             (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").as[Boolean] mustBe (membersETMPPath(0) \ "orLfChgPaidbyAnoPS").as[Boolean]
             if (areMorePensions) {
-            (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "pstr" ).as[String] mustBe (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
+            (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "pstr" ).as[String] mustBe
+              (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
+            (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "chargeAmountReported").as[BigDecimal] mustBe
+              (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").as[BigDecimal]
+
+          //TODO : isChargeInAdditionReported boolean check
+              (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
+            } else {
+              (membersUAPath(0) \ "mccloudRemedy"\ "chargeAmountReported").as[BigDecimal] mustBe
+                (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").as[BigDecimal]
+
+              //TODO : isChargeInAdditionReported boolean check
+              (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
             }
           }
-          //TODO : isChargeInAdditionReported boolean check
 
           (transformedJson \ "chargeDDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
             (etmpResponseJson \ "chargeTypeDDetails" \ "totalAmount").as[BigDecimal]

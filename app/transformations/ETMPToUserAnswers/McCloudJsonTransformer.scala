@@ -44,10 +44,14 @@ trait McCloudJsonTransformer extends JsonTransformer {
             ).reduce orElse doNothing
           acc.flatMap(jsArray => currentJsObj.map (jsObject => jsArray :+ jsObject))
         }
-         arrayOfItems.flatMap { schemeNode => (__ \ "mccloudRemedy" \ "schemes").json.put(schemeNode) }
+         arrayOfItems.flatMap { schemeNode => (
+           (__ \ "mccloudRemedy" \ "schemes").json.put(schemeNode) and
+           (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsTrue)
+           ).reduce }
       } else {
-        (__ \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").json.pick)
-        (__ \ "mccloudRemedy" \ "chargeAmountReported" ).json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").json.pick)
+        ((__ \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").json.pick) and
+        (__ \ "mccloudRemedy" \ "chargeAmountReported" ).json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").json.pick) and
+        (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsTrue)).reduce
       }
       (mcCloud and schemeObj).reduce
     }
