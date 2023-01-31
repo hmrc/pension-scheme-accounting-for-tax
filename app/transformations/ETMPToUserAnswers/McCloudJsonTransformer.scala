@@ -32,28 +32,35 @@ trait McCloudJsonTransformer extends JsonTransformer {
   }
 
   private def readsScheme: Reads[JsObject] = {
-    (__ \ "orLfChgPaidbyAnoPS").read[Boolean].flatMap { areMoreSchemes =>
-      val mcCloud: Reads[JsObject] = ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
-        (__ \ "mccloudRemedy" \ "wasAnotherPensionScheme").json.put(JsBoolean(areMoreSchemes))).reduce
-      val schemeObj = if (areMoreSchemes) {
-       val arrayOfItems = (0 to calculateMax).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
-          val currentJsObj = (
-            (__ \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "repPeriodForLtac").json.pick) and
-            (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "amtOrRepLtaChg").json.pick) and
-            (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)
-            ).reduce orElse doNothing
-          acc.flatMap(jsArray => currentJsObj.map (jsObject => jsArray :+ jsObject))
+    (__ \ "orLfChgPaidbyAnoPS").readNullable[Boolean].flatMap {
+      case Some(areMoreSchemes) =>
+        val mcCloud: Reads[JsObject] = ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
+          (__ \ "mccloudRemedy" \ "wasAnotherPensionScheme").json.put(JsBoolean(areMoreSchemes))).reduce
+        val schemeObj = if (areMoreSchemes) {
+          val arrayOfItems = (0 to calculateMax).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
+            val currentJsObj = (
+              (__ \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "repPeriodForLtac").json.pick) and
+                (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "amtOrRepLtaChg").json.pick) and
+                (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)
+              ).reduce orElse doNothing
+            acc.flatMap(jsArray => currentJsObj.map(jsObject => jsArray :+ jsObject))
+          }
+          arrayOfItems.flatMap { schemeNode =>
+            (
+              (__ \ "mccloudRemedy" \ "schemes").json.put(schemeNode) and
+                (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsTrue)
+              ).reduce
+          }
+        } else {
+          ((__ \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").json.pick) and
+            (__ \ "mccloudRemedy" \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").json.pick) and
+            (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsTrue)).reduce
         }
-         arrayOfItems.flatMap { schemeNode => (
-           (__ \ "mccloudRemedy" \ "schemes").json.put(schemeNode) and
-           (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsTrue)
-           ).reduce }
-      } else {
-        ((__ \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").json.pick) and
-        (__ \ "mccloudRemedy" \ "chargeAmountReported" ).json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").json.pick) and
-        (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsTrue)).reduce
-      }
-      (mcCloud and schemeObj).reduce
+        (mcCloud and schemeObj).reduce
+      case None =>
+        ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
+          (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsFalse)).reduce
+
     }
   }
 

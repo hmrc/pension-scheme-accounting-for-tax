@@ -242,12 +242,15 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   private def mccloudRemedy: Gen[JsObject] = {
     for {
       isPublicServicePensionsRemedy <- arbitrary[Boolean]
-      wasAnotherPensionScheme <- arbitrary[Boolean]
-      howManySchemes <- Gen.chooseNum(minT = 1, maxT = if (wasAnotherPensionScheme) 5 else 1)
-      schemes <- genSeqOfSchemes(howManySchemes, wasAnotherPensionScheme, isPublicServicePensionsRemedy)
+      optWasAnotherPensionScheme <- arbitrary[Option[Boolean]]
+      howManySchemes <- Gen.chooseNum(minT = 1, maxT = if (optWasAnotherPensionScheme.getOrElse(false)) 5 else 1)
+      schemes <- genSeqOfSchemes(howManySchemes, optWasAnotherPensionScheme.getOrElse(false), isPublicServicePensionsRemedy)
     } yield {
       val a = if (isPublicServicePensionsRemedy) {
-        Json.obj("orLfChgPaidbyAnoPS" -> wasAnotherPensionScheme) ++ schemes
+        optWasAnotherPensionScheme match {
+          case Some(x) =>  Json.obj("orLfChgPaidbyAnoPS" -> x) ++ schemes
+          case None => Json.obj()
+        }
       } else {
         Json.obj()
       }
