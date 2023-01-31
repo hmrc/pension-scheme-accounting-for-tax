@@ -182,30 +182,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "totalAmount" -> totalAmount
         ))
 
-//  private def test(howManySchemes: Int) = {
-//    val seqInt: Seq[Int] = 1 to howManySchemes
-//    val seqGenScheme = seqInt.map { _ =>
-//      for {
-//        pstr <- Gen.alphaStr
-//        date <- dateGenerator
-//        chargeAmountReported <- arbitrary[BigDecimal]
-//      } yield {
-//        Json.obj(
-//          "pstr" -> pstr,
-//          "repPeriodForLtac" -> date,
-//          "amtOrRepLtaChg" -> chargeAmountReported
-//        )
-//      }
-//    }
-//    val x = Gen.sequence[Seq[JsObject], JsObject](seqGenScheme)
-//    x.map { t =>
-//      Json.obj(
-//        "pensionSchemeDetails" -> JsArray(t)
-//      )
-//    }
-//  }
-
-  private def test(howManySchemes: Int, optPstrGen: Gen[Option[String]]) = {
+  private def schemes(howManySchemes: Int, optPstrGen: Gen[Option[String]]) = {
     val seqInt: Seq[Int] = 1 to howManySchemes
     val seqGenScheme = seqInt.map { _ =>
       for {
@@ -233,8 +210,8 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   private def genSeqOfSchemes(howManySchemes: Int, wasAnotherPensionScheme: Boolean, isPublicServiceRem: Boolean): Gen[JsObject] = {
     (isPublicServiceRem, wasAnotherPensionScheme) match {
-      case (true, true) => test(howManySchemes, Gen.alphaStr.map(Some(_)))
-      case (true, false) => test(1, Gen.oneOf(Seq(None)))
+      case (true, true) => schemes(howManySchemes, Gen.alphaStr.map(Some(_)))
+      case (true, false) => schemes(1, Gen.oneOf(Seq(None)))
       case _ => Gen.oneOf(Seq(Json.obj()))
     }
   }
@@ -246,7 +223,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       howManySchemes <- Gen.chooseNum(minT = 1, maxT = if (optWasAnotherPensionScheme.getOrElse(false)) 5 else 1)
       schemes <- genSeqOfSchemes(howManySchemes, optWasAnotherPensionScheme.getOrElse(false), isPublicServicePensionsRemedy)
     } yield {
-      val a = if (isPublicServicePensionsRemedy) {
+      val additionalSchemes = if (isPublicServicePensionsRemedy) {
         optWasAnotherPensionScheme match {
           case Some(x) =>  Json.obj("orLfChgPaidbyAnoPS" -> x) ++ schemes
           case None => Json.obj()
@@ -256,7 +233,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       }
       Json.obj(
         "lfAllowanceChgPblSerRem" -> isPublicServicePensionsRemedy
-      ) ++ a
+      ) ++ additionalSchemes
     }
   }
 
