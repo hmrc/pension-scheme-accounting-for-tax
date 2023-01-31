@@ -29,7 +29,6 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     "must transform ChargeDDetails from ETMP format to UserAnswers format" in {
       forAll(chargeDETMPGenerator) {
         etmpResponseJson =>
-            println("\n\n\n Generated " + etmpResponseJson)
           val transformer = new ChargeDTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
             println("\n\n\n userAnswers " + transformedJson)
@@ -50,8 +49,14 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
 
           val isMcCloudRem = (membersUAPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
           isMcCloudRem mustBe (membersETMPPath(0) \ "lfAllowanceChgPblSerRem").as[Boolean]
+                      println("\n\n\n Generated " + etmpResponseJson)
           if (isMcCloudRem) {
+            val areMorePensions = (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").as[Boolean]
+            areMorePensions mustBe (membersETMPPath(0) \ "orLfChgPaidbyAnoPS").as[Boolean]
             (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").as[Boolean] mustBe (membersETMPPath(0) \ "orLfChgPaidbyAnoPS").as[Boolean]
+            if (areMorePensions) {
+            (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "pstr" ).as[String] mustBe (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
+            }
           }
           //TODO : isChargeInAdditionReported boolean check
 

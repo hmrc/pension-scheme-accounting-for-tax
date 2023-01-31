@@ -36,21 +36,31 @@ trait McCloudJsonTransformer extends JsonTransformer {
   //    }
   //  }
 
+  private def calculateMax: Int = {
+    //    val max = (0 to 4).takeWhile { i =>
+    //      val h = (__ \ "pensionSchemeDetails" \ i \ "repPeriodForLtac").readNullable[String].map{ value =>
+    //        value.isDefined
+    //      }
+    //    }
+    4
+  }
+
   private def readsScheme: Reads[JsObject] = {
     (__ \ Symbol("orLfChgPaidbyAnoPS")).read[Boolean].flatMap { areMoreSchemes =>
       val mcCloud: Reads[JsObject] = ((__ \ Symbol("mccloudRemedy") \ Symbol("isPublicServicePensionsRemedy")).json.put(JsTrue) and
         (__ \ Symbol("mccloudRemedy") \ Symbol("wasAnotherPensionScheme")).json.put(JsBoolean(areMoreSchemes))).reduce
       val schemeObj = if (areMoreSchemes) {
-        (0 to 4).foldLeft[Reads[JsObject]](Reads.pure(Json.obj())) { (acc: Reads[JsObject], curr: Int) =>
-          val tt: Reads[JsObject] = ((__ \ Symbol("mccloudRemedy") \ Symbol("schemes") \ Symbol("taxYearReportedAndPaid") \ Symbol("endDate"))
+       val arrayOfItems = (0 to calculateMax).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
+          val currentJsObj = ((__ \ Symbol("taxYearReportedAndPaid") \ Symbol("endDate"))
             .json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "repPeriodForLtac").json.pick) and
-            (__ \ Symbol("mccloudRemedy") \ Symbol("schemes") \ Symbol("chargeAmountReported"))
-              .json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "amtOrRepLtaChg").json.pick)).reduce
-          (
-            acc and (tt orElse doNothing)
-
-            ).reduce
+            (__ \ Symbol("chargeAmountReported"))
+              .json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "amtOrRepLtaChg").json.pick) and
+            (__ \ Symbol("pstr"))
+              .json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)
+            ).reduce orElse doNothing
+          acc.flatMap(jsArray => currentJsObj.map (jsObject => jsArray :+ jsObject))
         }
+         arrayOfItems.flatMap { schemeNode => (__ \ Symbol("mccloudRemedy") \ Symbol("schemes")).json.put(schemeNode) }
       } else {
         (__ \ Symbol("mccloudRemedy") \ Symbol("taxYearReportedAndPaid") \ Symbol("endDate"))
           .json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").json.pick)
