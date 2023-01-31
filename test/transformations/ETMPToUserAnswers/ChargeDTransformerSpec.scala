@@ -32,7 +32,6 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
             println("\n\n\n Generated " + etmpResponseJson)
           val transformer = new ChargeDTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-
             println("\n\n\n userAnswers " + transformedJson)
 
           def membersUAPath(i: Int): JsLookupResult = transformedJson \ "chargeDDetails" \ "members" \ i
