@@ -30,9 +30,14 @@ trait McCloudJsonTransformer extends JsonTransformer {
     //    }
     4
   }
+  private val readsBoolean: Reads[Boolean] = __.read[String].flatMap {
+    case "Yes" => Reads.pure(true)
+    case "No" => Reads.pure(false)
+    case _ => Reads.failed[Boolean]("Unknown value")
+  }
 
   private def readsScheme: Reads[JsObject] = {
-    (__ \ "orLfChgPaidbyAnoPS").readNullable[Boolean].flatMap {
+    (__ \ "orLfChgPaidbyAnoPS").readNullable[Boolean](readsBoolean).flatMap {
       case Some(areMoreSchemes) =>
         val mcCloud: Reads[JsObject] = ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
           (__ \ "mccloudRemedy" \ "wasAnotherPensionScheme").json.put(JsBoolean(areMoreSchemes))).reduce
@@ -65,9 +70,9 @@ trait McCloudJsonTransformer extends JsonTransformer {
   }
 
   def readsMcCloudDetails: Reads[JsObject] = {
-    (__ \ "lfAllowanceChgPblSerRem").read[Boolean].flatMap { isMcCloud =>
-      if (isMcCloud) { readsScheme }
-      else { (__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsFalse) }
+    (__ \ "lfAllowanceChgPblSerRem").readNullable[Boolean](readsBoolean).flatMap {
+        case Some(true) => readsScheme
+        case _ => (__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsFalse)
     }
   }
 }
