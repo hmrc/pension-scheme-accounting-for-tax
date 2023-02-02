@@ -17,6 +17,7 @@
 package controllers
 
 import connectors.{AFTConnector, FinancialStatementConnector}
+import models.SchemeChargeType.{aftManualAssessment, aftManualAssessmentCredit, aftReturn, aftReturnCredit, otcAftReturn, otcAftReturnCredit, otcManualAssessment, otcManualAssessmentCredit}
 import models.SchemeFSDetail
 import play.api.libs.json._
 import play.api.mvc._
@@ -97,10 +98,27 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     }
   }
 
+
+  private def updateChargeTypeForSeqSchemeFSDetail(seqSchemeFSDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
+    seqSchemeFSDetail.map { schemeFSDetail =>
+      val newChargeType = (schemeFSDetail.chargeType, schemeFSDetail.amountDue < 0) match {
+        case (aftReturn.value, true) => aftReturnCredit.value
+        case (otcAftReturn.value, true) => otcAftReturnCredit.value
+        case (otcAftReturn.value, true) => otcAftReturnCredit.value
+        case (otcManualAssessment.value, true) => otcManualAssessmentCredit.value
+        case _ => schemeFSDetail.chargeType
+      }
+      schemeFSDetail.copy(
+        chargeType = newChargeType
+      )
+    }
+  }
+
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
       get(key = "pstr") { pstr =>
         financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
+
           val updatedSchemeFS =
             for {
               seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
