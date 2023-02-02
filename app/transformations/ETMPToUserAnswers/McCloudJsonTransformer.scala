@@ -45,7 +45,7 @@ trait McCloudJsonTransformer extends JsonTransformer {
           val arrayOfItems = (0 to calculateMax).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
             val currentJsObj = (
               (__ \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "repPeriodForLtac").json.pick) and
-                (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "amtOrRepLtaChg").json.pick) and
+                (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "amtOrRepLtaChg").json.pick) and // TODO: amtOrRepAaChg for AA
                 (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)
               ).reduce orElse doNothing
             acc.flatMap(jsArray => currentJsObj.map(jsObject => jsArray :+ jsObject))
