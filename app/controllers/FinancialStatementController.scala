@@ -98,18 +98,18 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     }
   }
 
-
-  private def updateChargeTypeForSeqSchemeFSDetail(seqSchemeFSDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
+  private def updateChargeType(seqSchemeFSDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
     seqSchemeFSDetail.map { schemeFSDetail =>
-      val newChargeType = (schemeFSDetail.chargeType, schemeFSDetail.amountDue < 0) match {
+      val maybeCreditChargeType = (schemeFSDetail.chargeType, schemeFSDetail.amountDue < 0) match {
         case (aftReturn.value, true) => aftReturnCredit.value
         case (otcAftReturn.value, true) => otcAftReturnCredit.value
         case (otcAftReturn.value, true) => otcAftReturnCredit.value
         case (otcManualAssessment.value, true) => otcManualAssessmentCredit.value
         case _ => schemeFSDetail.chargeType
       }
+
       schemeFSDetail.copy(
-        chargeType = newChargeType
+        chargeType = maybeCreditChargeType
       )
     }
   }
@@ -123,8 +123,9 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
             for {
               seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
             } yield {
+              val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
               data copy (
-                seqSchemeFSDetail = updateSourceChargeInfo(seqSchemeFSDetailWithVersionAndReceiptDate)
+                seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
                 )
             }
           updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
