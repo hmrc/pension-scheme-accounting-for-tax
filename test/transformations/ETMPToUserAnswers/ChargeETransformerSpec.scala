@@ -25,11 +25,6 @@ import transformations.generators.AFTETMPResponseGenerators
 import java.time.LocalDate
 
 class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
-  private def yesNoToOptBoolean(yesNo: String): Option[Boolean] = yesNo match {
-    case "Yes" => Some(true)
-    case "No" => Some(false)
-    case _ => None
-  }
 
   private def optYesNoToOptBoolean(yesNo: Option[String]): Option[Boolean] = yesNo match {
     case Some("Yes") => Some(true)
@@ -77,11 +72,15 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
                    (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
                  (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "chargeAmountReported").as[BigDecimal] mustBe
                    (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \"taxYearReportedAndPaid" \ "endDate").as[String] mustBe
+                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForAac").as[String]
                  (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
 
                case Some(false) =>
                  (membersUAPath(0) \ "mccloudRemedy" \ "chargeAmountReported").as[BigDecimal] mustBe
                    (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").as[String] mustBe
+                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForAac").as[String]
                  (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
 
                case None =>
