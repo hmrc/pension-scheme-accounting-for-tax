@@ -187,7 +187,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     val seqGenScheme = seqInt.map { _ =>
       for {
         optPstr <- optPstrGen
-        date <- dateGenerator
+        date <- Gen.oneOf(Seq("2023-03-31", "2023-06-30", "2023-09-30" , "2023-12-31"))
         chargeAmountReported <- arbitrary[BigDecimal]
       } yield {
         val moreThanOneScheme = optPstr match {

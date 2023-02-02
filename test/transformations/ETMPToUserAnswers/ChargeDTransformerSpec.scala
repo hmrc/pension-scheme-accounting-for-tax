@@ -16,11 +16,15 @@
 
 package transformations.ETMPToUserAnswers
 
+import helpers.DateHelper.getQuarterStartDate
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import play.api.libs.json.{JsLookupResult, JsObject}
 import transformations.generators.AFTETMPResponseGenerators
+
+import java.time.{LocalDate, LocalDateTime}
+import java.time.format.DateTimeFormatter
 
 class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
@@ -29,6 +33,8 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     case Some("No") => Some(false)
     case _ => None
   }
+  private val dateFormatterYMD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+  private def formatDateDMYString(date: String): LocalDateTime = LocalDate.parse(date, dateFormatterYMD).atStartOfDay()
 
   "A Charge D Transformer must" - {
 
@@ -36,8 +42,10 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
       forAll(chargeDETMPGenerator) {
         etmpResponseJson =>
           val transformer = new ChargeDTransformer
+          val transformed = etmpResponseJson.transform(transformer.transformToUserAnswers)
+println(s"\n\n\n\n ETMP $etmpResponseJson")
+println(s"\n\n\n\n TRANSFORMED $transformed")
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-
           def membersUAPath(i: Int): JsLookupResult = transformedJson \ "chargeDDetails" \ "members" \ i
 
           def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeDDetails" \ "memberDetails" \ i
@@ -63,15 +71,25 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
                     (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
                   (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "chargeAmountReported").as[BigDecimal] mustBe
                     (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").as[BigDecimal]
-                  (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \"taxYearReportedAndPaid" \ "endDate").as[String] mustBe
-                    (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").as[String]
+                  val date = (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").as[String]
+                  (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \"taxYearReportedAndPaidPage").as[String] mustBe
+                    formatDateDMYString(date).getYear.toString
+                  (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \"taxQuarterReportedAndPaid" \ "startDate").as[String] mustBe
+                    getQuarterStartDate(formatDateDMYString(date).toString)
+                  (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \"taxQuarterReportedAndPaid" \ "endDate").as[String] mustBe
+                    formatDateDMYString(date).toString
                   (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
 
                 case Some(false) =>
                   (membersUAPath(0) \ "mccloudRemedy" \ "chargeAmountReported").as[BigDecimal] mustBe
                     (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").as[BigDecimal]
-                  (membersUAPath(0) \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").as[String] mustBe
-                    (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").as[String]
+                  val date = (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").as[String]
+                  (membersUAPath(0) \ "mccloudRemedy" \"taxYearReportedAndPaidPage").as[String] mustBe
+                    formatDateDMYString(date).getYear.toString
+                  (membersUAPath(0) \ "mccloudRemedy" \"taxQuarterReportedAndPaid" \ "startDate").as[String] mustBe
+                    getQuarterStartDate(formatDateDMYString(date).toString)
+                  (membersUAPath(0) \ "mccloudRemedy" \"taxQuarterReportedAndPaid" \ "endDate").as[String] mustBe
+                    formatDateDMYString(date).toString
                   (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
 
                 case None =>
