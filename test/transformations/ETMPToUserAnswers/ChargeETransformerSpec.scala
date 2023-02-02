@@ -66,28 +66,30 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
            */
 
 
-          val isMcCloudRem = (membersUAPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
-          Some(isMcCloudRem) mustBe yesNoToOptBoolean((membersETMPPath(0) \ "anAllowanceChgPblSerRem").as[String])
-          if (isMcCloudRem) {
-            val areMorePensions = (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").asOpt[Boolean]
-            areMorePensions mustBe optYesNoToOptBoolean((membersETMPPath(0) \ "orChgPaidbyAnoPS").asOpt[String])
-            areMorePensions match {
-              case Some(true) =>
-                (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "pstr").as[String] mustBe
-                  (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
-                (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "chargeAmountReported").as[BigDecimal] mustBe
-                  (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
-                (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
+          val isMcCloudRem = (membersUAPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").asOpt[Boolean]
+         isMcCloudRem match {
+           case Some(true) =>
+             val areMorePensions = (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").asOpt[Boolean]
+             areMorePensions mustBe optYesNoToOptBoolean((membersETMPPath(0) \ "orChgPaidbyAnoPS").asOpt[String])
+             areMorePensions match {
+               case Some(true) =>
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "pstr").as[String] mustBe
+                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "chargeAmountReported").as[BigDecimal] mustBe
+                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
 
-              case Some(false) =>
-                (membersUAPath(0) \ "mccloudRemedy" \ "chargeAmountReported").as[BigDecimal] mustBe
-                  (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
-                (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
+               case Some(false) =>
+                 (membersUAPath(0) \ "mccloudRemedy" \ "chargeAmountReported").as[BigDecimal] mustBe
+                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
 
-              case None =>
-                (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe false
-            }
-          }
+               case None =>
+                 (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe false
+             }
+           case Some(false) => (membersETMPPath(0) \ "anAllowanceChgPblSerRem").asOpt[String] mustBe Some("No")
+           case _ => (membersETMPPath(0) \ "anAllowanceChgPblSerRem").asOpt[String] mustBe None
+         }
 
 
 

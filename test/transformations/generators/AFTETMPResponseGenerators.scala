@@ -208,11 +208,11 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     }
   }
 
-  private def genSeqOfSchemes(howManySchemes: Int, wasAnotherPensionScheme: Boolean, isPublicServiceRem: Boolean,
+  private def genSeqOfSchemes(howManySchemes: Int, wasAnotherPensionScheme: Boolean, isPublicServiceRem: Option[Boolean],
                               amountNodeName: String, repoPeriodNodeName: String ): Gen[JsObject] = {
     (isPublicServiceRem, wasAnotherPensionScheme) match {
-      case (true, true) => schemes(howManySchemes, Gen.alphaStr.map(Some(_)),amountNodeName, repoPeriodNodeName)
-      case (true, false) => schemes(1, Gen.oneOf(Seq(None)), amountNodeName, repoPeriodNodeName)
+      case (Some(true), true) => schemes(howManySchemes, Gen.alphaStr.map(Some(_)),amountNodeName, repoPeriodNodeName)
+      case (Some(true), false) => schemes(1, Gen.oneOf(Seq(None)), amountNodeName, repoPeriodNodeName)
       case _ => Gen.oneOf(Seq(Json.obj()))
     }
   }
@@ -225,24 +225,32 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   private def mccloudRemedy(isPSRNodeName: String, isOtherSchemesNodeName: String,
                             amountNodeName : String, repoPeriodNodeName : String): Gen[JsObject] = {
     for {
-      isPublicServicePensionsRemedy <- arbitrary[Boolean]
+      isPublicServicePensionsRemedy <- arbitrary[Option[Boolean]]
       optWasAnotherPensionScheme <- arbitrary[Option[Boolean]]
       howManySchemes <- Gen.chooseNum(minT = 1, maxT = if (optWasAnotherPensionScheme.getOrElse(false)) 5 else 1)
       schemes <- genSeqOfSchemes(howManySchemes, optWasAnotherPensionScheme.getOrElse(false), isPublicServicePensionsRemedy,
         amountNodeName: String, repoPeriodNodeName: String )
     } yield {
-      val additionalSchemes = if (isPublicServicePensionsRemedy) {
-        optWasAnotherPensionScheme match {
-          case Some(x) =>  Json.obj(isOtherSchemesNodeName -> booleanToYesNo(x)) ++ schemes
-          case None => Json.obj()
+//      val additionalSchemes = if (isPublicServicePensionsRemedy) {
+//        optWasAnotherPensionScheme match {
+//          case Some(x) =>  Json.obj(isOtherSchemesNodeName -> booleanToYesNo(x)) ++ schemes
+//          case None => Json.obj()
+//        }
+//      } else {
+//        Json.obj()
+//      }
+//      Json.obj(
+//        isPSRNodeName -> booleanToYesNo(isPublicServicePensionsRemedy)
+//      ) ++ additionalSchemes
+    (isPublicServicePensionsRemedy, optWasAnotherPensionScheme) match {
+            case (Some(true), Some(x)) =>
+              Json.obj(isOtherSchemesNodeName -> booleanToYesNo(x)) ++ schemes ++
+              Json.obj(isPSRNodeName -> booleanToYesNo(true))
+            case (Some(true), None) => Json.obj(isPSRNodeName -> booleanToYesNo(true))
+            case (Some(false), _) => Json.obj(isPSRNodeName -> booleanToYesNo(false))
+            case _ => Json.obj()
+          }
         }
-      } else {
-        Json.obj()
-      }
-      Json.obj(
-        isPSRNodeName -> booleanToYesNo(isPublicServicePensionsRemedy)
-      ) ++ additionalSchemes
-    }
   }
 
   val chargeDMember: Gen[JsObject] =
