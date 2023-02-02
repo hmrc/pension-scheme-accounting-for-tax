@@ -20,7 +20,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
-class ChargeETransformer extends JsonTransformer {
+class ChargeETransformer extends McCloudJsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
     (__ \ Symbol("chargeTypeEDetails")).readNullable(__.read(
@@ -38,7 +38,8 @@ class ChargeETransformer extends JsonTransformer {
       (__ \ Symbol("chargeDetails") \ Symbol("chargeAmount")).json.copyFrom((__ \ Symbol("amountOfCharge")).json.pick) and
       (__ \ Symbol("chargeDetails") \ Symbol("dateNoticeReceived")).json.copyFrom((__ \ Symbol("dateOfNotice")).json.pick) and
       getPaidUnder237b and
-      (__ \ Symbol("annualAllowanceYear")).json.copyFrom((__ \ Symbol("taxYearEnding")).json.pick)).reduce
+      (__ \ Symbol("annualAllowanceYear")).json.copyFrom((__ \ Symbol("taxYearEnding")).json.pick) and
+      readsMcCloudDetails(isPSRNodeName = "anAllowanceChgPblSerRem", isOtherSchemesNodeName = "orChgPaidbyAnoPS")).reduce
 
   def getPaidUnder237b: Reads[JsObject] =
     (__ \ Symbol("paidUnder237b")).read[String].flatMap { paidUnder237b =>
