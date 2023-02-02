@@ -36,7 +36,7 @@ trait McCloudJsonTransformer extends JsonTransformer {
     case _ => Reads.failed[Boolean]("Unknown value")
   }
 
-  private def readsScheme(isOtherSchemesNodeName: String): Reads[JsObject] = {
+  private def readsScheme(isOtherSchemesNodeName: String, amountNodeName: String, repoPeriodNodeName: String): Reads[JsObject] = {
     (__ \ isOtherSchemesNodeName).readNullable[Boolean](readsBoolean).flatMap {
       case Some(areMoreSchemes) =>
         val mcCloud: Reads[JsObject] = ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
@@ -44,8 +44,8 @@ trait McCloudJsonTransformer extends JsonTransformer {
         val schemeObj = if (areMoreSchemes) {
           val arrayOfItems = (0 to calculateMax).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
             val currentJsObj = (
-              (__ \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "repPeriodForLtac").json.pick) and
-                (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "amtOrRepLtaChg").json.pick) and // TODO: amtOrRepAaChg for AA
+              (__ \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ repoPeriodNodeName).json.pick) and
+                (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ amountNodeName).json.pick) and
                 (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)
               ).reduce orElse doNothing
             acc.flatMap(jsArray => currentJsObj.map(jsObject => jsArray :+ jsObject))
@@ -57,8 +57,8 @@ trait McCloudJsonTransformer extends JsonTransformer {
               ).reduce
           }
         } else {
-          ((__ \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "repPeriodForLtac").json.pick) and
-            (__ \ "mccloudRemedy" \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ "amtOrRepLtaChg").json.pick) and
+          ((__ \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).json.pick) and
+            (__ \ "mccloudRemedy" \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ amountNodeName).json.pick) and
             (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsTrue)).reduce
         }
         (mcCloud and schemeObj).reduce
@@ -69,9 +69,9 @@ trait McCloudJsonTransformer extends JsonTransformer {
     }
   }
 
-  def readsMcCloudDetails(isPSRNodeName: String, isOtherSchemesNodeName: String): Reads[JsObject] = {
+  def readsMcCloudDetails(isPSRNodeName: String, isOtherSchemesNodeName: String, amountNodeName: String, repoPeriodNodeName: String): Reads[JsObject] = {
     (__ \ isPSRNodeName).readNullable[Boolean](readsBoolean).flatMap {
-        case Some(true) => readsScheme(isOtherSchemesNodeName)
+        case Some(true) => readsScheme(isOtherSchemesNodeName, amountNodeName, repoPeriodNodeName)
         case _ => (__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsFalse)
     }
   }

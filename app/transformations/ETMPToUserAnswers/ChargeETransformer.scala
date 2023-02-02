@@ -39,7 +39,8 @@ class ChargeETransformer extends McCloudJsonTransformer {
       (__ \ Symbol("chargeDetails") \ Symbol("dateNoticeReceived")).json.copyFrom((__ \ Symbol("dateOfNotice")).json.pick) and
       getPaidUnder237b and
       (__ \ Symbol("annualAllowanceYear")).json.copyFrom((__ \ Symbol("taxYearEnding")).json.pick) and
-      readsMcCloudDetails(isPSRNodeName = "anAllowanceChgPblSerRem", isOtherSchemesNodeName = "orChgPaidbyAnoPS")).reduce
+      readsMcCloudDetails(isPSRNodeName = "anAllowanceChgPblSerRem", isOtherSchemesNodeName = "orChgPaidbyAnoPS",
+        amountNodeName = "amtOrRepAaChg", repoPeriodNodeName = "repPeriodForAac")).reduce
 
   def getPaidUnder237b: Reads[JsObject] =
     (__ \ Symbol("paidUnder237b")).read[String].flatMap { paidUnder237b =>

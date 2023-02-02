@@ -25,7 +25,17 @@ import transformations.generators.AFTETMPResponseGenerators
 import java.time.LocalDate
 
 class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
+  private def yesNoToOptBoolean(yesNo: String): Option[Boolean] = yesNo match {
+    case "Yes" => Some(true)
+    case "No" => Some(false)
+    case _ => None
+  }
 
+  private def optYesNoToOptBoolean(yesNo: Option[String]): Option[Boolean] = yesNo match {
+    case Some("Yes") => Some(true)
+    case Some("No") => Some(false)
+    case _ => None
+  }
   "A Charge E Transformer" - {
     "must transform ChargeEDetails from ETMP ChargeEDetails to UserAnswers" in {
       forAll(chargeEETMPGenerator) {
@@ -49,6 +59,41 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
 
 
           (membersUAPath(0) \ "annualAllowanceYear").as[Int] mustBe (membersETMPPath(0) \ "taxYearEnding").as[Int]
+
+          /*
+          isPSRNodeName = "anAllowanceChgPblSerRem", isOtherSchemesNodeName = "orChgPaidbyAnoPS",
+                  amountNodeName = "amtOrRepAaChg", repoPeriodNodeName = "repPeriodForAac"
+           */
+
+
+          val isMcCloudRem = (membersUAPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
+          Some(isMcCloudRem) mustBe yesNoToOptBoolean((membersETMPPath(0) \ "anAllowanceChgPblSerRem").as[String])
+          if (isMcCloudRem) {
+            val areMorePensions = (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").asOpt[Boolean]
+            areMorePensions mustBe optYesNoToOptBoolean((membersETMPPath(0) \ "orChgPaidbyAnoPS").asOpt[String])
+            areMorePensions match {
+              case Some(true) =>
+                (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "pstr").as[String] mustBe
+                  (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
+                (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "chargeAmountReported").as[BigDecimal] mustBe
+                  (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
+                (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
+
+              case Some(false) =>
+                (membersUAPath(0) \ "mccloudRemedy" \ "chargeAmountReported").as[BigDecimal] mustBe
+                  (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
+                (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
+
+              case None =>
+                (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe false
+            }
+          }
+
+
+
+
+
+
 
           (transformedJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
             (etmpResponseJson \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal]

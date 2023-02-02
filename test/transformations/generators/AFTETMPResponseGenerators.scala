@@ -20,7 +20,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
-import play.api.libs.json.{JsArray, JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, JsString, Json}
 
 import java.time.{LocalDate, Year}
 
@@ -182,7 +182,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "totalAmount" -> totalAmount
         ))
 
-  private def schemes(howManySchemes: Int, optPstrGen: Gen[Option[String]]) = {
+  private def schemes(howManySchemes: Int, optPstrGen: Gen[Option[String]]): Gen[JsObject] = {
     val seqInt: Seq[Int] = 1 to howManySchemes
     val seqGenScheme = seqInt.map { _ =>
       for {
@@ -216,6 +216,8 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     }
   }
 
+  private def booleanToYesNo(flag:Boolean) = if (flag) JsString("Yes") else JsString("No")
+
   private def mccloudRemedy: Gen[JsObject] = {
     for {
       isPublicServicePensionsRemedy <- arbitrary[Boolean]
@@ -225,14 +227,14 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     } yield {
       val additionalSchemes = if (isPublicServicePensionsRemedy) {
         optWasAnotherPensionScheme match {
-          case Some(x) =>  Json.obj("orLfChgPaidbyAnoPS" -> x) ++ schemes
+          case Some(x) =>  Json.obj("orLfChgPaidbyAnoPS" -> booleanToYesNo(x)) ++ schemes
           case None => Json.obj()
         }
       } else {
         Json.obj()
       }
       Json.obj(
-        "lfAllowanceChgPblSerRem" -> isPublicServicePensionsRemedy
+        "lfAllowanceChgPblSerRem" -> booleanToYesNo(isPublicServicePensionsRemedy)
       ) ++ additionalSchemes
     }
   }

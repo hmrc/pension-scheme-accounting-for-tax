@@ -24,6 +24,18 @@ import transformations.generators.AFTETMPResponseGenerators
 
 class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
+  private def yesNoToOptBoolean(yesNo: String): Option[Boolean] = yesNo match {
+    case "Yes" => Some(true)
+    case "No" => Some(false)
+    case _ => None
+  }
+
+  private def optYesNoToOptBoolean(yesNo: Option[String]): Option[Boolean] = yesNo match {
+    case Some("Yes") => Some(true)
+    case Some("No") => Some(false)
+    case _ => None
+  }
+
   "A Charge D Transformer must" - {
 
     "must transform ChargeDDetails from ETMP format to UserAnswers format" in {
@@ -31,7 +43,6 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
         etmpResponseJson =>
           val transformer = new ChargeDTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-            println("\n\n\n userAnswers " + transformedJson)
 
           def membersUAPath(i: Int): JsLookupResult = transformedJson \ "chargeDDetails" \ "members" \ i
 
@@ -48,11 +59,10 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           (membersUAPath(0) \ "chargeDetails" \ "taxAt55Percent").as[BigDecimal] mustBe (membersETMPPath(0) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
 
           val isMcCloudRem = (membersUAPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
-          isMcCloudRem mustBe (membersETMPPath(0) \ "lfAllowanceChgPblSerRem").as[Boolean]
-                      println("\n\n\n Generated " + etmpResponseJson)
+          Some(isMcCloudRem) mustBe yesNoToOptBoolean( (membersETMPPath(0) \ "lfAllowanceChgPblSerRem").as[String])
           if (isMcCloudRem) {
-            val areMorePensions = (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").asOpt[Boolean]
-            areMorePensions mustBe (membersETMPPath(0) \ "orLfChgPaidbyAnoPS").asOpt[Boolean]
+            val areMorePensions =  (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").asOpt[Boolean]
+            areMorePensions mustBe optYesNoToOptBoolean( (membersETMPPath(0) \ "orLfChgPaidbyAnoPS").asOpt[String])
             areMorePensions match {
               case Some(true) =>
                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "pstr" ).as[String] mustBe
