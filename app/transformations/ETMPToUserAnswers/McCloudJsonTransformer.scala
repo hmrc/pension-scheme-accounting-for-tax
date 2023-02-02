@@ -75,4 +75,12 @@ trait McCloudJsonTransformer extends JsonTransformer {
         case _ => (__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsFalse)
     }
   }
+
+  // def readsMcCloudDetails(isPSRNodeName: String, isOtherSchemesNodeName: String, amountNodeName: String, repoPeriodNodeName: String): Reads[JsObject] = {
+  //    (__ \ isPSRNodeName).readNullable[Boolean](readsBoolean).flatMap {
+  //        case Some(true) => readsScheme(isOtherSchemesNodeName, amountNodeName, repoPeriodNodeName)
+  //        case Some(false) => (__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsFalse)
+  //        case _ => Reads.pure(Json.obj())
+  //    }
+  //  }
 }
