@@ -16,7 +16,7 @@
 
 package transformations.ETMPToUserAnswers
 
-import helpers.DateHelper.getQuarterStartDate
+import helpers.DateHelper.{formatDateDMYString, getQuarterStartDate}
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
@@ -24,7 +24,6 @@ import play.api.libs.json.{JsLookupResult, JsObject}
 import transformations.generators.AFTETMPResponseGenerators
 
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
@@ -33,10 +32,6 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     case Some("No") => Some(false)
     case _ => None
   }
-
-  private val dateFormatterYMD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-  private def formatDateDMYString(date: String): LocalDate = LocalDate.parse(date, dateFormatterYMD).atStartOfDay().toLocalDate
 
   "A Charge E Transformer" - {
     "must transform ChargeEDetails from ETMP ChargeEDetails to UserAnswers" in {
@@ -105,12 +100,6 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
            case Some(false) => (membersETMPPath(0) \ "anAllowanceChgPblSerRem").asOpt[String] mustBe Some("No")
            case _ => (membersETMPPath(0) \ "anAllowanceChgPblSerRem").asOpt[String] mustBe None
          }
-
-
-
-
-
-
 
           (transformedJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
             (etmpResponseJson \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal]

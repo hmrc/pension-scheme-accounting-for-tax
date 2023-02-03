@@ -16,6 +16,11 @@
 
 package helpers
 
+import play.api.libs.json.{JsString, JsValue}
+
+import java.time.{LocalDate, LocalDateTime}
+import java.time.format.DateTimeFormatter
+
 object DateHelper {
 
   // scalastyle:off magic.number
@@ -29,4 +34,11 @@ object DateHelper {
     }
     endDate.substring(0,5) + monthAndDate
   }
+
+  val dateFormatterYMD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+  def formatDateDMYString(date: String): LocalDateTime = LocalDate.parse(date, dateFormatterYMD).atStartOfDay()
+
+  val extractTaxYear: JsValue => JsString = dateString => JsString(formatDateDMYString(dateString.as[JsString].value).getYear.toString)
+
 }

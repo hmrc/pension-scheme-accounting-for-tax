@@ -16,15 +16,12 @@
 
 package transformations.ETMPToUserAnswers
 
-import helpers.DateHelper.getQuarterStartDate
+import helpers.DateHelper.{formatDateDMYString, getQuarterStartDate}
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import play.api.libs.json.{JsLookupResult, JsObject}
 import transformations.generators.AFTETMPResponseGenerators
-
-import java.time.{LocalDate, LocalDateTime}
-import java.time.format.DateTimeFormatter
 
 class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
@@ -33,8 +30,6 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     case Some("No") => Some(false)
     case _ => None
   }
-  private val dateFormatterYMD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-  private def formatDateDMYString(date: String): LocalDate = LocalDate.parse(date, dateFormatterYMD).atStartOfDay().toLocalDate
 
   "A Charge D Transformer must" - {
 

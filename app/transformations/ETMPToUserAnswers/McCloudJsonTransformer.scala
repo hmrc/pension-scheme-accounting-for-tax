@@ -16,26 +16,18 @@
 
 package transformations.ETMPToUserAnswers
 
-import helpers.DateHelper.getQuarterStartDate
+import helpers.DateHelper.{extractTaxYear, getQuarterStartDate}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
-import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, LocalDateTime}
-
 trait McCloudJsonTransformer extends JsonTransformer {
-  private val dateFormatterYMD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-  private def formatDateDMYString(date: String): LocalDateTime = LocalDate.parse(date, dateFormatterYMD).atStartOfDay()
 
   private val readsBoolean: Reads[Boolean] = __.read[String].flatMap {
     case "Yes" => Reads.pure(true)
     case "No" => Reads.pure(false)
     case _ => Reads.failed[Boolean]("Unknown value")
   }
-
-  private val extractTaxYear: JsValue => JsString = dateString => JsString(formatDateDMYString(dateString.as[JsString].value).getYear.toString)
 
   private def readsScheme(isOtherSchemesNodeName: String, amountNodeName: String, repoPeriodNodeName: String): Reads[JsObject] = {
     def readsDateAndChargeAmount(endDate: String): Reads[JsObject] = (
