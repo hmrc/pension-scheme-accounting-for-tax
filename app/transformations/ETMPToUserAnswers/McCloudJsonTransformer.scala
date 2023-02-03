@@ -21,8 +21,8 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
-import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, LocalDateTime}
 
 trait McCloudJsonTransformer extends JsonTransformer {
   private val dateFormatterYMD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -37,9 +37,15 @@ trait McCloudJsonTransformer extends JsonTransformer {
 
   private val extractTaxYear: JsValue => JsString = dateString => JsString(formatDateDMYString(dateString.as[JsString].value).getYear.toString)
 
-  
   private def readsScheme(isOtherSchemesNodeName: String, amountNodeName: String, repoPeriodNodeName: String): Reads[JsObject] = {
-    (__ \ isOtherSchemesNodeName).readNullable[Boolean](readsBoolean).flatMap {
+    def readsDateAndChargeAmount(endDate: String): Reads[JsObject] = (
+      (__ \ "taxYearReportedAndPaidPage").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).json.pick.map(extractTaxYear)) and
+        (__ \ "taxQuarterReportedAndPaid" \ "startDate").json.copyFrom(Reads.pure(JsString(getQuarterStartDate(endDate)))) and
+        (__ \ "taxQuarterReportedAndPaid" \ "endDate").json.copyFrom(Reads.pure(JsString(endDate))) and
+        (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ amountNodeName).json.pick)
+      ).reduce
+
+    (__ \ isOtherSchemesNodeName).readNullable[Boolean](readsBoolean).flatMap{
       case Some(areMoreSchemes) =>
         val mcCloud: Reads[JsObject] = ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
           (__ \ "mccloudRemedy" \ "wasAnotherPensionScheme").json.put(JsBoolean(areMoreSchemes))).reduce
@@ -47,13 +53,8 @@ trait McCloudJsonTransformer extends JsonTransformer {
           (__ \ "pensionSchemeDetails").read[JsArray].map(_.value.size).flatMap { max =>
             val readsSchemeArray = (0 until max).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
               (__ \ "pensionSchemeDetails" \ curr \ repoPeriodNodeName).read[String].flatMap { endDate =>
-                val currentJsObj = (
-                  (__ \ "taxYearReportedAndPaidPage").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ repoPeriodNodeName).json.pick.map(extractTaxYear)) and
-                    (__ \ "taxQuarterReportedAndPaid" \ "startDate").json.copyFrom(Reads.pure(JsString(getQuarterStartDate(endDate)))) and
-                    (__ \ "taxQuarterReportedAndPaid" \ "endDate").json.copyFrom(Reads.pure(JsString(endDate))) and
-                    (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ amountNodeName).json.pick) and
-                    (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)
-                  ).reduce orElse doNothing
+                val currentJsObj = (readsDateAndChargeAmount(endDate) and
+                  (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)).reduce orElse doNothing
                 acc.flatMap(jsArray => currentJsObj.map(jsObject => jsArray :+ jsObject))
               }
             }
@@ -65,14 +66,7 @@ trait McCloudJsonTransformer extends JsonTransformer {
             }
           }
         } else {
-          val mcCloudDetailReads = (__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).read[String].flatMap { endDate =>
-            (
-              (__ \ "taxYearReportedAndPaidPage").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).json.pick.map(extractTaxYear)) and
-              (__ \ "taxQuarterReportedAndPaid" \ "startDate").json.copyFrom(Reads.pure(JsString(getQuarterStartDate(endDate)))) and
-              (__ \ "taxQuarterReportedAndPaid" \ "endDate").json.copyFrom(Reads.pure(JsString(endDate))) and
-              (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ amountNodeName).json.pick)
-              ).reduce
-          }
+          val mcCloudDetailReads = (__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).read[String].flatMap(readsDateAndChargeAmount)
           mcCloudDetailReads.flatMap { jsObject =>
             (
               (__ \ "mccloudRemedy").json.put(jsObject) and
