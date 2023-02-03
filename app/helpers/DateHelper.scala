@@ -20,7 +20,7 @@ object DateHelper {
 
   // scalastyle:off magic.number
   def getQuarterStartDate(endDate: String): String = {
-    val monthAndDate = endDate.substring( 5) match {
+    val monthAndDate = endDate.substring(5, 10) match {
       case "03-31" => "01-01"
       case "06-30" => "04-01"
       case "09-30" => "07-01"

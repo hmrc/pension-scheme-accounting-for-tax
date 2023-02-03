@@ -34,7 +34,7 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     case _ => None
   }
   private val dateFormatterYMD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-  private def formatDateDMYString(date: String): LocalDateTime = LocalDate.parse(date, dateFormatterYMD).atStartOfDay()
+  private def formatDateDMYString(date: String): LocalDate = LocalDate.parse(date, dateFormatterYMD).atStartOfDay().toLocalDate
 
   "A Charge D Transformer must" - {
 
@@ -43,8 +43,6 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
         etmpResponseJson =>
           val transformer = new ChargeDTransformer
           val transformed = etmpResponseJson.transform(transformer.transformToUserAnswers)
-println(s"\n\n\n\n ETMP $etmpResponseJson")
-println(s"\n\n\n\n TRANSFORMED $transformed")
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
           def membersUAPath(i: Int): JsLookupResult = transformedJson \ "chargeDDetails" \ "members" \ i
 

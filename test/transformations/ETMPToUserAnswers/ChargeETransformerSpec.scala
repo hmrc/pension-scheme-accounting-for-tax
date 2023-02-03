@@ -16,6 +16,7 @@
 
 package transformations.ETMPToUserAnswers
 
+import helpers.DateHelper.getQuarterStartDate
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
@@ -23,6 +24,7 @@ import play.api.libs.json.{JsLookupResult, JsObject}
 import transformations.generators.AFTETMPResponseGenerators
 
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
@@ -31,6 +33,11 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     case Some("No") => Some(false)
     case _ => None
   }
+
+  private val dateFormatterYMD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+  private def formatDateDMYString(date: String): LocalDate = LocalDate.parse(date, dateFormatterYMD).atStartOfDay().toLocalDate
+
   "A Charge E Transformer" - {
     "must transform ChargeEDetails from ETMP ChargeEDetails to UserAnswers" in {
       forAll(chargeEETMPGenerator) {
@@ -72,17 +79,26 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
                    (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
                  (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "chargeAmountReported").as[BigDecimal] mustBe
                    (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
-                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \"taxYearReportedAndPaid" \ "endDate").as[String] mustBe
-                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForAac").as[String]
+                 val date = (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForAac").as[String]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "taxYearReportedAndPaidPage").as[String] mustBe
+                   formatDateDMYString(date).getYear.toString
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "taxQuarterReportedAndPaid" \ "startDate").as[String] mustBe
+                   getQuarterStartDate(formatDateDMYString(date).toString)
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "taxQuarterReportedAndPaid" \ "endDate").as[String] mustBe
+                   formatDateDMYString(date).toString
                  (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
 
                case Some(false) =>
                  (membersUAPath(0) \ "mccloudRemedy" \ "chargeAmountReported").as[BigDecimal] mustBe
                    (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
-                 (membersUAPath(0) \ "mccloudRemedy" \ "taxYearReportedAndPaid" \ "endDate").as[String] mustBe
-                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForAac").as[String]
+                 val date = (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForAac").as[String]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "taxYearReportedAndPaidPage").as[String] mustBe
+                   formatDateDMYString(date).getYear.toString
+                 (membersUAPath(0) \ "mccloudRemedy" \ "taxQuarterReportedAndPaid" \ "startDate").as[String] mustBe
+                   getQuarterStartDate(formatDateDMYString(date).toString)
+                 (membersUAPath(0) \ "mccloudRemedy" \ "taxQuarterReportedAndPaid" \ "endDate").as[String] mustBe
+                   formatDateDMYString(date).toString
                  (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
-
                case None =>
                  (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe false
              }
