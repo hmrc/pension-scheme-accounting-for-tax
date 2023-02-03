@@ -16,7 +16,7 @@
 
 package transformations.ETMPToUserAnswers
 
-import helpers.DateHelper.{extractTaxYear, getQuarterStartDate}
+import helpers.DateHelper.{McCloudExtractTaxYear, getQuarterStartDate}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
@@ -31,7 +31,7 @@ trait McCloudJsonTransformer extends JsonTransformer {
 
   private def readsScheme(isOtherSchemesNodeName: String, amountNodeName: String, repoPeriodNodeName: String): Reads[JsObject] = {
     def readsDateAndChargeAmount(endDate: String): Reads[JsObject] = (
-      (__ \ "taxYearReportedAndPaidPage").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).json.pick.map(extractTaxYear)) and
+      (__ \ "taxYearReportedAndPaidPage").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).json.pick.map(McCloudExtractTaxYear)) and
         (__ \ "taxQuarterReportedAndPaid" \ "startDate").json.copyFrom(Reads.pure(JsString(getQuarterStartDate(endDate)))) and
         (__ \ "taxQuarterReportedAndPaid" \ "endDate").json.copyFrom(Reads.pure(JsString(endDate))) and
         (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ amountNodeName).json.pick)
@@ -46,7 +46,7 @@ trait McCloudJsonTransformer extends JsonTransformer {
             val readsSchemeArray = (0 until max).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
               (__ \ "pensionSchemeDetails" \ curr \ repoPeriodNodeName).read[String].flatMap { endDate =>
                 val currentJsObj = (readsDateAndChargeAmount(endDate) and
-                  (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)).reduce orElse doNothing
+                  (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)).reduce
                 acc.flatMap(jsArray => currentJsObj.map(jsObject => jsArray :+ jsObject))
               }
             }

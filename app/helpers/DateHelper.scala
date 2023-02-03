@@ -18,7 +18,7 @@ package helpers
 
 import play.api.libs.json.{JsString, JsValue}
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 object DateHelper {
@@ -36,9 +36,7 @@ object DateHelper {
   }
 
   val dateFormatterYMD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-  def formatDateDMYString(date: String): LocalDateTime = LocalDate.parse(date, dateFormatterYMD).atStartOfDay()
-
-  val extractTaxYear: JsValue => JsString = dateString => JsString(formatDateDMYString(dateString.as[JsString].value).getYear.toString)
+  def formatDateDMYString(date: String): LocalDate = LocalDate.parse(date, dateFormatterYMD).atStartOfDay().toLocalDate
+  val McCloudExtractTaxYear: JsValue => JsString = dateString => JsString(formatDateDMYString(dateString.as[JsString].value).getYear.toString)
 
 }
