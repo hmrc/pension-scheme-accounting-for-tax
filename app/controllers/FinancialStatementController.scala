@@ -103,7 +103,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       val maybeCreditChargeType = (schemeFSDetail.chargeType, schemeFSDetail.amountDue < 0) match {
         case (aftReturn.value, true) => aftReturnCredit.value
         case (otcAftReturn.value, true) => otcAftReturnCredit.value
-        case (otcAftReturn.value, true) => otcAftReturnCredit.value
+        case (aftManualAssessment.value, true) => aftManualAssessmentCredit.value
         case (otcManualAssessment.value, true) => otcManualAssessmentCredit.value
         case _ => schemeFSDetail.chargeType
       }

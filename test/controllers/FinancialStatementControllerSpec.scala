@@ -151,7 +151,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithNoAFTDetails)
     }
 
-    "return OK when the details are returned based on pstr and aft details exist, charge flipped to credit" in {
+    "return OK when the details are returned based on pstr and aft details exist, AFT return Charge flip to credit" in {
       val receiptDateFromIF = "2020-12-12T09:30:47Z"
       val aftDetailsJson = Json.obj(
         "aftDetails" -> Json.obj(
@@ -164,12 +164,75 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       val controller = application.injector.instanceOf[FinancialStatementController]
 
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
-        Future.successful(schemeModelForChargeTypeFlipToCredit))
+        Future.successful(schemeModelForFlipToAftReturnCredit))
 
       val result = controller.schemeStatement()(fakeRequestWithPstr)
 
       status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateToCredit)
+      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateToAftReturnCredit)
+    }
+
+    "return OK when the details are returned based on pstr and aft details exist, OTC Transfer Charge flip to credit" in {
+      val receiptDateFromIF = "2020-12-12T09:30:47Z"
+      val aftDetailsJson = Json.obj(
+        "aftDetails" -> Json.obj(
+          "aftVersion" -> 2,
+          "receiptDate" -> Json.toJson(receiptDateFromIF)
+        )
+      )
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModelForFlipToOtcTransferCredit))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateToOtcTransferCredit)
+    }
+
+    "return OK when the details are returned based on pstr and aft details exist, AFT Manual Assessment Charge flip to credit" in {
+      val receiptDateFromIF = "2020-12-12T09:30:47Z"
+      val aftDetailsJson = Json.obj(
+        "aftDetails" -> Json.obj(
+          "aftVersion" -> 2,
+          "receiptDate" -> Json.toJson(receiptDateFromIF)
+        )
+      )
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModelForFlipToAftManualAssessmentCredit))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateToAftManualAssessmentCredit)
+    }
+
+    "return OK when the details are returned based on pstr and aft details exist, OTC Manual Assessment Charge flip to credit" in {
+      val receiptDateFromIF = "2020-12-12T09:30:47Z"
+      val aftDetailsJson = Json.obj(
+        "aftDetails" -> Json.obj(
+          "aftVersion" -> 2,
+          "receiptDate" -> Json.toJson(receiptDateFromIF)
+        )
+      )
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModelForFlipToOtcManualAssessmentCredit))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateToOtcManualAssessmentCredit)
     }
 
     "throw BadRequestException when PSTR is not present in the header" in {
@@ -246,7 +309,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "Accounting for tax return",
+        chargeType = "Accounting for Tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -266,7 +329,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "Accounting for tax return",
+        chargeType = "Accounting for Tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -288,7 +351,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "Accounting for tax return",
+        chargeType = "Accounting for Tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -304,13 +367,13 @@ object FinancialStatementControllerSpec {
     )
   )
 
-  private val schemeModelForChargeTypeFlipToCredit: SchemeFS = SchemeFS(
+  private val schemeModelForFlipToAftReturnCredit: SchemeFS = SchemeFS(
     inhibitRefundSignal = false,
     seqSchemeFSDetail = Seq(
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "Accounting for tax return",
+        chargeType = "Accounting for Tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = -1029.05,
@@ -324,21 +387,147 @@ object FinancialStatementControllerSpec {
     )
   )
 
-  private val schemeModelAfterUpdateToCredit: SchemeFS = SchemeFS(
+  private val schemeModelAfterUpdateToAftReturnCredit: SchemeFS = SchemeFS(
     inhibitRefundSignal = false,
     seqSchemeFSDetail = Seq(
       SchemeFSDetail(
         index = 0,
         chargeReference = "XY002610150184",
-        chargeType = "Accounting for tax return credit",
+        chargeType = "Accounting for Tax return credit",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = -1029.05,
         outstandingAmount = 56049.08,
         accruedInterestTotal = 100.05,
         formBundleNumber = Some("ww"),
-        version = None,
-        receiptDate = None,
+        version = Some(2),
+        receiptDate = Some(LocalDate.parse("2020-12-12")),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val schemeModelForFlipToOtcTransferCredit: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = s"XY002610150184",
+        chargeType = "Overseas transfer charge",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val schemeModelAfterUpdateToOtcTransferCredit: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = "XY002610150184",
+        chargeType = "Overseas transfer charge credit",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        version = Some(2),
+        receiptDate = Some(LocalDate.parse("2020-12-12")),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val schemeModelForFlipToAftManualAssessmentCredit: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = s"XY002610150184",
+        chargeType = "Accounting for Tax return manual assessment",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val schemeModelAfterUpdateToAftManualAssessmentCredit: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = "XY002610150184",
+        chargeType = "Accounting for Tax return manual assessment credit",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        version = Some(2),
+        receiptDate = Some(LocalDate.parse("2020-12-12")),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val schemeModelForFlipToOtcManualAssessmentCredit: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = s"XY002610150184",
+        chargeType = "Overseas transfer charge manual assessment",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val schemeModelAfterUpdateToOtcManualAssessmentCredit: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = "XY002610150184",
+        chargeType = "Overseas transfer charge manual assessment credit",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        version = Some(2),
+        receiptDate = Some(LocalDate.parse("2020-12-12")),
         stoodOverAmount = 25089.08,
         periodStartDate = Some(LocalDate.parse("2020-04-01")),
         periodEndDate = Some(LocalDate.parse("2020-06-30"))
