@@ -235,6 +235,29 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateToOtcManualAssessmentCredit)
     }
 
+    "schemeStatement" must {
+      val receiptDateFromIF = "2020-12-12T09:30:47Z"
+      val aftDetailsJson = Json.obj(
+        "aftDetails" -> Json.obj(
+          "aftVersion" -> 2,
+          "receiptDate" -> Json.toJson(receiptDateFromIF)
+        )
+      )
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
+      val controller = application.injector.instanceOf[FinancialStatementController]
+      xyz.foreach { c =>
+        s"return OK when the details are returned based on pstr and aft details exist, Flip charges to credit if negative amountDue for $c" in {
+          val d = c._1
+          val e = c._2
+          when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+            Future.successful(d))
+          val result = controller.schemeStatement()(fakeRequestWithPstr)
+          status(result) mustBe OK
+          contentAsJson(result) mustBe Json.toJson(e)
+        }
+      }
+    }
+
     "throw BadRequestException when PSTR is not present in the header" in {
 
       val controller = application.injector.instanceOf[FinancialStatementController]
@@ -533,6 +556,12 @@ object FinancialStatementControllerSpec {
         periodEndDate = Some(LocalDate.parse("2020-06-30"))
       )
     )
+  )
+  private val xyz = List(
+    (schemeModelForFlipToAftReturnCredit, schemeModelAfterUpdateToAftReturnCredit),
+    (schemeModelForFlipToOtcTransferCredit, schemeModelAfterUpdateToOtcTransferCredit),
+    (schemeModelForFlipToAftManualAssessmentCredit, schemeModelAfterUpdateToAftManualAssessmentCredit),
+    (schemeModelForFlipToOtcManualAssessmentCredit, schemeModelAfterUpdateToOtcManualAssessmentCredit)
   )
 }
 
