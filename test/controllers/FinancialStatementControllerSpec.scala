@@ -151,6 +151,27 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithNoAFTDetails)
     }
 
+    "return OK when the details are returned based on pstr and aft details exist, charge flipped to credit" in {
+      val receiptDateFromIF = "2020-12-12T09:30:47Z"
+      val aftDetailsJson = Json.obj(
+        "aftDetails" -> Json.obj(
+          "aftVersion" -> 2,
+          "receiptDate" -> Json.toJson(receiptDateFromIF)
+        )
+      )
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
+
+      val controller = application.injector.instanceOf[FinancialStatementController]
+
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModelForChargeTypeFlipToCredit))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateToCredit)
+    }
+
     "throw BadRequestException when PSTR is not present in the header" in {
 
       val controller = application.injector.instanceOf[FinancialStatementController]
@@ -225,7 +246,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "PSS AFT Return",
+        chargeType = "Accounting for tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -245,7 +266,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "PSS AFT Return",
+        chargeType = "Accounting for tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -267,10 +288,52 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "PSS AFT Return",
+        chargeType = "Accounting for tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        version = None,
+        receiptDate = None,
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val schemeModelForChargeTypeFlipToCredit: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = s"XY002610150184",
+        chargeType = "Accounting for tax return",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val schemeModelAfterUpdateToCredit: SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = "XY002610150184",
+        chargeType = "Accounting for tax return credit",
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
         outstandingAmount = 56049.08,
         accruedInterestTotal = 100.05,
         formBundleNumber = Some("ww"),
