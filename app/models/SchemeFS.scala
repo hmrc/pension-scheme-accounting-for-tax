@@ -217,6 +217,8 @@ object SchemeChargeType extends Enumeration {
   val contractSettlement: TypeValue = TypeValue("56901000", "Contract settlement charge")
   val contractSettlementInterest: TypeValue = TypeValue("56952000", "Contract settlement interest charge")
   val repaymentInterest: TypeValue = TypeValue("56962925", "Repayment interest")
+  val pssLtaDischargeAssessment: TypeValue = TypeValue("56971000", "PSS LTA Discharge Assessment")
+  val pssLtaDischargeAssessmentInterest: TypeValue = TypeValue("56982000", "Interest on PSS LTA Discharge Assessment")
   val excessReliefPaidCharge: TypeValue = TypeValue("57701000", "Excess relief paid charge")
   val excessReliefIntCharge: TypeValue = TypeValue("57751000", "Interest on excess relief charge")
 
