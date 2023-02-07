@@ -55,6 +55,7 @@ class AftBatchedDataCacheRepositorySpec
   var aftBatchedDataCacheRepository: AftBatchedDataCacheRepository = _
 
   override def beforeAll(): Unit = {
+    reset(mockAppConfig)
     when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
     when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
     when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(collectionName)
