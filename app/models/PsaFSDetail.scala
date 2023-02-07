@@ -206,6 +206,12 @@ object PsaChargeType extends Enumeration {
   val contractSettlementInterest: TypeValue = TypeValue("58052000", "Contract settlement interest")
   val repaymentInterest: TypeValue = TypeValue("57962925", "Repayment Interest")
   val paymentOnAccount: TypeValue = TypeValue("00600100", "Payment on account")
+  val ssc30DayLpp: TypeValue = TypeValue("57501080", "SSC 30 day LPP")
+  val ssc6MonthLpp: TypeValue = TypeValue("57501091", "SSC 6 month LPP")
+  val ssc12MonthLpp: TypeValue = TypeValue("57501092", "SSC 12 month LPP")
+  val ltaDischargeAssessment30DayLpp: TypeValue = TypeValue("56991080", "LTA discharge assessment 30 day LPP")
+  val ltaDischargeAssessment6MonthLpp: TypeValue = TypeValue("56991091", "LTA discharge assessment 6 month LPP")
+  val ltaDischargeAssessment12MonthLpp: TypeValue = TypeValue("56991092", "LTA discharge assessment 12 month LPP")
 
   def valueWithName(name: String): String = {
     withName(name).asInstanceOf[TypeValue].value
