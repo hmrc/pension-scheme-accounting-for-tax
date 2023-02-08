@@ -16,6 +16,7 @@
 
 package transformations.ETMPToUserAnswers
 
+import helpers.DateHelper.{formatDateDMYString, getQuarterStartDate}
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
@@ -25,6 +26,12 @@ import transformations.generators.AFTETMPResponseGenerators
 import java.time.LocalDate
 
 class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
+
+  private def optYesNoToOptBoolean(yesNo: Option[String]): Option[Boolean] = yesNo match {
+    case Some("Yes") => Some(true)
+    case Some("No") => Some(false)
+    case _ => None
+  }
 
   "A Charge E Transformer" - {
     "must transform ChargeEDetails from ETMP ChargeEDetails to UserAnswers" in {
@@ -49,6 +56,44 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
 
 
           (membersUAPath(0) \ "annualAllowanceYear").as[Int] mustBe (membersETMPPath(0) \ "taxYearEnding").as[Int]
+
+          val isMcCloudRem = (membersUAPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").asOpt[Boolean]
+         isMcCloudRem match {
+           case Some(true) =>
+             val areMorePensions = (membersUAPath(0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").asOpt[Boolean]
+             areMorePensions mustBe optYesNoToOptBoolean((membersETMPPath(0) \ "orChgPaidbyAnoPS").asOpt[String])
+             areMorePensions match {
+               case Some(true) =>
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "pstr").as[String] mustBe
+                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "pstr").as[String]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "chargeAmountReported").as[BigDecimal] mustBe
+                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
+                 val date = (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForAac").as[String]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "taxYearReportedAndPaidPage").as[String] mustBe
+                   formatDateDMYString(date).getYear.toString
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "taxQuarterReportedAndPaid" \ "startDate").as[String] mustBe
+                   getQuarterStartDate(formatDateDMYString(date).toString)
+                 (membersUAPath(0) \ "mccloudRemedy" \ "schemes" \ 0 \ "taxQuarterReportedAndPaid" \ "endDate").as[String] mustBe
+                   formatDateDMYString(date).toString
+                 (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
+
+               case Some(false) =>
+                 (membersUAPath(0) \ "mccloudRemedy" \ "chargeAmountReported").as[BigDecimal] mustBe
+                   (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "amtOrRepAaChg").as[BigDecimal]
+                 val date = (membersETMPPath(0) \ "pensionSchemeDetails" \ 0 \ "repPeriodForAac").as[String]
+                 (membersUAPath(0) \ "mccloudRemedy" \ "taxYearReportedAndPaidPage").as[String] mustBe
+                   formatDateDMYString(date).getYear.toString
+                 (membersUAPath(0) \ "mccloudRemedy" \ "taxQuarterReportedAndPaid" \ "startDate").as[String] mustBe
+                   getQuarterStartDate(formatDateDMYString(date).toString)
+                 (membersUAPath(0) \ "mccloudRemedy" \ "taxQuarterReportedAndPaid" \ "endDate").as[String] mustBe
+                   formatDateDMYString(date).toString
+                 (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe true
+               case None =>
+                 (membersUAPath(0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean] mustBe false
+             }
+           case Some(false) => (membersETMPPath(0) \ "anAllowanceChgPblSerRem").asOpt[String] mustBe Some("No")
+           case _ => (membersETMPPath(0) \ "anAllowanceChgPblSerRem").asOpt[String] mustBe None
+         }
 
           (transformedJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
             (etmpResponseJson \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal]
