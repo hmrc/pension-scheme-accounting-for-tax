@@ -219,9 +219,6 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   private def booleanToYesNo(flag:Boolean) = if (flag) JsString("Yes") else JsString("No")
 
-  //isPSRNodeName = "lfAllowanceChgPblSerRem", isOtherSchemesNodeName = "orLfChgPaidbyAnoPS",
-  //        amountNodeName = "amtOrRepLtaChg", repoPeriodNodeName = "repPeriodForLtac"
-
   private def mccloudRemedy(isPSRNodeName: String, isOtherSchemesNodeName: String,
                             amountNodeName : String, repoPeriodNodeName : String): Gen[JsObject] = {
     for {
@@ -231,17 +228,6 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       schemes <- genSeqOfSchemes(howManySchemes, optWasAnotherPensionScheme.getOrElse(false), isPublicServicePensionsRemedy,
         amountNodeName: String, repoPeriodNodeName: String )
     } yield {
-//      val additionalSchemes = if (isPublicServicePensionsRemedy) {
-//        optWasAnotherPensionScheme match {
-//          case Some(x) =>  Json.obj(isOtherSchemesNodeName -> booleanToYesNo(x)) ++ schemes
-//          case None => Json.obj()
-//        }
-//      } else {
-//        Json.obj()
-//      }
-//      Json.obj(
-//        isPSRNodeName -> booleanToYesNo(isPublicServicePensionsRemedy)
-//      ) ++ additionalSchemes
     (isPublicServicePensionsRemedy, optWasAnotherPensionScheme) match {
             case (Some(true), Some(x)) =>
               Json.obj(isOtherSchemesNodeName -> booleanToYesNo(x)) ++ schemes ++
