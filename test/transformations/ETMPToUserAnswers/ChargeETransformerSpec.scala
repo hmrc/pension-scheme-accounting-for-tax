@@ -57,12 +57,6 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
 
           (membersUAPath(0) \ "annualAllowanceYear").as[Int] mustBe (membersETMPPath(0) \ "taxYearEnding").as[Int]
 
-          /*
-          isPSRNodeName = "anAllowanceChgPblSerRem", isOtherSchemesNodeName = "orChgPaidbyAnoPS",
-                  amountNodeName = "amtOrRepAaChg", repoPeriodNodeName = "repPeriodForAac"
-           */
-
-
           val isMcCloudRem = (membersUAPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").asOpt[Boolean]
          isMcCloudRem match {
            case Some(true) =>
