@@ -52,8 +52,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
 
   def getAftDetailsUrl = s"$ifURL${config.get[String](path = "serviceUrls.get-aft-details")}"
 
-  def getAftFbnDetailsUrl = s"$ifURL${config.get[String](path = "serviceUrls.get-aft-details-fbNumber")}"
-
   def getAftVersionUrl = s"$ifURL${config.get[String](path = "serviceUrls.get-aft-version")}"
 
   def psaFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.psa-financial-statement")}"
