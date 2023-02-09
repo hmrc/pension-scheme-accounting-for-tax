@@ -119,7 +119,6 @@ class AFTConnector @Inject()(
     val getAftUrl: String = config.getAftDetailsUrl.format(pstr)
     val headers = integrationFrameworkHeader :+ "quarterStartDate" -> startDate :+ "aftVersion" -> aftVersion
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headers: _*)
-
     http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
       response =>
         response.status match {
