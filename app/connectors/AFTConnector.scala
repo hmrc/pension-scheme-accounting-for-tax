@@ -116,7 +116,8 @@ class AFTConnector @Inject()(
   def getAftDetails(pstr: String, startDate: String, aftVersion: String)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[JsValue] = {
 
-    val getAftUrl: String = config.getAftDetailsUrl.format(pstr, startDate, aftVersion)
+    val getAftUrl: String = config.getAftDetailsUrl.format(pstr)
+    val headers = integrationFrameworkHeader :+ "quarterStartDate" -> startDate :+ "aftVersion" -> aftVersion
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
 
     http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
