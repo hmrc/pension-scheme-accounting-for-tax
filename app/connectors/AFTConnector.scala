@@ -116,9 +116,9 @@ class AFTConnector @Inject()(
   def getAftDetails(pstr: String, startDate: String, aftVersion: String)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[JsValue] = {
 
-    val getAftUrl: String = config.getAftDetailsUrl.format(pstr, startDate, aftVersion)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
-
+    val getAftUrl: String = config.getAftDetailsUrl.format(pstr)
+    val headers = integrationFrameworkHeader :+ "quarterStartDate" -> startDate :+ "aftVersion" -> aftVersion
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headers: _*)
     http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
       response =>
         response.status match {
@@ -131,8 +131,9 @@ class AFTConnector @Inject()(
   def getAftDetails(pstr: String, fbNumber: String)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Option[JsValue]] = {
 
-    val getAftUrl: String = config.getAftFbnDetailsUrl.format(pstr, fbNumber)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
+    val getAftUrl: String = config.getAftDetailsUrl.format(pstr)
+    val headers = integrationFrameworkHeader :+ "fbNumber" -> fbNumber
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headers: _*)
 
     http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
       response =>
@@ -148,7 +149,7 @@ class AFTConnector @Inject()(
                     (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[AFTVersion]] = {
 
     val getAftVersionUrl: String = config.getAftVersionUrl.format(pstr, startDate)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = desHeader: _*)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
 
     http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map {
       response =>
@@ -164,15 +165,6 @@ class AFTConnector @Inject()(
             handleErrorResponse("GET", getAftVersionUrl)(response)
         }
     } andThen aftVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate)
-  }
-
-  private def desHeader: Seq[(String, String)] = {
-    Seq(
-      "Environment" -> config.desEnvironment,
-      "Authorization" -> config.authorization,
-      "Content-Type" -> "application/json",
-      "CorrelationId" -> headerUtils.getCorrelationId
-    )
   }
 
   private def integrationFrameworkHeader: Seq[(String, String)] = {
