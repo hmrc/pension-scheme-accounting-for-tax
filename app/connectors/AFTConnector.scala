@@ -131,8 +131,9 @@ class AFTConnector @Inject()(
   def getAftDetails(pstr: String, fbNumber: String)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Option[JsValue]] = {
 
-    val getAftUrl: String = config.getAftFbnDetailsUrl.format(pstr, fbNumber)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
+    val getAftUrl: String = config.getAftFbnDetailsUrl.format(pstr)
+    val headers = integrationFrameworkHeader :+ "fbNumber" -> fbNumber
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headers: _*)
 
     http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
       response =>
