@@ -42,7 +42,8 @@ object FeatureToggleName {
 
   implicit val reads: Reads[FeatureToggleName] = Reads {
     case JsString(DummyToggle.asString) => JsSuccess(DummyToggle)
-    case _ => JsError("Unrecognised feature toggle name")
+    case JsString(s) => JsError(s"Unrecognised feature toggle name: $s")
+    case _ => JsError(s"Unrecognised feature toggle name")
   }
 
   implicit val writes: Writes[FeatureToggleName] =
