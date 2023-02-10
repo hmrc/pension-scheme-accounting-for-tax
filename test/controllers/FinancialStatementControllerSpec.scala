@@ -116,17 +116,19 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
   "schemeStatement" must {
 
-    "return OK when the details are returned based on pstr and aft details exist" in {
-      val receiptDateFromIF = "2020-12-12T09:30:47Z"
-      val aftDetailsJson = Json.obj(
-        "aftDetails" -> Json.obj(
-          "aftVersion" -> 2,
-          "receiptDate" -> Json.toJson(receiptDateFromIF)
-        )
+    val receiptDateFromIF = "2020-12-12T09:30:47Z"
+    val aftDetailsJson = Json.obj(
+      "aftDetails" -> Json.obj(
+        "aftVersion" -> 2,
+        "receiptDate" -> Json.toJson(receiptDateFromIF)
       )
-      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
+    )
 
-      val controller = application.injector.instanceOf[FinancialStatementController]
+    val controller = application.injector.instanceOf[FinancialStatementController]
+
+    "return OK when the details are returned based on pstr and aft details exist" in {
+
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
 
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModel))
@@ -140,8 +142,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     "return OK when the details are returned based on pstr and aft details don't exist" in {
       when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(None))
 
-      val controller = application.injector.instanceOf[FinancialStatementController]
-
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModel))
 
@@ -151,9 +151,22 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithNoAFTDetails)
     }
 
-    "throw BadRequestException when PSTR is not present in the header" in {
+    "updateChargeType" must {
 
-      val controller = application.injector.instanceOf[FinancialStatementController]
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(None))
+      listOfChargesAndAssociatedCredits.foreach { pairOfChargeAndCredit =>
+        val (charge, credit) = pairOfChargeAndCredit
+        s"flip ${charge.seqSchemeFSDetail.head.chargeType} to ${credit.seqSchemeFSDetail.head.chargeType} if negative amountDue" in {
+          when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+            Future.successful(charge))
+          val result = controller.schemeStatement()(fakeRequestWithPstr)
+          status(result) mustBe OK
+          contentAsJson(result) mustBe Json.toJson(credit)
+        }
+      }
+    }
+
+    "throw BadRequestException when PSTR is not present in the header" in {
 
       recoverToExceptionIf[BadRequestException] {
         controller.schemeStatement()(fakeRequest)
@@ -164,8 +177,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     }
 
     "throw generic exception when any other exception returned from Des" in {
-
-      val controller = application.injector.instanceOf[FinancialStatementController]
 
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.failed(new Exception("Generic Exception")))
@@ -179,7 +190,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
     "throw Unauthorised Exception when there is external id is not present in auth" in {
       when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
-      val controller = application.injector.instanceOf[FinancialStatementController]
 
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModel))
@@ -225,7 +235,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "PSS AFT Return",
+        chargeType = "Accounting for Tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -245,7 +255,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "PSS AFT Return",
+        chargeType = "Accounting for Tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -267,7 +277,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "PSS AFT Return",
+        chargeType = "Accounting for Tax return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -281,6 +291,53 @@ object FinancialStatementControllerSpec {
         periodEndDate = Some(LocalDate.parse("2020-06-30"))
       )
     )
+  )
+
+  private def schemeModelForFlipToCredit(charge: String): SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = s"XY002610150184",
+        chargeType = charge,
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private def schemeModelAfterUpdateToCredit(credit: String): SchemeFS = SchemeFS(
+    inhibitRefundSignal = false,
+    seqSchemeFSDetail = Seq(
+      SchemeFSDetail(
+        index = 0,
+        chargeReference = "XY002610150184",
+        chargeType = credit,
+        dueDate = Some(LocalDate.parse("2020-02-15")),
+        totalAmount = 80000.00,
+        amountDue = -1029.05,
+        outstandingAmount = 56049.08,
+        accruedInterestTotal = 100.05,
+        formBundleNumber = Some("ww"),
+        stoodOverAmount = 25089.08,
+        periodStartDate = Some(LocalDate.parse("2020-04-01")),
+        periodEndDate = Some(LocalDate.parse("2020-06-30"))
+      )
+    )
+  )
+
+  private val listOfChargesAndAssociatedCredits = Seq(
+    (schemeModelForFlipToCredit("Accounting for Tax return"), schemeModelAfterUpdateToCredit("Accounting for Tax return credit")),
+    (schemeModelForFlipToCredit("Overseas transfer charge"), schemeModelAfterUpdateToCredit("Overseas transfer charge credit")),
+    (schemeModelForFlipToCredit("Accounting for Tax return manual assessment"), schemeModelAfterUpdateToCredit("Accounting for Tax return manual assessment credit")),
+    (schemeModelForFlipToCredit("Overseas transfer charge manual assessment"), schemeModelAfterUpdateToCredit("Overseas transfer charge manual assessment credit"))
   )
 }
 

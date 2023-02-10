@@ -204,13 +204,17 @@ object SchemeChargeType extends Enumeration {
   sealed case class TypeValue(name: String, value: String) extends Val(name)
 
   val aftReturn: TypeValue = TypeValue("56001000", "Accounting for Tax return")
+  val aftReturnCredit: TypeValue = TypeValue("56002930", "Accounting for Tax return credit")
   val aftReturnInterest: TypeValue = TypeValue("56052000", "Interest on Accounting for Tax return")
   val otcAftReturn: TypeValue = TypeValue("56101000", "Overseas transfer charge")
+  val otcAftReturnCredit: TypeValue = TypeValue("56102930", "Overseas transfer charge credit")
   val otcAftReturnInterest: TypeValue = TypeValue("56152000", "Interest on overseas transfer charge")
   val paymentOnAccount: TypeValue = TypeValue("00600100", "Payment on account")
   val aftManualAssessment: TypeValue = TypeValue("56201000", "Accounting for Tax return manual assessment")
+  val aftManualAssessmentCredit: TypeValue = TypeValue("56202930", "Accounting for Tax return manual assessment credit")
   val aftManualAssessmentInterest: TypeValue = TypeValue("56252000", "Interest on Accounting for Tax return manual assessment")
   val otcManualAssessment: TypeValue = TypeValue("56301000", "Overseas transfer charge manual assessment")
+  val otcManualAssessmentCredit: TypeValue = TypeValue("56302930", "Overseas transfer charge manual assessment credit")
   val otcManualAssessmentInterest: TypeValue = TypeValue("56352000", "Interest on overseas transfer charge manual assessment")
   val pssCharge: TypeValue = TypeValue("56701000", "Pensions charge")
   val pssChargeInterest: TypeValue = TypeValue("56752000", "Interest on pensions charge")
@@ -219,6 +223,15 @@ object SchemeChargeType extends Enumeration {
   val repaymentInterest: TypeValue = TypeValue("56962925", "Repayment interest")
   val excessReliefPaidCharge: TypeValue = TypeValue("57701000", "Excess relief paid charge")
   val excessReliefIntCharge: TypeValue = TypeValue("57751000", "Interest on excess relief charge")
+  val pssSchemeSanctionCharge: TypeValue = TypeValue("56401000", "Scheme sanction charge")
+  val pssSchemeSanctionCreditCharge: TypeValue = TypeValue("56402930", "Scheme sanction credit charge")
+  val pssSchemeSanctionChargeInterest: TypeValue = TypeValue("56452000", "Scheme sanction charge interest")
+  val pssManualSsc: TypeValue = TypeValue("56601000", "Manual SSC")
+  val pssManualCreditSsc: TypeValue = TypeValue("56602930", "Manual credit SSC")
+  val pssManualSchemeSanctionChargeInterest: TypeValue = TypeValue("56652000", "Manual scheme sanction charge interest")
+  val pssFixedChargeMembersTax: TypeValue = TypeValue("56501000", "Fixed charge members tax")
+  val pssFixedCreditChargeMembersTax: TypeValue = TypeValue("56502930", "Fixed credit charge members tax")
+  val pssManualFixedChargeMembersTax: TypeValue = TypeValue("57801000", "Manual fixed charge members tax")
 
   def valueWithName(name: String): String = {
     withName(name).asInstanceOf[TypeValue].value
