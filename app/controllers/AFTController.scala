@@ -136,6 +136,9 @@ class AFTController @Inject()(
     implicit request =>
       get { (pstr, startDate) =>
         withAFTVersion { aftVersion =>
+
+          logger.warn(s"CONTROLLER - GET AFT DETAILS CALLED: aftVersion: $aftVersion")
+
           aftConnector.getAftDetails(pstr, startDate, aftVersion).map {
             etmpJson =>
               etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
