@@ -112,7 +112,6 @@ class AFTController @Inject()(
       }
   }
 
-  //scalastyle:off cyclomatic.complexity
   def getOverview: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
@@ -136,18 +135,15 @@ class AFTController @Inject()(
   def getDetails: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
-        request.headers.get("aftVersion") match {
-          case Some(aftVer) =>
-            aftConnector.getAftDetails(pstr, startDate, aftVer).map {
-              etmpJson =>
-                etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
+        withAFTVersion { aftVersion =>
+          aftConnector.getAftDetails(pstr, startDate, aftVersion).map {
+            etmpJson =>
+              etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
 
-                  case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
-                  case JsError(errors) => throw JsResultException(errors)
-                }
-            }
-          case _ =>
-            Future.failed(new BadRequestException("Bad Request with no AFT version"))
+                case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
+                case JsError(errors) => throw JsResultException(errors)
+              }
+          }
         }
       }
   }
@@ -186,12 +182,10 @@ class AFTController @Inject()(
   def getIsChargeNonZero: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
-
-        val versionNumber: String = request.headers.get("aftVersion")
-          .getOrElse(throw new BadRequestException(s"Bad Request without aftVersion"))
-
-        isChargeNonZero(pstr, startDate, versionNumber).map { isNonZero =>
-          Ok(isNonZero.toString)
+        withAFTVersion { aftVersion =>
+          isChargeNonZero(pstr, startDate, aftVersion).map { isNonZero =>
+            Ok(isNonZero.toString)
+          }
         }
       }
   }
@@ -243,6 +237,18 @@ class AFTController @Inject()(
         }
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
+    }
+  }
+
+
+  private def withAFTVersion(block: String => Future[Result])
+                            (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+    request.headers.get("aftVersion") match {
+      case Some(version) =>
+        val aftVersion = ("00" + version).takeRight(3)
+        block(aftVersion)
+      case _ =>
+        Future.failed(new BadRequestException("Bad Request with no aft version"))
     }
   }
 }
