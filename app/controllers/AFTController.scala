@@ -163,17 +163,13 @@ class AFTController @Inject()(
       get { (pstr, startDate) =>
         aftConnector.getAftVersions(pstr, startDate).flatMap { aftVersions =>
           Future.sequence(aftVersions.map { version =>
-            aftConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map { detailsJs =>
-
+            aftConnector.getAftDetails(pstr, startDate, padVersion(version.reportVersion.toString)).map { detailsJs =>
               detailsJs.transform(aftDetailsTransformer.transformToUserAnswers) match {
-
                 case JsSuccess(userAnswersJson, _) =>
-
                   (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
                     case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
                     case JsError(_) => VersionsWithSubmitter(version, None)
                   }
-
                 case JsError(errors) => throw JsResultException(errors)
               }
             }
@@ -243,17 +239,16 @@ class AFTController @Inject()(
     }
   }
 
-
   private def withAFTVersion(block: String => Future[Result])
                             (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     request.headers.get("aftVersion") match {
-      case Some(version) =>
-        val aftVersion = ("00" + version).takeRight(3)
-        block(aftVersion)
+      case Some(version) => block(padVersion(version))
       case _ =>
         Future.failed(new BadRequestException("Bad Request with no aft version"))
     }
   }
+
+  private def padVersion(version: String): String = ("00" + version).takeRight(3)
 }
 
 case class AFTValidationFailureException(exMessage: String) extends Exception(exMessage)

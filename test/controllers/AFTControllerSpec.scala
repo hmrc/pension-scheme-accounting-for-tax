@@ -19,7 +19,7 @@ package controllers
 import audit.{AuditService, FileAftReturnSchemaValidator}
 import connectors.AFTConnector
 import models.enumeration.JourneyType
-import models.{AFTOverview, AFTOverviewVersion, AFTVersion}
+import models._
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, times, verify, when}
 import org.mockito.{ArgumentCaptor, ArgumentMatchers, Mockito}
@@ -410,6 +410,30 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         response.getMessage must include("INTERNAL SERVER ERROR")
         response.reportAs mustBe INTERNAL_SERVER_ERROR
       }
+    }
+  }
+
+  "getVersionsWithSubmitter" must {
+    "return OK and correct versions and submitters when valid versions/ aft details returned" in {
+      val controller = application.injector.instanceOf[AFTController]
+
+      when(mockAftConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
+        Future.successful(Seq(AFTVersion(1, LocalDate.now(), "submitted"))))
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq("001"))(any(), any(), any())).thenReturn(
+        Future.successful(etmpAFTDetailsResponse)
+      )
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
+
+      val result = controller.getVersionsWithSubmitter()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+
+      status(result) mustBe OK
+      val expectedVersionsWithSubmitter = Json.toJson(
+        Seq(VersionsWithSubmitter(
+          AFTVersion(1, LocalDate.now(), "submitted"),
+          Some(AFTSubmitterDetails("PSP", "Martin Brookes", "10000240", Some("A0003450"), LocalDate.of(2016, 12, 17)))
+        ))
+      )
+      contentAsJson(result) mustBe expectedVersionsWithSubmitter
     }
   }
 
