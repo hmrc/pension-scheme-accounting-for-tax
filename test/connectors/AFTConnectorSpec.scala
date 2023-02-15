@@ -71,6 +71,8 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
   private val startDt = "2020-01-01"
   private val endDate = "2021-06-30"
   private val aftSubmitUrl = s"/pension-online/$pstr/aft/return"
+  private val getAftDetailsUrl = s"/pension-online/$pstr/aft/details"
+
   private val getAftOverviewUrl = s"/pension-online/reports/overview/pods/$pstr/AFT?fromDate=$startDt&toDate=$endDate"
   private val testCorrelationId = "testCorrelationId"
   private val overview1 = AFTOverview(LocalDate.of(2020, 4, 1), LocalDate.of(2020, 6, 30),
@@ -87,6 +89,25 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
     super.beforeAll()
   }
 
+
+  "get aft details" must {
+
+    "return successfully when ETMP has returned OK when original aftVersion header in header carrier" in {
+      val hcWithAftVersion: HeaderCarrier = HeaderCarrier(otherHeaders = Seq("aftVersion" -> "1"))
+      val response = Json.obj("test" -> "value")
+      server.stubFor(
+        get(urlEqualTo(getAftDetailsUrl))
+          .withHeader("aftVersion", equalTo("001"))
+          .willReturn(
+            ok.withBody(Json.stringify(response))
+          )
+      )
+
+      connector.getAftDetails(pstr, startDt, "001")(headerCarrier = hcWithAftVersion, implicitly, implicitly) map { jsValue =>
+        jsValue mustBe response
+      }
+    }
+  }
 
   "fileAFTReturn" must {
 
