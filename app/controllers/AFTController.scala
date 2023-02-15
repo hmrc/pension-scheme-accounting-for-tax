@@ -112,7 +112,6 @@ class AFTController @Inject()(
       }
   }
 
-  //scalastyle:off cyclomatic.complexity
   def getOverview: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
@@ -136,18 +135,18 @@ class AFTController @Inject()(
   def getDetails: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
-        request.headers.get("aftVersion") match {
-          case Some(aftVer) =>
-            aftConnector.getAftDetails(pstr, startDate, aftVer).map {
-              etmpJson =>
-                etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
+        withAFTVersion { aftVersion =>
 
-                  case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
-                  case JsError(errors) => throw JsResultException(errors)
-                }
-            }
-          case _ =>
-            Future.failed(new BadRequestException("Bad Request with no AFT version"))
+          logger.warn(s"CONTROLLER - GET AFT DETAILS CALLED: aftVersion: $aftVersion")
+
+          aftConnector.getAftDetails(pstr, startDate, aftVersion).map {
+            etmpJson =>
+              etmpJson.transform(aftDetailsTransformer.transformToUserAnswers) match {
+
+                case JsSuccess(userAnswersJson, _) => Ok(userAnswersJson)
+                case JsError(errors) => throw JsResultException(errors)
+              }
+          }
         }
       }
   }
@@ -164,17 +163,13 @@ class AFTController @Inject()(
       get { (pstr, startDate) =>
         aftConnector.getAftVersions(pstr, startDate).flatMap { aftVersions =>
           Future.sequence(aftVersions.map { version =>
-            aftConnector.getAftDetails(pstr, startDate, version.reportVersion.toString).map { detailsJs =>
-
+            aftConnector.getAftDetails(pstr, startDate, padVersion(version.reportVersion.toString)).map { detailsJs =>
               detailsJs.transform(aftDetailsTransformer.transformToUserAnswers) match {
-
                 case JsSuccess(userAnswersJson, _) =>
-
                   (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
                     case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
                     case JsError(_) => VersionsWithSubmitter(version, None)
                   }
-
                 case JsError(errors) => throw JsResultException(errors)
               }
             }
@@ -186,12 +181,10 @@ class AFTController @Inject()(
   def getIsChargeNonZero: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
-
-        val versionNumber: String = request.headers.get("aftVersion")
-          .getOrElse(throw new BadRequestException(s"Bad Request without aftVersion"))
-
-        isChargeNonZero(pstr, startDate, versionNumber).map { isNonZero =>
-          Ok(isNonZero.toString)
+        withAFTVersion { aftVersion =>
+          isChargeNonZero(pstr, startDate, aftVersion).map { isNonZero =>
+            Ok(isNonZero.toString)
+          }
         }
       }
   }
@@ -245,6 +238,17 @@ class AFTController @Inject()(
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
     }
   }
+
+  private def withAFTVersion(block: String => Future[Result])
+                            (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+    request.headers.get("aftVersion") match {
+      case Some(version) => block(padVersion(version))
+      case _ =>
+        Future.failed(new BadRequestException("Bad Request with no aft version"))
+    }
+  }
+
+  private def padVersion(version: String): String = ("00" + version).takeRight(3)
 }
 
 case class AFTValidationFailureException(exMessage: String) extends Exception(exMessage)
