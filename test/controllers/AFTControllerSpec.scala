@@ -617,7 +617,7 @@ object AFTControllerSpec {
       |          "line2": "Ironmasters Way",
       |          "line1": "Plaza 2 "
       |        },
-      |        "memberAFTVersion": "001",
+      |        "memberAFTVersion": 1,
       |        "chargeDetails": {
       |          "amountTaxDue": 2300.02,
       |          "paymentDate": "2020-10-18"
@@ -639,7 +639,7 @@ object AFTControllerSpec {
       |          "line2": "Post Box APTS",
       |          "line1": "45 UpperMarshall Street"
       |        },
-      |        "memberAFTVersion": "001",
+      |        "memberAFTVersion": 1,
       |        "chargeDetails": {
       |          "amountTaxDue": 12340.02,
       |          "paymentDate": "2020-10-28"
@@ -680,7 +680,7 @@ object AFTControllerSpec {
       |          "lastName": "Kenneth",
       |          "nino": "AA089000A"
       |        },
-      |        "memberAFTVersion": "001",
+      |        "memberAFTVersion": 1,
       |        "chargeDetails": {
       |          "dateOfEvent": "2020-10-18",
       |          "taxAt55Percent": 9.02,
@@ -694,7 +694,7 @@ object AFTControllerSpec {
       |          "lastName": "Lara",
       |          "nino": "AA100000A"
       |        },
-      |        "memberAFTVersion": "001",
+      |        "memberAFTVersion": 1,
       |        "chargeDetails": {
       |          "dateOfEvent": "2020-10-28",
       |          "taxAt55Percent": 10.02,
@@ -704,7 +704,7 @@ object AFTControllerSpec {
       |    ],
       |    "amendedVersion": 1
       |  },
-      |  "aftVersion": "002",
+      |  "aftVersion": 2,
       |  "schemeName": "Open Scheme Overview API Test 2",
       |  "aftStatus": "Submitted",
       |  "quarter": {
@@ -871,7 +871,7 @@ object AFTControllerSpec {
       |    }
       |  },
       |  "chargeDetails": {
-      |    "chargeTypeC": {
+      |    "chargeTypeCDetails": {
       |      "totalAmount": 90.02,
       |      "amendedVersion": 1,
       |      "memberDetails": [
@@ -887,7 +887,7 @@ object AFTControllerSpec {
       |          },
       |          "totalAmountOfTaxDue": 2300.02,
       |          "memberStatus": "New",
-      |          "memberAFTVersion": "001",
+      |          "memberAFTVersion": 1,
       |          "correspondenceAddressDetails": {
       |            "countryCode": "GB",
       |            "postalCode": "TF3 4NT",
@@ -910,7 +910,7 @@ object AFTControllerSpec {
       |          },
       |          "totalAmountOfTaxDue": 12340.02,
       |          "memberStatus": "New",
-      |          "memberAFTVersion": "001",
+      |          "memberAFTVersion": 1,
       |          "correspondenceAddressDetails": {
       |            "countryCode": "GB",
       |            "postalCode": "B1 1LA",
@@ -923,7 +923,7 @@ object AFTControllerSpec {
       |        }
       |      ]
       |    },
-      |    "chargeTypeD": {
+      |    "chargeTypeDDetails": {
       |      "totalAmount": 2345.02,
       |      "amendedVersion": 1,
       |      "memberDetails": [
@@ -937,7 +937,7 @@ object AFTControllerSpec {
       |          "memberStatus": "New",
       |          "lfAllowanceChgPblSerRem": "No",
       |          "totalAmtOfTaxDueAtLowerRate": 1.02,
-      |          "memberAFTVersion": "001",
+      |          "memberAFTVersion": 1,
       |          "dateOfBeneCrysEvent": "2020-10-18"
       |        },
       |        {
@@ -949,13 +949,13 @@ object AFTControllerSpec {
       |          },
       |          "memberStatus": "New",
       |          "totalAmtOfTaxDueAtLowerRate": 3.02,
-      |          "memberAFTVersion": "001",
+      |          "memberAFTVersion": 1,
       |          "lfAllowanceChgPblSerRem": "No",
       |          "dateOfBeneCrysEvent": "2020-10-28"
       |        }
       |      ]
       |    },
-      |    "chargeTypeA": {
+      |    "chargeTypeADetails": {
       |      "totalAmtOfTaxDueAtHigherRate": 2500.02,
       |      "totalAmount": 4500.04,
       |      "numberOfMembers": 2,
