@@ -65,9 +65,11 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     )
   }
 
+  private def padVersion(version: Int): String = ("00" + version.toString).takeRight(3)
+
   val aftDetailsGenerator: Gen[JsObject] =
     for {
-      aftVersion <- Gen.choose(1, 999)
+      aftVersion <- Gen.choose(1, 999).map(padVersion)
       aftStatus <- Gen.oneOf("Compiled", "Submitted")
       quarterStartDate <- dateGenerator
       quarterEndDate <- dateGenerator
@@ -133,7 +135,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     } yield {
       Json.obj(
         "memberStatus" -> memberStatus,
-        "memberAFTVersion" -> memberAFTVersion,
+        "memberAFTVersion" -> padVersion(memberAFTVersion),
         "memberTypeDetails" -> Json.obj(
           "memberType" -> "Individual",
           "individualDetails" -> individual
@@ -156,7 +158,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     } yield {
       Json.obj(
         "memberStatus" -> memberStatus,
-        "memberAFTVersion" -> memberAFTVersion,
+        "memberAFTVersion" -> padVersion(memberAFTVersion),
         "memberTypeDetails" -> Json.obj(
           "memberType" -> "Organisation",
           "comOrOrganisationName" -> comOrOrganisationName,
@@ -252,7 +254,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     } yield {
       Json.obj(
         "memberStatus" -> memberStatus,
-        "memberAFTVersion" -> memberAFTVersion,
+        "memberAFTVersion" -> padVersion(memberAFTVersion),
         "individualsDetails" -> individual,
         "dateOfBenefitCrystalizationEvent" -> dateOfBenefitCrystalizationEvent,
         "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
@@ -288,7 +290,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         amountNodeName = "amtOrRepAaChg", repoPeriodNodeName = "repPeriodForAac")
     } yield Json.obj(
       "memberStatus" -> memberStatus,
-      "memberAFTVersion" -> memberAFTVersion,
+      "memberAFTVersion" -> padVersion(memberAFTVersion),
       "individualsDetails" -> Json.obj(
         fields = "firstName" -> firstName,
         "lastName" -> lastName,
@@ -348,7 +350,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       amountTaxDue <- arbitrary[BigDecimal]
     } yield Json.obj(
       "memberStatus" -> memberStatus,
-      "memberAFTVersion" -> memberAFTVersion,
+      "memberAFTVersion" -> padVersion(memberAFTVersion),
       "individualsDetails" -> Json.obj(
         fields = "firstName" -> firstName,
         "lastName" -> lastName,

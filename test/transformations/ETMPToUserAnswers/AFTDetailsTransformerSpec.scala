@@ -197,7 +197,7 @@ object AFTDetailsTransformerSpec {
     """{
       |  "aftDetails": {
       |    "aftStatus": "Compiled",
-      |    "aftVersion": "1",
+      |    "aftVersion": "001",
       |    "quarterStartDate": "2019-01-01",
       |    "quarterEndDate": "2019-03-31",
       |    "receiptDate": "2016-12-17T09:30:47Z"
@@ -225,7 +225,7 @@ object AFTDetailsTransformerSpec {
       |      "memberDetails": [
       |        {
       |          "memberStatus": "New",
-      |          "memberAFTVersion": 2,
+      |          "memberAFTVersion": "002",
       |          "memberTypeDetails": {
       |            "memberType": "Individual",
       |            "individualDetails": {
@@ -254,7 +254,7 @@ object AFTDetailsTransformerSpec {
       |      "memberDetails": [
       |        {
       |          "memberStatus": "Changed",
-      |          "memberAFTVersion": 1,
+      |          "memberAFTVersion": "001",
       |          "individualsDetails": {
       |            "title": "Mr",
       |            "firstName": "Joy",
@@ -274,7 +274,7 @@ object AFTDetailsTransformerSpec {
       |      "memberDetails": [
       |        {
       |          "memberStatus": "New",
-      |          "memberAFTVersion": 3,
+      |          "memberAFTVersion": "003",
       |          "individualsDetails": {
       |            "firstName": "eFirstName",
       |            "lastName": "eLastName",
@@ -298,7 +298,7 @@ object AFTDetailsTransformerSpec {
       |      "memberDetails": [
       |        {
       |          "memberStatus": "Deleted",
-      |          "memberAFTVersion": 1,
+      |          "memberAFTVersion": "001",
       |          "individualsDetails": {
       |            "title": "Mr",
       |            "firstName": "Craig",
