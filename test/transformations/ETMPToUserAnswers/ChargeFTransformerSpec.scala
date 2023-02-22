@@ -31,7 +31,7 @@ class ChargeFTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
         etmpResponseJson =>
           val transformer = new ChargeFTransformer
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value \ "chargeFDetails"
-          val chargeFResponse = etmpResponseJson \ "chargeTypeFDetails"
+          val chargeFResponse = etmpResponseJson \ "chargeTypeF"
 
           (transformedJson \ "amendedVersion").as[Int] mustBe (chargeFResponse \ "amendedVersion").as[Int]
           (transformedJson \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe (chargeFResponse \ "totalAmount").as[BigDecimal]

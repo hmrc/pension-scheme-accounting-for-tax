@@ -207,19 +207,19 @@ object AFTDetailsTransformerSpec {
       |    "pstr": "1234"
       |  },
       |  "chargeDetails": {
-      |    "chargeTypeADetails": {
+      |    "chargeTypeA": {
       |      "amendedVersion": 1,
       |      "numberOfMembers": 2,
       |      "totalAmtOfTaxDueAtLowerRate": 200.02,
       |      "totalAmtOfTaxDueAtHigherRate": 200.02,
       |      "totalAmount": 200.02
       |    },
-      |    "chargeTypeBDetails": {
+      |    "chargeTypeB": {
       |      "amendedVersion": 1,
       |      "numberOfMembers": 2,
       |      "totalAmount": 100.02
       |    },
-      |    "chargeTypeCDetails": {
+      |    "chargeTypeC": {
       |      "totalAmount": 500.02,
       |      "amendedVersion": 1,
       |      "memberDetails": [
@@ -248,7 +248,7 @@ object AFTDetailsTransformerSpec {
       |        }
       |      ]
       |    },
-      |    "chargeTypeDDetails": {
+      |    "chargeTypeD": {
       |      "amendedVersion": 1,
       |      "totalAmount": 2345.02,
       |      "memberDetails": [
@@ -268,7 +268,7 @@ object AFTDetailsTransformerSpec {
       |        }
       |      ]
       |    },
-      |    "chargeTypeEDetails": {
+      |    "chargeTypeE": {
       |      "amendedVersion": 1,
       |      "totalAmount": 200.02,
       |      "memberDetails": [
@@ -287,12 +287,12 @@ object AFTDetailsTransformerSpec {
       |        }
       |      ]
       |    },
-      |    "chargeTypeFDetails": {
+      |    "chargeTypeF": {
       |      "amendedVersion": 1,
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
       |    },
-      |    "chargeTypeGDetails": {
+      |    "chargeTypeG": {
       |      "amendedVersion": 1,
       |      "totalOTCAmount": 1230.02,
       |      "memberDetails": [

@@ -467,7 +467,7 @@ object AFTControllerSpec {
       "receiptDate" -> "2016-12-17T09:30:47Z",
     ),
     "chargeDetails" -> Json.obj(
-      "chargeTypeFDetails" -> Json.obj(
+      "chargeTypeF" -> Json.obj(
         "amendedVersion" -> 1,
         "totalAmount" -> 200.02,
         "dateRegiWithdrawn" -> "1980-02-29"
@@ -871,7 +871,7 @@ object AFTControllerSpec {
       |    }
       |  },
       |  "chargeDetails": {
-      |    "chargeTypeCDetails": {
+      |    "chargeTypeC": {
       |      "totalAmount": 90.02,
       |      "amendedVersion": 1,
       |      "memberDetails": [
@@ -923,7 +923,7 @@ object AFTControllerSpec {
       |        }
       |      ]
       |    },
-      |    "chargeTypeDDetails": {
+      |    "chargeTypeD": {
       |      "totalAmount": 2345.02,
       |      "amendedVersion": 1,
       |      "memberDetails": [
@@ -955,7 +955,7 @@ object AFTControllerSpec {
       |        }
       |      ]
       |    },
-      |    "chargeTypeADetails": {
+      |    "chargeTypeA": {
       |      "totalAmtOfTaxDueAtHigherRate": 2500.02,
       |      "totalAmount": 4500.04,
       |      "numberOfMembers": 2,

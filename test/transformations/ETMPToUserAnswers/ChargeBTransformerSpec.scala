@@ -31,13 +31,13 @@ class ChargeBTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
 
           (transformedJson \ "chargeBDetails" \ "amendedVersion").as[Int] mustBe
-            (etmpResponseJson \ "chargeTypeBDetails" \ "amendedVersion").as[Int]
+            (etmpResponseJson \ "chargeTypeB" \ "amendedVersion").as[Int]
 
           (transformedJson \ "chargeBDetails" \ "chargeDetails" \ "numberOfDeceased").as[Int] mustBe
-            (etmpResponseJson \ "chargeTypeBDetails" \ "numberOfMembers").as[Int]
+            (etmpResponseJson \ "chargeTypeB" \ "numberOfMembers").as[Int]
 
           (transformedJson \ "chargeBDetails" \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe
-            (etmpResponseJson \ "chargeTypeBDetails" \ "totalAmount").as[BigDecimal]
+            (etmpResponseJson \ "chargeTypeB" \ "totalAmount").as[BigDecimal]
       }
     }
   }

@@ -73,7 +73,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       aftStatus <- Gen.oneOf("Compiled", "Submitted")
       quarterStartDate <- dateGenerator
       quarterEndDate <- dateGenerator
-      aftReturnType <- Gen.oneOf(Seq("AFT Charge", "AFT Assessment"))
+      aftReturnType <- Gen.oneOf(Seq("1", "2"))
       receiptDate <- arbitrary[String]
     } yield Json.obj(
       fields =
@@ -102,7 +102,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       totalAmtOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
-      fields = "chargeTypeADetails" ->
+      fields = "chargeTypeA" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
           "numberOfMembers" -> numberOfMembers,
@@ -117,7 +117,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       numberOfMembers <- arbitrary[Int]
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
-      fields = "chargeTypeBDetails" ->
+      fields = "chargeTypeB" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
           "numberOfMembers" -> numberOfMembers,
@@ -177,7 +177,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       orgMembers <- Gen.listOfN(1, chargeCOrgMember)
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
-      fields = "chargeTypeCDetails" ->
+      fields = "chargeTypeC" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
           "memberDetails" -> (indvMembers ++ orgMembers),
@@ -268,7 +268,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       members <- Gen.listOfN(2, chargeDMember)
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
-      fields = "chargeTypeDDetails" ->
+      fields = "chargeTypeD" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
           "memberDetails" -> members,
@@ -308,7 +308,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       members <- Gen.listOfN(2, chargeEMember)
       totalAmount <- arbitrary[BigDecimal] retryUntil (_ > 0)
     } yield Json.obj(
-      fields = "chargeTypeEDetails" ->
+      fields = "chargeTypeE" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
           "memberDetails" -> members,
@@ -321,7 +321,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       amountTaxDue <- arbitrary[BigDecimal]
       deRegistrationDate <- dateGenerator
     } yield Json.obj(
-      fields = "chargeTypeFDetails" ->
+      fields = "chargeTypeF" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
           "totalAmount" -> amountTaxDue,
@@ -370,7 +370,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       members <- Gen.listOfN(2, chargeGMember)
       totalChargeAmount <- arbitrary[BigDecimal] retryUntil (_ > 0)
     } yield Json.obj(
-      fields = "chargeTypeGDetails" ->
+      fields = "chargeTypeG" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
           "memberDetails" -> members,

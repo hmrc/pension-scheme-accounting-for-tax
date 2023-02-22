@@ -41,7 +41,7 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
           def membersUAPath(i: Int): JsLookupResult = transformedJson \ "chargeDDetails" \ "members" \ i
 
-          def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeDDetails" \ "memberDetails" \ i
+          def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeD" \ "memberDetails" \ i
 
           (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "firstName").as[String]
           (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "lastName").as[String]
@@ -93,10 +93,10 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           }
 
           (transformedJson \ "chargeDDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
-            (etmpResponseJson \ "chargeTypeDDetails" \ "totalAmount").as[BigDecimal]
+            (etmpResponseJson \ "chargeTypeD" \ "totalAmount").as[BigDecimal]
 
           (transformedJson \ "chargeDDetails" \ "amendedVersion").as[Int] mustBe
-            (etmpResponseJson \ "chargeTypeDDetails" \ "amendedVersion").as[Int]
+            (etmpResponseJson \ "chargeTypeD" \ "amendedVersion").as[Int]
 
           (transformedJson \ "chargeDDetails" \ "members").as[Seq[JsObject]].size mustBe 2
       }
