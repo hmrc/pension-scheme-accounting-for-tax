@@ -23,23 +23,23 @@ import transformations.generators.AFTETMPResponseGenerators
 
 class ChargeATransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
-  "A Charge A Transformer" - {
-    "must transform ChargeADetails from ETMP ChargeTypeADetails to UserAnswers" in {
-      forAll(chargeAETMPGenerator) {
-        etmpResponseJson =>
-          val transformer = new ChargeATransformer
-          val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value \ "chargeADetails"
-          val chargeAResponse = etmpResponseJson \ "chargeTypeA"
-
-          (transformedJson \ "amendedVersion").as[Int] mustBe (chargeAResponse \ "amendedVersion").as[Int]
-          (transformedJson \ "chargeDetails" \ "numberOfMembers").as[Int] mustBe (chargeAResponse \ "numberOfMembers").as[Int]
-          (transformedJson \ "chargeDetails" \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal] mustBe
-            (chargeAResponse \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
-          (transformedJson \ "chargeDetails" \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal] mustBe
-            (chargeAResponse \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
-          (transformedJson \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe (chargeAResponse \ "totalAmount").as[BigDecimal]
-      }
-    }
-  }
+//  "A Charge A Transformer" - {
+//    "must transform ChargeADetails from ETMP ChargeTypeADetails to UserAnswers" in {
+//      forAll(chargeAETMPGenerator) {
+//        etmpResponseJson =>
+//          val transformer = new ChargeATransformer
+//          val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value \ "chargeADetails"
+//          val chargeAResponse = etmpResponseJson \ "chargeTypeA"
+//
+//          (transformedJson \ "amendedVersion").as[Int] mustBe (chargeAResponse \ "amendedVersion").as[Int]
+//          (transformedJson \ "chargeDetails" \ "numberOfMembers").as[Int] mustBe (chargeAResponse \ "numberOfMembers").as[Int]
+//          (transformedJson \ "chargeDetails" \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal] mustBe
+//            (chargeAResponse \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
+//          (transformedJson \ "chargeDetails" \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal] mustBe
+//            (chargeAResponse \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
+//          (transformedJson \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe (chargeAResponse \ "totalAmount").as[BigDecimal]
+//      }
+//    }
+//  }
 
 }

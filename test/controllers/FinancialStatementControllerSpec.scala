@@ -119,7 +119,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     val receiptDateFromIF = "2020-12-12T09:30:47Z"
     val aftDetailsJson = Json.obj(
       "aftDetails" -> Json.obj(
-        "aftVersion" -> "002",
+        "aftVersion" -> 2,
         "receiptDate" -> Json.toJson(receiptDateFromIF)
       )
     )

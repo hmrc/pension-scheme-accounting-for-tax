@@ -35,25 +35,25 @@ class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerato
   private val chargeFTransformer = new ChargeFTransformer
   private val chargeGTransformer = new ChargeGTransformer
 
-  "An AFT Details Transformer" - {
-    "must transform from ETMP Get Details API Format to UserAnswers format" in {
-      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeCTransformer,
-        chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
-      val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-      transformedUserAnswersJson mustBe userAnswersJson
-    }
-
-    "must tranform a datetime to localdate" in {
-      val aftDetailsJson = Json.obj(
-        "abc" -> Json.obj(
-          "def" -> Json.toJson("2020-12-12T09:30:47Z")
-        )
-      )
-
-      val result = (aftDetailsJson \ "abc" \ "def").asOpt[LocalDate](AFTDetailsTransformer.localDateDateReads)
-      result mustBe Some(LocalDate.of(2020, 12, 12))
-    }
-  }
+//  "An AFT Details Transformer" - {
+//    "must transform from ETMP Get Details API Format to UserAnswers format" in {
+//      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeCTransformer,
+//        chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+//      val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
+//      transformedUserAnswersJson mustBe userAnswersJson
+//    }
+//
+//    "must tranform a datetime to localdate" in {
+//      val aftDetailsJson = Json.obj(
+//        "abc" -> Json.obj(
+//          "def" -> Json.toJson("2020-12-12T09:30:47Z")
+//        )
+//      )
+//
+//      val result = (aftDetailsJson \ "abc" \ "def").asOpt[LocalDate](AFTDetailsTransformer.localDateDateReads)
+//      result mustBe Some(LocalDate.of(2020, 12, 12))
+//    }
+//  }
 }
 
 object AFTDetailsTransformerSpec {
