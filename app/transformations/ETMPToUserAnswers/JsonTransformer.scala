@@ -35,5 +35,8 @@ trait JsonTransformer {
       case JsString(s) => JsString(s.toInt.toString)
       case e => throw new RuntimeException("Not a string: " + e.toString)
   }
-
+  protected val removeZeroesFromVersionToInt: JsValue => JsValue = {
+    case JsString(s) => JsNumber(s.toInt)
+    case e => throw new RuntimeException("Not a string: " + e.toString)
+  }
 }

@@ -35,25 +35,25 @@ class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerato
   private val chargeFTransformer = new ChargeFTransformer
   private val chargeGTransformer = new ChargeGTransformer
 
-//  "An AFT Details Transformer" - {
-//    "must transform from ETMP Get Details API Format to UserAnswers format" in {
-//      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeCTransformer,
-//        chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
-//      val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-//      transformedUserAnswersJson mustBe userAnswersJson
-//    }
-//
-//    "must tranform a datetime to localdate" in {
-//      val aftDetailsJson = Json.obj(
-//        "abc" -> Json.obj(
-//          "def" -> Json.toJson("2020-12-12T09:30:47Z")
-//        )
-//      )
-//
-//      val result = (aftDetailsJson \ "abc" \ "def").asOpt[LocalDate](AFTDetailsTransformer.localDateDateReads)
-//      result mustBe Some(LocalDate.of(2020, 12, 12))
-//    }
-//  }
+  "An AFT Details Transformer" - {
+    "must transform from ETMP Get Details API Format to UserAnswers format" in {
+      val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeCTransformer,
+        chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
+      val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
+      transformedUserAnswersJson mustBe userAnswersJson
+    }
+
+    "must tranform a datetime to localdate" in {
+      val aftDetailsJson = Json.obj(
+        "abc" -> Json.obj(
+          "def" -> Json.toJson("2020-12-12T09:30:47Z")
+        )
+      )
+
+      val result = (aftDetailsJson \ "abc" \ "def").asOpt[LocalDate](AFTDetailsTransformer.localDateDateReads)
+      result mustBe Some(LocalDate.of(2020, 12, 12))
+    }
+  }
 }
 
 object AFTDetailsTransformerSpec {
@@ -208,20 +208,20 @@ object AFTDetailsTransformerSpec {
       |  },
       |  "chargeDetails": {
       |    "chargeTypeA": {
-      |      "amendedVersion": 1,
+      |      "amendedVersion": "001",
       |      "numberOfMembers": 2,
       |      "totalAmtOfTaxDueAtLowerRate": 200.02,
       |      "totalAmtOfTaxDueAtHigherRate": 200.02,
       |      "totalAmount": 200.02
       |    },
       |    "chargeTypeB": {
-      |      "amendedVersion": 1,
+      |      "amendedVersion": "001",
       |      "numberOfMembers": 2,
       |      "totalAmount": 100.02
       |    },
       |    "chargeTypeC": {
       |      "totalAmount": 500.02,
-      |      "amendedVersion": 1,
+      |      "amendedVersion": "001",
       |      "memberDetails": [
       |        {
       |          "memberStatus": "New",
@@ -249,7 +249,7 @@ object AFTDetailsTransformerSpec {
       |      ]
       |    },
       |    "chargeTypeD": {
-      |      "amendedVersion": 1,
+      |      "amendedVersion": "001",
       |      "totalAmount": 2345.02,
       |      "memberDetails": [
       |        {
@@ -269,7 +269,7 @@ object AFTDetailsTransformerSpec {
       |      ]
       |    },
       |    "chargeTypeE": {
-      |      "amendedVersion": 1,
+      |      "amendedVersion": "001",
       |      "totalAmount": 200.02,
       |      "memberDetails": [
       |        {
@@ -288,12 +288,12 @@ object AFTDetailsTransformerSpec {
       |      ]
       |    },
       |    "chargeTypeF": {
-      |      "amendedVersion": 1,
+      |      "amendedVersion": "001",
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
       |    },
       |    "chargeTypeG": {
-      |      "amendedVersion": 1,
+      |      "amendedVersion": "001",
       |      "totalOTCAmount": 1230.02,
       |      "memberDetails": [
       |        {

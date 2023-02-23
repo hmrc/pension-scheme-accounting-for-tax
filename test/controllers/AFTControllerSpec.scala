@@ -468,7 +468,7 @@ object AFTControllerSpec {
     ),
     "chargeDetails" -> Json.obj(
       "chargeTypeF" -> Json.obj(
-        "amendedVersion" -> 1,
+        "amendedVersion" -> "001",
         "totalAmount" -> 200.02,
         "dateRegiWithdrawn" -> "1980-02-29"
       )

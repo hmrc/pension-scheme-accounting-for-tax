@@ -20,12 +20,13 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
-class ChargeBTransformer {
+class ChargeBTransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
     (__ \ Symbol("chargeTypeB")).readNullable {
       __.read(
-        ((__ \ Symbol("chargeBDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
+        ((__ \ Symbol("chargeBDetails") \ Symbol("amendedVersion")).json
+          .copyFrom((__ \ Symbol("amendedVersion")).json.pick.map(removeZeroesFromVersionToInt)) and
           (__ \ Symbol("chargeBDetails") \ Symbol("chargeDetails") \ Symbol("numberOfDeceased")).json.copyFrom((__ \ Symbol("numberOfMembers")).json.pick) and
           (__ \ Symbol("chargeBDetails") \ Symbol("chargeDetails") \ Symbol("totalAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce
       )

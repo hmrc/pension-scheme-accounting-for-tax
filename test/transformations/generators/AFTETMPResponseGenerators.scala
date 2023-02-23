@@ -96,7 +96,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeAETMPGenerator: Gen[JsObject] =
     for {
-      amendedVersion <- arbitrary[Int]
+      amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       numberOfMembers <- arbitrary[Int]
       totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
       totalAmtOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
@@ -113,7 +113,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeBETMPGenerator: Gen[JsObject] =
     for {
-      amendedVersion <- arbitrary[Int]
+      amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       numberOfMembers <- arbitrary[Int]
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
@@ -127,7 +127,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   val chargeCIndividualMember: Gen[JsObject] =
     for {
       memberStatus <- arbitrary[String]
-      memberAFTVersion <- arbitrary[Int]
+      memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       address <- addressGenerator
       individual <- individualGen
       dateOfPayment <- dateGenerator
@@ -135,7 +135,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     } yield {
       Json.obj(
         "memberStatus" -> memberStatus,
-        "memberAFTVersion" -> padVersion(memberAFTVersion),
+        "memberAFTVersion" -> memberAFTVersion,
         "memberTypeDetails" -> Json.obj(
           "memberType" -> "Individual",
           "individualDetails" -> individual
@@ -149,7 +149,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   val chargeCOrgMember: Gen[JsObject] =
     for {
       memberStatus <- arbitrary[String]
-      memberAFTVersion <- arbitrary[Int]
+      memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       address <- addressGenerator
       comOrOrganisationName <- arbitrary[String]
       crnNumber <- arbitrary[String]
@@ -158,7 +158,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     } yield {
       Json.obj(
         "memberStatus" -> memberStatus,
-        "memberAFTVersion" -> padVersion(memberAFTVersion),
+        "memberAFTVersion" -> memberAFTVersion,
         "memberTypeDetails" -> Json.obj(
           "memberType" -> "Organisation",
           "comOrOrganisationName" -> comOrOrganisationName,
@@ -172,7 +172,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeCETMPGenerator: Gen[JsObject] =
     for {
-      amendedVersion <- arbitrary[Int]
+      amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       indvMembers <- Gen.listOfN(2, chargeCIndividualMember)
       orgMembers <- Gen.listOfN(1, chargeCOrgMember)
       totalAmount <- arbitrary[BigDecimal]
@@ -244,7 +244,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   val chargeDMember: Gen[JsObject] =
     for {
       memberStatus <- arbitrary[String]
-      memberAFTVersion <- arbitrary[Int]
+      memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       individual <- individualGen
       dateOfBenefitCrystalizationEvent <- dateGenerator
       totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
@@ -254,7 +254,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     } yield {
       Json.obj(
         "memberStatus" -> memberStatus,
-        "memberAFTVersion" -> padVersion(memberAFTVersion),
+        "memberAFTVersion" -> memberAFTVersion,
         "individualsDetails" -> individual,
         "dateOfBenefitCrystalizationEvent" -> dateOfBenefitCrystalizationEvent,
         "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
@@ -264,7 +264,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeDETMPGenerator: Gen[JsObject] =
     for {
-      amendedVersion <- arbitrary[Int]
+      amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       members <- Gen.listOfN(2, chargeDMember)
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
@@ -278,7 +278,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   val chargeEMember: Gen[JsObject] =
     for {
       memberStatus <- arbitrary[String]
-      memberAFTVersion <- arbitrary[Int]
+      memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       firstName <- arbitrary[String]
       lastName <- arbitrary[String]
       nino <- ninoGen
@@ -290,7 +290,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         amountNodeName = "amtOrRepAaChg", repoPeriodNodeName = "repPeriodForAac")
     } yield Json.obj(
       "memberStatus" -> memberStatus,
-      "memberAFTVersion" -> padVersion(memberAFTVersion),
+      "memberAFTVersion" -> memberAFTVersion,
       "individualsDetails" -> Json.obj(
         fields = "firstName" -> firstName,
         "lastName" -> lastName,
@@ -304,7 +304,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeEETMPGenerator: Gen[JsObject] =
     for {
-      amendedVersion <- arbitrary[Int]
+      amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       members <- Gen.listOfN(2, chargeEMember)
       totalAmount <- arbitrary[BigDecimal] retryUntil (_ > 0)
     } yield Json.obj(
@@ -317,7 +317,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeFETMPGenerator: Gen[JsObject] =
     for {
-      amendedVersion <- arbitrary[Int]
+      amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       amountTaxDue <- arbitrary[BigDecimal]
       deRegistrationDate <- dateGenerator
     } yield Json.obj(
@@ -339,7 +339,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   val chargeGMember: Gen[JsObject] =
     for {
       memberStatus <- arbitrary[String]
-      memberAFTVersion <- arbitrary[Int]
+      memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       firstName <- arbitrary[String]
       lastName <- arbitrary[String]
       nino <- ninoGen
@@ -350,7 +350,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       amountTaxDue <- arbitrary[BigDecimal]
     } yield Json.obj(
       "memberStatus" -> memberStatus,
-      "memberAFTVersion" -> padVersion(memberAFTVersion),
+      "memberAFTVersion" -> memberAFTVersion,
       "individualsDetails" -> Json.obj(
         fields = "firstName" -> firstName,
         "lastName" -> lastName,
@@ -366,7 +366,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeGETMPGenerator: Gen[JsObject] =
     for {
-      amendedVersion <- arbitrary[Int]
+      amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       members <- Gen.listOfN(2, chargeGMember)
       totalChargeAmount <- arbitrary[BigDecimal] retryUntil (_ > 0)
     } yield Json.obj(

@@ -25,20 +25,20 @@ import java.time.LocalDate
 
 class ChargeFTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
-//  "A Charge F Transformer" - {
-//    "must transform ChargeFDetails from ETMP ChargeTypeFDetails to UserAnswers" in {
-//      forAll(chargeFETMPGenerator) {
-//        etmpResponseJson =>
-//          val transformer = new ChargeFTransformer
-//          val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value \ "chargeFDetails"
-//          val chargeFResponse = etmpResponseJson \ "chargeTypeF"
-//
-//          (transformedJson \ "amendedVersion").as[Int] mustBe (chargeFResponse \ "amendedVersion").as[Int]
-//          (transformedJson \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe (chargeFResponse \ "totalAmount").as[BigDecimal]
-//          (transformedJson \ "chargeDetails" \ "deRegistrationDate").as[LocalDate] mustBe (chargeFResponse \ "dateRegiWithdrawn").as[LocalDate]
-//
-//      }
-//    }
-//  }
+  "A Charge F Transformer" - {
+    "must transform ChargeFDetails from ETMP ChargeTypeFDetails to UserAnswers" in {
+      forAll(chargeFETMPGenerator) {
+        etmpResponseJson =>
+          val transformer = new ChargeFTransformer
+          val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value \ "chargeFDetails"
+          val chargeFResponse = etmpResponseJson \ "chargeTypeF"
+
+          (transformedJson \ "amendedVersion").as[Int] mustBe (chargeFResponse \ "amendedVersion").as[String].toInt
+          (transformedJson \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe (chargeFResponse \ "totalAmount").as[BigDecimal]
+          (transformedJson \ "chargeDetails" \ "deRegistrationDate").as[LocalDate] mustBe (chargeFResponse \ "dateRegiWithdrawn").as[LocalDate]
+
+      }
+    }
+  }
 
 }
