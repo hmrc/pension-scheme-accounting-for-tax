@@ -487,7 +487,7 @@ object AFTControllerSpec {
 
   private val transformedAftDEtailsUAJson = Json.obj(
     "aftStatus" -> "Compiled",
-    "aftVersion" -> "1",
+    "aftVersion" -> 1,
     "quarter" -> Json.obj(
       "startDate" -> "2020-02-29",
       "endDate" -> "2020-05-29"

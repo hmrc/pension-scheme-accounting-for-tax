@@ -61,7 +61,7 @@ object AFTDetailsTransformerSpec {
   private val userAnswersJson = Json.parse(
     """{
       |  "aftStatus": "Compiled",
-      |  "aftVersion": "1",
+      |  "aftVersion": 1,
       |  "pstr": "1234",
       |  "schemeName": "Test Scheme",
       |  "quarter": {

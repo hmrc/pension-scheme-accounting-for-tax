@@ -30,13 +30,9 @@ trait JsonTransformer {
       (__ \ Symbol("memberDetails") \ Symbol("nino")).json.copyFrom((__ \ Symbol("individualsDetails") \ Symbol("nino")).json.pick)
       ).reduce
 
-  protected def readsVersion: Reads[JsValue] = __.read[JsString].map(v => JsString(v.value.toInt.toString))
-  protected val removeZeroesFromVersion: JsValue => JsValue =  {
-      case JsString(s) => JsString(s.toInt.toString)
-      case e => throw new RuntimeException("Not a string: " + e.toString)
+  protected val readsVersionRemovingZeroes: Reads[JsValue] = Reads{
+    case JsString(s) => JsSuccess(JsNumber(s.toInt))
+    case e => JsError(s"Not a Json string value: $e")
   }
-  protected val removeZeroesFromVersionToInt: JsValue => JsValue = {
-    case JsString(s) => JsNumber(s.toInt)
-    case e => throw new RuntimeException("Not a string: " + e.toString)
-  }
+
 }

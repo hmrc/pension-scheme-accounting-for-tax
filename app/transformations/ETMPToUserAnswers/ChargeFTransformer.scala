@@ -26,7 +26,7 @@ class ChargeFTransformer extends JsonTransformer {
     (__ \ Symbol("chargeTypeF")).readNullable {
       __.read(
         ((__ \ Symbol("chargeFDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json
-          .pick.map(removeZeroesFromVersionToInt)) and
+          .pick(readsVersionRemovingZeroes)) and
           (__ \ Symbol("chargeFDetails") \ Symbol("chargeDetails") \ Symbol("totalAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick) and
           (__ \ Symbol("chargeFDetails") \ Symbol("chargeDetails") \ Symbol("deRegistrationDate"))
             .json.copyFrom((__ \ Symbol("dateRegiWithdrawn")).json.pick)).reduce

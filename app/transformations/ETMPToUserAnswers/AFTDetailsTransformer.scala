@@ -43,7 +43,7 @@ class AFTDetailsTransformer @Inject()(
 
   private def transformAFTDetails: Reads[JsObject] =
     ((__ \ Symbol("aftStatus")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("aftStatus")).json.pick) and
-      (__ \ Symbol("aftVersion")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("aftVersion")).json.pick.map(removeZeroesFromVersion)) and
+      (__ \ Symbol("aftVersion")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("aftVersion")).json.pick(readsVersionRemovingZeroes)) and
       (__ \ Symbol("quarter") \ Symbol("startDate")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("quarterStartDate")).json.pick) and
       (__ \ Symbol("quarter") \ Symbol("endDate")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("quarterEndDate")).json.pick)).reduce
 

@@ -25,7 +25,7 @@ class ChargeDTransformer extends McCloudJsonTransformer {
   def transformToUserAnswers: Reads[JsObject] =
     (__ \ Symbol("chargeTypeD")).readNullable(__.read(
       ((__ \ Symbol("chargeDDetails") \ Symbol("amendedVersion")).json
-        .copyFrom((__ \ Symbol("amendedVersion")).json.pick.map(removeZeroesFromVersionToInt)) and
+        .copyFrom((__ \ Symbol("amendedVersion")).json.pick(readsVersionRemovingZeroes)) and
         (__ \ Symbol("chargeDDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
         (__ \ Symbol("chargeDDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce
     )).map(_.getOrElse(Json.obj()))
@@ -36,7 +36,7 @@ class ChargeDTransformer extends McCloudJsonTransformer {
     (readsMemberDetails and
       (__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick) and
       (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json
-        .pick.map(removeZeroesFromVersionToInt)) and
+        .pick(readsVersionRemovingZeroes)) and
       (__ \ Symbol("chargeDetails") \ Symbol("dateOfEvent")).json.copyFrom((__ \ Symbol("dateOfBenefitCrystalizationEvent")).json.pick) and
       (__ \ Symbol("chargeDetails") \ Symbol("taxAt25Percent")).json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtLowerRate")).json.pick) and
       (__ \ Symbol("chargeDetails") \ Symbol("taxAt55Percent")).json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtHigherRate")).json.pick) and
