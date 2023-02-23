@@ -23,7 +23,7 @@ import play.api.libs.json.{JsObject, Json, Reads, __}
 class ChargeATransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ Symbol("chargeTypeADetails")).readNullable {
+    (__ \ Symbol("chargeTypeA")).readNullable {
       __.read(
         ((__ \ Symbol("chargeADetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
           (__ \ Symbol("chargeADetails") \ Symbol("chargeDetails") \ Symbol("numberOfMembers")).json.copyFrom((__ \ Symbol("numberOfMembers")).json.pick) and

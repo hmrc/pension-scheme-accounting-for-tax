@@ -23,7 +23,7 @@ import play.api.libs.json._
 class ChargeDTransformer extends McCloudJsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ Symbol("chargeTypeDDetails")).readNullable(__.read(
+    (__ \ Symbol("chargeTypeD")).readNullable(__.read(
       ((__ \ Symbol("chargeDDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
         (__ \ Symbol("chargeDDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
         (__ \ Symbol("chargeDDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce

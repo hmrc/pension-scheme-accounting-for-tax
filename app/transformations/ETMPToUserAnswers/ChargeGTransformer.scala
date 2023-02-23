@@ -23,7 +23,7 @@ import play.api.libs.json._
 class ChargeGTransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ Symbol("chargeTypeGDetails")).readNullable(__.read(
+    (__ \ Symbol("chargeTypeG")).readNullable(__.read(
       ((__ \ Symbol("chargeGDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
         (__ \ Symbol("chargeGDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
         (__ \ Symbol("chargeGDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalOTCAmount")).json.pick)).reduce
