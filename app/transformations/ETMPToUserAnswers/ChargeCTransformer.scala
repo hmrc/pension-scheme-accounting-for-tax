@@ -37,7 +37,7 @@ class ChargeCTransformer extends JsonTransformer {
       (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion"))
         .json.pick(readsVersionRemovingZeroes)) and
       (__ \ Symbol("memberTypeDetails")).read(readsEmployerTypeDetails) and
-      (__ \ Symbol("correspondenceAddressDetails")).read(readsCorrespondenceAddressDetails) and
+      (__ \ Symbol("addressDetails")).read(readsCorrespondenceAddressDetails) and
       (__ \ Symbol("chargeDetails") \ Symbol("paymentDate")).json.copyFrom((__ \ Symbol("dateOfPayment")).json.pick) and
       (__ \ Symbol("chargeDetails") \ Symbol("amountTaxDue")).json.copyFrom((__ \ Symbol("totalAmountOfTaxDue")).json.pick)
       ).reduce
@@ -52,12 +52,12 @@ class ChargeCTransformer extends JsonTransformer {
             (__ \ Symbol("sponsoringIndividualDetails") \ Symbol("lastName"))
               .json.copyFrom((__ \ Symbol("individualDetails") \ Symbol("lastName")).json.pick) and
             (__ \ Symbol("sponsoringIndividualDetails") \ Symbol("nino"))
-              .json.copyFrom((__ \ Symbol("individualDetails") \ Symbol("nino")).json.pick)
+              .json.copyFrom((__ \ Symbol("individualDetails") \ Symbol("ninoRef")).json.pick)
           ).reduce
       case _ =>
         (
           (__ \ Symbol("whichTypeOfSponsoringEmployer")).json.put(JsString("organisation")) and
-            (__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("name")).json.copyFrom((__ \ Symbol("comOrOrganisationName")).json.pick) and
+            (__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("name")).json.copyFrom((__ \ Symbol("compOrOrgName")).json.pick) and
             (__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("crn")).json.copyFrom((__ \ Symbol("crnNumber")).json.pick)
           ).reduce
     }
@@ -67,7 +67,7 @@ class ChargeCTransformer extends JsonTransformer {
       (__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line2")).json.copyFrom((__ \ Symbol("addressLine2")).json.pick) and
       ((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line3")).json.copyFrom((__ \ Symbol("addressLine3")).json.pick) orElse doNothing) and
       ((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line4")).json.copyFrom((__ \ Symbol("addressLine4")).json.pick) orElse doNothing) and
-      ((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("postcode")).json.copyFrom((__ \ Symbol("postalCode")).json.pick) orElse doNothing) and
-      (__ \ Symbol("sponsoringEmployerAddress") \ Symbol("country")).json.copyFrom((__ \ Symbol("countryCode")).json.pick)).reduce
+      ((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("postcode")).json.copyFrom((__ \ Symbol("postCode")).json.pick) orElse doNothing) and
+      (__ \ Symbol("sponsoringEmployerAddress") \ Symbol("country")).json.copyFrom((__ \ Symbol("country")).json.pick)).reduce
 }
 
