@@ -231,17 +231,17 @@ object AFTDetailsTransformerSpec {
       |            "individualDetails": {
       |              "firstName": "testFirst",
       |              "lastName": "testLast",
-      |              "nino": "AB100100A"
+      |              "ninoRef": "AB100100A"
       |            }
       |          },
-      |          "correspondenceAddressDetails": {
+      |          "addressDetails": {
       |            "nonUKAddress": "False",
-      |            "postalCode": "NE20 0GG",
+      |            "postCode": "NE20 0GG",
       |            "addressLine1": "line1",
       |            "addressLine2": "line2",
       |            "addressLine3": "line3",
       |            "addressLine4": "line4",
-      |            "countryCode": "GB"
+      |            "country": "GB"
       |          },
       |          "dateOfPayment": "2020-01-01",
       |          "totalAmountOfTaxDue": 500.02
@@ -260,7 +260,7 @@ object AFTDetailsTransformerSpec {
       |            "firstName": "Joy",
       |            "middleName": "H",
       |            "lastName": "Kenneth",
-      |            "nino": "AA089000A"
+      |            "ninoRef": "AA089000A"
       |          },
       |          "dateOfBenefitCrystalizationEvent": "2016-02-29",
       |          "totalAmtOfTaxDueAtLowerRate": 1.02,
@@ -278,7 +278,7 @@ object AFTDetailsTransformerSpec {
       |          "individualsDetails": {
       |            "firstName": "eFirstName",
       |            "lastName": "eLastName",
-      |            "nino": "AE100100A"
+      |            "ninoRef": "AE100100A"
       |          },
       |          "amountOfCharge": 200.02,
       |          "taxYearEnding": "2020",
@@ -305,7 +305,7 @@ object AFTDetailsTransformerSpec {
       |            "middleName": "H",
       |            "lastName": "White",
       |            "dateOfBirth": "1980-02-29",
-      |            "nino": "AA012000A"
+      |            "ninoRef": "AA012000A"
       |          },
       |          "qropsReference": "Q300000",
       |          "amountTransferred": 45670.02,

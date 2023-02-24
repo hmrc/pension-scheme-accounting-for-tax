@@ -61,7 +61,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
 
           (uaPath \ "firstName").as[String] mustBe (etmpPath \ "firstName").as[String]
           (uaPath \ "lastName").as[String] mustBe (etmpPath \ "lastName").as[String]
-          (uaPath \ "nino").as[String] mustBe (etmpPath \ "nino").as[String]
+          (uaPath \ "nino").as[String] mustBe (etmpPath \ "ninoRef").as[String]
       }
     }
 
@@ -75,7 +75,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 2 \ "sponsoringOrganisationDetails"
           val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 2 \ "memberTypeDetails"
 
-          (uaPath \ "name").as[String] mustBe (etmpPath \ "comOrOrganisationName").as[String]
+          (uaPath \ "name").as[String] mustBe (etmpPath \ "compOrOrgName").as[String]
           (uaPath \ "crn").as[String] mustBe (etmpPath \ "crnNumber").as[String]
       }
     }
@@ -88,14 +88,14 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
 
           val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringEmployerAddress"
-          val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 0 \ "correspondenceAddressDetails"
+          val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 0 \ "addressDetails"
 
           (uaPath \ "line1").as[String] mustBe (etmpPath \ "addressLine1").as[String]
           (uaPath \ "line2").as[String] mustBe (etmpPath \ "addressLine2").as[String]
           (uaPath \ "line3").asOpt[String] mustBe (etmpPath \ "addressLine3").asOpt[String]
           (uaPath \ "line4").asOpt[String] mustBe (etmpPath \ "addressLine4").asOpt[String]
-          (uaPath \ "country").as[String] mustBe (etmpPath \ "countryCode").as[String]
-          (uaPath \ "postcode").asOpt[String] mustBe (etmpPath \ "postalCode").asOpt[String]
+          (uaPath \ "country").as[String] mustBe (etmpPath \ "country").as[String]
+          (uaPath \ "postcode").asOpt[String] mustBe (etmpPath \ "postCode").asOpt[String]
       }
     }
   }

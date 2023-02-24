@@ -41,7 +41,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     Json.obj(
       fields = "firstName" -> firstName,
       "lastName" -> lastName,
-      "nino" -> nino
+      "ninoRef" -> nino
     )
   }
 
@@ -61,7 +61,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       "addressLine3" -> line3,
       "addressLine4" -> line4,
       "postCode" -> postalCode,
-      "countryCode" -> country
+      "country" -> country
     )
   }
 
@@ -140,7 +140,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "memberType" -> "Individual",
           "individualDetails" -> individual
         ),
-        "correspondenceAddressDetails" -> address,
+        "addressDetails" -> address,
         "dateOfPayment" -> dateOfPayment,
         "totalAmountOfTaxDue" -> totalAmountTaxDue
       )
@@ -161,10 +161,10 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         "memberAFTVersion" -> memberAFTVersion,
         "memberTypeDetails" -> Json.obj(
           "memberType" -> "Organisation",
-          "comOrOrganisationName" -> comOrOrganisationName,
+          "compOrOrgName" -> comOrOrganisationName,
           "crnNumber" -> crnNumber
         ),
-        "correspondenceAddressDetails" -> address,
+        "addressDetails" -> address,
         "dateOfPayment" -> dateOfPayment,
         "totalAmountOfTaxDue" -> totalAmountTaxDue
       )
@@ -294,7 +294,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       "individualsDetails" -> Json.obj(
         fields = "firstName" -> firstName,
         "lastName" -> lastName,
-        "nino" -> nino
+        "ninoRef" -> nino
       ),
       "taxYearEnding" -> taxYear,
       "amountOfCharge" -> chargeAmount,
@@ -355,7 +355,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         fields = "firstName" -> firstName,
         "lastName" -> lastName,
         "dateOfBirth" -> dob,
-        "nino" -> nino
+        "ninoRef" -> nino
       ),
       "qropsReference" -> qropsReferenceNumber,
       "dateOfTransfer" -> qropsTransferDate,
