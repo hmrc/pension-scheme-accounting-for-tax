@@ -57,7 +57,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
 
           val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringIndividualDetails"
           val etmpPath = etmpJson \ "chargeTypeC" \
-            "memberDetails" \ 0 \ "memberTypeDetails" \ "individualDetails"
+            "memberDetails" \ 0 \ "individualDetails"
 
           (uaPath \ "firstName").as[String] mustBe (etmpPath \ "firstName").as[String]
           (uaPath \ "lastName").as[String] mustBe (etmpPath \ "lastName").as[String]
@@ -73,7 +73,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
 
           val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 2 \ "sponsoringOrganisationDetails"
-          val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 2 \ "memberTypeDetails"
+          val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 2 \ "organisationDetails"
 
           (uaPath \ "name").as[String] mustBe (etmpPath \ "compOrOrgName").as[String]
           (uaPath \ "crn").as[String] mustBe (etmpPath \ "crnNumber").as[String]

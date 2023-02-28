@@ -226,16 +226,14 @@ object AFTDetailsTransformerSpec {
       |        {
       |          "memberStatus": "New",
       |          "memberAFTVersion": "002",
-      |          "memberTypeDetails": {
       |            "memberType": "Individual",
       |            "individualDetails": {
-      |              "firstName": "testFirst",
-      |              "lastName": "testLast",
-      |              "ninoRef": "AB100100A"
-      |            }
+      |            "firstName": "testFirst",
+      |            "lastName": "testLast",
+      |            "ninoRef": "AB100100A"
       |          },
       |          "addressDetails": {
-      |            "nonUKAddress": "False",
+      |            "nonUKAddress": false,
       |            "postCode": "NE20 0GG",
       |            "addressLine1": "line1",
       |            "addressLine2": "line2",

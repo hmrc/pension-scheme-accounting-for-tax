@@ -36,7 +36,7 @@ class ChargeCTransformer extends JsonTransformer {
     ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick) and
       (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion"))
         .json.pick(readsVersionRemovingZeroes)) and
-      (__ \ Symbol("memberTypeDetails")).read(readsEmployerTypeDetails) and
+      __.read(readsEmployerTypeDetails) and
       (__ \ Symbol("addressDetails")).read(readsCorrespondenceAddressDetails) and
       (__ \ Symbol("chargeDetails") \ Symbol("paymentDate")).json.copyFrom((__ \ Symbol("dateOfPayment")).json.pick) and
       (__ \ Symbol("chargeDetails") \ Symbol("amountTaxDue")).json.copyFrom((__ \ Symbol("totalAmountOfTaxDue")).json.pick)
@@ -57,8 +57,10 @@ class ChargeCTransformer extends JsonTransformer {
       case _ =>
         (
           (__ \ Symbol("whichTypeOfSponsoringEmployer")).json.put(JsString("organisation")) and
-            (__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("name")).json.copyFrom((__ \ Symbol("compOrOrgName")).json.pick) and
-            (__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("crn")).json.copyFrom((__ \ Symbol("crnNumber")).json.pick)
+            (__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("name")).json
+              .copyFrom((__ \ Symbol("organisationDetails") \ Symbol("compOrOrgName")).json.pick) and
+            (__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("crn")).json
+              .copyFrom((__ \ Symbol("organisationDetails") \ Symbol("crnNumber")).json.pick)
           ).reduce
     }
 

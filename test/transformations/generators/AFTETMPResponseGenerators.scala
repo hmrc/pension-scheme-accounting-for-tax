@@ -55,7 +55,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     country <- Gen.listOfN(2, nonEmptyString).map(_.mkString)
   } yield {
     Json.obj(
-      fields = "nonUKAddress" -> nonUkAddress.toString.capitalize,
+      fields = "nonUKAddress" -> nonUkAddress,
       "addressLine1" -> line1,
       "addressLine2" -> line2,
       "addressLine3" -> line3,
@@ -136,10 +136,8 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       Json.obj(
         "memberStatus" -> memberStatus,
         "memberAFTVersion" -> memberAFTVersion,
-        "memberTypeDetails" -> Json.obj(
-          "memberType" -> "Individual",
-          "individualDetails" -> individual
-        ),
+        "memberType" -> "Individual",
+        "individualDetails" -> individual,
         "addressDetails" -> address,
         "dateOfPayment" -> dateOfPayment,
         "totalAmountOfTaxDue" -> totalAmountTaxDue
@@ -159,8 +157,8 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       Json.obj(
         "memberStatus" -> memberStatus,
         "memberAFTVersion" -> memberAFTVersion,
-        "memberTypeDetails" -> Json.obj(
-          "memberType" -> "Organisation",
+        "memberType" -> "Organisation",
+        "organisationDetails" -> Json.obj(
           "compOrOrgName" -> comOrOrganisationName,
           "crnNumber" -> crnNumber
         ),
@@ -184,12 +182,12 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "totalAmount" -> totalAmount
         ))
 
-  private def schemes(howManySchemes: Int, optPstrGen: Gen[Option[String]], amountNodeName: String, repoPeriodNodeName: String ): Gen[JsObject] = {
+  private def schemes(howManySchemes: Int, optPstrGen: Gen[Option[String]], amountNodeName: String, repoPeriodNodeName: String): Gen[JsObject] = {
     val seqInt: Seq[Int] = 1 to howManySchemes
     val seqGenScheme = seqInt.map { _ =>
       for {
         optPstr <- optPstrGen
-        date <- Gen.oneOf(Seq("2023-03-31", "2023-06-30", "2023-09-30" , "2023-12-31"))
+        date <- Gen.oneOf(Seq("2023-03-31", "2023-06-30", "2023-09-30", "2023-12-31"))
         chargeAmountReported <- arbitrary[BigDecimal]
       } yield {
         val moreThanOneScheme = optPstr match {
@@ -211,34 +209,34 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   }
 
   private def genSeqOfSchemes(howManySchemes: Int, wasAnotherPensionScheme: Boolean, isPublicServiceRem: Option[Boolean],
-                              amountNodeName: String, repoPeriodNodeName: String ): Gen[JsObject] = {
+                              amountNodeName: String, repoPeriodNodeName: String): Gen[JsObject] = {
     (isPublicServiceRem, wasAnotherPensionScheme) match {
-      case (Some(true), true) => schemes(howManySchemes, Gen.alphaStr.map(Some(_)),amountNodeName, repoPeriodNodeName)
+      case (Some(true), true) => schemes(howManySchemes, Gen.alphaStr.map(Some(_)), amountNodeName, repoPeriodNodeName)
       case (Some(true), false) => schemes(1, Gen.oneOf(Seq(None)), amountNodeName, repoPeriodNodeName)
       case _ => Gen.oneOf(Seq(Json.obj()))
     }
   }
 
-  private def booleanToYesNo(flag:Boolean) = if (flag) JsString("Yes") else JsString("No")
+  private def booleanToYesNo(flag: Boolean) = if (flag) JsString("Yes") else JsString("No")
 
   private def mccloudRemedy(isPSRNodeName: String, isOtherSchemesNodeName: String,
-                            amountNodeName : String, repoPeriodNodeName : String): Gen[JsObject] = {
+                            amountNodeName: String, repoPeriodNodeName: String): Gen[JsObject] = {
     for {
       isPublicServicePensionsRemedy <- arbitrary[Option[Boolean]]
       optWasAnotherPensionScheme <- arbitrary[Option[Boolean]]
       howManySchemes <- Gen.chooseNum(minT = 1, maxT = if (optWasAnotherPensionScheme.getOrElse(false)) 5 else 1)
       schemes <- genSeqOfSchemes(howManySchemes, optWasAnotherPensionScheme.getOrElse(false), isPublicServicePensionsRemedy,
-        amountNodeName: String, repoPeriodNodeName: String )
+        amountNodeName: String, repoPeriodNodeName: String)
     } yield {
-    (isPublicServicePensionsRemedy, optWasAnotherPensionScheme) match {
-            case (Some(true), Some(x)) =>
-              Json.obj(isOtherSchemesNodeName -> booleanToYesNo(x)) ++ schemes ++
-              Json.obj(isPSRNodeName -> booleanToYesNo(true))
-            case (Some(true), None) => Json.obj(isPSRNodeName -> booleanToYesNo(true))
-            case (Some(false), _) => Json.obj(isPSRNodeName -> booleanToYesNo(false))
-            case _ => Json.obj()
-          }
-        }
+      (isPublicServicePensionsRemedy, optWasAnotherPensionScheme) match {
+        case (Some(true), Some(x)) =>
+          Json.obj(isOtherSchemesNodeName -> booleanToYesNo(x)) ++ schemes ++
+            Json.obj(isPSRNodeName -> booleanToYesNo(true))
+        case (Some(true), None) => Json.obj(isPSRNodeName -> booleanToYesNo(true))
+        case (Some(false), _) => Json.obj(isPSRNodeName -> booleanToYesNo(false))
+        case _ => Json.obj()
+      }
+    }
   }
 
   val chargeDMember: Gen[JsObject] =
@@ -250,7 +248,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
       totalAmtOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
       mccloud <- mccloudRemedy(isPSRNodeName = "lfAllowanceChgPblSerRem", isOtherSchemesNodeName = "orLfChgPaidbyAnoPS",
-              amountNodeName = "amtOrRepLtaChg", repoPeriodNodeName = "repPeriodForLtac")
+        amountNodeName = "amtOrRepLtaChg", repoPeriodNodeName = "repPeriodForLtac")
     } yield {
       Json.obj(
         "memberStatus" -> memberStatus,
