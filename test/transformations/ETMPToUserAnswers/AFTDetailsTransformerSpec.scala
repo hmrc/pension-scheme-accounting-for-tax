@@ -255,7 +255,7 @@ object AFTDetailsTransformerSpec {
       |        {
       |          "memberStatus": "Changed",
       |          "memberAFTVersion": "001",
-      |          "individualsDetails": {
+      |          "individualDetails": {
       |            "title": "Mr",
       |            "firstName": "Joy",
       |            "middleName": "H",
@@ -275,7 +275,7 @@ object AFTDetailsTransformerSpec {
       |        {
       |          "memberStatus": "New",
       |          "memberAFTVersion": "003",
-      |          "individualsDetails": {
+      |          "individualDetails": {
       |            "firstName": "eFirstName",
       |            "lastName": "eLastName",
       |            "ninoRef": "AE100100A"
@@ -299,7 +299,7 @@ object AFTDetailsTransformerSpec {
       |        {
       |          "memberStatus": "Deleted",
       |          "memberAFTVersion": "001",
-      |          "individualsDetails": {
+      |          "individualDetails": {
       |            "title": "Mr",
       |            "firstName": "Craig",
       |            "middleName": "H",

@@ -34,7 +34,7 @@ class ChargeGTransformer extends JsonTransformer {
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
-      (__ \ Symbol("memberDetails") \ Symbol("dob")).json.copyFrom((__ \ Symbol("individualsDetails") \ Symbol("dateOfBirth")).json.pick) and
+      (__ \ Symbol("memberDetails") \ Symbol("dob")).json.copyFrom((__ \ Symbol("individualDetails") \ Symbol("dateOfBirth")).json.pick) and
       readsQrops and
       (__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick) and
       (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json

@@ -255,7 +255,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       Json.obj(
         "memberStatus" -> memberStatus,
         "memberAFTVersion" -> memberAFTVersion,
-        "individualsDetails" -> individual,
+        "individualDetails" -> individual,
         "dateOfBenefitCrystalizationEvent" -> dateOfBenefitCrystalizationEvent,
         "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
         "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate
@@ -291,7 +291,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     } yield Json.obj(
       "memberStatus" -> memberStatus,
       "memberAFTVersion" -> memberAFTVersion,
-      "individualsDetails" -> Json.obj(
+      "individualDetails" -> Json.obj(
         fields = "firstName" -> firstName,
         "lastName" -> lastName,
         "ninoRef" -> nino
@@ -351,7 +351,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     } yield Json.obj(
       "memberStatus" -> memberStatus,
       "memberAFTVersion" -> memberAFTVersion,
-      "individualsDetails" -> Json.obj(
+      "individualDetails" -> Json.obj(
         fields = "firstName" -> firstName,
         "lastName" -> lastName,
         "dateOfBirth" -> dob,

@@ -37,9 +37,9 @@ class ChargeGTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
 
           (membersUAPath(0) \ "memberStatus").as[String] mustBe (membersETMPPath(0) \ "memberStatus").as[String]
           (membersUAPath(0) \ "memberAFTVersion").as[Int] mustBe (membersETMPPath(0) \ "memberAFTVersion").as[String].toInt
-          (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "firstName").as[String]
-          (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "lastName").as[String]
-          (membersUAPath(0) \ "memberDetails" \ "dob").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "dateOfBirth").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualDetails" \ "firstName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualDetails" \ "lastName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "dob").as[String] mustBe (membersETMPPath(0) \ "individualDetails" \ "dateOfBirth").as[String]
 
           (membersUAPath(0) \ "chargeDetails" \ "qropsReferenceNumber").as[String] mustBe (membersETMPPath(0) \ "qropsReference").as[String].substring(1)
           (membersUAPath(0) \ "chargeDetails" \ "qropsTransferDate").as[String] mustBe (membersETMPPath(0) \ "dateOfTransfer").as[String]
@@ -53,7 +53,7 @@ class ChargeGTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           (transformedJson \ "chargeGDetails" \ "amendedVersion").as[Int] mustBe
             (etmpResponseJson \ "chargeTypeG" \ "amendedVersion").as[String].toInt
 
-          (membersUAPath(1) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(1) \ "individualsDetails" \ "firstName").as[String]
+          (membersUAPath(1) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(1) \ "individualDetails" \ "firstName").as[String]
 
           (transformedJson \ "chargeGDetails" \ "members").as[Seq[JsObject]].size mustBe 2
 
