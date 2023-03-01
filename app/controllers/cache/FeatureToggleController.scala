@@ -64,29 +64,32 @@ class FeatureToggleController @Inject()(
           val toggleData = body.as[ToggleDetails]
           featureToggleService.upsertFeatureToggle(toggleData).map(_ => NoContent)
         case None =>
-          Future.successful(NotFound)
+          Future.successful(BadRequest)
       }
     }
   }
 
-  def deleteToggle(toggleName: String): Action[AnyContent] = Action.async { _ => {
-    featureToggleService.deleteToggle(toggleName).map(_ => NoContent)
-  }
-  }
-
-  def getToggle(toggleName: String): Action[AnyContent] = Action.async { _ => {
-    featureToggleService.getToggle(toggleName) map {
-      case Some(toggle) => Ok(Json.toJson(toggle))
-      case _ => NoContent
+  def deleteToggle(toggleName: String): Action[AnyContent] = Action.async {
+    _ => {
+      featureToggleService.deleteToggle(toggleName).map(_ => NoContent)
     }
   }
-  }
 
-  def getAllFeatureToggles: Action[AnyContent] = Action.async { _ =>
-    featureToggleService.getAllFeatureToggles map {
-      seqToggles => {
-        Ok(Json.toJson(seqToggles))
+  def getToggle(toggleName: String): Action[AnyContent] = Action.async {
+    _ => {
+      featureToggleService.getToggle(toggleName) map {
+        case Some(toggle) => Ok(Json.toJson(toggle))
+        case _ => NoContent
       }
     }
+  }
+
+  def getAllFeatureToggles: Action[AnyContent] = Action.async {
+    _ =>
+      featureToggleService.getAllFeatureToggles map {
+        seqToggles => {
+          Ok(Json.toJson(seqToggles))
+        }
+      }
   }
 }
