@@ -37,18 +37,17 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
       forAll(chargeDETMPGenerator) {
         etmpResponseJson =>
           val transformer = new ChargeDTransformer
-          val transformed = etmpResponseJson.transform(transformer.transformToUserAnswers)
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
           def membersUAPath(i: Int): JsLookupResult = transformedJson \ "chargeDDetails" \ "members" \ i
 
-          def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeDDetails" \ "memberDetails" \ i
+          def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeD" \ "memberDetails" \ i
 
-          (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "firstName").as[String]
-          (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "lastName").as[String]
-          (membersUAPath(0) \ "memberDetails" \ "nino").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "nino").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualDetails" \ "firstName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualDetails" \ "lastName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "nino").as[String] mustBe (membersETMPPath(0) \ "individualDetails" \ "ninoRef").as[String]
 
           (membersUAPath(0) \ "memberStatus").as[String] mustBe (membersETMPPath(0) \ "memberStatus").as[String]
-          (membersUAPath(0) \ "memberAFTVersion").as[Int] mustBe (membersETMPPath(0) \ "memberAFTVersion").as[Int]
+          (membersUAPath(0) \ "memberAFTVersion").as[Int] mustBe (membersETMPPath(0) \ "memberAFTVersion").as[String].toInt
           (membersUAPath(0) \ "chargeDetails" \ "dateOfEvent").as[String] mustBe (membersETMPPath(0) \ "dateOfBenefitCrystalizationEvent").as[String]
           (membersUAPath(0) \ "chargeDetails" \ "taxAt25Percent").as[BigDecimal] mustBe (membersETMPPath(0) \ "totalAmtOfTaxDueAtLowerRate").as[BigDecimal]
           (membersUAPath(0) \ "chargeDetails" \ "taxAt55Percent").as[BigDecimal] mustBe (membersETMPPath(0) \ "totalAmtOfTaxDueAtHigherRate").as[BigDecimal]
@@ -93,10 +92,10 @@ class ChargeDTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           }
 
           (transformedJson \ "chargeDDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
-            (etmpResponseJson \ "chargeTypeDDetails" \ "totalAmount").as[BigDecimal]
+            (etmpResponseJson \ "chargeTypeD" \ "totalAmount").as[BigDecimal]
 
           (transformedJson \ "chargeDDetails" \ "amendedVersion").as[Int] mustBe
-            (etmpResponseJson \ "chargeTypeDDetails" \ "amendedVersion").as[Int]
+            (etmpResponseJson \ "chargeTypeD" \ "amendedVersion").as[String].toInt
 
           (transformedJson \ "chargeDDetails" \ "members").as[Seq[JsObject]].size mustBe 2
       }

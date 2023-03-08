@@ -93,7 +93,7 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
   "get aft details" must {
 
     "return successfully when ETMP has returned OK when original aftVersion header in header carrier" in {
-      val hcWithAftVersion: HeaderCarrier = HeaderCarrier(otherHeaders = Seq("aftVersion" -> "1"))
+      val hc: HeaderCarrier = HeaderCarrier()
       val response = Json.obj("test" -> "value")
       server.stubFor(
         get(urlEqualTo(getAftDetailsUrl))
@@ -103,7 +103,7 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
           )
       )
 
-      connector.getAftDetails(pstr, startDt, "001")(headerCarrier = hcWithAftVersion, implicitly, implicitly) map { jsValue =>
+      connector.getAftDetails(pstr, startDt, "001")(headerCarrier = hc, implicitly, implicitly) map { jsValue =>
         jsValue mustBe response
       }
     }

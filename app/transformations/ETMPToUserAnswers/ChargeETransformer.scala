@@ -23,8 +23,9 @@ import play.api.libs.json._
 class ChargeETransformer extends McCloudJsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ Symbol("chargeTypeEDetails")).readNullable(__.read(
-      ((__ \ Symbol("chargeEDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
+    (__ \ Symbol("chargeTypeE")).readNullable(__.read(
+      ((__ \ Symbol("chargeEDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json
+        .pick(readsVersionRemovingZeroes)) and
         (__ \ Symbol("chargeEDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
         (__ \ Symbol("chargeEDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce
     )).map(_.getOrElse(Json.obj()))
@@ -34,7 +35,8 @@ class ChargeETransformer extends McCloudJsonTransformer {
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
       (__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick) and
-      (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick) and
+      (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json
+        .pick(readsVersionRemovingZeroes)) and
       (__ \ Symbol("chargeDetails") \ Symbol("chargeAmount")).json.copyFrom((__ \ Symbol("amountOfCharge")).json.pick) and
       (__ \ Symbol("chargeDetails") \ Symbol("dateNoticeReceived")).json.copyFrom((__ \ Symbol("dateOfNotice")).json.pick) and
       getPaidUnder237b and
