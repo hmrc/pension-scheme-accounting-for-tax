@@ -138,7 +138,7 @@ class AFTConnector @Inject()(
       response =>
         response.status match {
           case OK => Some(Json.parse(response.body))
-          case NOT_FOUND => None
+          case NOT_FOUND | FORBIDDEN => None
           case _ => handleErrorResponse("GET", getAftUrl)(response)
         }
     } andThen aftDetailsAuditEventService.sendOptionAFTDetailsAuditEvent(pstr, fbNumber)
