@@ -240,7 +240,7 @@ class AFTController @Inject()(
   }
 
   private def withAFTVersion(block: String => Future[Result])
-                            (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+                            (implicit request: Request[AnyContent]): Future[Result] = {
     request.headers.get("aftVersion") match {
       case Some(version) => block(padVersion(version))
       case _ =>
