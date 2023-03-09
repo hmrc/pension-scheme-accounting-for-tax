@@ -261,8 +261,8 @@ object AFTDetailsTransformerSpec {
       |            "ninoRef": "AA089000A"
       |          },
       |          "dateOfBenefitCrystalizationEvent": "2016-02-29",
-      |          "totalAmtOfTaxDueAtLowerRate": 1.02,
-      |          "totalAmtOfTaxDueAtHigherRate": 9.02
+      |          "totalAmountDueAtLowerRate": 1.02,
+      |          "totalAmountDueAtHigherRate": 9.02
       |        }
       |      ]
       |    },

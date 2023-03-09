@@ -98,16 +98,16 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     for {
       amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       numberOfMembers <- arbitrary[Int]
-      totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
-      totalAmtOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
+      totalAmountOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
+      totalAmountOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
       fields = "chargeTypeA" ->
         Json.obj(
           fields = "amendedVersion" -> amendedVersion,
           "numberOfMembers" -> numberOfMembers,
-          "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
-          "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate,
+          "totalAmtOfTaxDueAtLowerRate" -> totalAmountOfTaxDueAtLowerRate,
+          "totalAmtOfTaxDueAtHigherRate" -> totalAmountOfTaxDueAtHigherRate,
           "totalAmount" -> totalAmount
         ))
 
@@ -245,8 +245,8 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       individual <- individualGen
       dateOfBenefitCrystalizationEvent <- dateGenerator
-      totalAmtOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
-      totalAmtOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
+      totalAmountOfTaxDueAtLowerRate <- arbitrary[BigDecimal]
+      totalAmountOfTaxDueAtHigherRate <- arbitrary[BigDecimal]
       mccloud <- mccloudRemedy(isPSRNodeName = "lfAllowanceChgPblSerRem", isOtherSchemesNodeName = "orLfChgPaidbyAnoPS",
         amountNodeName = "amtOrRepLtaChg", repoPeriodNodeName = "repPeriodForLtac")
     } yield {
@@ -255,8 +255,8 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         "memberAFTVersion" -> memberAFTVersion,
         "individualDetails" -> individual,
         "dateOfBenefitCrystalizationEvent" -> dateOfBenefitCrystalizationEvent,
-        "totalAmtOfTaxDueAtLowerRate" -> totalAmtOfTaxDueAtLowerRate,
-        "totalAmtOfTaxDueAtHigherRate" -> totalAmtOfTaxDueAtHigherRate
+        "totalAmountDueAtLowerRate" -> totalAmountOfTaxDueAtLowerRate,
+        "totalAmountDueAtHigherRate" -> totalAmountOfTaxDueAtHigherRate
       ) ++ mccloud
     }
 
