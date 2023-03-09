@@ -38,8 +38,8 @@ class ChargeDTransformer extends McCloudJsonTransformer {
       (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json
         .pick(readsVersionRemovingZeroes)) and
       (__ \ Symbol("chargeDetails") \ Symbol("dateOfEvent")).json.copyFrom((__ \ Symbol("dateOfBenefitCrystalizationEvent")).json.pick) and
-      (__ \ Symbol("chargeDetails") \ Symbol("taxAt25Percent")).json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtLowerRate")).json.pick) and
-      (__ \ Symbol("chargeDetails") \ Symbol("taxAt55Percent")).json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtHigherRate")).json.pick) and
+      (__ \ Symbol("chargeDetails") \ Symbol("taxAt25Percent")).json.copyFrom((__ \ Symbol("totalAmountOfTaxDueAtLowerRate")).json.pick) and
+      (__ \ Symbol("chargeDetails") \ Symbol("taxAt55Percent")).json.copyFrom((__ \ Symbol("totalAmountOfTaxDueAtHigherRate")).json.pick) and
       readsMcCloudDetails(isPSRNodeName = "lfAllowanceChgPblSerRem", isOtherSchemesNodeName = "orLfChgPaidbyAnoPS",
         amountNodeName = "amtOrRepLtaChg", repoPeriodNodeName = "repPeriodForLtac")).reduce
 }
