@@ -237,7 +237,7 @@ class AFTController @Inject()(
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
     }
-  }
+  }\
 
   private def withAFTVersion(block: String => Future[Result])
                             (implicit request: Request[AnyContent]): Future[Result] = {
