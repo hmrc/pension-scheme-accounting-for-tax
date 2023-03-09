@@ -255,8 +255,8 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         "memberAFTVersion" -> memberAFTVersion,
         "individualDetails" -> individual,
         "dateOfBenefitCrystalizationEvent" -> dateOfBenefitCrystalizationEvent,
-        "totalAmountOfTaxDueAtLowerRate" -> totalAmountOfTaxDueAtLowerRate,
-        "totalAmountOfTaxDueAtHigherRate" -> totalAmountOfTaxDueAtHigherRate
+        "totalAmountDueAtLowerRate" -> totalAmountOfTaxDueAtLowerRate,
+        "totalAmountDueAtHigherRate" -> totalAmountOfTaxDueAtHigherRate
       ) ++ mccloud
     }
 
