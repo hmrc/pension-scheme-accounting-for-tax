@@ -228,12 +228,12 @@ object SchemeChargeType extends Enumeration {
   val pssSchemeSanctionCharge: TypeValue = TypeValue("56401000", "Scheme sanction charge")
   val pssSchemeSanctionCreditCharge: TypeValue = TypeValue("56402930", "Scheme sanction credit charge")
   val pssSchemeSanctionChargeInterest: TypeValue = TypeValue("56452000", "Scheme sanction charge interest")
-  val pssManualSsc: TypeValue = TypeValue("56601000", "Manual SSC")
+  val pssManualSsc: TypeValue = TypeValue("56601000", "Manual Scheme Sanction Charge")
   val pssManualCreditSsc: TypeValue = TypeValue("56602930", "Manual credit SSC")
   val pssManualSchemeSanctionChargeInterest: TypeValue = TypeValue("56652000", "Manual scheme sanction charge interest")
-  val pssFixedChargeMembersTax: TypeValue = TypeValue("56501000", "Fixed charge members tax")
+  val pssFixedChargeMembersTax: TypeValue = TypeValue("56501000", "Member Unauthorised Payments")
   val pssFixedCreditChargeMembersTax: TypeValue = TypeValue("56502930", "Fixed credit charge members tax")
-  val pssManualFixedChargeMembersTax: TypeValue = TypeValue("57801000", "Manual fixed charge members tax")
+  val pssManualFixedChargeMembersTax: TypeValue = TypeValue("57801000", "Manual Member Unauthorised Payments")
 
   def valueWithName(name: String): String = {
     withName(name).asInstanceOf[TypeValue].value
