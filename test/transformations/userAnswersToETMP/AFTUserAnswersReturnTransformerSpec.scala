@@ -303,7 +303,7 @@ object AFTUserAnswersReturnTransformerSpec {
       |            "nino": "AE100100A"
       |          },
       |          "amountOfCharge": 200.02,
-      |          "taxYearEnding": "2020",
+      |          "taxYearEnding": "2021",
       |          "dateOfNotice": "2020-01-11",
       |          "anAllowanceChgPblSerRem": "No",
       |          "paidUnder237b": "Yes"
@@ -574,7 +574,7 @@ object AFTUserAnswersReturnTransformerSpec {
       |            "nino": "AE100100A"
       |          },
       |          "amountOfCharge": 200.02,
-      |          "taxYearEnding": "2020",
+      |          "taxYearEnding": "2021",
       |          "dateOfNotice": "2020-01-11",
       |          "anAllowanceChgPblSerRem": "No",
       |          "paidUnder237b": "Yes"

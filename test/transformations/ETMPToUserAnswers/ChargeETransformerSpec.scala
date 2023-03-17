@@ -42,13 +42,13 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
 
           def membersUAPath(i: Int): JsLookupResult = transformedJson \ "chargeEDetails" \ "members" \ i
 
-          def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeEDetails" \ "memberDetails" \ i
+          def membersETMPPath(i: Int): JsLookupResult = etmpResponseJson \ "chargeTypeE" \ "memberDetails" \ i
 
           (membersUAPath(0) \ "memberStatus").as[String] mustBe (membersETMPPath(0) \ "memberStatus").as[String]
-          (membersUAPath(0) \ "memberAFTVersion").as[Int] mustBe (membersETMPPath(0) \ "memberAFTVersion").as[Int]
-          (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "firstName").as[String]
-          (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "lastName").as[String]
-          (membersUAPath(0) \ "memberDetails" \ "nino").as[String] mustBe (membersETMPPath(0) \ "individualsDetails" \ "nino").as[String]
+          (membersUAPath(0) \ "memberAFTVersion").as[Int] mustBe (membersETMPPath(0) \ "memberAFTVersion").as[String].toInt
+          (membersUAPath(0) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(0) \ "individualDetails" \ "firstName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "lastName").as[String] mustBe (membersETMPPath(0) \ "individualDetails" \ "lastName").as[String]
+          (membersUAPath(0) \ "memberDetails" \ "nino").as[String] mustBe (membersETMPPath(0) \ "individualDetails" \ "ninoRef").as[String]
 
           (membersUAPath(0) \ "chargeDetails" \ "chargeAmount").as[BigDecimal] mustBe (membersETMPPath(0) \ "amountOfCharge").as[BigDecimal]
           (membersUAPath(0) \ "chargeDetails" \ "dateNoticeReceived").as[LocalDate] mustBe (membersETMPPath(0) \ "dateOfNotice").as[LocalDate]
@@ -96,12 +96,12 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
          }
 
           (transformedJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
-            (etmpResponseJson \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal]
+            (etmpResponseJson \ "chargeTypeE" \ "totalAmount").as[BigDecimal]
 
           (transformedJson \ "chargeEDetails" \ "amendedVersion").as[Int] mustBe
-            (etmpResponseJson \ "chargeTypeEDetails" \ "amendedVersion").as[Int]
+            (etmpResponseJson \ "chargeTypeE" \ "amendedVersion").as[String].toInt
 
-          (membersUAPath(1) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(1) \ "individualsDetails" \ "firstName").as[String]
+          (membersUAPath(1) \ "memberDetails" \ "firstName").as[String] mustBe (membersETMPPath(1) \ "individualDetails" \ "firstName").as[String]
 
           (transformedJson \ "chargeEDetails" \ "members").as[Seq[JsObject]].size mustBe 2
       }

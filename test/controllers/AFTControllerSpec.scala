@@ -461,14 +461,14 @@ object AFTControllerSpec {
     ),
     "aftDetails" -> Json.obj(
       "aftStatus" -> "Compiled",
-      "aftVersion" -> "1",
+      "aftVersion" -> "001",
       "quarterStartDate" -> "2020-02-29",
       "quarterEndDate" -> "2020-05-29",
       "receiptDate" -> "2016-12-17T09:30:47Z",
     ),
     "chargeDetails" -> Json.obj(
-      "chargeTypeFDetails" -> Json.obj(
-        "amendedVersion" -> 1,
+      "chargeTypeF" -> Json.obj(
+        "amendedVersion" -> "001",
         "totalAmount" -> 200.02,
         "dateRegiWithdrawn" -> "1980-02-29"
       )
@@ -487,7 +487,7 @@ object AFTControllerSpec {
 
   private val transformedAftDEtailsUAJson = Json.obj(
     "aftStatus" -> "Compiled",
-    "aftVersion" -> "1",
+    "aftVersion" -> 1,
     "quarter" -> Json.obj(
       "startDate" -> "2020-02-29",
       "endDate" -> "2020-05-29"
@@ -517,7 +517,7 @@ object AFTControllerSpec {
     ),
     "aftDetails" -> Json.obj(
       "aftStatus" -> "Compiled",
-      "aftVersion" -> "1",
+      "aftVersion" -> "001",
       "quarterStartDate" -> "2020-02-29",
       "quarterEndDate" -> "2020-05-29"
     ),
@@ -573,7 +573,7 @@ object AFTControllerSpec {
     )
 
 
-  private val fakeRequestForGetDetails = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("startDate", startDt), ("aftVersion", "99"))
+  private val fakeRequestForGetDetails = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("startDate", startDt), ("aftVersion", "099"))
   private val json =
     """{
       |  "aftStatus": "Compiled",
@@ -749,7 +749,7 @@ object AFTControllerSpec {
       |          "line2": "Ironmasters Way",
       |          "line1": "Plaza 2 "
       |        },
-      |        "memberAFTVersion": 1,
+      |        "memberAFTVersion": "001",
       |        "chargeDetails": {
       |          "amountTaxDue": 2300.02,
       |          "paymentDate": "2020-10-18"
@@ -771,7 +771,7 @@ object AFTControllerSpec {
       |          "line2": "Post Box APTS",
       |          "line1": "45 UpperMarshall Street"
       |        },
-      |        "memberAFTVersion": 1,
+      |        "memberAFTVersion": "001",
       |        "chargeDetails": {
       |          "amountTaxDue": 12340.02,
       |          "paymentDate": "2020-10-28"
@@ -812,7 +812,7 @@ object AFTControllerSpec {
       |          "lastName": "Kenneth",
       |          "nino": "AA089000A"
       |        },
-      |        "memberAFTVersion": 1,
+      |        "memberAFTVersion": "001",
       |        "chargeDetails": {
       |          "dateOfEvent": "2020-10-18",
       |          "taxAt55Percent": 9.02,
@@ -826,7 +826,7 @@ object AFTControllerSpec {
       |          "lastName": "Lara",
       |          "nino": "AA100000A"
       |        },
-      |        "memberAFTVersion": 1,
+      |        "memberAFTVersion": "001",
       |        "chargeDetails": {
       |          "dateOfEvent": "2020-10-28",
       |          "taxAt55Percent": 10.02,
@@ -836,7 +836,7 @@ object AFTControllerSpec {
       |    ],
       |    "amendedVersion": 1
       |  },
-      |  "aftVersion": 2,
+      |  "aftVersion": "002",
       |  "schemeName": "Open Scheme Overview API Test 2",
       |  "aftStatus": "Submitted",
       |  "quarter": {
@@ -977,7 +977,7 @@ object AFTControllerSpec {
   private val jsonOneMemberZeroValue = Json.parse(
     """{
       |  "aftStatus": "Compiled",
-      |  "aftVersion": "1",
+      |  "aftVersion": "001",
       |  "quarter": {
       |       "startDate": "2019-01-01",
       |       "endDate": "2019-03-31"

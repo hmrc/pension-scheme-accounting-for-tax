@@ -23,6 +23,8 @@ import transformations.generators.AFTETMPResponseGenerators
 
 class ChargeBTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
+  private def padVersion(version: Int): String = ("00" + version.toString).takeRight(3)
+
   "A Charge B Transformer" - {
     "must transform ChargeBDetails from ETMP ChargeTypeBDetails to UserAnswers" in {
       forAll(chargeBETMPGenerator) {
@@ -31,13 +33,13 @@ class ChargeBTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val transformedJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
 
           (transformedJson \ "chargeBDetails" \ "amendedVersion").as[Int] mustBe
-            (etmpResponseJson \ "chargeTypeBDetails" \ "amendedVersion").as[Int]
+            (etmpResponseJson \ "chargeTypeB" \ "amendedVersion").as[String].toInt
 
           (transformedJson \ "chargeBDetails" \ "chargeDetails" \ "numberOfDeceased").as[Int] mustBe
-            (etmpResponseJson \ "chargeTypeBDetails" \ "numberOfMembers").as[Int]
+            (etmpResponseJson \ "chargeTypeB" \ "numberOfMembers").as[Int]
 
           (transformedJson \ "chargeBDetails" \ "chargeDetails" \ "totalAmount").as[BigDecimal] mustBe
-            (etmpResponseJson \ "chargeTypeBDetails" \ "totalAmount").as[BigDecimal]
+            (etmpResponseJson \ "chargeTypeB" \ "totalAmount").as[BigDecimal]
       }
     }
   }
