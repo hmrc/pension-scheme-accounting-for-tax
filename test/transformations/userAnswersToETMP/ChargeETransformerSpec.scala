@@ -58,7 +58,9 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
             (uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "dateNoticeReceived").as[String]
           (etmpMemberPath(transformedJson, 0) \ "paidUnder237b").as[String] mustBe
             booleanToString((uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean])
-          (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe ((uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String].toInt+1).toString
+          // TODO PODS-8147: Once data (taxYearEnding holding startYear) has been corrected the below line should be uncommented to replace the one below it
+//          (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe ((uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String].toInt+1).toString
+          (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String]
 
           (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "memberStatus").as[String]
           (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").as[Int] mustBe (uaMemberPath(userAnswersJson, 0) \ "memberAFTVersion").as[Int]
@@ -191,7 +193,9 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
                 ),
                 "dateOfNotice" -> "2020-01-11",
                 "anAllowanceChgPblSerRem" -> "No",
-                "taxYearEnding" -> "2021",
+                // TODO PODS-8147: Once data (taxYearEnding holding startYear) has been corrected the below line should be uncommented to replace the one below it
+//                "taxYearEnding" -> "2021",
+                "taxYearEnding" -> "2020",
                 "amountOfCharge" -> 200.02,
                 "paidUnder237b" -> "Yes",
                 "memberStatus" -> "Changed",
