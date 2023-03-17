@@ -142,7 +142,7 @@ object AFTDetailsTransformerSpec {
       |          "lastName": "eLastName",
       |          "nino": "AE100100A"
       |        },
-      |        "annualAllowanceYear": "2020",
+      |        "annualAllowanceYear": "2019",
       |        "chargeDetails": {
       |          "dateNoticeReceived": "2020-01-11",
       |          "chargeAmount": 200.02,

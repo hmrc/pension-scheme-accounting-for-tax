@@ -54,8 +54,7 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           (membersUAPath(0) \ "chargeDetails" \ "dateNoticeReceived").as[LocalDate] mustBe (membersETMPPath(0) \ "dateOfNotice").as[LocalDate]
           (membersUAPath(0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean] mustBe (membersETMPPath(0) \ "paidUnder237b").get.as[String].equals("Yes")
 
-
-          (membersUAPath(0) \ "annualAllowanceYear").as[Int] mustBe (membersETMPPath(0) \ "taxYearEnding").as[Int]
+          (membersUAPath(0) \ "annualAllowanceYear").as[String] mustBe ((membersETMPPath(0) \ "taxYearEnding").as[String].toInt - 1).toString
 
           val isMcCloudRem = (membersUAPath(0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").asOpt[Boolean]
          isMcCloudRem match {
