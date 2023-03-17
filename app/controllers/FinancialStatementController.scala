@@ -64,7 +64,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
             aftConnector.getAftDetails(pstr, fb).map {
               case None => Seq(schemeFSDetail)
               case Some(jsValue) =>
-                val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
+                val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[String].map(_.toInt)
                 val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
                 Seq(schemeFSDetail.copy(
                   receiptDate = optReceiptDate,
