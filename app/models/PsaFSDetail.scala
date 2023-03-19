@@ -196,7 +196,7 @@ object PsaChargeType extends Enumeration {
   val aftDailyLFP: TypeValue = TypeValue("57001091", "Accounting for Tax Further Late Filing Penalty")
   val aft30DayLPP: TypeValue = TypeValue("57301080", "Accounting for Tax 30 Days Late Payment Penalty")
   val aft6MonthLPP: TypeValue = TypeValue("57301091", "Accounting for Tax 6 Months Late Payment Penalty")
-  val aft12MonthLPP: TypeValue = TypeValue("57301092", "Accounting for Tax 12 Months Late Payment Penalty ")
+  val aft12MonthLPP: TypeValue = TypeValue("57301092", "Accounting for Tax 12 Months Late Payment Penalty")
   val otc30DayLPP: TypeValue = TypeValue("57401080", "Overseas Transfer Charge 30 Days Late Payment Penalty")
   val otc6MonthLPP: TypeValue = TypeValue("57401091", "Overseas Transfer Charge 6 Months Late Payment Penalty")
   val otc12MonthLPP: TypeValue = TypeValue("57401092", "Overseas Transfer Charge 12 Months Late Payment Penalty")
