@@ -40,6 +40,8 @@ class ChargeETransformer extends McCloudJsonTransformer {
       (__ \ Symbol("chargeDetails") \ Symbol("chargeAmount")).json.copyFrom((__ \ Symbol("amountOfCharge")).json.pick) and
       (__ \ Symbol("chargeDetails") \ Symbol("dateNoticeReceived")).json.copyFrom((__ \ Symbol("dateOfNotice")).json.pick) and
       getPaidUnder237b and
+      // TODO PODS-8147: Once data (taxYearEnding holding startYear) has been corrected the below line should be uncommented to replace the one below it
+//      (__ \ Symbol("annualAllowanceYear")).json.copyFrom((__ \ Symbol("taxYearEnding")).json.pick.map(v => JsString((v.as[String].toInt-1).toString))) and
       (__ \ Symbol("annualAllowanceYear")).json.copyFrom((__ \ Symbol("taxYearEnding")).json.pick) and
       readsMcCloudDetails(isPSRNodeName = "anAllowanceChgPblSerRem", isOtherSchemesNodeName = "orChgPaidbyAnoPS",
         amountNodeName = "amtOrRepAaChg", repoPeriodNodeName = "repPeriodForAac")).reduce
