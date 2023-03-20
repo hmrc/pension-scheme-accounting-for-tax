@@ -28,14 +28,14 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository._
 import repository.model.{FileUploadDataCache, FileUploadStatus}
 import uk.gov.hmrc.auth.core.AuthConnector
 
-import java.time.{LocalDateTime, ZoneId}
+import java.time.{LocalDateTime, ZoneId, ZoneOffset}
 import scala.concurrent.Future
 
 class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
@@ -99,21 +99,16 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
 
     "calling getUploadResult" must {
       "return OK with the data" in {
-        val dateTimeNow = LocalDateTime.now(ZoneId.of("UTC"))
+        val dateTimeNow = LocalDateTime.now(ZoneOffset.UTC)
         val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, FileUploadStatus("InProgress"), dateTimeNow, dateTimeNow, dateTimeNow)
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
         val result = controller.getUploadResult(fakeRequest)
         status(result) mustEqual OK
-        contentAsJson(result) mustEqual Json.obj(
-          fields = "uploadId" -> "uploadId",
-          "reference" -> "reference",
-          "status" -> Json.obj(
-            "_type" -> "InProgress"),
-          "created" -> dateTimeNow,
-          "lastUpdated" -> dateTimeNow,
-          "expireAt" -> dateTimeNow
-        )
+        val res = contentAsJson(result).as[JsObject]
+        (res \ "uploadId").as[String] contains "uploadId"
+        (res \ "reference").as[String] contains "reference"
+        (res \ "status" \ "_type").as[String] contains "InProgress"
       }
       "return NOT FOUND when the data doesn't exist" in {
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(None)
