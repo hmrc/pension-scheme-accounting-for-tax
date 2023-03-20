@@ -25,8 +25,10 @@ import play.api.http.Status
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
+import repository.IdempotentRequestCacheRepository
 import services.AFTService
 import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.mongo.cache.DataKey
 import utils.HttpResponseHelper
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -39,12 +41,44 @@ class AFTConnector @Inject()(
                               aftVersionsAuditEventService: GetAFTVersionsAuditService,
                               aftDetailsAuditEventService: GetAFTDetailsAuditService,
                               aftService: AFTService,
-                              headerUtils: HeaderUtils
+                              headerUtils: HeaderUtils,
+                              idempotentRequestCacheRepository: IdempotentRequestCacheRepository
                             )
   extends HttpErrorFunctions
     with HttpResponseHelper {
 
   private val logger = Logger(classOf[AFTConnector])
+
+  case class AFTReturnResponse(status: String, response: Option[String])
+
+  object AFTReturnResponse {
+    implicit val format = Json.format[AFTReturnResponse]
+  }
+
+  def idempotentFileAFTReturn(requestId: String, pstr: String, journeyType: String, data: JsValue, triesLeft:Int = 5)
+                             (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[String] = {
+    Thread.sleep(1000)
+    idempotentRequestCacheRepository.get(requestId)(DataKey[AFTReturnResponse]("idempotentRequest")).flatMap {
+      case Some(AFTReturnResponse(status, response)) if status == "complete" =>
+        logger.info("1")
+        Future.successful(response.getOrElse(""))
+      case Some(AFTReturnResponse(status, _)) if status == "pending" =>
+        logger.info("2")
+        Thread.sleep(1000)
+        if(triesLeft > 0) idempotentFileAFTReturn(requestId, pstr, journeyType, data, triesLeft - 1)
+        else {
+          throw new RuntimeException("AFT file return failed")
+        }
+      case None =>
+        logger.info("3")
+        idempotentRequestCacheRepository.put(requestId)(DataKey[AFTReturnResponse]("idempotentRequest"), AFTReturnResponse("pending", None))
+        fileAFTReturn(pstr, journeyType, data).map { resp =>
+          Thread.sleep(1000)
+          idempotentRequestCacheRepository.put(requestId)(DataKey[AFTReturnResponse]("idempotentRequest"), AFTReturnResponse("complete", Some(resp.body)))
+          resp.body
+        }
+    }
+  }
 
   def fileAFTReturn(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {

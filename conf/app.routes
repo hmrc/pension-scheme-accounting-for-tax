@@ -1,6 +1,6 @@
 # microservice specific routes
 
-POST          /aft-file-return/:journeyType                                         controllers.AFTController.fileReturn(journeyType: JourneyType.Name)
+POST          /aft-file-return/:journeyType/:requestId                              controllers.AFTController.fileReturn(journeyType: JourneyType.Name, requestId:String)
 
 GET           /get-aft-details                                                      controllers.AFTController.getDetails
 GET           /get-is-aft-non-zero                                                  controllers.AFTController.getIsChargeNonZero

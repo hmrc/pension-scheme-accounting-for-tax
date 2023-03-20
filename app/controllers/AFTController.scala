@@ -32,7 +32,6 @@ import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.JSONPayloadSchemaValidator
-
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -59,7 +58,7 @@ class AFTController @Inject()(
   type SeqOfChargeType = Option[Seq[Option[String]]]
 
   //scalastyle:off cyclomatic.complexity
-  def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
+  def fileReturn(journeyType: JourneyType.Name, requestId: String): Action[AnyContent] = Action.async {
     implicit request =>
       post { (pstr, userAnswersJson) =>
         aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
@@ -68,10 +67,11 @@ class AFTController @Inject()(
             case JsSuccess(dataToBeSendToETMP, _) =>
               val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
               validationResult match {
-                case Left(errors) => val psaOrPspId: Option[String] = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
-                  case `value`: JsValue => value("submittedID").toString
-                  case _ => ""
-                }
+                case Left(errors) =>
+                  val psaOrPspId: Option[String] = dataToBeSendToETMP.value("aftDeclarationDetails").asOpt[JsValue].map {
+                    case `value`: JsValue => value("submittedID").toString
+                    case _ => ""
+                  }
                   val chargeType: SeqOfChargeType = dataToBeSendToETMP.value("chargeDetails").asOpt[JsValue].map {
                     case `value`: JsValue =>
                       Seq(
@@ -97,9 +97,10 @@ class AFTController @Inject()(
                     errors.size)
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
 
-                case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                    Ok(response.body)
+                case Right(_) =>
+                  logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+                  aftConnector.idempotentFileAFTReturn(requestId, pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                    Ok(response)
                   }
               }
 
