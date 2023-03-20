@@ -37,6 +37,13 @@ trait McCloudJsonTransformer extends JsonTransformer {
         (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ amountNodeName).json.pick)
       ).reduce
 
+    def readsDateAndChargeAmountWithIndex(endDate: String, index: Int): Reads[JsObject] = (
+      (__ \ "taxYearReportedAndPaidPage").json.copyFrom((__ \ "pensionSchemeDetails" \ index \ repoPeriodNodeName).json.pick.map(McCloudExtractTaxYear)) and
+        (__ \ "taxQuarterReportedAndPaid" \ "startDate").json.copyFrom(Reads.pure(JsString(getQuarterStartDate(endDate)))) and
+        (__ \ "taxQuarterReportedAndPaid" \ "endDate").json.copyFrom(Reads.pure(JsString(endDate))) and
+        (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ index \ amountNodeName).json.pick)
+      ).reduce
+
     (__ \ isOtherSchemesNodeName).readNullable[Boolean](readsBoolean).flatMap{
       case Some(areMoreSchemes) =>
         val mcCloud: Reads[JsObject] = ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
@@ -45,7 +52,7 @@ trait McCloudJsonTransformer extends JsonTransformer {
           (__ \ "pensionSchemeDetails").read[JsArray].map(_.value.size).flatMap { max =>
             val readsSchemeArray = (0 until max).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
               (__ \ "pensionSchemeDetails" \ curr \ repoPeriodNodeName).read[String].flatMap { endDate =>
-                val currentJsObj = (readsDateAndChargeAmount(endDate) and
+                val currentJsObj = (readsDateAndChargeAmountWithIndex(endDate, curr) and
                   (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)).reduce
                 acc.flatMap(jsArray => currentJsObj.map(jsObject => jsArray :+ jsObject))
               }
