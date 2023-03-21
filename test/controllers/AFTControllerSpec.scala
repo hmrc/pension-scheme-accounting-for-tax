@@ -40,6 +40,7 @@ import uk.gov.hmrc.http._
 import utils.{ErrorReport, JSONPayloadSchemaValidator, JsonFileReader}
 
 import java.time.LocalDate
+import java.util.UUID
 import scala.concurrent.Future
 
 class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar with BeforeAndAfter with JsonFileReader {
@@ -50,6 +51,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
   private val mockAuditService = mock[AuditService]
 
+  private val uuid = UUID.randomUUID().toString
   private val fakeRequest = FakeRequest("GET", "/")
   private val mockDesConnector = mock[AFTConnector]
   private val mockAftService = mock[AFTService]
@@ -105,10 +107,10 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "return OK when valid response from DES" in {
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaRequestJson.toString)))
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.successful( fileAFTUaRequestJson.toString))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
-      val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
+      val result = controller.fileReturn(journeyType, uuid)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
     }
@@ -116,10 +118,10 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "return OK when valid response (full Payload) from DES" in {
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaFullPayloadRequestJson.toString)))
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.successful(fileAFTUaRequestJson.toString))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
-      val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
+      val result = controller.fileReturn(journeyType, uuid)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
     }
@@ -137,12 +139,12 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any()))
         .thenReturn(validationResponse)
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaInvalidPayloadRequestJson.toString)))
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.successful(fileAFTUaRequestJson.toString))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
 
       recoverToExceptionIf[AFTValidationFailureException] {
-        controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaInvalidPayloadRequestJson).
+        controller.fileReturn(journeyType, uuid)(fakeRequest.withJsonBody(fileAFTUaInvalidPayloadRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map { ex =>
         val expectedErrorMessage = "Invalid AFT file AFT return:-\nErrorReport(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}})"
@@ -156,11 +158,11 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "throw Upstream5XXResponse on Internal Server Error from DES" in {
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.failed(UpstreamErrorResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       recoverToExceptionIf[UpstreamErrorResponse] {
-        controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
+        controller.fileReturn(journeyType, uuid)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map {
         _.statusCode mustBe INTERNAL_SERVER_ERROR
@@ -171,9 +173,9 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       val controller = application.injector.instanceOf[AFTController]
       val jsonPayload = jsonOneMemberZeroValue
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(OK, jsonPayload.toString)))
-      val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(jsonPayload).
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
+        .thenReturn(Future.successful(jsonPayload.toString))
+      val result = controller.fileReturn(journeyType, uuid)(fakeRequest.withJsonBody(jsonPayload).
         withHeaders(newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
     }

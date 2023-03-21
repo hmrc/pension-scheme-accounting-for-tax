@@ -33,6 +33,12 @@ import utils.HttpResponseHelper
 
 import scala.concurrent.{ExecutionContext, Future}
 
+case class AFTReturnResponse(status: String, response: Option[String])
+
+object AFTReturnResponse {
+  implicit val format = Json.format[AFTReturnResponse]
+}
+
 class AFTConnector @Inject()(
                               http: HttpClient,
                               config: AppConfig,
@@ -49,11 +55,7 @@ class AFTConnector @Inject()(
 
   private val logger = Logger(classOf[AFTConnector])
 
-  case class AFTReturnResponse(status: String, response: Option[String])
 
-  object AFTReturnResponse {
-    implicit val format = Json.format[AFTReturnResponse]
-  }
 
   def idempotentFileAFTReturn(requestId: String, pstr: String, journeyType: String, data: JsValue, triesLeft:Int = 5)
                              (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[String] = {
