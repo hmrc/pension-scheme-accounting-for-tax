@@ -30,7 +30,7 @@ class IdempotentRequestCacheRepository @Inject()(
                                  )(implicit ec: ExecutionContext
                                  ) extends MongoCacheRepository(
   mongoComponent   = mongoComponent,
-  collectionName   = "mycache",
+  collectionName   = "idempotentRequest",
   ttl              = Duration(1, TimeUnit.MINUTES),
   timestampSupport = timestampSupport,
   cacheIdType      = CacheIdType.SimpleCacheId
