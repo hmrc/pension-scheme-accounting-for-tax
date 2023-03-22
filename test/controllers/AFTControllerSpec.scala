@@ -107,7 +107,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "return OK when valid response from DES" in {
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful( fileAFTUaRequestJson.toString))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       val result = controller.fileReturn(journeyType, uuid)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
@@ -118,7 +118,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "return OK when valid response (full Payload) from DES" in {
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(fileAFTUaRequestJson.toString))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       val result = controller.fileReturn(journeyType, uuid)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
@@ -139,7 +139,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any()))
         .thenReturn(validationResponse)
 
-      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(fileAFTUaRequestJson.toString))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
 
@@ -158,7 +158,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "throw Upstream5XXResponse on Internal Server Error from DES" in {
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.failed(UpstreamErrorResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       recoverToExceptionIf[UpstreamErrorResponse] {
@@ -173,7 +173,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       val controller = application.injector.instanceOf[AFTController]
       val jsonPayload = jsonOneMemberZeroValue
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
-      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any(), any())(any(), any(), any()))
+      when(mockDesConnector.idempotentFileAFTReturn(any(), any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(jsonPayload.toString))
       val result = controller.fileReturn(journeyType, uuid)(fakeRequest.withJsonBody(jsonPayload).
         withHeaders(newHeaders = "pstr" -> pstr))
