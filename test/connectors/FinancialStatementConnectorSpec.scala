@@ -293,7 +293,7 @@ object FinancialStatementConnectorSpec {
     PsaFSDetail(
       index = 1,
       chargeReference = "Not Applicable",
-      chargeType = "Payment on account",
+      chargeType = "Payment on Account",
       dueDate = Some(LocalDate.parse("2020-06-25")),
       totalAmount = -15000.00,
       amountDue = -15000.00,
@@ -315,7 +315,7 @@ object FinancialStatementConnectorSpec {
     PsaFSDetail(
       index = 2,
       chargeReference = "Not Applicable",
-      chargeType = "Accounting for Tax late filing penalty",
+      chargeType = "Accounting for Tax Late Filing Penalty",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 80000.00,
       amountDue = 1029.05,
@@ -337,7 +337,7 @@ object FinancialStatementConnectorSpec {
     PsaFSDetail(
       index = 3,
       chargeReference = "XY002610150184",
-      chargeType = "Accounting for Tax further late filing penalty",
+      chargeType = "Accounting for Tax Further Late Filing Penalty",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 80000.00,
       amountDue = 1029.05,
@@ -497,7 +497,7 @@ object FinancialStatementConnectorSpec {
     SchemeFSDetail(
       index = 1,
       chargeReference = "XY002610150184",
-      chargeType = "Accounting for Tax return",
+      chargeType = "Accounting for Tax Return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 80000.00,
       amountDue = 1029.05,
@@ -522,7 +522,7 @@ object FinancialStatementConnectorSpec {
     SchemeFSDetail(
       index = 2,
       chargeReference = "XY002610150185",
-      chargeType = "Interest on Accounting for Tax return",
+      chargeType = "Accounting for Tax Return Interest",
       dueDate = Some(LocalDate.parse("2020-07-15")),
       totalAmount = 129.00,
       amountDue = 333.05,

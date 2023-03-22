@@ -177,7 +177,7 @@ object PsaFSReadsSpec {
   private def psaFSModel = PsaFSDetail(
     index = 0,
     chargeReference = "XY002610150184",
-    chargeType = "Overseas transfer charge late payment penalty (6 months)",
+    chargeType = "Overseas Transfer Charge 6 Months Late Payment Penalty",
     dueDate = Some(LocalDate.parse("2020-02-15")),
     totalAmount = 80000.00,
     outstandingAmount = 56049.08,
@@ -192,7 +192,7 @@ object PsaFSReadsSpec {
   private def psaFSMaxModel = PsaFSDetail(
     index = 0,
     chargeReference = "XY002610150184",
-    chargeType = "Overseas transfer charge late payment penalty (6 months)",
+    chargeType = "Overseas Transfer Charge 6 Months Late Payment Penalty",
     dueDate = Some(LocalDate.parse("2020-02-15")),
     totalAmount = 80000.00,
     outstandingAmount = 56049.08,
@@ -214,7 +214,7 @@ object PsaFSReadsSpec {
 
   private val psaSourceChargeInfo: PsaSourceChargeInfo = PsaSourceChargeInfo(
     index = 1,
-    chargeType = "Contract settlement charge",
+    chargeType = "Contract Settlement",
     periodStartDate = LocalDate.parse("2020-04-01"),
     periodEndDate = LocalDate.parse("2020-06-30")
   )
@@ -223,7 +223,7 @@ object PsaFSReadsSpec {
     PsaFSDetail(
       index = 1,
       chargeReference = "XY002610150184",
-      chargeType = "Contract settlement charge",
+      chargeType = "Contract Settlement",
       dueDate = Some(LocalDate.parse("2020-06-25")),
       totalAmount = -15000.00,
       amountDue = -15000.00,
@@ -245,7 +245,7 @@ object PsaFSReadsSpec {
     PsaFSDetail(
       index = 2,
       chargeReference = "Not Applicable",
-      chargeType = "Contract settlement interest",
+      chargeType = "Contract Settlement Interest",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 80000.00,
       amountDue = 1029.05,
