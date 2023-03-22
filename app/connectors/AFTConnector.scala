@@ -67,6 +67,7 @@ class AFTConnector @Inject()(
       case true =>
         logger.debug("AFT file return first request, sending API request")
         fileAFTReturn(pstr, journeyType, data).flatMap { resp =>
+          Thread.sleep(2000)
           idempotentRequestCacheRepository.put(requestId)(
             DataKey[AFTReturnResponse]("idempotentRequest"),
             AFTReturnResponse("complete", Some(resp.body))

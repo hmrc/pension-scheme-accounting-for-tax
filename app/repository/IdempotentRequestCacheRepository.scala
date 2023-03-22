@@ -44,9 +44,7 @@ class IdempotentRequestCacheRepository @Inject()(
       CacheItem(
         requestId,
         JsObject.apply(Seq(
-          "data" -> Json.toJson(Map(
-            key -> data
-          ))
+            key -> Json.toJson(data)
         )),
         java.time.Instant.now(),
         java.time.Instant.now()
