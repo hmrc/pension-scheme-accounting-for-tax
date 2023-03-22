@@ -283,7 +283,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       chargeAmount <- arbitrary[BigDecimal]
       date <- dateGenerator
       isMandatory <- Gen.oneOf("Yes", "No")
-      taxYear <- Gen.choose(1990, Year.now.getValue)
+      taxYear <- Gen.choose(1990, Year.now.getValue).map(_.toString)
       mccloud <- mccloudRemedy(isPSRNodeName = "anAllowanceChgPblSerRem", isOtherSchemesNodeName = "orChgPaidbyAnoPS",
         amountNodeName = "amtOrRepAaChg", repoPeriodNodeName = "repPeriodForAac")
     } yield Json.obj(
