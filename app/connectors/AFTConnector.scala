@@ -57,8 +57,37 @@ class AFTConnector @Inject()(
 
 
 
-  def idempotentFileAFTReturn(requestId: String, pstr: String, journeyType: String, data: JsValue, triesLeft:Int = 5)
+  def idempotentFileAFTReturn(requestId: String, pstr: String, journeyType: String, data: JsValue)
                              (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader):Future[String] = {
+    idempotentRequestCacheRepository.insert(
+      requestId,
+      "idempotentRequest",
+      AFTReturnResponse("pending", None)
+    ).flatMap {
+      case true =>
+        logger.debug("AFT file return first request, sending API request")
+        fileAFTReturn(pstr, journeyType, data).flatMap { resp =>
+          idempotentRequestCacheRepository.put(requestId)(
+            DataKey[AFTReturnResponse]("idempotentRequest"),
+            AFTReturnResponse("complete", Some(resp.body))
+          ).map {
+            _ => resp.body
+          }
+        } recoverWith {
+          case exception =>
+            idempotentRequestCacheRepository.put(requestId)(
+              DataKey[AFTReturnResponse]("idempotentRequest"),
+              AFTReturnResponse("failed", Some(exception.getMessage))
+            )
+            throw exception
+        }
+      case false =>
+        aftReturnRetrieveData(requestId, pstr, journeyType, data, 5)
+    }
+  }
+
+  private def aftReturnRetrieveData(requestId:String, pstr: String, journeyType: String, data: JsValue, triesLeft:Int)
+                                   (implicit ec: ExecutionContext):Future[String] = {
     idempotentRequestCacheRepository.get(requestId)(DataKey[AFTReturnResponse]("idempotentRequest")).flatMap {
       case Some(AFTReturnResponse(status, response)) if status == "complete" =>
         logger.debug("AFT return has been complete returning response")
@@ -66,23 +95,10 @@ class AFTConnector @Inject()(
       case Some(AFTReturnResponse(status, _)) if status == "pending" =>
         logger.debug("AFT return is pending, waiting for response")
         Thread.sleep(1000)
-        if(triesLeft > 0) {
-          idempotentFileAFTReturn(requestId, pstr, journeyType, data, triesLeft - 1)
+        if (triesLeft > 0) {
+          aftReturnRetrieveData(requestId, pstr, journeyType, data, triesLeft - 1)
         } else {
           throw new RuntimeException("AFT file return failed")
-        }
-      case None =>
-        logger.debug("AFT file return first request, sending API request")
-        idempotentRequestCacheRepository.put(requestId)(DataKey[AFTReturnResponse]("idempotentRequest"), AFTReturnResponse("pending", None)).flatMap { _ =>
-          fileAFTReturn(pstr, journeyType, data).flatMap { resp =>
-            idempotentRequestCacheRepository.put(requestId)(DataKey[AFTReturnResponse]("idempotentRequest"), AFTReturnResponse("complete", Some(resp.body))).map {
-              _ => resp.body
-            }
-          } recoverWith {
-            case exception =>
-              idempotentRequestCacheRepository.put(requestId)(DataKey[AFTReturnResponse]("idempotentRequest"), AFTReturnResponse("failed", Some(exception.getMessage)))
-              throw exception
-          }
         }
       case Some(AFTReturnResponse(status, _)) if status == "failed" =>
         logger.debug("AFT file return request failed")

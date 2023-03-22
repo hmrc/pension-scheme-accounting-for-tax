@@ -17,11 +17,13 @@
 package repository
 
 import com.google.inject.{Inject, Singleton}
-import uk.gov.hmrc.mongo.cache.{CacheIdType, MongoCacheRepository}
+import org.mongodb.scala.MongoWriteException
+import play.api.libs.json.{JsObject, Json, Reads, Writes}
+import uk.gov.hmrc.mongo.cache.{CacheIdType, CacheItem, MongoCacheRepository}
 import uk.gov.hmrc.mongo.{MongoComponent, TimestampSupport}
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 @Singleton
 class IdempotentRequestCacheRepository @Inject()(
@@ -34,4 +36,25 @@ class IdempotentRequestCacheRepository @Inject()(
   ttl              = Duration(1, TimeUnit.MINUTES),
   timestampSupport = timestampSupport,
   cacheIdType      = CacheIdType.SimpleCacheId
-)
+) {
+
+  private lazy val documentExistsErrorCode = 11000
+  def insert[T](requestId:String, key:String, data: T)(implicit writes:Writes[T]): Future[Boolean] = {
+    collection.insertOne(
+      CacheItem(
+        requestId,
+        JsObject.apply(Seq(
+          "data" -> Json.toJson(Map(
+            key -> data
+          ))
+        )),
+        java.time.Instant.now(),
+        java.time.Instant.now()
+      )
+    ).toFuture().map { _ => true }
+      .recoverWith {
+        case e: MongoWriteException if e.getCode == documentExistsErrorCode =>
+          Future.successful(false)
+      }
+  }
+}
