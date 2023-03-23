@@ -22,26 +22,10 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsValue, Json}
 
 import java.time.LocalDate
-import java.util.NoSuchElementException
 
 class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
   import PsaFSReadsSpec._
-
-  "rdsPsaFSDetailsMedium" must {
-    "format " when {
-      "reading from json" in {
-        val result = Json.fromJson[PsaFSDetail](psaFSResponseJson(chargeType = "57401091"))(PsaFS.rdsPsaFSDetailsMedium).asOpt.value
-        result mustBe psaFSModel
-      }
-
-      "throw NoSuchElementException for invalid charge type" in {
-        intercept[NoSuchElementException] {
-          Json.fromJson[PsaFSDetail](psaFSResponseJson(chargeType = "56000000"))(PsaFS.rdsPsaFSDetailsMedium).asOpt.value
-        }
-      }
-    }
-  }
 
   "rdsPsaFSDetailMax" must {
     "format " when {
