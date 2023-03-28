@@ -76,35 +76,6 @@ object SchemeFS {
     (JsPath \ "inhibitRefundSignal").write[Boolean] and
       (JsPath \ "seqSchemeFSDetail").write[Seq[SchemeFSDetail]]) (x => (x.inhibitRefundSignal, x.seqSchemeFSDetail))
 
-  implicit val rdsSchemeFSDetailMedium: Reads[SchemeFSDetail] = (
-    (JsPath \ "chargeReference").read[String] and
-      (JsPath \ "chargeType").read[String] and
-      (JsPath \ "dueDate").readNullable[String] and
-      (JsPath \ "totalAmount").read[BigDecimal] and
-      (JsPath \ "amountDue").read[BigDecimal] and
-      (JsPath \ "outstandingAmount").read[BigDecimal] and
-      (JsPath \ "accruedInterestTotal").read[BigDecimal] and
-      (JsPath \ "stoodOverAmount").read[BigDecimal] and
-      (JsPath \ "periodStartDate").readNullable[String] and
-      (JsPath \ "periodEndDate").readNullable[String]
-    ) (
-    (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
-     accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt) =>
-      SchemeFSDetail(
-        index = 0,
-        chargeReference,
-        SchemeChargeType.valueWithName(chargeType),
-        dueDateOpt.map(LocalDate.parse),
-        totalAmount,
-        amountDue,
-        outstandingAmount,
-        accruedInterestTotal,
-        stoodOverAmount,
-        periodStartDateOpt.map(LocalDate.parse),
-        periodEndDateOpt.map(LocalDate.parse)
-      )
-  )
-
   implicit val rdsDocumentLineItemDetail: Reads[DocumentLineItemDetail] = (
     (JsPath \ "clearedAmountItem").read[BigDecimal] and
       (JsPath \ "clearingDate").readNullable[LocalDate] and
@@ -160,12 +131,6 @@ object SchemeFS {
         documentLineItemDetails
       )
   )
-
-  implicit val rdsSchemeFSMedium: Reads[SchemeFS] = {
-    Reads.seq(rdsSchemeFSDetailMedium).map {
-      seqSchemeFSDetail => SchemeFS(inhibitRefundSignal = false, seqSchemeFSDetail = seqSchemeFSDetail)
-    }
-  }
 
   implicit val rdsSchemeFSMax: Reads[SchemeFS] = {
     def transformExtraFields(seqSchemeFSDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
