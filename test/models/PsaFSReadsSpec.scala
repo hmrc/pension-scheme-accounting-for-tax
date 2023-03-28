@@ -36,7 +36,7 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
       "reading from json where period start/end date and pstr are missing (payment on account)" in {
         val psaFSMaxResponseMissingFieldsJson = psaFSMaxResponseJson(chargeType = "00600100").as[JsObject] - "periodStartDate" - "periodEndDate" - "pstr"
-        def expectedResult: PsaFSDetail = psaFSMaxModel("Payment on account") copy (
+        def expectedResult: PsaFSDetail = psaFSMaxModel("Payment on Account") copy (
           periodStartDate = LocalDate.of(1900, 1, 1),
           periodEndDate = LocalDate.of(2900, 12, 31),
           pstr = ""
