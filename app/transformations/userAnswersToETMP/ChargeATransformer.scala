@@ -25,7 +25,8 @@ class ChargeATransformer extends JsonTransformer {
   def transformToETMPData: Reads[JsObject] =
     (__ \ Symbol("chargeADetails")).readNullable {
       __.read(
-        (((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeADetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
+        (((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeADetails") \ Symbol("amendedVersion")).json
+          .copyFrom((__ \ Symbol("amendedVersion")).json.pick)
           orElse doNothing) and
           (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeADetails") \ Symbol("numberOfMembers"))
             .json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("numberOfMembers")).json.pick) and

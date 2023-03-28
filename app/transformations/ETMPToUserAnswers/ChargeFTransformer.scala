@@ -20,12 +20,13 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json.{JsObject, Json, Reads, __}
 
-class ChargeFTransformer {
+class ChargeFTransformer extends JsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ Symbol("chargeTypeFDetails")).readNullable {
+    (__ \ Symbol("chargeTypeF")).readNullable {
       __.read(
-        ((__ \ Symbol("chargeFDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
+        ((__ \ Symbol("chargeFDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json
+          .pick(readsVersionRemovingZeroes)) and
           (__ \ Symbol("chargeFDetails") \ Symbol("chargeDetails") \ Symbol("totalAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick) and
           (__ \ Symbol("chargeFDetails") \ Symbol("chargeDetails") \ Symbol("deRegistrationDate"))
             .json.copyFrom((__ \ Symbol("dateRegiWithdrawn")).json.pick)).reduce

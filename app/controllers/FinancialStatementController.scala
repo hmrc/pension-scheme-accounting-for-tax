@@ -17,6 +17,7 @@
 package controllers
 
 import connectors.{AFTConnector, FinancialStatementConnector}
+import models.SchemeChargeType.{aftManualAssessment, aftManualAssessmentCredit, aftReturn, aftReturnCredit, otcAftReturn, otcAftReturnCredit, otcManualAssessment, otcManualAssessmentCredit}
 import models.SchemeFSDetail
 import play.api.libs.json._
 import play.api.mvc._
@@ -63,7 +64,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
             aftConnector.getAftDetails(pstr, fb).map {
               case None => Seq(schemeFSDetail)
               case Some(jsValue) =>
-                val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[Int]
+                val optVersion = (jsValue \ "aftDetails" \ "aftVersion").asOpt[String].map(_.toInt)
                 val optReceiptDate = (jsValue \ "aftDetails" \ "receiptDate").asOpt[LocalDate](localDateDateReads)
                 Seq(schemeFSDetail.copy(
                   receiptDate = optReceiptDate,
@@ -97,16 +98,34 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     }
   }
 
+  private def updateChargeType(seqSchemeFSDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
+    seqSchemeFSDetail.map { schemeFSDetail =>
+      val maybeCreditChargeType = (schemeFSDetail.chargeType, schemeFSDetail.amountDue < 0) match {
+        case (aftReturn.value, true) => aftReturnCredit.value
+        case (otcAftReturn.value, true) => otcAftReturnCredit.value
+        case (aftManualAssessment.value, true) => aftManualAssessmentCredit.value
+        case (otcManualAssessment.value, true) => otcManualAssessmentCredit.value
+        case _ => schemeFSDetail.chargeType
+      }
+
+      schemeFSDetail.copy(
+        chargeType = maybeCreditChargeType
+      )
+    }
+  }
+
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
       get(key = "pstr") { pstr =>
         financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
+
           val updatedSchemeFS =
             for {
               seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
             } yield {
+              val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
               data copy (
-                seqSchemeFSDetail = updateSourceChargeInfo(seqSchemeFSDetailWithVersionAndReceiptDate)
+                seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
                 )
             }
           updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))

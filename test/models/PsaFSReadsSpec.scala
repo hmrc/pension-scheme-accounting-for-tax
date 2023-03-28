@@ -19,35 +19,30 @@ package models
 import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 import java.time.LocalDate
-import java.util.NoSuchElementException
 
 class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
   import PsaFSReadsSpec._
 
-  "rdsPsaFSDetailsMedium" must {
-    "format " when {
-      "reading from json" in {
-        val result = Json.fromJson[PsaFSDetail](psaFSResponseJson(chargeType = "57401091"))(PsaFS.rdsPsaFSDetailsMedium).asOpt.value
-        result mustBe psaFSModel
-      }
-
-      "throw NoSuchElementException for invalid charge type" in {
-        intercept[NoSuchElementException] {
-          Json.fromJson[PsaFSDetail](psaFSResponseJson(chargeType = "56000000"))(PsaFS.rdsPsaFSDetailsMedium).asOpt.value
-        }
-      }
-    }
-  }
-
   "rdsPsaFSDetailMax" must {
     "format " when {
       "reading from json" in {
         val result = Json.fromJson[PsaFSDetail](psaFSMaxResponseJson(chargeType = "57401091"))(PsaFS.rdsPsaFSDetailMax).asOpt.value
-        result mustBe psaFSMaxModel
+        result mustBe psaFSMaxModel( chargeType = "Overseas transfer charge late payment penalty (6 months)")
+      }
+
+      "reading from json where period start/end date and pstr are missing (payment on account)" in {
+        val psaFSMaxResponseMissingFieldsJson = psaFSMaxResponseJson(chargeType = "00600100").as[JsObject] - "periodStartDate" - "periodEndDate" - "pstr"
+        def expectedResult: PsaFSDetail = psaFSMaxModel("Payment on account") copy (
+          periodStartDate = LocalDate.of(1900, 1, 1),
+          periodEndDate = LocalDate.of(2900, 12, 31),
+          pstr = ""
+        )
+        val result = Json.fromJson[PsaFSDetail](psaFSMaxResponseMissingFieldsJson)(PsaFS.rdsPsaFSDetailMax).asOpt.value
+        result mustBe expectedResult
       }
 
       "throw NoSuchElementException for invalid charge type" in {
@@ -189,10 +184,10 @@ object PsaFSReadsSpec {
     pstr = "24000040IN"
   )
 
-  private def psaFSMaxModel = PsaFSDetail(
+  private def psaFSMaxModel(chargeType: String) = PsaFSDetail(
     index = 0,
     chargeReference = "XY002610150184",
-    chargeType = "Overseas transfer charge late payment penalty (6 months)",
+    chargeType = chargeType,
     dueDate = Some(LocalDate.parse("2020-02-15")),
     totalAmount = 80000.00,
     outstandingAmount = 56049.08,

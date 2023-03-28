@@ -61,7 +61,7 @@ object AFTDetailsTransformerSpec {
   private val userAnswersJson = Json.parse(
     """{
       |  "aftStatus": "Compiled",
-      |  "aftVersion": "1",
+      |  "aftVersion": 1,
       |  "pstr": "1234",
       |  "schemeName": "Test Scheme",
       |  "quarter": {
@@ -197,7 +197,7 @@ object AFTDetailsTransformerSpec {
     """{
       |  "aftDetails": {
       |    "aftStatus": "Compiled",
-      |    "aftVersion": "1",
+      |    "aftVersion": "001",
       |    "quarterStartDate": "2019-01-01",
       |    "quarterEndDate": "2019-03-31",
       |    "receiptDate": "2016-12-17T09:30:47Z"
@@ -207,78 +207,76 @@ object AFTDetailsTransformerSpec {
       |    "pstr": "1234"
       |  },
       |  "chargeDetails": {
-      |    "chargeTypeADetails": {
-      |      "amendedVersion": 1,
+      |    "chargeTypeA": {
+      |      "amendedVersion": "001",
       |      "numberOfMembers": 2,
       |      "totalAmtOfTaxDueAtLowerRate": 200.02,
       |      "totalAmtOfTaxDueAtHigherRate": 200.02,
       |      "totalAmount": 200.02
       |    },
-      |    "chargeTypeBDetails": {
-      |      "amendedVersion": 1,
+      |    "chargeTypeB": {
+      |      "amendedVersion": "001",
       |      "numberOfMembers": 2,
       |      "totalAmount": 100.02
       |    },
-      |    "chargeTypeCDetails": {
+      |    "chargeTypeC": {
       |      "totalAmount": 500.02,
-      |      "amendedVersion": 1,
+      |      "amendedVersion": "001",
       |      "memberDetails": [
       |        {
       |          "memberStatus": "New",
-      |          "memberAFTVersion": 2,
-      |          "memberTypeDetails": {
+      |          "memberAFTVersion": "002",
       |            "memberType": "Individual",
       |            "individualDetails": {
-      |              "firstName": "testFirst",
-      |              "lastName": "testLast",
-      |              "nino": "AB100100A"
-      |            }
+      |            "firstName": "testFirst",
+      |            "lastName": "testLast",
+      |            "ninoRef": "AB100100A"
       |          },
-      |          "correspondenceAddressDetails": {
-      |            "nonUKAddress": "False",
-      |            "postalCode": "NE20 0GG",
+      |          "addressDetails": {
+      |            "nonUKAddress": false,
+      |            "postCode": "NE20 0GG",
       |            "addressLine1": "line1",
       |            "addressLine2": "line2",
       |            "addressLine3": "line3",
       |            "addressLine4": "line4",
-      |            "countryCode": "GB"
+      |            "country": "GB"
       |          },
       |          "dateOfPayment": "2020-01-01",
       |          "totalAmountOfTaxDue": 500.02
       |        }
       |      ]
       |    },
-      |    "chargeTypeDDetails": {
-      |      "amendedVersion": 1,
+      |    "chargeTypeD": {
+      |      "amendedVersion": "001",
       |      "totalAmount": 2345.02,
       |      "memberDetails": [
       |        {
       |          "memberStatus": "Changed",
-      |          "memberAFTVersion": 1,
-      |          "individualsDetails": {
+      |          "memberAFTVersion": "001",
+      |          "individualDetails": {
       |            "title": "Mr",
       |            "firstName": "Joy",
       |            "middleName": "H",
       |            "lastName": "Kenneth",
-      |            "nino": "AA089000A"
+      |            "ninoRef": "AA089000A"
       |          },
       |          "dateOfBenefitCrystalizationEvent": "2016-02-29",
-      |          "totalAmtOfTaxDueAtLowerRate": 1.02,
-      |          "totalAmtOfTaxDueAtHigherRate": 9.02
+      |          "totalAmountDueAtLowerRate": 1.02,
+      |          "totalAmountDueAtHigherRate": 9.02
       |        }
       |      ]
       |    },
-      |    "chargeTypeEDetails": {
-      |      "amendedVersion": 1,
+      |    "chargeTypeE": {
+      |      "amendedVersion": "001",
       |      "totalAmount": 200.02,
       |      "memberDetails": [
       |        {
       |          "memberStatus": "New",
-      |          "memberAFTVersion": 3,
-      |          "individualsDetails": {
+      |          "memberAFTVersion": "003",
+      |          "individualDetails": {
       |            "firstName": "eFirstName",
       |            "lastName": "eLastName",
-      |            "nino": "AE100100A"
+      |            "ninoRef": "AE100100A"
       |          },
       |          "amountOfCharge": 200.02,
       |          "taxYearEnding": "2020",
@@ -287,25 +285,25 @@ object AFTDetailsTransformerSpec {
       |        }
       |      ]
       |    },
-      |    "chargeTypeFDetails": {
-      |      "amendedVersion": 1,
+      |    "chargeTypeF": {
+      |      "amendedVersion": "001",
       |      "totalAmount": 200.02,
       |      "dateRegiWithdrawn": "1980-02-29"
       |    },
-      |    "chargeTypeGDetails": {
-      |      "amendedVersion": 1,
+      |    "chargeTypeG": {
+      |      "amendedVersion": "001",
       |      "totalOTCAmount": 1230.02,
       |      "memberDetails": [
       |        {
       |          "memberStatus": "Deleted",
-      |          "memberAFTVersion": 1,
-      |          "individualsDetails": {
+      |          "memberAFTVersion": "001",
+      |          "individualDetails": {
       |            "title": "Mr",
       |            "firstName": "Craig",
       |            "middleName": "H",
       |            "lastName": "White",
       |            "dateOfBirth": "1980-02-29",
-      |            "nino": "AA012000A"
+      |            "ninoRef": "AA012000A"
       |          },
       |          "qropsReference": "Q300000",
       |          "amountTransferred": 45670.02,

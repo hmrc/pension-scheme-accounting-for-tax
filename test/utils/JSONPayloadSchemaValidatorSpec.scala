@@ -23,7 +23,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
 
 class JSONPayloadSchemaValidatorSpec extends AnyWordSpec with MockitoSugar with Matchers with BeforeAndAfter {
-  val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-0.1.0.json"
+  val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-2.1.0.json"
 
   private val jsonPayloadSchemaValidator = new JSONPayloadSchemaValidator
   "validateJson" must {

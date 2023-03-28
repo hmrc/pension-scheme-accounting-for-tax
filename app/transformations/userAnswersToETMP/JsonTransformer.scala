@@ -28,6 +28,9 @@ trait JsonTransformer {
 
   val doNothing: Reads[JsObject] = __.json.put(Json.obj())
 
+  protected def fail[A](s:String): Reads[A] = Reads.failed[A](s)
+
+
   implicit class JsObjectReadsOps(rds: Reads[JsObject]) {
     val orElseEmptyOnMissingFields: Reads[JsObject] = Reads[JsObject](json =>
       rds.reads(json) match {

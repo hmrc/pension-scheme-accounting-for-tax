@@ -16,19 +16,23 @@
 
 package transformations.userAnswersToETMP
 
+import models.Scheme
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 import play.api.libs.json._
 import transformations.generators.AFTUserAnswersGenerators
-import org.scalatest.OptionValues
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks.forAll
 
 class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators with OptionValues {
   private def etmpMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails" \ i
 
   private def uaMemberPath(json: JsObject, i: Int): JsLookupResult = json \ "chargeEDetails" \ "members" \ i
 
+  private def booleanToString(b: Boolean): String = if (b) "Yes" else "No"
+
   private val transformer = new ChargeETransformer
+
 
   "A Charge E Transformer" - {
     "must filter out the members with memberStatus not Deleted" +
@@ -53,7 +57,9 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (etmpMemberPath(transformedJson, 0) \ "dateOfNotice").as[String] mustBe
             (uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "dateNoticeReceived").as[String]
           (etmpMemberPath(transformedJson, 0) \ "paidUnder237b").as[String] mustBe
-            (if ((uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean]) "Yes" else "No")
+            booleanToString((uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean])
+          // TODO PODS-8147: Once data (taxYearEnding holding startYear) has been corrected the below line should be uncommented to replace the one below it
+//          (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe ((uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String].toInt+1).toString
           (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String]
 
           (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "memberStatus").as[String]
@@ -65,6 +71,38 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "amendedVersion").asOpt[Int] mustBe None
 
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 6
+
+          val isMcCloudRemedyUA = {
+            val isMcCloud = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").as[Boolean]
+            val isInAddition = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "isChargeInAdditionReported").as[Boolean]
+            isMcCloud && isInAddition
+          }
+
+          // MCCLOUD REMEDY
+          (etmpMemberPath(transformedJson, 0) \ "anAllowanceChgPblSerRem").as[String] mustBe booleanToString(isMcCloudRemedyUA)
+          if (isMcCloudRemedyUA) {
+            val isOtherSchemes = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "wasAnotherPensionScheme").as[Boolean]
+            (etmpMemberPath(transformedJson, 0) \ "orChgPaidbyAnoPS").as[String] mustBe booleanToString(isOtherSchemes)
+
+            if (isOtherSchemes) {
+              val uaSeqSchemes = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy" \ "schemes").as[Seq[Scheme]]
+              val transformedSchemes: Seq[JsValue] = (etmpMemberPath(transformedJson, 0) \ "pensionSchemeDetails").as[JsArray].value.toSeq
+              uaSeqSchemes.zipWithIndex.foreach { case (uaScheme, i) =>
+                (transformedSchemes(i) \ "pstr").asOpt[String] mustBe uaScheme.pstr
+                (transformedSchemes(i) \ "repPeriodForAac").asOpt[String] mustBe Some(uaScheme.taxQuarterReportedAndPaid.endDate)
+                (transformedSchemes(i) \ "amtOrRepAaChg").asOpt[BigDecimal] mustBe Some(uaScheme.chargeAmountReported)
+              }
+            } else {
+              val uaScheme = (uaMemberPath(userAnswersJson, 0) \ "mccloudRemedy").as[Scheme]
+              val transformedSchemes = (etmpMemberPath(transformedJson, 0) \ "pensionSchemeDetails").as[JsArray].value.toSeq
+              transformedSchemes.headOption.flatMap(jsValue =>
+                (jsValue \ "repPeriodForAac").asOpt[String]) mustBe Some(uaScheme.taxQuarterReportedAndPaid.endDate)
+              transformedSchemes.headOption.flatMap(jsValue =>
+                (jsValue \ "amtOrRepAaChg").asOpt[BigDecimal]) mustBe Some(uaScheme.chargeAmountReported)
+            }
+          } else {
+            assert(true)
+          }
       }
     }
 
@@ -154,6 +192,9 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
                   "nino" -> "AA089000A"
                 ),
                 "dateOfNotice" -> "2020-01-11",
+                "anAllowanceChgPblSerRem" -> "No",
+                // TODO PODS-8147: Once data (taxYearEnding holding startYear) has been corrected the below line should be uncommented to replace the one below it
+//                "taxYearEnding" -> "2021",
                 "taxYearEnding" -> "2020",
                 "amountOfCharge" -> 200.02,
                 "paidUnder237b" -> "Yes",

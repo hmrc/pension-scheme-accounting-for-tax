@@ -16,6 +16,7 @@
 
 package transformations.generators
 
+import models.{Scheme, TaxQuarter}
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.rng.Seed
@@ -185,23 +186,6 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
           "totalChargeAmount" -> totalChargeAmount
         ))
 
-  def chargeDMember(status: String): Gen[JsObject] =
-    for {
-      memberDetails <- memberDetailsGen
-      memberVersion <- arbitrary[Int]
-      date <- dateGenerator
-      taxAt25Percent <- arbitrary[BigDecimal]
-      taxAt55Percent <- arbitrary[BigDecimal]
-    } yield Json.obj(
-      "memberDetails" -> memberDetails,
-      "memberAFTVersion" -> memberVersion,
-      "memberStatus" -> status,
-      "chargeDetails" -> Json.obj(
-        "dateOfEvent" -> date,
-        "taxAt25Percent" -> taxAt25Percent,
-        "taxAt55Percent" -> taxAt55Percent
-      )
-    )
 
   val chargeDUserAnswersGenerator: Gen[JsObject] =
     for {
@@ -216,6 +200,69 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
           "totalChargeAmount" -> totalChargeAmount
         ))
 
+  private def genSeqOfSchemes(howManySchemes: Int, wasAnotherPensionScheme: Boolean): Gen[Seq[Scheme]] = {
+    val seqInt: Seq[Int] = 1 to howManySchemes
+    val seqGenScheme = seqInt.map { _ =>
+      for {
+        pstr <- Gen.alphaStr
+        taxYearReportedAndPaidPage <- Gen.alphaStr
+        taxQuarterStartDate <- Gen.alphaStr
+        taxQuarterEndDate <- Gen.alphaStr
+        chargeAmountReported <- arbitrary[BigDecimal]
+      } yield {
+        Scheme(if (wasAnotherPensionScheme) Some(pstr) else None,
+          taxYearReportedAndPaidPage, TaxQuarter(taxQuarterStartDate, taxQuarterEndDate), chargeAmountReported)
+      }
+    }
+
+    Gen.sequence[Seq[Scheme], Scheme](seqGenScheme)
+  }
+
+  def mccloudRemedy: Gen[JsObject] = {
+    for {
+      isPublicServicePensionsRemedy <- arbitrary[Boolean]
+      isInAddition <- arbitrary[Boolean]
+      wasAnotherPensionScheme <-  arbitrary[Boolean]
+      howManySchemes <- Gen.chooseNum(minT = 1, maxT = if(wasAnotherPensionScheme) 5 else 1)
+      schemes <- genSeqOfSchemes(howManySchemes, wasAnotherPensionScheme)
+    } yield {
+      val schemeSection = if (wasAnotherPensionScheme) {
+        Json.obj(
+          "schemes" -> Json.toJson(schemes)
+        )
+      } else {
+          Json.toJson(schemes.head).as[JsObject]
+      }
+
+      Json.obj(
+        "isPublicServicePensionsRemedy" -> isPublicServicePensionsRemedy,
+        "isChargeInAdditionReported" -> isInAddition,
+        "wasAnotherPensionScheme" -> wasAnotherPensionScheme
+      ) ++ schemeSection
+    }
+  }
+
+
+  def chargeDMember(status: String): Gen[JsObject] =
+    for {
+      memberDetails <- memberDetailsGen
+      memberVersion <- arbitrary[Int]
+      date <- dateGenerator
+      taxAt25Percent <- arbitrary[BigDecimal]
+      taxAt55Percent <- arbitrary[BigDecimal]
+      mccloud <- mccloudRemedy
+    } yield Json.obj(
+      "memberDetails" -> memberDetails,
+      "memberAFTVersion" -> memberVersion,
+      "memberStatus" -> status,
+      "chargeDetails" -> Json.obj(
+        "dateOfEvent" -> date,
+        "taxAt25Percent" -> taxAt25Percent,
+        "taxAt55Percent" -> taxAt55Percent
+      ),
+      "mccloudRemedy" -> mccloud
+    )
+
   def chargeEMember(status: String): Gen[JsObject] =
     for {
       memberDetails <- memberDetailsGen
@@ -224,6 +271,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
       date <- dateGenerator
       isMandatory <- arbitrary[Boolean]
       taxYear <- Gen.choose(1990, Year.now.getValue)
+      mccloud <- mccloudRemedy
     } yield Json.obj(
       "memberDetails" -> memberDetails,
       "memberAFTVersion" -> memberVersion,
@@ -233,7 +281,8 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
         "chargeAmount" -> chargeAmount,
         "dateNoticeReceived" -> date,
         "isPaymentMandatory" -> isMandatory
-      )
+      ),
+      "mccloudRemedy" -> mccloud
     )
 
   val chargeEUserAnswersGenerator: Gen[JsObject] =

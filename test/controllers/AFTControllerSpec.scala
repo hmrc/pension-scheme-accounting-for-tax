@@ -19,7 +19,7 @@ package controllers
 import audit.{AuditService, FileAftReturnSchemaValidator}
 import connectors.AFTConnector
 import models.enumeration.JourneyType
-import models.{AFTOverview, AFTOverviewVersion, AFTVersion}
+import models._
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, times, verify, when}
 import org.mockito.{ArgumentCaptor, ArgumentMatchers, Mockito}
@@ -51,7 +51,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   private val mockAuditService = mock[AuditService]
 
   private val fakeRequest = FakeRequest("GET", "/")
-  private val mockDesConnector = mock[AFTConnector]
+  private val mockAftConnector = mock[AFTConnector]
   private val mockAftService = mock[AFTService]
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val mockAftOverviewCacheRepository = mock[AftOverviewCacheRepository]
@@ -68,7 +68,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AuthConnector].toInstance(authConnector),
-      bind[AFTConnector].toInstance(mockDesConnector),
+      bind[AFTConnector].toInstance(mockAftConnector),
       bind[AFTService].toInstance(mockAftService),
       bind[AftOverviewCacheRepository].toInstance(mockAftOverviewCacheRepository),
       bind[JSONPayloadSchemaValidator].toInstance(mockJSONPayloadSchemaValidator),
@@ -87,13 +87,13 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   private def controllerForGetAftVersions: AFTController = {
 
     val controller = application.injector.instanceOf[AFTController]
-    when(mockDesConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
+    when(mockAftConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
       Future.successful(versions))
     controller
   }
 
   before {
-    reset(mockDesConnector)
+    reset(mockAftConnector)
     reset(mockAftService)
     reset(authConnector)
     reset(mockJSONPayloadSchemaValidator)
@@ -105,7 +105,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "return OK when valid response from DES" in {
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+      when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
@@ -116,7 +116,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "return OK when valid response (full Payload) from DES" in {
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+      when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaFullPayloadRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
@@ -137,7 +137,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any()))
         .thenReturn(validationResponse)
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+      when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaInvalidPayloadRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
 
@@ -156,7 +156,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "throw Upstream5XXResponse on Internal Server Error from DES" in {
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+      when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.failed(UpstreamErrorResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       recoverToExceptionIf[UpstreamErrorResponse] {
@@ -171,7 +171,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       val controller = application.injector.instanceOf[AFTController]
       val jsonPayload = jsonOneMemberZeroValue
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
-      when(mockDesConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
+      when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, jsonPayload.toString)))
       val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(jsonPayload).
         withHeaders(newHeaders = "pstr" -> pstr))
@@ -185,9 +185,9 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
+      when(mockAftConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.successful(Seq(AFTVersion(1, LocalDate.now(), "submitted"))))
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq("1"))(any(), any(), any())).thenReturn(
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq("1"))(any(), any(), any())).thenReturn(
         Future.successful(createAFTDetailsResponse(chargeSectionWithValue(nonZeroCurrencyValue)))
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
@@ -225,7 +225,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
+      when(mockAftConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
@@ -244,7 +244,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
         .thenReturn(Future.successful(etmpAFTDetailsResponse))
 
       val result = controller.getDetails()(fakeRequestForGetDetails)
@@ -269,7 +269,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
         .thenReturn(Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
 
       recoverToExceptionIf[BadRequestException] {
@@ -284,7 +284,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
         .thenReturn(Future.failed(UpstreamErrorResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
@@ -299,7 +299,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
         .thenReturn(Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
@@ -314,7 +314,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
         .thenReturn(Future.failed(new Exception("Generic Exception")))
 
       recoverToExceptionIf[Exception] {
@@ -331,7 +331,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
         .thenReturn(Future.successful(etmpAFTDetailsResponse))
 
       val result = controller.getIsChargeNonZero()(fakeRequestForGetDetails)
@@ -344,7 +344,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
         .thenReturn(Future.successful(etmpAFTDetailsResponse))
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
 
@@ -360,7 +360,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     "return OK with the Seq of overview details and no data was found in cache" in {
       when(mockAftOverviewCacheRepository.get(any())(any())).thenReturn(Future.successful(None))
       when(mockAftOverviewCacheRepository.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
-      when(mockDesConnector.getAftOverview(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(endDate))(any(), any()))
+      when(mockAftConnector.getAftOverview(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(endDate))(any(), any()))
         .thenReturn(Future.successful(aftOverview))
 
       val controller = application.injector.instanceOf[AFTController]
@@ -400,7 +400,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      when(mockDesConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
+      when(mockAftConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
         Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
@@ -410,6 +410,30 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         response.getMessage must include("INTERNAL SERVER ERROR")
         response.reportAs mustBe INTERNAL_SERVER_ERROR
       }
+    }
+  }
+
+  "getVersionsWithSubmitter" must {
+    "return OK and correct versions and submitters when valid versions/ aft details returned" in {
+      val controller = application.injector.instanceOf[AFTController]
+
+      when(mockAftConnector.getAftVersions(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt))(any(), any(), any())).thenReturn(
+        Future.successful(Seq(AFTVersion(1, LocalDate.now(), "submitted"))))
+      when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq("001"))(any(), any(), any())).thenReturn(
+        Future.successful(etmpAFTDetailsResponse)
+      )
+      when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
+
+      val result = controller.getVersionsWithSubmitter()(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+
+      status(result) mustBe OK
+      val expectedVersionsWithSubmitter = Json.toJson(
+        Seq(VersionsWithSubmitter(
+          AFTVersion(1, LocalDate.now(), "submitted"),
+          Some(AFTSubmitterDetails("PSP", "Martin Brookes", "10000240", Some("A0003450"), LocalDate.of(2016, 12, 17)))
+        ))
+      )
+      contentAsJson(result) mustBe expectedVersionsWithSubmitter
     }
   }
 
@@ -429,7 +453,7 @@ object AFTControllerSpec {
   private val psaIdJsValue = Json.toJson("A2100005")
   private val startDt = "2020-01-01"
   private val endDate = "2020-12-31"
-  private val aftVer = "99"
+  private val aftVer = "099"
   private val etmpAFTDetailsResponse: JsValue = Json.obj(
     "schemeDetails" -> Json.obj(
       "pstr" -> "12345678AB",
@@ -437,14 +461,14 @@ object AFTControllerSpec {
     ),
     "aftDetails" -> Json.obj(
       "aftStatus" -> "Compiled",
-      "aftVersion" -> "1",
+      "aftVersion" -> "001",
       "quarterStartDate" -> "2020-02-29",
       "quarterEndDate" -> "2020-05-29",
       "receiptDate" -> "2016-12-17T09:30:47Z",
     ),
     "chargeDetails" -> Json.obj(
-      "chargeTypeFDetails" -> Json.obj(
-        "amendedVersion" -> 1,
+      "chargeTypeF" -> Json.obj(
+        "amendedVersion" -> "001",
         "totalAmount" -> 200.02,
         "dateRegiWithdrawn" -> "1980-02-29"
       )
@@ -463,7 +487,7 @@ object AFTControllerSpec {
 
   private val transformedAftDEtailsUAJson = Json.obj(
     "aftStatus" -> "Compiled",
-    "aftVersion" -> "1",
+    "aftVersion" -> 1,
     "quarter" -> Json.obj(
       "startDate" -> "2020-02-29",
       "endDate" -> "2020-05-29"
@@ -493,7 +517,7 @@ object AFTControllerSpec {
     ),
     "aftDetails" -> Json.obj(
       "aftStatus" -> "Compiled",
-      "aftVersion" -> "1",
+      "aftVersion" -> "001",
       "quarterStartDate" -> "2020-02-29",
       "quarterEndDate" -> "2020-05-29"
     ),
@@ -549,7 +573,7 @@ object AFTControllerSpec {
     )
 
 
-  private val fakeRequestForGetDetails = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("startDate", startDt), ("aftVersion", aftVer))
+  private val fakeRequestForGetDetails = FakeRequest("GET", "/").withHeaders(("pstr", pstr), ("startDate", startDt), ("aftVersion", "099"))
   private val json =
     """{
       |  "aftStatus": "Compiled",
@@ -725,7 +749,7 @@ object AFTControllerSpec {
       |          "line2": "Ironmasters Way",
       |          "line1": "Plaza 2 "
       |        },
-      |        "memberAFTVersion": 1,
+      |        "memberAFTVersion": "001",
       |        "chargeDetails": {
       |          "amountTaxDue": 2300.02,
       |          "paymentDate": "2020-10-18"
@@ -747,7 +771,7 @@ object AFTControllerSpec {
       |          "line2": "Post Box APTS",
       |          "line1": "45 UpperMarshall Street"
       |        },
-      |        "memberAFTVersion": 1,
+      |        "memberAFTVersion": "001",
       |        "chargeDetails": {
       |          "amountTaxDue": 12340.02,
       |          "paymentDate": "2020-10-28"
@@ -788,7 +812,7 @@ object AFTControllerSpec {
       |          "lastName": "Kenneth",
       |          "nino": "AA089000A"
       |        },
-      |        "memberAFTVersion": 1,
+      |        "memberAFTVersion": "001",
       |        "chargeDetails": {
       |          "dateOfEvent": "2020-10-18",
       |          "taxAt55Percent": 9.02,
@@ -802,7 +826,7 @@ object AFTControllerSpec {
       |          "lastName": "Lara",
       |          "nino": "AA100000A"
       |        },
-      |        "memberAFTVersion": 1,
+      |        "memberAFTVersion": "001",
       |        "chargeDetails": {
       |          "dateOfEvent": "2020-10-28",
       |          "taxAt55Percent": 10.02,
@@ -812,7 +836,7 @@ object AFTControllerSpec {
       |    ],
       |    "amendedVersion": 1
       |  },
-      |  "aftVersion": 2,
+      |  "aftVersion": "002",
       |  "schemeName": "Open Scheme Overview API Test 2",
       |  "aftStatus": "Submitted",
       |  "quarter": {
@@ -911,6 +935,7 @@ object AFTControllerSpec {
       |            "nino": "AA089000A"
       |          },
       |          "memberStatus": "New",
+      |          "lfAllowanceChgPblSerRem": "No",
       |          "totalAmtOfTaxDueAtLowerRate": 1.02,
       |          "memberAFTVersion": 1,
       |          "dateOfBeneCrysEvent": "2020-10-18"
@@ -925,6 +950,7 @@ object AFTControllerSpec {
       |          "memberStatus": "New",
       |          "totalAmtOfTaxDueAtLowerRate": 3.02,
       |          "memberAFTVersion": 1,
+      |          "lfAllowanceChgPblSerRem": "No",
       |          "dateOfBeneCrysEvent": "2020-10-28"
       |        }
       |      ]
@@ -951,7 +977,7 @@ object AFTControllerSpec {
   private val jsonOneMemberZeroValue = Json.parse(
     """{
       |  "aftStatus": "Compiled",
-      |  "aftVersion": "1",
+      |  "aftVersion": "001",
       |  "quarter": {
       |       "startDate": "2019-01-01",
       |       "endDate": "2019-03-31"

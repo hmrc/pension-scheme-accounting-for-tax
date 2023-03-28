@@ -22,26 +22,10 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsValue, Json}
 
 import java.time.LocalDate
-import java.util.NoSuchElementException
 
 class SchemeFSDetailReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
   import SchemeFSDetailReadsSpec._
-
-  "rdsSchemeFSDetailMedium" must {
-    "format " when {
-      "reading from json" in {
-        val result = Json.fromJson[SchemeFSDetail](schemeFSResponseJson(chargeType = "56001000"))(SchemeFS.rdsSchemeFSDetailMedium).asOpt.value
-        result mustBe schemeFSModel
-      }
-
-      "throw NoSuchElementException for invalid charge type" in {
-        intercept[NoSuchElementException] {
-          Json.fromJson[SchemeFSDetail](schemeFSResponseJson(chargeType = "56000000"))(SchemeFS.rdsSchemeFSDetailMedium).asOpt.value
-        }
-      }
-    }
-  }
 
   "rdsSchemeFSDetailMax" must {
     "format " when {

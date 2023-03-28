@@ -20,11 +20,12 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 
-class ChargeDTransformer extends JsonTransformer {
+class ChargeDTransformer extends McCloudJsonTransformer {
 
   def transformToUserAnswers: Reads[JsObject] =
-    (__ \ Symbol("chargeTypeDDetails")).readNullable(__.read(
-      ((__ \ Symbol("chargeDDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick) and
+    (__ \ Symbol("chargeTypeD")).readNullable(__.read(
+      ((__ \ Symbol("chargeDDetails") \ Symbol("amendedVersion")).json
+        .copyFrom((__ \ Symbol("amendedVersion")).json.pick(readsVersionRemovingZeroes)) and
         (__ \ Symbol("chargeDDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
         (__ \ Symbol("chargeDDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce
     )).map(_.getOrElse(Json.obj()))
@@ -34,8 +35,11 @@ class ChargeDTransformer extends JsonTransformer {
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and
       (__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick) and
-      (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick) and
+      (__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json
+        .pick(readsVersionRemovingZeroes)) and
       (__ \ Symbol("chargeDetails") \ Symbol("dateOfEvent")).json.copyFrom((__ \ Symbol("dateOfBenefitCrystalizationEvent")).json.pick) and
-      (__ \ Symbol("chargeDetails") \ Symbol("taxAt25Percent")).json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtLowerRate")).json.pick) and
-      (__ \ Symbol("chargeDetails") \ Symbol("taxAt55Percent")).json.copyFrom((__ \ Symbol("totalAmtOfTaxDueAtHigherRate")).json.pick)).reduce
+      (__ \ Symbol("chargeDetails") \ Symbol("taxAt25Percent")).json.copyFrom((__ \ Symbol("totalAmountDueAtLowerRate")).json.pick) and
+      (__ \ Symbol("chargeDetails") \ Symbol("taxAt55Percent")).json.copyFrom((__ \ Symbol("totalAmountDueAtHigherRate")).json.pick) and
+      readsMcCloudDetails(isPSRNodeName = "lfAllowanceChgPblSerRem", isOtherSchemesNodeName = "orLfChgPaidbyAnoPS",
+        amountNodeName = "amtOrRepLtaChg", repoPeriodNodeName = "repPeriodForLtac")).reduce
 }

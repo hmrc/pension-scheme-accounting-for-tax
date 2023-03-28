@@ -158,7 +158,7 @@ object AFTServiceSpec {
       "memberDetails" -> Json.arr(
         Json.obj(
           "memberStatus" -> "New",
-          "memberAFTVersion" -> 1,
+          "memberAFTVersion" -> "001",
           "memberTypeDetails" -> Json.obj(
             "memberType" -> "Individual",
             "individualDetails" -> Json.obj(
@@ -190,7 +190,7 @@ object AFTServiceSpec {
       "memberDetails" -> Json.arr(
         Json.obj(
           "memberStatus" -> "New",
-          "memberAFTVersion" -> 1,
+          "memberAFTVersion" -> "001",
           "individualsDetails" -> Json.obj(
             "title" -> "Mr",
             "firstName" -> "Ray",
@@ -211,7 +211,7 @@ object AFTServiceSpec {
       "memberDetails" -> Json.arr(
         Json.obj(
           "memberStatus" -> "New",
-          "memberAFTVersion" -> 1,
+          "memberAFTVersion" -> "001",
           "individualsDetails" -> Json.obj(
             "title" -> "Mr",
             "firstName" -> "Ray",
@@ -233,7 +233,7 @@ object AFTServiceSpec {
       "memberDetails" -> Json.arr(
         Json.obj(
           "memberStatus" -> "New",
-          "memberAFTVersion" -> 1,
+          "memberAFTVersion" -> "001",
           "individualsDetails" -> Json.obj(
             "title" -> "Mr",
             "firstName" -> "Ray",
