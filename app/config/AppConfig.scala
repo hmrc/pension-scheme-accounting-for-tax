@@ -30,7 +30,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   val auditingEnabled: Boolean = config.get[Boolean](path = "auditing.enabled")
   val graphiteHost: String = config.get[String](path = "microservice.metrics.graphite.host")
 
-  // private val baseURL: String = servicesConfig.baseUrl(serviceName = "des-hod")
   private val ifURL: String = servicesConfig.baseUrl(serviceName = "if-hod")
 
   lazy val desEnvironment: String = runModeConfiguration.getOptional[String]("microservice.services.des-hod.env").getOrElse("local")
