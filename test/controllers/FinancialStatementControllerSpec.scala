@@ -235,7 +235,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "Accounting for Tax return",
+        chargeType = "Accounting for Tax Return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -255,7 +255,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "Accounting for Tax return",
+        chargeType = "Accounting for Tax Return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -277,7 +277,7 @@ object FinancialStatementControllerSpec {
       SchemeFSDetail(
         index = 0,
         chargeReference = s"XY002610150184",
-        chargeType = "Accounting for Tax return",
+        chargeType = "Accounting for Tax Return",
         dueDate = Some(LocalDate.parse("2020-02-15")),
         totalAmount = 80000.00,
         amountDue = 1029.05,
@@ -334,10 +334,10 @@ object FinancialStatementControllerSpec {
   )
 
   private val listOfChargesAndAssociatedCredits = Seq(
-    (schemeModelForFlipToCredit("Accounting for Tax return"), schemeModelAfterUpdateToCredit("Accounting for Tax return credit")),
-    (schemeModelForFlipToCredit("Overseas transfer charge"), schemeModelAfterUpdateToCredit("Overseas transfer charge credit")),
-    (schemeModelForFlipToCredit("Accounting for Tax return manual assessment"), schemeModelAfterUpdateToCredit("Accounting for Tax return manual assessment credit")),
-    (schemeModelForFlipToCredit("Overseas transfer charge manual assessment"), schemeModelAfterUpdateToCredit("Overseas transfer charge manual assessment credit"))
+    (schemeModelForFlipToCredit("Accounting for Tax Return"), schemeModelAfterUpdateToCredit("Accounting for Tax Return credit")),
+    (schemeModelForFlipToCredit("Overseas Transfer Charge"), schemeModelAfterUpdateToCredit("Overseas Transfer Charge credit")),
+    (schemeModelForFlipToCredit("Accounting for Tax assessment"), schemeModelAfterUpdateToCredit("Accounting for Tax assessment credit")),
+    (schemeModelForFlipToCredit("Overseas Transfer Charge assessment"), schemeModelAfterUpdateToCredit("Overseas Transfer Charge assessment credit"))
   )
 }
 

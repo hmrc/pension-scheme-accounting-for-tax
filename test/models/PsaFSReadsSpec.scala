@@ -31,12 +31,12 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
     "format " when {
       "reading from json" in {
         val result = Json.fromJson[PsaFSDetail](psaFSMaxResponseJson(chargeType = "57401091"))(PsaFS.rdsPsaFSDetailMax).asOpt.value
-        result mustBe psaFSMaxModel( chargeType = "Overseas transfer charge late payment penalty (6 months)")
+        result mustBe psaFSMaxModel( chargeType = "Overseas Transfer Charge 6 Months Late Payment Penalty")
       }
 
       "reading from json where period start/end date and pstr are missing (payment on account)" in {
         val psaFSMaxResponseMissingFieldsJson = psaFSMaxResponseJson(chargeType = "00600100").as[JsObject] - "periodStartDate" - "periodEndDate" - "pstr"
-        def expectedResult: PsaFSDetail = psaFSMaxModel("Payment on account") copy (
+        def expectedResult: PsaFSDetail = psaFSMaxModel("Payment on Account") copy (
           periodStartDate = LocalDate.of(1900, 1, 1),
           periodEndDate = LocalDate.of(2900, 12, 31),
           pstr = ""
@@ -209,7 +209,7 @@ object PsaFSReadsSpec {
 
   private val psaSourceChargeInfo: PsaSourceChargeInfo = PsaSourceChargeInfo(
     index = 1,
-    chargeType = "Contract settlement charge",
+    chargeType = "Contract Settlement",
     periodStartDate = LocalDate.parse("2020-04-01"),
     periodEndDate = LocalDate.parse("2020-06-30")
   )
@@ -218,7 +218,7 @@ object PsaFSReadsSpec {
     PsaFSDetail(
       index = 1,
       chargeReference = "XY002610150184",
-      chargeType = "Contract settlement charge",
+      chargeType = "Contract Settlement",
       dueDate = Some(LocalDate.parse("2020-06-25")),
       totalAmount = -15000.00,
       amountDue = -15000.00,
@@ -240,7 +240,7 @@ object PsaFSReadsSpec {
     PsaFSDetail(
       index = 2,
       chargeReference = "Not Applicable",
-      chargeType = "Contract settlement interest",
+      chargeType = "Contract Settlement Interest",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 80000.00,
       amountDue = 1029.05,

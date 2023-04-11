@@ -13,7 +13,6 @@ lazy val microservice = Project(appName, file("."))
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test
   )
   .settings(scalaVersion := "2.13.8")
-  .settings(publishingSettings: _*)
   .settings(
     RoutesKeys.routesImport ++= Seq("models.enumeration.JourneyType", "models.enumeration.SchemeAdministratorType", "models.FeatureToggleName"),
     PlayKeys.devSettings += "play.server.http.port" -> "8207",

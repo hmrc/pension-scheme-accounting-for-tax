@@ -159,7 +159,7 @@ object SchemeFSDetailReadsSpec {
   private def schemeFSModel = SchemeFSDetail(
     index = 0,
     chargeReference = "XY002610150184",
-    chargeType = "Accounting for Tax return",
+    chargeType = "Accounting for Tax Return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
     totalAmount = 80000.00,
     amountDue = 1029.05,
@@ -173,7 +173,7 @@ object SchemeFSDetailReadsSpec {
   private def schemeFSModelMax = SchemeFSDetail(
     index = 0,
     chargeReference = "XY002610150184",
-    chargeType = "Accounting for Tax return",
+    chargeType = "Accounting for Tax Return",
     dueDate = Some(LocalDate.parse("2020-02-15")),
     totalAmount = 80000.00,
     amountDue = 1029.05,
@@ -202,7 +202,7 @@ object SchemeFSDetailReadsSpec {
     SchemeFSDetail(
       index = 1,
       chargeReference = "XY002610150184",
-      chargeType = "Accounting for Tax return",
+      chargeType = "Accounting for Tax Return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 80000.00,
       amountDue = 1029.05,
@@ -227,7 +227,7 @@ object SchemeFSDetailReadsSpec {
     SchemeFSDetail(
       index = 2,
       chargeReference = "XY002610150185",
-      chargeType = "Accounting for Tax return",
+      chargeType = "Accounting for Tax Return",
       dueDate = Some(LocalDate.parse("2020-02-15")),
       totalAmount = 800.00,
       amountDue = 1029.05,
