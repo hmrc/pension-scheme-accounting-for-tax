@@ -46,29 +46,26 @@ class AFTConnector @Inject()(
 
   private val logger = Logger(classOf[AFTConnector])
 
+  private def httpPostRequest(url: String, data: JsValue, journeyType: String)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader) =
+    http.POST[JsValue, HttpResponse](url, data)(implicitly, implicitly, hc, implicitly) map {
+    response =>
+      response.status match {
+        case OK => response
+        case _ => handleErrorResponse("POST", url, journeyType)(response)
+      }
+  }
+
   def fileAFTReturn(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
     logger.debug("File AFT return (IF) called - URL:" + fileAFTReturnURL)
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
     if (aftService.isChargeZeroedOut(data)) {
-      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) map {
-        response =>
-          response.status match {
-            case OK => response
-            case _ => handleErrorResponse("POST", fileAFTReturnURL, journeyType)(response)
-          }
-      } andThen
+      httpPostRequest(fileAFTReturnURL, data, journeyType)(hc, implicitly, implicitly) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data) andThen
         fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
     } else {
-      http.POST[JsValue, HttpResponse](fileAFTReturnURL, data)(implicitly, implicitly, hc, implicitly) map {
-        response =>
-          response.status match {
-            case OK => response
-            case _ => handleErrorResponse("POST", fileAFTReturnURL, journeyType)(response)
-          }
-      } andThen
+      httpPostRequest(fileAFTReturnURL, data, journeyType)(hc, implicitly, implicitly) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
     }
   }

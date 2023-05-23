@@ -100,6 +100,9 @@ class AFTController @Inject()(
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
 
                 case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+                  //connect to mongo collection - check whether jt is submit / compile. if submit - then we check in mongo if there is a doc that matches pstr.
+                  // if there is - we don't want to resubmit. if there isn't we want to insert a new entry into collection.
+                  // find suitable response code
                   aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     Ok(response.body)
                   }
