@@ -100,10 +100,16 @@ class AFTController @Inject()(
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
 
                 case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-                  //connect to mongo collection - check whether jt is submit / compile. if submit - then we check in mongo if there is a doc that matches pstr.
+                  //TODO PODS-7967 connect to mongo collection - check whether jt is submit / compile. if submit - then we check in mongo if there is a doc that matches pstr.
                   // if there is - we don't want to resubmit. if there isn't we want to insert a new entry into collection.
                   // find suitable response code
+                  println("\n\n\n\n\n + TEST1111")
+                  println("TEST1111")
+                  println("TEST1111")
+                  //TODO PODS-7967: need to post to the collection at this point with all of the confirmation page details
+                  // Need to POST here - lock it. Catch any failure - recover case match
                   aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                    //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
                     Ok(response.body)
                   }
               }
