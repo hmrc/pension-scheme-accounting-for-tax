@@ -124,9 +124,8 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
                 for {
                   seqSchemeFSDetailWithVersionAndReceiptDate <-
                     if(isNhs){
-                      financialStatementConnector.getPsaFS(psaId).map { psaData =>
                       println(s"\n\n\n THIS IS THE NHS\n\n\n")
-                      Future.successful(psaData.seqPsaFSDetail)}
+                      Future.successful(data.seqSchemeFSDetail)
                     }else {
                       updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
                     }
