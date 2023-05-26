@@ -36,6 +36,8 @@ GET           /cache/financial-info-credit-access/psa/:psaId/:srn               
 GET           /cache/financial-info-credit-access/psp/:pspId/:srn                   controllers.cache.FinancialInfoCreditAccessController.getForSchemePsp(pspId: String, srn:String)
 GET           /cache/financial-info-credit-access/psa/:psaId                        controllers.cache.FinancialInfoCreditAccessController.getForPsa(psaId: String)
 
-GET           /file-upload-outcome                                           controllers.cache.FileUploadOutcomeController.get
-POST          /file-upload-outcome                                           controllers.cache.FileUploadOutcomeController.post
-DELETE        /file-upload-outcome                                           controllers.cache.FileUploadOutcomeController.delete
+GET           /file-upload-outcome                                                  controllers.cache.FileUploadOutcomeController.get
+POST          /file-upload-outcome                                                  controllers.cache.FileUploadOutcomeController.post
+DELETE        /file-upload-outcome                                                  controllers.cache.FileUploadOutcomeController.delete
+
+POST          /submit-aft-return                                                    controllers.cache.SubmitAftReturnCacheController.post

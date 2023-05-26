@@ -19,11 +19,12 @@ package controllers
 import audit.FileAFTReturnAuditService
 import connectors.AFTConnector
 import models.enumeration.JourneyType
+import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
 import models.{AFTSubmitterDetails, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
-import repository.AftOverviewCacheRepository
+import repository.{AftOverviewCacheRepository, SubmitAftReturnCacheRepository}
 import services.AFTService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
@@ -46,6 +47,7 @@ class AFTController @Inject()(
                                aftDetailsTransformer: AFTDetailsTransformer,
                                fileAFTReturnAuditService: FileAFTReturnAuditService,
                                aftService: AFTService,
+                               submitAftReturnCacheRepository: SubmitAftReturnCacheRepository,
                                aftOverviewCacheRepository: AftOverviewCacheRepository,
                                jsonPayloadSchemaValidator: JSONPayloadSchemaValidator
                              )(implicit ec: ExecutionContext)
@@ -106,14 +108,23 @@ class AFTController @Inject()(
                   println("\n\n\n\n\n + TEST1111")
                   println("TEST1111")
                   println("TEST1111")
-                  //TODO PODS-7967: need to post to the collection at this point with all of the confirmation page details
-                  // Need to POST here - lock it. Catch any failure - recover case match
-                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                  submitAftReturnCacheRepository.insertLockData().flatMap { g =>
+                    if (!g && journeyType == AFT_SUBMIT_RETURN) {
+                      Future.successful(NoContent)
+                    } else {
+                      aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                        //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
+                        Ok(response.body)
+                      }
+                    }
+                    //TODO PODS-7967: need to post to the collection at this point with all of the confirmation page details
+                    // Need to POST here - lock it. Catch any failure - recover case match
+                    //                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
-                    Ok(response.body)
+                    //                    Ok(response.body)
+                    //                  }
                   }
               }
-
             case JsError(errors) =>
               throw JsResultException(errors)
           }

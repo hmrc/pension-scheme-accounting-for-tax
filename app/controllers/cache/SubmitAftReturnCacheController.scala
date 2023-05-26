@@ -17,15 +17,12 @@
 package controllers.cache
 
 import com.google.inject.Inject
-import play.api.Logger
 import play.api.mvc._
-import repository.{FileUploadOutcomeRepository, SubmitAftReturnCacheRepository}
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
-import uk.gov.hmrc.http.HeaderCarrier
+import repository.SubmitAftReturnCacheRepository
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 class SubmitAftReturnCacheController @Inject()(
                                                 repository: SubmitAftReturnCacheRepository,
@@ -33,14 +30,12 @@ class SubmitAftReturnCacheController @Inject()(
                                                 cc: ControllerComponents
                                            )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
 
-  def post(srn: String): Action[AnyContent] = Action.async {
+  def post: Action[AnyContent] = Action.async {
     _ =>
-      repository.insertLockData(srn).map(_ => Ok)
-  }
-
-  def get(srn: String): Action[AnyContent] = Action.async {
-    _ =>
-      repository.getLockData(srn).map(_ => Ok)
+      repository.insertLockData().map {
+        case true => Ok
+        case false => NoContent
+      }
   }
 }
 
