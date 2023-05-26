@@ -116,19 +116,28 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
 
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
-      get(key = "pstr") { pstr =>
-        financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
-
-          val updatedSchemeFS =
-            for {
-              seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
-            } yield {
-              val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
-              data copy (
-                seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
-                )
+      get(key = "psaId") { psaId =>
+        val isNhs = (psaId == "A2100005")
+          get(key = "pstr") { pstr =>
+            financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
+              val updatedSchemeFS =
+                for {
+                  seqSchemeFSDetailWithVersionAndReceiptDate <-
+                    if(isNhs){
+                      financialStatementConnector.getPsaFS(psaId).map { psaData =>
+                      println(s"\n\n\n THIS IS THE NHS\n\n\n")
+                      Future.successful(psaData.seqPsaFSDetail)}
+                    }else {
+                      updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+                    }
+                } yield {
+                  val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
+                  data copy (
+                    seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
+                    )
+                }
+              updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
             }
-          updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
         }
       }
   }
@@ -140,7 +149,8 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       case Some(_) =>
         request.headers.get(key) match {
           case Some(id) => block(id)
-          case _ => Future.failed(new BadRequestException(s"Bad Request with missing $key"))
+          case _ => println("\n\n\n failing here asdfghjhfvbhj\n\n\n")
+            Future.failed(new BadRequestException(s"Bad Request with missing $key"))
         }
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
