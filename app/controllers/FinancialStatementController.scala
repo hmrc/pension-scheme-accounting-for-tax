@@ -23,7 +23,8 @@ import play.api.libs.json._
 import play.api.mvc._
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment, Enrolments}
+import uk.gov.hmrc.domain.PsaId
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.HttpResponseHelper
@@ -31,6 +32,7 @@ import utils.HttpResponseHelper
 import java.time.LocalDate
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.auth.core.retrieve.~
 
 @Singleton()
 class FinancialStatementController @Inject()(cc: ControllerComponents,
@@ -116,29 +118,47 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
 
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
-      get(key = "psaId") { psaId =>
-        val isNhs = (psaId == "A2100005")
-          get(key = "pstr") { pstr =>
-            financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
-              val updatedSchemeFS =
-                for {
-                  seqSchemeFSDetailWithVersionAndReceiptDate <-
-                    if(isNhs){
-                      println(s"\n\n\n THIS IS THE NHS\n\n\n")
-                      Future.successful(data.seqSchemeFSDetail)
-                    }else {
-                      updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
-                    }
-                } yield {
-                  val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
-                  data copy (
-                    seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
-                    )
-                }
-              updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
+      withPstrPsa { (psaId, pstr) =>
+        financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
+          val isNhs = (psaId == "A21000051")
+          val updatedSchemeFS =
+            for {
+              seqSchemeFSDetailWithVersionAndReceiptDate <-
+                if (isNhs) {
+                Future.successful(data.seqSchemeFSDetail)
+              } else {
+                updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+              }
+            } yield {
+              val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
+              data copy (
+                seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
+                )
             }
+          updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
         }
       }
+  }
+
+  private def getPsaId(enrolments: Enrolments): Option[PsaId] =
+    enrolments
+      .getEnrolment(key = "HMRC-PODS-ORG")
+      .flatMap(_.getIdentifier("PSAID"))
+      .map(x => PsaId(x.value))
+
+
+  private def withPstrPsa(block: (String, String) => Future[Result])
+                 (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId and Retrievals.allEnrolments) {
+      case Some(_) ~ enrolments =>
+        (getPsaId(enrolments), request.headers.get("pstr")) match {
+          case (Some(PsaId(psaId)), Some(pstr)) => block(psaId, pstr)
+          case _ => Future.failed(new BadRequestException(s"Bad Request with missing psaId or pstr"))
+        }
+      case _ =>
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
+    }
   }
 
   private def get(key: String)(block: String => Future[Result])
@@ -148,8 +168,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       case Some(_) =>
         request.headers.get(key) match {
           case Some(id) => block(id)
-          case _ => println("\n\n\n failing here asdfghjhfvbhj\n\n\n")
-            Future.failed(new BadRequestException(s"Bad Request with missing $key"))
+          case _ => Future.failed(new BadRequestException(s"Bad Request with missing $key"))
         }
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
