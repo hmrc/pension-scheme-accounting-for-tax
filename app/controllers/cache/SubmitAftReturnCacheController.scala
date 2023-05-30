@@ -19,6 +19,7 @@ package controllers.cache
 import com.google.inject.Inject
 import play.api.mvc._
 import repository.SubmitAftReturnCacheRepository
+import repository.SubmitAftReturnCacheRepository.SubmitAftReturnCacheEntry
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -32,7 +33,7 @@ class SubmitAftReturnCacheController @Inject()(
 
   def post: Action[AnyContent] = Action.async {
     _ =>
-      repository.insertLockData().map {
+      repository.insertLockData(SubmitAftReturnCacheEntry("123", "testUser", "2021-02-02", "001")).map {
         case true => Ok
         case false => NoContent
       }

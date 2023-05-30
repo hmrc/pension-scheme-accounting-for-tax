@@ -17,17 +17,16 @@
 package repository
 
 import config.AppConfig
-import org.mongodb.scala.model.Filters
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar
+import repository.SubmitAftReturnCacheRepository.SubmitAftReturnCacheEntry
 import uk.gov.hmrc.mongo.MongoComponent
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
 class SubmitAftReturnCacheRepositorySpec
   extends AnyWordSpec with MockitoSugar with Matchers with EmbeddedMongoDBSupport with BeforeAndAfter with
@@ -38,6 +37,8 @@ class SubmitAftReturnCacheRepositorySpec
   import SubmitAftReturnCacheRepositorySpec._
 
   var submitAftReturnCacheRepository: SubmitAftReturnCacheRepository = _
+
+  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", "2021-02-02", "001")
 
   override def beforeAll(): Unit = {
     //    when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
@@ -61,13 +62,28 @@ class SubmitAftReturnCacheRepositorySpec
 
       val document = for {
         _ <- submitAftReturnCacheRepository.collection.drop().toFuture()
-        _ <- submitAftReturnCacheRepository
-         .insertLockData()
+        _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
         countedDocuments <- submitAftReturnCacheRepository.collection.countDocuments().toFuture()
       } yield countedDocuments
 
       whenReady(document) { documentsInDB =>
         documentsInDB mustBe 1L
+      }
+    }
+    "return false if entry already exists in cache. Length of collection should still be 1" in {
+
+      val document = for {
+        _ <- submitAftReturnCacheRepository.collection.drop().toFuture()
+        _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
+        response2 <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
+        countedDocuments <- submitAftReturnCacheRepository.collection.countDocuments().toFuture()
+        foundDocuments <- submitAftReturnCacheRepository.collection.find().toFuture()
+      } yield (countedDocuments, response2, foundDocuments)
+
+      whenReady(document) { case (documentsInDB, response, foundDocs) =>
+        println("\n\n\nFOUND: " + foundDocs)
+        documentsInDB mustBe 1L
+        response mustBe false
       }
     }
   }

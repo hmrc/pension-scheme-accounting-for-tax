@@ -34,6 +34,9 @@ object SubmitAftReturnCacheRepository {
   private val externalUserIdFieldName = "externalUserId"
   private val quarterStartDateFieldName = "quarterStartDate"
   private val versionNumberFieldName = "versionNumber"
+
+  case class SubmitAftReturnCacheEntry(srn: String, externalUserId: String, quarterStartDate: String, versionNumber: String)
+  implicit val format: Format[SubmitAftReturnCacheEntry] = Json.format[SubmitAftReturnCacheEntry]
 }
 
 @Singleton
@@ -41,33 +44,24 @@ class SubmitAftReturnCacheRepository @Inject()(
                                                 mongoComponent: MongoComponent,
                                                 configuration: AppConfig
                                               )(implicit val ec: ExecutionContext)
-  extends PlayMongoRepository[JsObject](
+  extends PlayMongoRepository[SubmitAftReturnCacheEntry](
     collectionName = "submit-aft-return-cache",
     mongoComponent = mongoComponent,
     domainFormat = implicitly,
     indexes = Seq(
       IndexModel(
         Indexes.ascending(srnFieldName, externalUserIdFieldName, quarterStartDateFieldName, versionNumberFieldName),
-        IndexOptions().name("primaryKey").unique(true).background(true))
+        IndexOptions().name("primaryKey").unique(true))
     )
   ) with Logging {
 
   private lazy val documentExistsErrorCode = 11000
 
-  def insertLockData(srn: String, externalUserId: String, quarterStartDate: String, versionNumber: String ): Future[Boolean] = {
-    //    case class Temp(s:String)
-    //    implicit val format: OFormat[Temp] = Json.format[Temp]
-    val x = Json.obj(
-      srnFieldName -> srn,
-      externalUserIdFieldName -> "def",
-      quarterStartDateFieldName -> "ghi",
-      versionNumberFieldName -> "jkl"
-
-    )
-    collection.insertOne(x).toFuture().map { _ => true }
-//      .recoverWith {
-//        case e: MongoWriteException if e.getCode == documentExistsErrorCode =>
-//          Future.successful(false)
-//      }
+  def insertLockData(submitAftReturnCacheEntry: SubmitAftReturnCacheEntry): Future[Boolean] = {
+    collection.insertOne(submitAftReturnCacheEntry).toFuture().map { _ => true }
+      .recoverWith {
+        case e: MongoWriteException if e.getCode == documentExistsErrorCode =>
+          Future.successful(false)
+      }
   }
 }

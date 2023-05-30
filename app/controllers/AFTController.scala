@@ -24,6 +24,7 @@ import models.{AFTSubmitterDetails, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
+import repository.SubmitAftReturnCacheRepository.SubmitAftReturnCacheEntry
 import repository.{AftOverviewCacheRepository, SubmitAftReturnCacheRepository}
 import services.AFTService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
@@ -108,7 +109,7 @@ class AFTController @Inject()(
                   println("\n\n\n\n\n + TEST1111")
                   println("TEST1111")
                   println("TEST1111")
-                  submitAftReturnCacheRepository.insertLockData().flatMap { g =>
+                  submitAftReturnCacheRepository.insertLockData(SubmitAftReturnCacheEntry("123", "testUser", "2021-02-02", "001")).flatMap { g =>
                     if (!g && journeyType == AFT_SUBMIT_RETURN) {
                       Future.successful(NoContent)
                     } else {
