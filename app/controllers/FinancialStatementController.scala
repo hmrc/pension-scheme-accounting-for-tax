@@ -120,7 +120,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     implicit request =>
       withPstrPsa { (psaId, pstr) =>
         financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
-          val isNhs = psaId == "A2100051"
+          val isNhs = psaId == "A0014476"
           val updatedSchemeFS =
             for {
               seqSchemeFSDetailWithVersionAndReceiptDate <-
