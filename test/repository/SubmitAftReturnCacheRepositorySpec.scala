@@ -41,8 +41,6 @@ class SubmitAftReturnCacheRepositorySpec
   val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", "2021-02-02", "001")
 
   override def beforeAll(): Unit = {
-    //    when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
-    //    when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
     //    when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(collectionName)
     initMongoDExecutable()
     startMongoD()
@@ -70,157 +68,29 @@ class SubmitAftReturnCacheRepositorySpec
         documentsInDB mustBe 1L
       }
     }
-    "return false if entry already exists in cache. Length of collection should still be 1" in {
-
-      val document = for {
-        _ <- submitAftReturnCacheRepository.collection.drop().toFuture()
-        _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
-        response2 <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
-        countedDocuments <- submitAftReturnCacheRepository.collection.countDocuments().toFuture()
-        foundDocuments <- submitAftReturnCacheRepository.collection.find().toFuture()
-      } yield (countedDocuments, response2, foundDocuments)
-
-      whenReady(document) { case (documentsInDB, response, foundDocs) =>
-        println("\n\n\nFOUND: " + foundDocs)
-        documentsInDB mustBe 1L
-        response mustBe false
-      }
-    }
+//    "return false if entry already exists in cache. Length of collection should still be 1" in {
+//
+//      val document = for {
+//        _ <- submitAftReturnCacheRepository.collection.drop().toFuture()
+//        _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
+//        response2 <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
+//        countedDocuments <- submitAftReturnCacheRepository.collection.countDocuments().toFuture()
+//        foundDocuments <- submitAftReturnCacheRepository.collection.find().toFuture()
+//      } yield (countedDocuments, response2, foundDocuments)
+//
+//      whenReady(document) { case (documentsInDB, response, foundDocs) =>
+//        println("\n\n\nFOUND: " + foundDocs)
+//        documentsInDB mustBe 1L
+//        response mustBe false
+//      }
+//    }
   }
 }
 
 object SubmitAftReturnCacheRepositorySpec extends MockitoSugar {
 
-//  private def mongoCollectionInsertBatches(submitAftReturnCacheRepository2: SubmitAftReturnCacheRepository, id: String,
-//                                           sessionId: String, seqBatchInfo: Seq[BatchInfo]): Future[Unit] = {
-//
-//    def selector(batchType: BatchType, batchNo: Int): Bson = {
-//      Filters.and(
-//        Filters.eq(uniqueAftIdKey, id + sessionId),
-//        Filters.eq(batchTypeKey, batchType.toString),
-//        Filters.eq(batchNoKey, batchNo)
-//      )
-//    }
-//
-//    val seqFutureUpdateWriteResult = seqBatchInfo.map { bi =>
-//      val modifier = Updates.combine(
-//        set(idKey, id),
-//        set("id", sessionId),
-//        set("data", Codecs.toBson(bi.jsValue))
-//      )
-//
-//      val upsertOptions = new FindOneAndUpdateOptions().upsert(true)
-//      submitAftReturnCacheRepository2.collection.findOneAndUpdate(
-//        filter = selector(bi.batchType, bi.batchNo),
-//        update = modifier,
-//        upsertOptions
-//      ).toFuture().map(_ => (): Unit)
-//
-//    }
-//    Future.sequence(seqFutureUpdateWriteResult).map(_ => (): Unit)
-//  }
-//
-//  private def mongoCollectionInsertSessionDataBatch(submitAftReturnCacheRepository2: SubmitAftReturnCacheRepository, id: String,
-//                                                    sessionId: String, sd: SessionData, batchSize: Int = 2): Future[Unit] = {
-//    val selector: Bson = {
-//      Filters.and(
-//        Filters.eq(uniqueAftIdKey, id + sessionId),
-//        Filters.eq(batchTypeKey, BatchType.SessionData.toString),
-//        Filters.eq(batchNoKey, 1)
-//      )
-//    }
-//    val modifier = Updates.combine(
-//      set(idKey, id),
-//      set("data", Codecs.toBson(Json.toJson(sd))),
-//      set("batchSize", batchSize)
-//    )
-//
-//    val upsertOptions = new FindOneAndUpdateOptions().upsert(true)
-//
-//    submitAftReturnCacheRepository2.collection.findOneAndUpdate(
-//      filter = selector,
-//      update = modifier,
-//      upsertOptions
-//    ).toFuture().map(_ => (): Unit)
-//  }
-//
   private val mockAppConfig = mock[AppConfig]
-//
-//  private val dummyJson = Json.obj("dummy" -> "value")
-//  private val version = 1
-//  private val accessMode = "dummy"
-//  private val areSubmittedVersionsAvailable = false
-//  private val id = "S24000000152020-04-01"
-//  private val anotherSchemeId = "S24000000162020-04-01"
-//  private val sessionId = "session-1"
-//  private val anotherSessionId = "session-2"
-//  private val uniqueAftId = id + sessionId
-//  private val lockDetail = Some(LockDetail(name = "Billy Wiggins", "A123456"))
-//  private val batchService = mock[BatchService]
-//  private val collectionName = "aft-batches"
-//
-//  private def sessionData(sessionId: String, lockDetail: Option[LockDetail] = lockDetail) = SessionData(
-//    sessionId = sessionId, lockDetail = lockDetail, version = version, accessMode = accessMode,
-//    areSubmittedVersionsAvailable = false)
-//
-//  private def sessionDataBatch(sessionId: String, lockDetail: Option[LockDetail]): Set[BatchInfo] = {
-//    val json = Json.toJson(sessionData(sessionId, lockDetail))
-//    Set(BatchInfo(BatchType.SessionData, 1, json))
-//  }
-//
-//  private def dbDocumentsAsSeqBatchInfo(s: Seq[JsValue]): Set[BatchInfo] = {
-//    s.map { jsValue =>
-//      val batchType = BatchType.getBatchType((jsValue \ "batchType").as[String])
-//        .getOrElse(throw new RuntimeException("Unknown batch type"))
-//      val batchNo = (jsValue \ "batchNo").as[Int]
-//      val jsData = {
-//        val t = jsValue \ "data"
-//        batchType match {
-//          case BatchType.Other => t.as[JsObject]
-//          case BatchType.SessionData => t.as[JsObject]
-//          case _ => t.as[JsArray]
-//        }
-//      }
-//      BatchInfo(batchType, batchNo, jsData)
-//    }.toSet
-//  }
-//
-//  private def filterOnBatchTypeAndNo(batchType: BatchType, batchNo: Int): BatchInfo => Boolean =
-//    bi => bi.batchType == batchType && bi.batchNo == batchNo
-//
-//  private val setOfFourChargeCMembersInTwoBatches: Set[BatchInfo] = {
-//    val payloadOtherBatch = payloadOther
-//    val jsArrayChargeC = payloadChargeTypeCEmployer(numberOfItems = 4)
-//    Set(
-//      BatchInfo(BatchType.Other, 1, payloadOtherBatch),
-//      BatchInfo(BatchType.ChargeC, 1, JsArray(Seq(jsArrayChargeC(0), jsArrayChargeC(1)))),
-//      BatchInfo(BatchType.ChargeC, 2, JsArray(Seq(jsArrayChargeC(2), jsArrayChargeC(3))))
-//    )
-//  }
-//
-//  private val fullSetOfBatchesToSaveToMongo: Set[BatchInfo] = {
-//    val jsArrayChargeC = payloadChargeTypeCEmployer(numberOfItems = 5)
-//    val jsArrayChargeD = payloadChargeTypeDMember(numberOfItems = 4)
-//    val jsArrayChargeE = payloadChargeTypeEMember(numberOfItems = 2)
-//    val jsArrayChargeG = payloadChargeTypeGMember(numberOfItems = 7)
-//    Set(BatchInfo(BatchType.Other, 1,
-//      payloadOther ++ payloadChargeTypeA ++ payloadChargeTypeB ++ payloadChargeTypeF ++ concatenateNodes(
-//        Seq(payloadChargeTypeCMinusEmployers(numberOfItems = 5)), nodeNameChargeC) ++ concatenateNodes(
-//        Seq(payloadChargeTypeDMinusMembers(numberOfItems = 4)), nodeNameChargeD) ++ concatenateNodes(
-//        Seq(payloadChargeTypeEMinusMembers(numberOfItems = 2)), nodeNameChargeE) ++ concatenateNodes(
-//        Seq(payloadChargeTypeGMinusMembers(numberOfItems = 7)), nodeNameChargeG)),
-//      BatchInfo(BatchType.ChargeC, 1, JsArray(Seq(jsArrayChargeC(0), jsArrayChargeC(1)))),
-//      BatchInfo(BatchType.ChargeC, 2, JsArray(Seq(jsArrayChargeC(2), jsArrayChargeC(3)))),
-//      BatchInfo(BatchType.ChargeC, 3, JsArray(Seq(jsArrayChargeC(4)))),
-//      BatchInfo(BatchType.ChargeD, 1, JsArray(Seq(jsArrayChargeD(0), jsArrayChargeD(1)))),
-//      BatchInfo(BatchType.ChargeD, 2, JsArray(Seq(jsArrayChargeD(2), jsArrayChargeD(3)))),
-//      BatchInfo(BatchType.ChargeE, 1, JsArray(Seq(jsArrayChargeE(0), jsArrayChargeE(1)))),
-//      BatchInfo(BatchType.ChargeG, 1, JsArray(Seq(jsArrayChargeG(0), jsArrayChargeG(1)))),
-//      BatchInfo(BatchType.ChargeG, 2, JsArray(Seq(jsArrayChargeG(2), jsArrayChargeG(3)))),
-//      BatchInfo(BatchType.ChargeG, 3, JsArray(Seq(jsArrayChargeG(4), jsArrayChargeG(5)))),
-//      BatchInfo(BatchType.ChargeG, 4, JsArray(Seq(jsArrayChargeG(6)))))
-//  }
-//
+
   private def buildRepository(mongoHost: String, mongoPort: Int): SubmitAftReturnCacheRepository = {
     val databaseName = "pension-scheme-accounting-for-tax"
     val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"

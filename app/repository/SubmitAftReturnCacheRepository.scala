@@ -42,7 +42,7 @@ object SubmitAftReturnCacheRepository {
 @Singleton
 class SubmitAftReturnCacheRepository @Inject()(
                                                 mongoComponent: MongoComponent,
-                                                configuration: AppConfig
+                                                appConfig: AppConfig
                                               )(implicit val ec: ExecutionContext)
   extends PlayMongoRepository[SubmitAftReturnCacheEntry](
     collectionName = "submit-aft-return-cache",

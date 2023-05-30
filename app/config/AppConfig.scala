@@ -40,6 +40,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   val mongoDBAFTBatchesTTL: Int = config.get[Int](path = "mongodb.aft-cache.aft-batches.timeToLiveInSeconds")
   val mongoDBAFTBatchesMaxTTL: Int = config.get[Int](path = "mongodb.aft-cache.aft-batches.maxTimeToLiveInSeconds")
 
+
   lazy val integrationframeworkEnvironment: String = runModeConfiguration.getOptional[String](
     path = "microservice.services.if-hod.env").getOrElse("local")
   lazy val integrationframeworkAuthorization: String = "Bearer " + runModeConfiguration.getOptional[String](
