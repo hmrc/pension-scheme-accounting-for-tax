@@ -70,7 +70,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     overrides(modules: _*).build()
 
 
-  private val nhsPsaId = "A2100051"
+  private val nhsPsaId = "A0014476"
   private def expectedAuthorisations(psaId: String = "A2100052"): Option[String] ~ Enrolments = {
     Option("Ext-137d03b9-d807-4283-a254-fb6c30aceef1") and
       Enrolments(
