@@ -23,7 +23,8 @@ import play.api.libs.json._
 import play.api.mvc._
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment, Enrolments}
+import uk.gov.hmrc.domain.PsaId
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.HttpResponseHelper
@@ -31,6 +32,7 @@ import utils.HttpResponseHelper
 import java.time.LocalDate
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.auth.core.retrieve.~
 
 @Singleton()
 class FinancialStatementController @Inject()(cc: ControllerComponents,
@@ -116,12 +118,17 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
 
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
-      get(key = "pstr") { pstr =>
+      withPstrPsa { (psaId, pstr) =>
         financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
-
+          val isNhs = psaId == "A0014476"
           val updatedSchemeFS =
             for {
-              seqSchemeFSDetailWithVersionAndReceiptDate <- updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+              seqSchemeFSDetailWithVersionAndReceiptDate <-
+                if (isNhs) {
+                Future.successful(data.seqSchemeFSDetail)
+              } else {
+                updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+              }
             } yield {
               val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
               data copy (
@@ -131,6 +138,27 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
           updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
         }
       }
+  }
+
+  private def getPsaId(enrolments: Enrolments): Option[PsaId] =
+    enrolments
+      .getEnrolment(key = "HMRC-PODS-ORG")
+      .flatMap(_.getIdentifier("PSAID"))
+      .map(id => PsaId(id.value))
+
+
+  private def withPstrPsa(block: (String, String) => Future[Result])
+                 (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId and Retrievals.allEnrolments) {
+      case Some(_) ~ enrolments =>
+        (getPsaId(enrolments), request.headers.get("pstr")) match {
+          case (Some(PsaId(psaId)), Some(pstr)) => block(psaId, pstr)
+          case _ => Future.failed(new BadRequestException("Bad Request with missing psaId or pstr"))
+        }
+      case _ =>
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
+    }
   }
 
   private def get(key: String)(block: String => Future[Result])
