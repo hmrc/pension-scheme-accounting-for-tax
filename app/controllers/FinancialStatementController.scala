@@ -144,7 +144,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     enrolments
       .getEnrolment(key = "HMRC-PODS-ORG")
       .flatMap(_.getIdentifier("PSAID"))
-      .map(x => PsaId(x.value))
+      .map(id => PsaId(id.value))
 
 
   private def withPstrPsa(block: (String, String) => Future[Result])
