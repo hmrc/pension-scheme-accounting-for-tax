@@ -120,7 +120,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     implicit request =>
       withPstrPsa { (psaId, pstr) =>
         financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
-          val isNhs = (psaId == "A21000051")
+          val isNhs = psaId == "A2100051"
           val updatedSchemeFS =
             for {
               seqSchemeFSDetailWithVersionAndReceiptDate <-
@@ -154,7 +154,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       case Some(_) ~ enrolments =>
         (getPsaId(enrolments), request.headers.get("pstr")) match {
           case (Some(PsaId(psaId)), Some(pstr)) => block(psaId, pstr)
-          case _ => Future.failed(new BadRequestException(s"Bad Request with missing psaId or pstr"))
+          case _ => Future.failed(new BadRequestException("Bad Request with missing psaId or pstr"))
         }
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))

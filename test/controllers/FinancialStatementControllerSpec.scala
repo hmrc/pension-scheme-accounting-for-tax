@@ -32,7 +32,9 @@ import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository._
-import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
+import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http._
 import utils.JsonFileReader
 
@@ -67,15 +69,26 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
     overrides(modules: _*).build()
 
+
+  private val nhsPsaId = "A2100051"
+  private def expectedAuthorisations(psaId: String = "A2100052"): Option[String] ~ Enrolments = {
+    Option("Ext-137d03b9-d807-4283-a254-fb6c30aceef1") and
+      Enrolments(
+        Set(
+          Enrolment("HMRC-PODS-ORG", Seq(EnrolmentIdentifier("PSAID", psaId)), "Activated", None)
+        )
+      )
+  }
+
   before {
-    reset(mockFSConnector, authConnector)
-    when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
+    reset(mockFSConnector)
+    reset(authConnector)
   }
 
   "psaStatement" must {
 
     "return OK when the details are returned based on pstr, start date and AFT version" in {
-
+      when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
       val controller = application.injector.instanceOf[FinancialStatementController]
 
       when(mockFSConnector.getPsaFS(ArgumentMatchers.eq(psaId))(any(), any(), any())).thenReturn(
@@ -88,7 +101,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     }
 
     "throw BadRequestException when PSTR is not present in the header" in {
-
+      when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
       val controller = application.injector.instanceOf[FinancialStatementController]
 
       recoverToExceptionIf[BadRequestException] {
@@ -100,7 +113,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     }
 
     "throw generic exception when any other exception returned from Des" in {
-
+      when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
       val controller = application.injector.instanceOf[FinancialStatementController]
 
       when(mockFSConnector.getPsaFS(ArgumentMatchers.eq(psaId))(any(), any(), any())).thenReturn(
@@ -126,8 +139,8 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
     val controller = application.injector.instanceOf[FinancialStatementController]
 
-    "return OK when the details are returned based on pstr and aft details exist" in {
-
+    "return OK & call get aft details when the details are returned based on pstr and aft details exist and NOT NHS" in {
+      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
       when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
 
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
@@ -139,7 +152,21 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
     }
 
+    "return OK & not call get aft details when the details are returned based on pstr and aft details exist and NHS" in {
+      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations(nhsPsaId)))
+      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
+
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModel))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithNoAFTDetails)
+    }
+
     "return OK when the details are returned based on pstr and aft details don't exist" in {
+      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
       when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(None))
 
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
@@ -159,6 +186,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
         s"flip ${charge.seqSchemeFSDetail.head.chargeType} to ${credit.seqSchemeFSDetail.head.chargeType} if negative amountDue" in {
           when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
             Future.successful(charge))
+          when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
           val result = controller.schemeStatement()(fakeRequestWithPstr)
           status(result) mustBe OK
           contentAsJson(result) mustBe Json.toJson(credit)
@@ -167,17 +195,17 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     }
 
     "throw BadRequestException when PSTR is not present in the header" in {
-
+      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
       recoverToExceptionIf[BadRequestException] {
         controller.schemeStatement()(fakeRequest)
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing pstr"
+        response.getMessage mustBe "Bad Request with missing psaId or pstr"
       }
     }
 
     "throw generic exception when any other exception returned from Des" in {
-
+      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.failed(new Exception("Generic Exception")))
 
@@ -189,7 +217,13 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     }
 
     "throw Unauthorised Exception when there is external id is not present in auth" in {
-      when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
+      def expectedAuthorisations: Option[String] ~ Enrolments = {
+        None and
+          Enrolments(
+            Set.empty
+          )
+      }
+      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations))
 
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModel))
