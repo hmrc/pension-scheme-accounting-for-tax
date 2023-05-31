@@ -20,22 +20,20 @@ import com.google.inject.Inject
 import config.AppConfig
 import org.mongodb.scala.MongoWriteException
 import org.mongodb.scala.model._
+import play.api.Logging
 import play.api.libs.json._
-import play.api.{Configuration, Logging}
 import repository.SubmitAftReturnCacheRepository._
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 
 object SubmitAftReturnCacheRepository {
-  private val srnFieldName = "srn"
+  private val pstrFieldName = "pstr"
   private val externalUserIdFieldName = "externalUserId"
-  private val quarterStartDateFieldName = "quarterStartDate"
-  private val versionNumberFieldName = "versionNumber"
 
-  case class SubmitAftReturnCacheEntry(srn: String, externalUserId: String, quarterStartDate: String, versionNumber: String)
+  case class SubmitAftReturnCacheEntry(pstr: String, externalUserId: String)
   implicit val format: Format[SubmitAftReturnCacheEntry] = Json.format[SubmitAftReturnCacheEntry]
 }
 
@@ -45,12 +43,12 @@ class SubmitAftReturnCacheRepository @Inject()(
                                                 appConfig: AppConfig
                                               )(implicit val ec: ExecutionContext)
   extends PlayMongoRepository[SubmitAftReturnCacheEntry](
-    collectionName = "submit-aft-return-cache",
+    collectionName = appConfig.mongoDBSubmitAftReturnCollectionName,
     mongoComponent = mongoComponent,
     domainFormat = implicitly,
     indexes = Seq(
       IndexModel(
-        Indexes.ascending(srnFieldName, externalUserIdFieldName, quarterStartDateFieldName, versionNumberFieldName),
+        Indexes.ascending(pstrFieldName, externalUserIdFieldName),
         IndexOptions().name("primaryKey").unique(true))
     )
   ) with Logging {

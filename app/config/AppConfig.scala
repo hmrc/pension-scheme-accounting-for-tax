@@ -39,6 +39,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   val mongoDBAFTBatchesCollectionName: String = config.get[String](path = "mongodb.aft-cache.aft-batches.name")
   val mongoDBAFTBatchesTTL: Int = config.get[Int](path = "mongodb.aft-cache.aft-batches.timeToLiveInSeconds")
   val mongoDBAFTBatchesMaxTTL: Int = config.get[Int](path = "mongodb.aft-cache.aft-batches.maxTimeToLiveInSeconds")
+  val mongoDBSubmitAftReturnCollectionName: String = config.get[String](path = "mongodb.aft-cache.submit-aft-return-cache.name")
 
 
   lazy val integrationframeworkEnvironment: String = runModeConfiguration.getOptional[String](

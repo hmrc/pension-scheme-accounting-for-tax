@@ -17,6 +17,7 @@
 package repository
 
 import config.AppConfig
+import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
@@ -38,10 +39,8 @@ class SubmitAftReturnCacheRepositorySpec
 
   var submitAftReturnCacheRepository: SubmitAftReturnCacheRepository = _
 
-  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", "2021-02-02", "001")
-
   override def beforeAll(): Unit = {
-    //    when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(collectionName)
+    when(mockAppConfig.mongoDBSubmitAftReturnCollectionName).thenReturn(collectionName)
     initMongoDExecutable()
     startMongoD()
     submitAftReturnCacheRepository = buildRepository(mongoHost, mongoPort)
@@ -68,28 +67,14 @@ class SubmitAftReturnCacheRepositorySpec
         documentsInDB mustBe 1L
       }
     }
-//    "return false if entry already exists in cache. Length of collection should still be 1" in {
-//
-//      val document = for {
-//        _ <- submitAftReturnCacheRepository.collection.drop().toFuture()
-//        _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
-//        response2 <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
-//        countedDocuments <- submitAftReturnCacheRepository.collection.countDocuments().toFuture()
-//        foundDocuments <- submitAftReturnCacheRepository.collection.find().toFuture()
-//      } yield (countedDocuments, response2, foundDocuments)
-//
-//      whenReady(document) { case (documentsInDB, response, foundDocs) =>
-//        println("\n\n\nFOUND: " + foundDocs)
-//        documentsInDB mustBe 1L
-//        response mustBe false
-//      }
-//    }
   }
 }
 
 object SubmitAftReturnCacheRepositorySpec extends MockitoSugar {
 
   private val mockAppConfig = mock[AppConfig]
+  private val collectionName = "submit-aft-return"
+  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser")
 
   private def buildRepository(mongoHost: String, mongoPort: Int): SubmitAftReturnCacheRepository = {
     val databaseName = "pension-scheme-accounting-for-tax"

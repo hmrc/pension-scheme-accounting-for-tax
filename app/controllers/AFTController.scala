@@ -65,7 +65,11 @@ class AFTController @Inject()(
   //scalastyle:off cyclomatic.complexity
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
-      post { (pstr, userAnswersJson) =>
+      post { (pstr, x, userAnswersJson) =>
+        val g = request.body
+        val h = request.headers
+        println("\n\n\n\n\nBODY : " + g)
+        println("\n\n\n\n\nHeader : " + h)
         aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
@@ -106,24 +110,29 @@ class AFTController @Inject()(
                   //TODO PODS-7967 connect to mongo collection - check whether jt is submit / compile. if submit - then we check in mongo if there is a doc that matches pstr.
                   // if there is - we don't want to resubmit. if there isn't we want to insert a new entry into collection.
                   // find suitable response code
-                  println("\n\n\n\n\n + TEST1111")
-                  println("TEST1111")
-                  println("TEST1111")
-                  submitAftReturnCacheRepository.insertLockData(SubmitAftReturnCacheEntry("123", "testUser", "2021-02-02", "001")).flatMap { g =>
-                    if (!g && journeyType == AFT_SUBMIT_RETURN) {
-                      Future.successful(NoContent)
-                    } else {
-                      aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                        //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
-                        Ok(response.body)
-                      }
-                    }
-                    //TODO PODS-7967: need to post to the collection at this point with all of the confirmation page details
-                    // Need to POST here - lock it. Catch any failure - recover case match
-                    //                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                 def gggg = aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
-                    //                    Ok(response.body)
-                    //                  }
+                  Ok(response.body)
+                  }
+                  journeyType match {
+
+                    case AFT_SUBMIT_RETURN =>
+                      submitAftReturnCacheRepository.insertLockData(SubmitAftReturnCacheEntry(pstr, x)).flatMap { g =>
+                        println("\n\n\nMongoCache: " + g)
+                        if (!g && journeyType == AFT_SUBMIT_RETURN) {
+                          Future.successful(NoContent)
+                        } else {
+                          gggg
+                        }
+                        //TODO PODS-7967: need to post to the collection at this point with all of the confirmation page details
+                        // Need to POST here - lock it. Catch any failure - recover case match
+                        //                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                        //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
+                        //                    Ok(response.body)
+                        //                  }
+                      }
+                    case _ => gggg
+
                   }
               }
             case JsError(errors) =>
@@ -219,19 +228,19 @@ class AFTController @Inject()(
     }
   }
 
-  private def post(block: (String, JsValue) => Future[Result])
+  private def post(block: (String, String, JsValue) => Future[Result])
                   (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
 
     logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
 
     authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(_) =>
+      case Some(x) =>
         (
           request.headers.get("pstr"),
           request.body.asJson
         ) match {
           case (Some(pstr), Some(js)) =>
-            block(pstr, js)
+            block(pstr, x, js)
           case (pstr, jsValue) =>
             Future.failed(new BadRequestException(
               s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
