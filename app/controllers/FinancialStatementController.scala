@@ -23,6 +23,7 @@ import play.api.libs.json._
 import play.api.mvc._
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment, Enrolments}
 import uk.gov.hmrc.domain.PsaId
 import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
@@ -32,7 +33,6 @@ import utils.HttpResponseHelper
 import java.time.LocalDate
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.auth.core.retrieve.~
 
 @Singleton()
 class FinancialStatementController @Inject()(cc: ControllerComponents,
@@ -118,9 +118,8 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
 
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
-      withPstrPsa { (psaId, pstr) =>
+      withPstrAndNhsCheck { (isNhs, pstr) =>
         financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
-          val isNhs = psaId == "A0014476"
           val updatedSchemeFS =
             for {
               seqSchemeFSDetailWithVersionAndReceiptDate <-
@@ -146,14 +145,16 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       .flatMap(_.getIdentifier("PSAID"))
       .map(id => PsaId(id.value))
 
-
-  private def withPstrPsa(block: (String, String) => Future[Result])
+  private def withPstrAndNhsCheck(block: (Boolean, String) => Future[Result])
                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-
     authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId and Retrievals.allEnrolments) {
       case Some(_) ~ enrolments =>
         (getPsaId(enrolments), request.headers.get("pstr")) match {
-          case (Some(PsaId(psaId)), Some(pstr)) => block(psaId, pstr)
+          case (Some(PsaId(psaId)), Some(pstr)) =>
+            val isNhs = psaId == "A0014476"
+            block(isNhs, pstr)
+          case (_, Some(pstr)) =>
+            block(false, pstr)
           case _ => Future.failed(new BadRequestException("Bad Request with missing psaId or pstr"))
         }
       case _ =>
