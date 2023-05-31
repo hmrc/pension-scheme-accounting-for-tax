@@ -66,10 +66,6 @@ class AFTController @Inject()(
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
       post { (pstr, x, userAnswersJson) =>
-        val g = request.body
-        val h = request.headers
-        println("\n\n\n\n\nBODY : " + g)
-        println("\n\n\n\n\nHeader : " + h)
         aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
@@ -107,22 +103,21 @@ class AFTController @Inject()(
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
 
                 case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+                  def filingAftReturn = aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                    //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
+                    Ok(response.body)
+                  }
                   //TODO PODS-7967 connect to mongo collection - check whether jt is submit / compile. if submit - then we check in mongo if there is a doc that matches pstr.
                   // if there is - we don't want to resubmit. if there isn't we want to insert a new entry into collection.
                   // find suitable response code
-                 def gggg = aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                    //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
-                  Ok(response.body)
-                  }
                   journeyType match {
 
                     case AFT_SUBMIT_RETURN =>
                       submitAftReturnCacheRepository.insertLockData(SubmitAftReturnCacheEntry(pstr, x)).flatMap { g =>
-                        println("\n\n\nMongoCache: " + g)
                         if (!g && journeyType == AFT_SUBMIT_RETURN) {
                           Future.successful(NoContent)
                         } else {
-                          gggg
+                          filingAftReturn
                         }
                         //TODO PODS-7967: need to post to the collection at this point with all of the confirmation page details
                         // Need to POST here - lock it. Catch any failure - recover case match
@@ -131,8 +126,7 @@ class AFTController @Inject()(
                         //                    Ok(response.body)
                         //                  }
                       }
-                    case _ => gggg
-
+                    case _ => filingAftReturn
                   }
               }
             case JsError(errors) =>
