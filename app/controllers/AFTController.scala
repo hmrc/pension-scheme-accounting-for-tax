@@ -63,9 +63,10 @@ class AFTController @Inject()(
   type SeqOfChargeType = Option[Seq[Option[String]]]
 
   //scalastyle:off cyclomatic.complexity
+  //scalastyle:off method.length
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
-      post { (pstr, x, userAnswersJson) =>
+      post { (pstr, externalUserId, userAnswersJson) =>
         aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
@@ -104,27 +105,14 @@ class AFTController @Inject()(
 
                 case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
                   def filingAftReturn = aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                    //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
                     Ok(response.body)
                   }
-                  //TODO PODS-7967 connect to mongo collection - check whether jt is submit / compile. if submit - then we check in mongo if there is a doc that matches pstr.
-                  // if there is - we don't want to resubmit. if there isn't we want to insert a new entry into collection.
-                  // find suitable response code
                   journeyType match {
-
                     case AFT_SUBMIT_RETURN =>
-                      submitAftReturnCacheRepository.insertLockData(SubmitAftReturnCacheEntry(pstr, x)).flatMap { g =>
-                        if (!g && journeyType == AFT_SUBMIT_RETURN) {
+                      submitAftReturnCacheRepository.insertLockData(SubmitAftReturnCacheEntry(pstr, externalUserId)).flatMap { entryExists =>
+                        if (!entryExists && journeyType == AFT_SUBMIT_RETURN) {
                           Future.successful(NoContent)
-                        } else {
-                          filingAftReturn
-                        }
-                        //TODO PODS-7967: need to post to the collection at this point with all of the confirmation page details
-                        // Need to POST here - lock it. Catch any failure - recover case match
-                        //                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                        //TODO PODS-7967 what happens when fileAftReturns a 5xx error?
-                        //                    Ok(response.body)
-                        //                  }
+                        } else { filingAftReturn }
                       }
                     case _ => filingAftReturn
                   }
@@ -228,13 +216,13 @@ class AFTController @Inject()(
     logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
 
     authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(x) =>
+      case Some(externalUserId) =>
         (
           request.headers.get("pstr"),
           request.body.asJson
         ) match {
           case (Some(pstr), Some(js)) =>
-            block(pstr, x, js)
+            block(pstr, externalUserId, js)
           case (pstr, jsValue) =>
             Future.failed(new BadRequestException(
               s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
