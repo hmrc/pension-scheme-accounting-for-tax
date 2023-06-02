@@ -17,6 +17,7 @@
 package repository
 
 import config.AppConfig
+import org.joda.time.{DateTime, DateTimeZone}
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
@@ -74,7 +75,7 @@ object SubmitAftReturnCacheRepositorySpec extends MockitoSugar {
 
   private val mockAppConfig = mock[AppConfig]
   private val collectionName = "submit-aft-return"
-  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser")
+  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", DateTime.now(DateTimeZone.UTC))
 
   private def buildRepository(mongoHost: String, mongoPort: Int): SubmitAftReturnCacheRepository = {
     val databaseName = "pension-scheme-accounting-for-tax"
