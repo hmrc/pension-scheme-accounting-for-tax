@@ -36,7 +36,7 @@ object SubmitAftReturnCacheRepository {
   private val pstrFieldName = "pstr"
   private val externalUserIdFieldName = "externalUserId"
 
-  case class SubmitAftReturnCacheEntry(pstr: String, externalUserId: String, expireAt: DateTime)
+  case class SubmitAftReturnCacheEntry(pstr: String, externalUserId: String, insertionTime: DateTime)
   implicit val dateFormats: Format[DateTime] = MongoJodaFormats.dateTimeFormat
   implicit val format: OFormat[SubmitAftReturnCacheEntry] = Json.format[SubmitAftReturnCacheEntry]
 }
@@ -56,19 +56,16 @@ class SubmitAftReturnCacheRepository @Inject()(
         IndexOptions().name("primaryKey").unique(true),
       ),
       IndexModel(
-        keys = Indexes.ascending("expireAt"),
-        indexOptions = IndexOptions().name("dataExpiry").unique(true).expireAfter(0, TimeUnit.SECONDS)
+        keys = Indexes.ascending("insertionTime"),
+        indexOptions = IndexOptions().name("insertion").expireAfter(appConfig.mongoDBSubmitAftReturnTTL, TimeUnit.SECONDS)
       )
     )
   ) with Logging {
 
-
-  private def expireInSeconds: DateTime = DateTime.now(DateTimeZone.UTC).plusSeconds(appConfig.mongoDBSubmitAftReturnTTL)
-
   private lazy val documentExistsErrorCode = 11000
 
   def insertLockData(pstr: String, externalUserId: String): Future[Boolean] = {
-    collection.insertOne(SubmitAftReturnCacheEntry(pstr, externalUserId, expireInSeconds)).toFuture().map { _ => true }
+    collection.insertOne(SubmitAftReturnCacheEntry(pstr, externalUserId, DateTime.now(DateTimeZone.UTC))).toFuture().map { _ => true }
       .recoverWith {
         case e: MongoWriteException if e.getCode == documentExistsErrorCode =>
           Future.successful(false)
