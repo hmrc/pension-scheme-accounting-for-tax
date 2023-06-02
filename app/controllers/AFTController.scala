@@ -19,11 +19,13 @@ package controllers
 import audit.FileAFTReturnAuditService
 import connectors.AFTConnector
 import models.enumeration.JourneyType
+import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
 import models.{AFTSubmitterDetails, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
-import repository.AftOverviewCacheRepository
+import repository.SubmitAftReturnCacheRepository.SubmitAftReturnCacheEntry
+import repository.{AftOverviewCacheRepository, SubmitAftReturnCacheRepository}
 import services.AFTService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
@@ -46,6 +48,7 @@ class AFTController @Inject()(
                                aftDetailsTransformer: AFTDetailsTransformer,
                                fileAFTReturnAuditService: FileAFTReturnAuditService,
                                aftService: AFTService,
+                               submitAftReturnCacheRepository: SubmitAftReturnCacheRepository,
                                aftOverviewCacheRepository: AftOverviewCacheRepository,
                                jsonPayloadSchemaValidator: JSONPayloadSchemaValidator
                              )(implicit ec: ExecutionContext)
@@ -60,9 +63,10 @@ class AFTController @Inject()(
   type SeqOfChargeType = Option[Seq[Option[String]]]
 
   //scalastyle:off cyclomatic.complexity
+  //scalastyle:off method.length
   def fileReturn(journeyType: JourneyType.Name): Action[AnyContent] = Action.async {
     implicit request =>
-      post { (pstr, userAnswersJson) =>
+      post { (pstr, externalUserId, userAnswersJson) =>
         aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
           logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
           userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
@@ -100,11 +104,19 @@ class AFTController @Inject()(
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
 
                 case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
-                  aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
+                  def filingAftReturn = aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     Ok(response.body)
                   }
+                  journeyType match {
+                    case AFT_SUBMIT_RETURN =>
+                      submitAftReturnCacheRepository.insertLockData(pstr, externalUserId).flatMap { entryExists =>
+                        if (!entryExists && journeyType == AFT_SUBMIT_RETURN) {
+                          Future.successful(NoContent)
+                        } else { filingAftReturn }
+                      }
+                    case _ => filingAftReturn
+                  }
               }
-
             case JsError(errors) =>
               throw JsResultException(errors)
           }
@@ -198,19 +210,19 @@ class AFTController @Inject()(
     }
   }
 
-  private def post(block: (String, JsValue) => Future[Result])
+  private def post(block: (String, String, JsValue) => Future[Result])
                   (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
 
     logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
 
     authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(_) =>
+      case Some(externalUserId) =>
         (
           request.headers.get("pstr"),
           request.body.asJson
         ) match {
           case (Some(pstr), Some(js)) =>
-            block(pstr, js)
+            block(pstr, externalUserId, js)
           case (pstr, jsValue) =>
             Future.failed(new BadRequestException(
               s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
