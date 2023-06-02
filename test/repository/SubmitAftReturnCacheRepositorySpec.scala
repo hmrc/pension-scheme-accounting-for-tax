@@ -59,7 +59,7 @@ class SubmitAftReturnCacheRepositorySpec
 
       val document = for {
         _ <- submitAftReturnCacheRepository.collection.drop().toFuture()
-        _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry)
+        _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry.pstr, aftCacheEntry.externalUserId)
         countedDocuments <- submitAftReturnCacheRepository.collection.countDocuments().toFuture()
       } yield countedDocuments
 

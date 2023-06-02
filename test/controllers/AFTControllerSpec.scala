@@ -110,7 +110,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
-      when(mockSubmitAftReturnCacheRepository.insertLockData(any())).thenReturn(Future.successful(true))
+      when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any())).thenReturn(Future.successful(true))
       val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
@@ -122,7 +122,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaFullPayloadRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
-      when(mockSubmitAftReturnCacheRepository.insertLockData(any())).thenReturn(Future.successful(true))
+      when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any())).thenReturn(Future.successful(true))
       val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
@@ -134,7 +134,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaFullPayloadRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
-      when(mockSubmitAftReturnCacheRepository.insertLockData(any())).thenReturn(Future.successful(false))
+      when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any())).thenReturn(Future.successful(false))
       val result = controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
       status(result) mustBe NO_CONTENT
@@ -156,7 +156,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaInvalidPayloadRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
-      when(mockSubmitAftReturnCacheRepository.insertLockData(any())).thenReturn(Future.successful(true))
+      when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any())).thenReturn(Future.successful(true))
 
       recoverToExceptionIf[AFTValidationFailureException] {
         controller.fileReturn(journeyType)(fakeRequest.withJsonBody(fileAFTUaInvalidPayloadRequestJson).

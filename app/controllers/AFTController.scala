@@ -109,7 +109,7 @@ class AFTController @Inject()(
                   }
                   journeyType match {
                     case AFT_SUBMIT_RETURN =>
-                      submitAftReturnCacheRepository.insertLockData(SubmitAftReturnCacheEntry(pstr, externalUserId)).flatMap { entryExists =>
+                      submitAftReturnCacheRepository.insertLockData(pstr, externalUserId).flatMap { entryExists =>
                         if (!entryExists && journeyType == AFT_SUBMIT_RETURN) {
                           Future.successful(NoContent)
                         } else { filingAftReturn }
