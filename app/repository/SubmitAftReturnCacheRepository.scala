@@ -53,7 +53,7 @@ class SubmitAftReturnCacheRepository @Inject()(
     indexes = Seq(
       IndexModel(
         Indexes.ascending(pstrFieldName, externalUserIdFieldName),
-        IndexOptions().name("primaryKey").unique(true),
+        IndexOptions().name("primaryKey").unique(true)
       ),
       IndexModel(
         keys = Indexes.ascending("insertionTime"),
