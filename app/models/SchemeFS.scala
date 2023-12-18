@@ -19,7 +19,7 @@ package models
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 case class DocumentLineItemDetail(clearedAmountItem: BigDecimal, clearingDate: Option[LocalDate], paymDateOrCredDueDate: Option[LocalDate], clearingReason: Option[String])
 
@@ -105,11 +105,13 @@ object SchemeFS {
       (JsPath \ "formbundleNumber").readNullable[String] and
       (JsPath \ "aftVersion").readNullable[Int] and
       (JsPath \ "sourceChargeRefForInterest").readNullable[String] and
-      (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail))
+      (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail)) and
+      (JsPath \ "reportVersion").readNullable[Int] and
+      (JsPath \ "submissionDateTime").readNullable[LocalDate]
     ) (
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt,
-     formBundleNumber, aftVersionOpt, sourceChargeRefForInterest, documentLineItemDetails) =>
+     formBundleNumber, aftVersionOpt, sourceChargeRefForInterest, documentLineItemDetails, reportVersion, submittionDateTime) =>
       SchemeFSDetail(
         index = 0,
         chargeReference,
@@ -123,8 +125,8 @@ object SchemeFS {
         periodStartDateOpt.map(LocalDate.parse),
         periodEndDateOpt.map(LocalDate.parse),
         formBundleNumber,
-        None,
-        None,
+        reportVersion,
+        submittionDateTime,
         aftVersionOpt,
         sourceChargeRefForInterest,
         None,

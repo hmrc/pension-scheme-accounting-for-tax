@@ -34,3 +34,6 @@ tmp
 .idea_modules
 bin
 .bsp
+.metals
+.bloop
+project/metals.sbt

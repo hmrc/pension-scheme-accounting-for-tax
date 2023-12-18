@@ -21,6 +21,7 @@ import models.SchemeChargeType.{aftManualAssessment, aftManualAssessmentCredit, 
 import models.SchemeFSDetail
 import play.api.libs.json._
 import play.api.mvc._
+import services.FeatureToggleService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer.localDateDateReads
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
@@ -38,7 +39,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
                                              val authConnector: AuthConnector,
-                                             aftConnector: AFTConnector
+                                             aftConnector: AFTConnector,
+                                             featureToggleService: FeatureToggleService
                                             )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -116,26 +118,53 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     }
   }
 
+  private def withPstrCheck(block: String => Future[Result])
+      (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+    authorised(Enrolment("HMRC-PODS-ORG")) {
+      case Some(_) =>
+        request.headers.get("pstr").map(block).getOrElse(
+          Future.failed(new BadRequestException("Bad Request with missing psaId or pstr"))
+        )
+      case _ =>
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
+    }
+  }
+
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
-      withPstrAndNhsCheck { (isNhs, pstr) =>
-        financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
-          val updatedSchemeFS =
-            for {
-              seqSchemeFSDetailWithVersionAndReceiptDate <-
-                if (isNhs) {
-                Future.successful(data.seqSchemeFSDetail)
-              } else {
-                updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
-              }
-            } yield {
-              val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
-              data copy (
+      featureToggleService.getToggle("new-financial-statement").flatMap { toggle =>
+        toggle.map { _ =>
+          withPstrCheck { pstr =>
+            financialStatementConnector.getSchemeFS(pstr).map { data =>
+              val updatedSchemeFSData = updateChargeType(data.seqSchemeFSDetail)
+              val updatedSchemeFS = data copy (
                 seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
                 )
+              Ok(Json.toJson(updatedSchemeFS))
             }
-          updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
-        }
+          }
+        }.getOrElse(
+          // TODO: Remove after toggle is switched on. -Pavel Vjalicin
+          withPstrAndNhsCheck { (isNhs, pstr) =>
+            financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
+              val updatedSchemeFS =
+                for {
+                  seqSchemeFSDetailWithVersionAndReceiptDate <-
+                    if (isNhs) {
+                      Future.successful(data.seqSchemeFSDetail)
+                    } else {
+                      updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+                    }
+                } yield {
+                  val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
+                  data copy (
+                    seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
+                    )
+                }
+              updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
+            }
+          }
+        )
       }
   }
 
@@ -144,7 +173,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       .getEnrolment(key = "HMRC-PODS-ORG")
       .flatMap(_.getIdentifier("PSAID"))
       .map(id => PsaId(id.value))
-
+  //TODO: remove after financial statement toggle is on
   private def withPstrAndNhsCheck(block: (Boolean, String) => Future[Result])
                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId and Retrievals.allEnrolments) {
