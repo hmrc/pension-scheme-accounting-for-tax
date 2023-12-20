@@ -106,7 +106,7 @@ object SchemeFS {
       (JsPath \ "aftVersion").readNullable[Int] and
       (JsPath \ "sourceChargeRefForInterest").readNullable[String] and
       (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail)) and
-      (JsPath \ "reportVersion").readNullable[Int] and
+      (JsPath \ "reportVersion").readNullable[String] and
       (JsPath \ "submissionDateTime").readNullable[String]
     ) (
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
@@ -125,7 +125,7 @@ object SchemeFS {
         periodStartDateOpt.map(LocalDate.parse),
         periodEndDateOpt.map(LocalDate.parse),
         formBundleNumber,
-        reportVersion,
+        reportVersion.map(_.toInt),
         submittionDateTime.map(x => LocalDate.parse(x.split("T").head)),
         aftVersionOpt,
         sourceChargeRefForInterest,
