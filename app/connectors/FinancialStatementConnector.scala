@@ -80,18 +80,10 @@ class FinancialStatementConnector @Inject()(
 
   def getSchemeFS(pstr: String)
                  (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
-
-
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
-    transformSchemeFS(pstr, config.schemeFinancialStatementMaxUrl.format(pstr))(hc, implicitly, implicitly)
-  }
-
-  //scalastyle:off cyclomatic.complexity
-  private def transformSchemeFS(pstr: String, url: String)
-                               (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
 
     val reads: Reads[SchemeFS] = SchemeFS.rdsSchemeFSMax
-
+    val url = config.schemeFinancialStatementMaxUrl.format(pstr)
     http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
       response.status match {
         case OK =>

@@ -105,11 +105,13 @@ object SchemeFS {
       (JsPath \ "formbundleNumber").readNullable[String] and
       (JsPath \ "aftVersion").readNullable[Int] and
       (JsPath \ "sourceChargeRefForInterest").readNullable[String] and
-      (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail))
+      (JsPath \ "documentLineItemDetails").read(Reads.seq(rdsDocumentLineItemDetail)) and
+      (JsPath \ "reportVersion").readNullable[String] and
+      (JsPath \ "submissionDateTime").readNullable[String]
     ) (
     (chargeReference, chargeType, dueDateOpt, totalAmount, amountDue, outstandingAmount,
      accruedInterestTotal, stoodOverAmount, periodStartDateOpt, periodEndDateOpt,
-     formBundleNumber, aftVersionOpt, sourceChargeRefForInterest, documentLineItemDetails) =>
+     formBundleNumber, aftVersionOpt, sourceChargeRefForInterest, documentLineItemDetails, reportVersion, submittionDateTime) =>
       SchemeFSDetail(
         index = 0,
         chargeReference,
@@ -123,8 +125,8 @@ object SchemeFS {
         periodStartDateOpt.map(LocalDate.parse),
         periodEndDateOpt.map(LocalDate.parse),
         formBundleNumber,
-        None,
-        None,
+        reportVersion.map(_.toInt),
+        submittionDateTime.map(x => LocalDate.parse(x.split("T").head)),
         aftVersionOpt,
         sourceChargeRefForInterest,
         None,
