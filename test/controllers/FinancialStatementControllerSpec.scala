@@ -134,7 +134,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     val controller = application.injector.instanceOf[FinancialStatementController]
     "return OK with added data when toggle is enabled" in {
       when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("toggle", None, true))))
+      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("new-financial-statement", None, true))))
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModelAfterUpdateWithAFTDetails))
 
