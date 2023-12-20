@@ -25,7 +25,6 @@ DELETE        /cache/financialInfo                                              
 
 GET           /psa-financial-statement                                              controllers.FinancialStatementController.psaStatement
 GET           /scheme-financial-statement                                           controllers.FinancialStatementController.schemeStatement
-GET           /scheme-financial-statement-new                                       controllers.FinancialStatementController.schemeStatementNew
 
 POST          /email-response/:submittedBy/:journeyType/:requestId/:email/:psaId    controllers.EmailResponseController.sendAuditEvents(requestId:String, psaId:String, submittedBy:SchemeAdministratorType.SchemeAdministratorType, email:String, journeyType:JourneyType.Name)
 
