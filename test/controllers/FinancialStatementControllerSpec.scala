@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.{AFTConnector, FinancialStatementConnector}
-import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
+import models._
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, when}
@@ -32,6 +32,7 @@ import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository._
+import services.FeatureToggleService
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
@@ -50,6 +51,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
   private val mockFSConnector = mock[FinancialStatementConnector]
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val mockAFTConnector = mock[AFTConnector]
+  private val mockFeatureToggle = mock[FeatureToggleService]
 
   private val modules: Seq[GuiceableModule] =
     Seq(
@@ -62,7 +64,8 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[FeatureToggleService].toInstance(mockFeatureToggle)
     )
 
   private val application: Application = new GuiceApplicationBuilder()
@@ -81,6 +84,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
   }
 
   before {
+    when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(None))
     reset(mockFSConnector)
     reset(authConnector)
   }
@@ -126,7 +130,20 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       }
     }
   }
+  "schemeStatementNew" must {
+    val controller = application.injector.instanceOf[FinancialStatementController]
+    "return OK with added data when toggle is enabled" in {
+      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
+      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("toggle", None, true))))
+      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+        Future.successful(schemeModelAfterUpdateWithAFTDetails))
 
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe OK
+      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
+    }
+  }
   "schemeStatement" must {
 
     val receiptDateFromIF = "2020-12-12T09:30:47Z"

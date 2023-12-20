@@ -18,7 +18,7 @@ package controllers
 
 import connectors.{AFTConnector, FinancialStatementConnector}
 import models.SchemeChargeType.{aftManualAssessment, aftManualAssessmentCredit, aftReturn, aftReturnCredit, otcAftReturn, otcAftReturnCredit, otcManualAssessment, otcManualAssessmentCredit}
-import models.SchemeFSDetail
+import models.{SchemeFSDetail, ToggleDetails}
 import play.api.libs.json._
 import play.api.mvc._
 import services.FeatureToggleService
@@ -120,11 +120,13 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
 
   private def withPstrCheck(block: String => Future[Result])
       (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG")) {
-      case Some(_) =>
-        request.headers.get("pstr").map(block).getOrElse(
-          Future.failed(new BadRequestException("Bad Request with missing psaId or pstr"))
-        )
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId and Retrievals.allEnrolments) {
+      case Some(_) ~ enrolments =>
+        (getPsaId(enrolments), request.headers.get("pstr")) match {
+          case (_, Some(pstr)) =>
+            block(pstr)
+          case _ => Future.failed(new BadRequestException("Bad Request with missing psaId or pstr"))
+        }
       case _ =>
         Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
     }
@@ -132,38 +134,39 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
 
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
-      featureToggleService.getToggle("new-financial-statement").flatMap { toggle =>
-        toggle.map { _ =>
-          withPstrCheck { pstr =>
-            financialStatementConnector.getSchemeFS(pstr).map { data =>
-              val updatedSchemeFSData = updateChargeType(data.seqSchemeFSDetail)
-              val updatedSchemeFS = data copy (
+
+      def oldFStatement = withPstrAndNhsCheck { (isNhs, pstr) =>
+        financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
+          val updatedSchemeFS =
+            for {
+              seqSchemeFSDetailWithVersionAndReceiptDate <-
+                if (isNhs) {
+                  Future.successful(data.seqSchemeFSDetail)
+                } else {
+                  updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
+                }
+            } yield {
+              val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
+              data copy (
                 seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
                 )
-              Ok(Json.toJson(updatedSchemeFS))
             }
-          }
+          updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
+        }
+      }
+
+      featureToggleService.getToggle("new-financial-statement").flatMap { toggle =>
+        toggle.map {
+          case ToggleDetails(_, _, true) =>
+            withPstrCheck { pstr =>
+              financialStatementConnector.getSchemeFS(pstr).map { data =>
+                Ok(Json.toJson(data.copy(seqSchemeFSDetail = updateChargeType(data.seqSchemeFSDetail))))
+              }
+            }
+          case _ => oldFStatement
         }.getOrElse(
           // TODO: Remove after toggle is switched on. -Pavel Vjalicin
-          withPstrAndNhsCheck { (isNhs, pstr) =>
-            financialStatementConnector.getSchemeFS(pstr).flatMap { data =>
-              val updatedSchemeFS =
-                for {
-                  seqSchemeFSDetailWithVersionAndReceiptDate <-
-                    if (isNhs) {
-                      Future.successful(data.seqSchemeFSDetail)
-                    } else {
-                      updateWithVersionAndReceiptDate(pstr, data.seqSchemeFSDetail)
-                    }
-                } yield {
-                  val updatedSchemeFSData = updateChargeType(seqSchemeFSDetailWithVersionAndReceiptDate)
-                  data copy (
-                    seqSchemeFSDetail = updateSourceChargeInfo(updatedSchemeFSData)
-                    )
-                }
-              updatedSchemeFS.map(schemeFS => Ok(Json.toJson(schemeFS)))
-            }
-          }
+          oldFStatement
         )
       }
   }
