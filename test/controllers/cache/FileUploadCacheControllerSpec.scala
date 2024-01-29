@@ -35,7 +35,7 @@ import repository._
 import repository.model.{FileUploadDataCache, FileUploadStatus}
 import uk.gov.hmrc.auth.core.AuthConnector
 
-import java.time.{LocalDateTime, ZoneId, ZoneOffset}
+import java.time.Instant
 import scala.concurrent.Future
 
 class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
@@ -99,7 +99,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
 
     "calling getUploadResult" must {
       "return OK with the data" in {
-        val dateTimeNow = LocalDateTime.now(ZoneOffset.UTC)
+        val dateTimeNow = Instant.now()
         val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, FileUploadStatus("InProgress"), dateTimeNow, dateTimeNow, dateTimeNow)
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
@@ -136,7 +136,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
     "calling registerUploadResult" must {
       "return OK with the data" in {
         val uploadStatus = FileUploadStatus("Success", None, None, Some("www.test.com"), Some("text/csv"), Some("test.csv"), Some("100".toLong))
-        val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, LocalDateTime.now, LocalDateTime.now, LocalDateTime.now)
+        val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, Instant.now(), Instant.now(), Instant.now())
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(referenceId))
 
@@ -146,7 +146,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
 
       "return BAD REQUEST when the request body cannot be parsed" in {
         val uploadStatus = FileUploadStatus("Success", None, None, Some("www.test.com"), Some("text/csv"), Some("test.csv"), Some("100".toLong))
-        val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, LocalDateTime.now, LocalDateTime.now, LocalDateTime.now)
+        val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, Instant.now(), Instant.now(), Instant.now())
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
 

@@ -76,21 +76,6 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
 
 object PsaFSReadsSpec {
 
-  private def psaFSResponseJson(chargeType: String): JsValue = Json.obj(
-    "index" -> 0,
-    "chargeReference" -> "XY002610150184",
-    "chargeType" -> s"$chargeType",
-    "dueDate" -> "2020-02-15",
-    "totalAmount" -> 80000.00,
-    "outstandingAmount" -> 56049.08,
-    "stoodOverAmount" -> 25089.08,
-    "accruedInterestTotal" -> 123.32,
-    "amountDue" -> 1029.05,
-    "periodStartDate" -> "2020-04-01",
-    "periodEndDate" -> "2020-06-30",
-    "pstr" -> "24000040IN"
-  )
-
   private def psaFSMaxResponseJson(chargeType: String): JsValue = Json.obj(
     "index" -> 0,
     "chargeReference" -> "XY002610150184",
@@ -167,21 +152,6 @@ object PsaFSReadsSpec {
         )
       )
     )
-  )
-
-  private def psaFSModel = PsaFSDetail(
-    index = 0,
-    chargeReference = "XY002610150184",
-    chargeType = "Overseas transfer charge late payment penalty (6 months)",
-    dueDate = Some(LocalDate.parse("2020-02-15")),
-    totalAmount = 80000.00,
-    outstandingAmount = 56049.08,
-    stoodOverAmount = 25089.08,
-    accruedInterestTotal = 123.32,
-    amountDue = 1029.05,
-    periodStartDate = LocalDate.parse("2020-04-01"),
-    periodEndDate = LocalDate.parse("2020-06-30"),
-    pstr = "24000040IN"
   )
 
   private def psaFSMaxModel(chargeType: String) = PsaFSDetail(

@@ -67,19 +67,6 @@ class SchemeFSDetailReadsSpec extends AnyWordSpec with OptionValues with Matcher
 
 
 object SchemeFSDetailReadsSpec {
-  private def schemeFSResponseJson(chargeType: String): JsValue = Json.obj(
-    "chargeReference" -> "XY002610150184",
-    "chargeType" -> s"$chargeType",
-    "dueDate" -> "2020-02-15",
-    "totalAmount" -> 80000.00,
-    "amountDue" -> 1029.05,
-    "outstandingAmount" -> 56049.08,
-    "accruedInterestTotal" -> 100.05,
-    "stoodOverAmount" -> 25089.08,
-    "periodStartDate" -> "2020-04-01",
-    "periodEndDate" -> "2020-06-30"
-  )
-
   private def schemeFSResponseJsonMax(chargeType: String): JsValue = Json.obj(
     "chargeReference" -> "XY002610150184",
     "chargeType" -> s"$chargeType",
@@ -154,20 +141,6 @@ object SchemeFSDetailReadsSpec {
         )
       )
     )
-  )
-
-  private def schemeFSModel = SchemeFSDetail(
-    index = 0,
-    chargeReference = "XY002610150184",
-    chargeType = "Accounting for Tax Return",
-    dueDate = Some(LocalDate.parse("2020-02-15")),
-    totalAmount = 80000.00,
-    amountDue = 1029.05,
-    outstandingAmount = 56049.08,
-    accruedInterestTotal = 100.05,
-    stoodOverAmount = 25089.08,
-    periodStartDate = Some(LocalDate.parse("2020-04-01")),
-    periodEndDate = Some(LocalDate.parse("2020-06-30"))
   )
 
   private def schemeFSModelMax = SchemeFSDetail(

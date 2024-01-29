@@ -156,10 +156,10 @@ class FeatureToggleControllerSpec
   "FeatureToggleController.deleteToggle" must {
     "delete the feature toggle and return NO_CONTENT" in {
       when(mockToggleDataRepository.upsertFeatureToggle(any()))
-        .thenReturn(Future.successful(()))
+        .thenReturn(Future.successful((): Unit))
 
       when(mockFeatureToggleService.deleteToggle(any()))
-        .thenReturn(Future.successful())
+        .thenReturn(Future.successful((): Unit))
 
       val controller = new FeatureToggleController(controllerComponents, mockFeatureToggleService)
 

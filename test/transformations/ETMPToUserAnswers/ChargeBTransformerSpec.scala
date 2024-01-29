@@ -23,7 +23,6 @@ import transformations.generators.AFTETMPResponseGenerators
 
 class ChargeBTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
-  private def padVersion(version: Int): String = ("00" + version.toString).takeRight(3)
 
   "A Charge B Transformer" - {
     "must transform ChargeBDetails from ETMP ChargeTypeBDetails to UserAnswers" in {
