@@ -15,7 +15,8 @@ lazy val microservice = Project(appName, file("."))
   .settings(
     RoutesKeys.routesImport ++= Seq("models.enumeration.JourneyType", "models.enumeration.SchemeAdministratorType", "models.FeatureToggleName"),
     PlayKeys.devSettings += "play.server.http.port" -> "8207",
-    scalacOptions += "-Wconf:src=routes/.*:s"
+    scalacOptions += "-Wconf:src=routes/.*:s",
+    scalacOptions += "-Wconf:cat=unused-imports&src=routes/.*:s"
   )
   .configs(IntegrationTest)
   .settings(integrationTestSettings(): _*)

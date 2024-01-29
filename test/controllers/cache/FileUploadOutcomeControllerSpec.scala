@@ -16,7 +16,7 @@
 
 package controllers.cache
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import controllers.cache.FileUploadOutcomeController.IdNotFoundFromAuth
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}

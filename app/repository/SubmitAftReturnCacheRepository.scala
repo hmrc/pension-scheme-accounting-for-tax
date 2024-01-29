@@ -18,7 +18,6 @@ package repository
 
 import com.google.inject.Inject
 import config.AppConfig
-import org.joda.time.{DateTime, DateTimeZone}
 import org.mongodb.scala.MongoWriteException
 import org.mongodb.scala.model._
 import play.api.Logging
@@ -26,8 +25,9 @@ import play.api.libs.json.{Format, Json, OFormat}
 import repository.SubmitAftReturnCacheRepository._
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
-import uk.gov.hmrc.mongo.play.json.formats.MongoJodaFormats
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,8 +36,8 @@ object SubmitAftReturnCacheRepository {
   private val pstrFieldName = "pstr"
   private val externalUserIdFieldName = "externalUserId"
 
-  case class SubmitAftReturnCacheEntry(pstr: String, externalUserId: String, insertionTime: DateTime)
-  implicit val dateFormats: Format[DateTime] = MongoJodaFormats.dateTimeFormat
+  case class SubmitAftReturnCacheEntry(pstr: String, externalUserId: String, insertionTime: Instant)
+  implicit val dateFormats: Format[Instant] = MongoJavatimeFormats.instantFormat
   implicit val format: OFormat[SubmitAftReturnCacheEntry] = Json.format[SubmitAftReturnCacheEntry]
 }
 
@@ -65,7 +65,7 @@ class SubmitAftReturnCacheRepository @Inject()(
   private lazy val documentExistsErrorCode = 11000
 
   def insertLockData(pstr: String, externalUserId: String): Future[Boolean] = {
-    collection.insertOne(SubmitAftReturnCacheEntry(pstr, externalUserId, DateTime.now(DateTimeZone.UTC))).toFuture().map { _ => true }
+    collection.insertOne(SubmitAftReturnCacheEntry(pstr, externalUserId, Instant.now())).toFuture().map { _ => true }
       .recoverWith {
         case e: MongoWriteException if e.getCode == documentExistsErrorCode =>
           Future.successful(false)
