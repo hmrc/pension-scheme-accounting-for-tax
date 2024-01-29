@@ -1,7 +1,6 @@
 import play.sbt.routes.RoutesKeys
 import scoverage.ScoverageKeys
 import uk.gov.hmrc.DefaultBuildSettings.integrationTestSettings
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
 
 val appName = "pension-scheme-accounting-for-tax"
 
@@ -12,7 +11,7 @@ lazy val microservice = Project(appName, file("."))
     majorVersion := 0,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test
   )
-  .settings(scalaVersion := "2.13.8")
+  .settings(scalaVersion := "2.13.12")
   .settings(
     RoutesKeys.routesImport ++= Seq("models.enumeration.JourneyType", "models.enumeration.SchemeAdministratorType", "models.FeatureToggleName"),
     PlayKeys.devSettings += "play.server.http.port" -> "8207",
