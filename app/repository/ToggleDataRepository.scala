@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ class ToggleDataRepository @Inject()(
   }
 
   def getAllFeatureToggles: Future[Seq[ToggleDetails]] = {
-    collection.find[JsValue].toFuture().map {
+    collection.find[JsValue].toFuture.map {
       seqJsValue =>
         seqJsValue map {
           jsVal => (jsVal \ "data").asOpt[ToggleDetails]

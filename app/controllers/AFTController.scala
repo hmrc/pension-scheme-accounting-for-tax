@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import models.{AFTSubmitterDetails, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
-import repository.SubmitAftReturnCacheRepository.SubmitAftReturnCacheEntry
 import repository.{AftOverviewCacheRepository, SubmitAftReturnCacheRepository}
 import services.AFTService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
@@ -57,10 +56,9 @@ class AFTController @Inject()(
     with Results
     with AuthorisedFunctions {
 
-  private val logger = Logger(classOf[AFTController])
-  val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-2.1.0.json"
-
   type SeqOfChargeType = Option[Seq[Option[String]]]
+  val schemaPath = "/resources/schemas/api-1538-file-aft-return-request-schema-2.1.0.json"
+  private val logger = Logger(classOf[AFTController])
 
   //scalastyle:off cyclomatic.complexity
   //scalastyle:off method.length
@@ -104,15 +102,19 @@ class AFTController @Inject()(
                   throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
 
                 case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
+
                   def filingAftReturn = aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
                     Ok(response.body)
                   }
+
                   journeyType match {
                     case AFT_SUBMIT_RETURN =>
                       submitAftReturnCacheRepository.insertLockData(pstr, externalUserId).flatMap { entryExists =>
                         if (!entryExists && journeyType == AFT_SUBMIT_RETURN) {
                           Future.successful(NoContent)
-                        } else { filingAftReturn }
+                        } else {
+                          filingAftReturn
+                        }
                       }
                     case _ => filingAftReturn
                   }
@@ -122,6 +124,28 @@ class AFTController @Inject()(
           }
         }
       }
+  }
+
+  private def post(block: (String, String, JsValue) => Future[Result])
+                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+
+    logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
+
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
+      case Some(externalUserId) =>
+        (
+          request.headers.get("pstr"),
+          request.body.asJson
+        ) match {
+          case (Some(pstr), Some(js)) =>
+            block(pstr, externalUserId, js)
+          case (pstr, jsValue) =>
+            Future.failed(new BadRequestException(
+              s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
+        }
+      case _ =>
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
+    }
   }
 
   def getOverview: Action[AnyContent] = Action.async {
@@ -170,6 +194,25 @@ class AFTController @Inject()(
       }
   }
 
+  private def get(block: (String, String) => Future[Result])
+                 (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
+      case Some(_) =>
+        (
+          request.headers.get("pstr"),
+          request.headers.get("startDate")
+        ) match {
+          case (Some(pstr), Some(startDate)) =>
+            block(pstr, startDate)
+          case _ =>
+            Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
+        }
+      case _ =>
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
+    }
+  }
+
   def getVersionsWithSubmitter: Action[AnyContent] = Action.async {
     implicit request =>
       get { (pstr, startDate) =>
@@ -207,47 +250,6 @@ class AFTController @Inject()(
                                request: RequestHeader): Future[Boolean] = {
     aftConnector.getAftDetails(pstr, startDate, versionNumber).map { jsValue =>
       !aftService.isChargeZeroedOut(jsValue)
-    }
-  }
-
-  private def post(block: (String, String, JsValue) => Future[Result])
-                  (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-
-    logger.debug(message = s"[Compile File Return: Incoming-Payload]${request.body.asJson}")
-
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(externalUserId) =>
-        (
-          request.headers.get("pstr"),
-          request.body.asJson
-        ) match {
-          case (Some(pstr), Some(js)) =>
-            block(pstr, externalUserId, js)
-          case (pstr, jsValue) =>
-            Future.failed(new BadRequestException(
-              s"Bad Request without pstr ($pstr) or request body ($jsValue)"))
-        }
-      case _ =>
-        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
-    }
-  }
-
-  private def get(block: (String, String) => Future[Result])
-                 (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(_) =>
-        (
-          request.headers.get("pstr"),
-          request.headers.get("startDate")
-        ) match {
-          case (Some(pstr), Some(startDate)) =>
-            block(pstr, startDate)
-          case _ =>
-            Future.failed(new BadRequestException("Bad Request with missing PSTR/Quarter Start Date"))
-        }
-      case _ =>
-        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
     }
   }
 

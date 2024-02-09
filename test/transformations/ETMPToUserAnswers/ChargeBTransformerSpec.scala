@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import transformations.generators.AFTETMPResponseGenerators
 
 class ChargeBTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators with OptionValues {
 
-  private def padVersion(version: Int): String = ("00" + version.toString).takeRight(3)
 
   "A Charge B Transformer" - {
     "must transform ChargeBDetails from ETMP ChargeTypeBDetails to UserAnswers" in {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,10 +156,10 @@ class FeatureToggleControllerSpec
   "FeatureToggleController.deleteToggle" must {
     "delete the feature toggle and return NO_CONTENT" in {
       when(mockToggleDataRepository.upsertFeatureToggle(any()))
-        .thenReturn(Future.successful(()))
+        .thenReturn(Future.successful((): Unit))
 
       when(mockFeatureToggleService.deleteToggle(any()))
-        .thenReturn(Future.successful())
+        .thenReturn(Future.successful((): Unit))
 
       val controller = new FeatureToggleController(controllerComponents, mockFeatureToggleService)
 

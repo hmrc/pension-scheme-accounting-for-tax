@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package repository
 
 import config.AppConfig
-import org.joda.time.{DateTime, DateTimeZone}
+import java.time.Instant
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
@@ -73,9 +73,9 @@ class SubmitAftReturnCacheRepositorySpec
 
 object SubmitAftReturnCacheRepositorySpec extends MockitoSugar {
 
+  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", Instant.now())
   private val mockAppConfig = mock[AppConfig]
   private val collectionName = "submit-aft-return"
-  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", DateTime.now(DateTimeZone.UTC))
 
   private def buildRepository(mongoHost: String, mongoPort: Int): SubmitAftReturnCacheRepository = {
     val databaseName = "pension-scheme-accounting-for-tax"

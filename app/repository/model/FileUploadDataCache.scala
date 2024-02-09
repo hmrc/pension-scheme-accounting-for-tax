@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package repository.model
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
 import play.api.libs.json._
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 
 case class FileUploadStatus(_type: String, failureReason: Option[String] = None, message: Option[String] = None,
@@ -30,8 +30,8 @@ object FileUploadStatus {
   implicit val reads: OFormat[FileUploadStatus] = Json.format[FileUploadStatus]
 }
 
-case class FileUploadDataCache(uploadId: String, reference: String, status: FileUploadStatus, created: LocalDateTime,
-                               lastUpdated: LocalDateTime, expireAt: LocalDateTime)
+case class FileUploadDataCache(uploadId: String, reference: String, status: FileUploadStatus, created: Instant,
+                               lastUpdated: Instant, expireAt: Instant)
 
 object FileUploadDataCache {
   implicit val reads: Reads[FileUploadDataCache] = (
@@ -42,13 +42,13 @@ object FileUploadDataCache {
       (JsPath \ Symbol("lastUpdated")).read[String] and
       (JsPath \ Symbol("expireAt")).read[String]
 
-    ) ((uploadId, reference, status, created, lastUpdated, expireAt) =>
+    )((uploadId, reference, status, created, lastUpdated, expireAt) =>
     FileUploadDataCache(
       uploadId,
       reference,
       status,
-      LocalDateTime.parse(created), LocalDateTime.parse(lastUpdated),
-      LocalDateTime.parse(expireAt)
+      Instant.parse(created), Instant.parse(lastUpdated),
+      Instant.parse(expireAt)
     ))
   implicit val writes: Writes[FileUploadDataCache] = (
     (JsPath \ Symbol("uploadId")).write[String] and
@@ -57,7 +57,7 @@ object FileUploadDataCache {
       (JsPath \ Symbol("created")).write[String] and
       (JsPath \ Symbol("lastUpdated")).write[String] and
       (JsPath \ Symbol("expireAt")).write[String]
-    ) (FileUploadDataCache => (FileUploadDataCache.uploadId,
+    )(FileUploadDataCache => (FileUploadDataCache.uploadId,
     FileUploadDataCache.reference,
     FileUploadDataCache.status,
     FileUploadDataCache.created.toString,
@@ -67,9 +67,9 @@ object FileUploadDataCache {
   def applyDataCache(uploadId: String,
                      reference: String,
                      status: FileUploadStatus,
-                     created: LocalDateTime = LocalDateTime.now(),
-                     lastUpdated: LocalDateTime = LocalDateTime.now(),
-                     expireAt: LocalDateTime): FileUploadDataCache = {
+                     created: Instant = Instant.now(),
+                     lastUpdated: Instant = Instant.now(),
+                     expireAt: Instant): FileUploadDataCache = {
     FileUploadDataCache(uploadId, reference, status, created, lastUpdated, expireAt)
   }
 }

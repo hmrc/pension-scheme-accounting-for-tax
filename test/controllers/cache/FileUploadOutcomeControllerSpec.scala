@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package controllers.cache
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 import controllers.cache.FileUploadOutcomeController.IdNotFoundFromAuth
 import org.apache.commons.lang3.RandomUtils
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}

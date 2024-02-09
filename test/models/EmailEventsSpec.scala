@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 package models
 
-import org.joda.time.DateTime
 import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsValue, Json}
+
+import java.time.Instant
 
 class EmailEventsSpec extends AnyWordSpec with OptionValues with Matchers {
 
@@ -58,7 +59,7 @@ object EmailEventsSpec {
   )
 
   private val emailResponseEvents = EmailEvents(Seq(
-    EmailEvent(Sent, DateTime.parse("2015-07-02T08:26:39.035Z")),
-    EmailEvent(Delivered, DateTime.parse("2015-07-02T08:25:20.068Z"))
+    EmailEvent(Sent, Instant.parse("2015-07-02T08:26:39.035Z")),
+    EmailEvent(Delivered, Instant.parse("2015-07-02T08:25:20.068Z"))
   ))
 }

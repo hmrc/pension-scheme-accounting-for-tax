@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
-import java.time.{LocalDateTime, ZoneId}
+import java.time.{Instant, LocalDateTime, ZoneId}
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
@@ -58,10 +58,10 @@ class FileUploadReferenceCacheRepository @Inject()(
   ) with Logging {
 
 
-  private def expireInSeconds: LocalDateTime = LocalDateTime.now(ZoneId.of("UTC")).
+  private def expireInSeconds: Instant = Instant.now().
     plusSeconds(configuration.get[Int](path = "mongodb.aft-cache.file-upload-response-cache.timeToLiveInSeconds"))
 
-  private implicit val dateFormat: Format[LocalDateTime] = MongoJavatimeFormats.localDateTimeFormat
+  private implicit val dateFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
 
   private val uploadIdKey = "uploadId"
   private val referenceKey = "reference"

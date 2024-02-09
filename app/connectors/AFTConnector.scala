@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,15 +46,6 @@ class AFTConnector @Inject()(
 
   private val logger = Logger(classOf[AFTConnector])
 
-  private def httpPostRequest(url: String, data: JsValue, journeyType: String)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader) =
-    http.POST[JsValue, HttpResponse](url, data)(implicitly, implicitly, hc, implicitly) map {
-    response =>
-      response.status match {
-        case OK => response
-        case _ => handleErrorResponse("POST", url, journeyType)(response)
-      }
-  }
-
   def fileAFTReturn(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
     val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
@@ -68,6 +59,21 @@ class AFTConnector @Inject()(
       httpPostRequest(fileAFTReturnURL, data, journeyType)(hc, implicitly, implicitly) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
     }
+  }
+
+  private def httpPostRequest(url: String, data: JsValue, journeyType: String)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader) =
+    http.POST[JsValue, HttpResponse](url, data)(implicitly, implicitly, hc, implicitly) map {
+      response =>
+        response.status match {
+          case OK => response
+          case _ => handleErrorResponse("POST", url, journeyType)(response)
+        }
+    }
+
+  private def integrationFrameworkHeader: Seq[(String, String)] = {
+    Seq("Environment" -> config.integrationframeworkEnvironment,
+      "Authorization" -> config.integrationframeworkAuthorization,
+      "Content-Type" -> "application/json", "CorrelationId" -> headerUtils.getCorrelationId)
   }
 
   //scalastyle:off cyclomatic.complexity
@@ -169,11 +175,5 @@ class AFTConnector @Inject()(
             handleErrorResponse("GET", getAftVersionUrl)(response)
         }
     } andThen aftVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate)
-  }
-
-  private def integrationFrameworkHeader: Seq[(String, String)] = {
-    Seq("Environment" -> config.integrationframeworkEnvironment,
-      "Authorization" -> config.integrationframeworkAuthorization,
-      "Content-Type" -> "application/json", "CorrelationId" -> headerUtils.getCorrelationId)
   }
 }
