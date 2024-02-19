@@ -66,6 +66,7 @@ class AFTConnector @Inject()(
       response =>
         response.status match {
           case OK => response
+          case FORBIDDEN if response.body.contains("RETURN_ALREADY_SUBMITTED") => response
           case _ => handleErrorResponse("POST", url, journeyType)(response)
         }
     }
