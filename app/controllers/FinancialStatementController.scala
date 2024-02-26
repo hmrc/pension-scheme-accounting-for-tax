@@ -96,8 +96,10 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
                 Ok(Json.toJson(data.copy(seqSchemeFSDetail = updateChargeType(data.seqSchemeFSDetail))))
               }
             }
+          case ToggleDetails(_, _, false) =>
+            Future.successful(BadRequest("new-financial-statement toggle is disabled"))
         }.getOrElse(
-          Future.successful(BadRequest("new-financial-statement toggle is disabled"))
+          Future.successful(NotFound("getToggle could not retrieve new-financial-statement toggle"))
         )
       }
   }
