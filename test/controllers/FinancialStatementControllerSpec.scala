@@ -72,8 +72,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
     overrides(modules: _*).build()
 
-
-  private val nhsPsaId = "A0014476"
   private def expectedAuthorisations(psaId: String = "A2100052"): Option[String] ~ Enrolments = {
     Option("Ext-137d03b9-d807-4283-a254-fb6c30aceef1") and
       Enrolments(
@@ -130,11 +128,13 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       }
     }
   }
-  "schemeStatementNew" must {
+
+  "schemeStatement" must {
     val controller = application.injector.instanceOf[FinancialStatementController]
+
     "return OK with added data when toggle is enabled" in {
       when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("new-financial-statement", None, true))))
+      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("new-financial-statement", None, isEnabled = true))))
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModelAfterUpdateWithAFTDetails))
 
@@ -143,112 +143,38 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
     }
+
+    "return BAD_REQUEST when toggle is disabled" in {
+      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
+      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("new-financial-statement", None, isEnabled = false))))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe BAD_REQUEST
+    }
+
+    "return NOT_FOUND when cannot retrieve toggle" in {
+      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
+      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(None))
+
+      val result = controller.schemeStatement()(fakeRequestWithPstr)
+
+      status(result) mustBe NOT_FOUND
+    }
   }
-  "schemeStatement" must {
 
-    val receiptDateFromIF = "2020-12-12T09:30:47Z"
-    val aftDetailsJson = Json.obj(
-      "aftDetails" -> Json.obj(
-        "aftVersion" -> "002",
-        "receiptDate" -> Json.toJson(receiptDateFromIF)
-      )
-    )
-
+  "updateChargeType" must {
     val controller = application.injector.instanceOf[FinancialStatementController]
-
-    "return OK & call get aft details when the details are returned based on pstr and aft details exist and NOT NHS" in {
-      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
-
-      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
-        Future.successful(schemeModel))
-
-      val result = controller.schemeStatement()(fakeRequestWithPstr)
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
-    }
-
-    "return OK & not call get aft details when the details are returned based on pstr and aft details exist and NHS" in {
-      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations(nhsPsaId)))
-      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(Some(aftDetailsJson)))
-
-      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
-        Future.successful(schemeModel))
-
-      val result = controller.schemeStatement()(fakeRequestWithPstr)
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithNoAFTDetails)
-    }
-
-    "return OK when the details are returned based on pstr and aft details don't exist" in {
-      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(None))
-
-      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
-        Future.successful(schemeModel))
-
-      val result = controller.schemeStatement()(fakeRequestWithPstr)
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithNoAFTDetails)
-    }
-
-    "updateChargeType" must {
-
-      when(mockAFTConnector.getAftDetails(any(), any())(any(), any(), any())).thenReturn(Future.successful(None))
-      listOfChargesAndAssociatedCredits.foreach { pairOfChargeAndCredit =>
-        val (charge, credit) = pairOfChargeAndCredit
-        s"flip ${charge.seqSchemeFSDetail.head.chargeType} to ${credit.seqSchemeFSDetail.head.chargeType} if negative amountDue" in {
-          when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
-            Future.successful(charge))
-          when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-          val result = controller.schemeStatement()(fakeRequestWithPstr)
-          status(result) mustBe OK
-          contentAsJson(result) mustBe Json.toJson(credit)
-        }
-      }
-    }
-
-    "throw BadRequestException when PSTR is not present in the header" in {
-      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      recoverToExceptionIf[BadRequestException] {
-        controller.schemeStatement()(fakeRequest)
-      } map { response =>
-        response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing psaId or pstr"
-      }
-    }
-
-    "throw generic exception when any other exception returned from Des" in {
-      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
-        Future.failed(new Exception("Generic Exception")))
-
-      recoverToExceptionIf[Exception] {
-        controller.schemeStatement()(fakeRequestWithPstr)
-      } map { response =>
-        response.getMessage mustBe "Generic Exception"
-      }
-    }
-
-    "throw Unauthorised Exception when there is external id is not present in auth" in {
-      def expectedAuthorisations: Option[String] ~ Enrolments = {
-        None and
-          Enrolments(
-            Set.empty
-          )
-      }
-      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations))
-
-      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
-        Future.successful(schemeModel))
-
-      recoverToExceptionIf[UnauthorizedException] {
-        controller.schemeStatement()(fakeRequestWithPstr)
-      } map { response =>
-        response.getMessage mustBe "Not Authorised - Unable to retrieve credentials - externalId"
+    listOfChargesAndAssociatedCredits.foreach { pairOfChargeAndCredit =>
+      val (charge, credit) = pairOfChargeAndCredit
+      s"flip ${charge.seqSchemeFSDetail.head.chargeType} to ${credit.seqSchemeFSDetail.head.chargeType} if negative amountDue" in {
+        when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
+        when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("new-financial-statement", None, isEnabled = true))))
+        when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
+          Future.successful(charge))
+        val result = controller.schemeStatement()(fakeRequestWithPstr)
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.toJson(credit)
       }
     }
   }
@@ -280,26 +206,6 @@ object FinancialStatementControllerSpec {
   private val psaFSResponse: PsaFS =
     PsaFS(inhibitRefundSignal = false, psaFSDetailResponse)
 
-  private val schemeModel: SchemeFS = SchemeFS(
-    inhibitRefundSignal = false,
-    seqSchemeFSDetail = Seq(
-      SchemeFSDetail(
-        index = 0,
-        chargeReference = s"XY002610150184",
-        chargeType = "Accounting for Tax Return",
-        dueDate = Some(LocalDate.parse("2020-02-15")),
-        totalAmount = 80000.00,
-        amountDue = 1029.05,
-        outstandingAmount = 56049.08,
-        accruedInterestTotal = 100.05,
-        formBundleNumber = Some("ww"),
-        stoodOverAmount = 25089.08,
-        periodStartDate = Some(LocalDate.parse("2020-04-01")),
-        periodEndDate = Some(LocalDate.parse("2020-06-30"))
-      )
-    )
-  )
-
   private val schemeModelAfterUpdateWithAFTDetails: SchemeFS = SchemeFS(
     inhibitRefundSignal = false,
     seqSchemeFSDetail = Seq(
@@ -315,28 +221,6 @@ object FinancialStatementControllerSpec {
         formBundleNumber = Some("ww"),
         version = Some(2),
         receiptDate = Some(LocalDate.parse("2020-12-12")),
-        stoodOverAmount = 25089.08,
-        periodStartDate = Some(LocalDate.parse("2020-04-01")),
-        periodEndDate = Some(LocalDate.parse("2020-06-30"))
-      )
-    )
-  )
-
-  private val schemeModelAfterUpdateWithNoAFTDetails: SchemeFS = SchemeFS(
-    inhibitRefundSignal = false,
-    seqSchemeFSDetail = Seq(
-      SchemeFSDetail(
-        index = 0,
-        chargeReference = s"XY002610150184",
-        chargeType = "Accounting for Tax Return",
-        dueDate = Some(LocalDate.parse("2020-02-15")),
-        totalAmount = 80000.00,
-        amountDue = 1029.05,
-        outstandingAmount = 56049.08,
-        accruedInterestTotal = 100.05,
-        formBundleNumber = Some("ww"),
-        version = None,
-        receiptDate = None,
         stoodOverAmount = 25089.08,
         periodStartDate = Some(LocalDate.parse("2020-04-01")),
         periodEndDate = Some(LocalDate.parse("2020-06-30"))
