@@ -19,10 +19,9 @@ package controllers
 import connectors.FinancialStatementConnector
 import models.SchemeChargeType.{aftManualAssessment, aftManualAssessmentCredit, aftReturn, aftReturnCredit,
   otcAftReturn, otcAftReturnCredit, otcManualAssessment, otcManualAssessmentCredit}
-import models.{SchemeFSDetail, ToggleDetails}
+import models.SchemeFSDetail
 import play.api.libs.json._
 import play.api.mvc._
-import services.FeatureToggleService
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment, Enrolments}
@@ -37,8 +36,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton()
 class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
-                                             val authConnector: AuthConnector,
-                                             featureToggleService: FeatureToggleService
+                                             val authConnector: AuthConnector
                                             )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -87,20 +85,10 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
 
   def schemeStatement: Action[AnyContent] = Action.async {
     implicit request =>
-
-      featureToggleService.getToggle("new-financial-statement").flatMap { toggle =>
-        toggle.map {
-          case ToggleDetails(_, _, true) =>
-            withPstrCheck { pstr =>
-              financialStatementConnector.getSchemeFS(pstr).map { data =>
-                Ok(Json.toJson(data.copy(seqSchemeFSDetail = updateChargeType(data.seqSchemeFSDetail))))
-              }
-            }
-          case ToggleDetails(_, _, false) =>
-            Future.successful(BadRequest("new-financial-statement toggle is disabled"))
-        }.getOrElse(
-          Future.successful(NotFound("getToggle could not retrieve new-financial-statement toggle"))
-        )
+      withPstrCheck { pstr =>
+        financialStatementConnector.getSchemeFS(pstr).map { data =>
+          Ok(Json.toJson(data.copy(seqSchemeFSDetail = updateChargeType(data.seqSchemeFSDetail))))
+        }
       }
   }
 
