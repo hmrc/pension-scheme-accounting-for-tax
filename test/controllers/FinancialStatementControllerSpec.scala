@@ -132,7 +132,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
   "schemeStatement" must {
     val controller = application.injector.instanceOf[FinancialStatementController]
 
-    "return OK with added data when toggle is enabled" in {
+    "return OK with added data" in {
       when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
       when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("new-financial-statement", None, isEnabled = true))))
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
@@ -142,24 +142,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
-    }
-
-    "return BAD_REQUEST when toggle is disabled" in {
-      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("new-financial-statement", None, isEnabled = false))))
-
-      val result = controller.schemeStatement()(fakeRequestWithPstr)
-
-      status(result) mustBe BAD_REQUEST
-    }
-
-    "return NOT_FOUND when cannot retrieve toggle" in {
-      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(None))
-
-      val result = controller.schemeStatement()(fakeRequestWithPstr)
-
-      status(result) mustBe NOT_FOUND
     }
   }
 
