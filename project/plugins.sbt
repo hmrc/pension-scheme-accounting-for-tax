@@ -5,7 +5,7 @@ resolvers += Resolver.typesafeRepo("releases")
 
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
-addSbtPlugin("uk.gov.hmrc" % "sbt-auto-build" % "3.20.0")
+addSbtPlugin("uk.gov.hmrc" % "sbt-auto-build" % "3.22.0")
 
 addSbtPlugin("uk.gov.hmrc" % "sbt-distributables" % "2.5.0")
 
