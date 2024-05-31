@@ -33,7 +33,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{Format, JsArray, JsObject, JsValue, Json}
 import repository.model.SessionData
 import services.BatchService
 import services.BatchService.BatchType.{ChargeC, ChargeD, ChargeE, ChargeG}
@@ -200,13 +200,14 @@ class AftBatchedDataCacheRepositorySpec
       when(batchService.createBatches(jsObjectCaptor.capture(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
       when(batchService.lastBatchNo(any())).thenReturn(Set(BatchIdentifier(BatchType.ChargeG, 3)))
 
-      val documentsInDB = for {
-        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
-        _ <- aftBatchedDataCacheRepository
+
+      val documentsInDB = aftBatchedDataCacheRepository.collection.drop().toFuture().flatMap { _ =>
+        aftBatchedDataCacheRepository
           .setSessionData(id, lockDetail, dummyJson, sessionId, version = version, accessMode = accessMode,
             areSubmittedVersionsAvailable = areSubmittedVersionsAvailable)
-        res <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
-      } yield res
+      }.flatMap { _ =>
+        aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      }
 
       whenReady(documentsInDB) { documentsInDB =>
         jsObjectCaptor.getValue mustBe dummyJson

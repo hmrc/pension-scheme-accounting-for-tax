@@ -187,9 +187,11 @@ class AftBatchedDataCacheRepository @Inject()(
             upsertOptions
           ).toFuture().map(_ => (): Unit)
         }
-        val allFutures = setFutures ++ lastBatchNos.map(removeBatchesAfterBatchIdentifier(id, sessionId, _))
-        Future.sequence(allFutures).map { _ =>
-          logWithTime(s"Finished updating/inserting batch(es)  in AFTBatchedDataCacheRepository")
+
+        Future.sequence(setFutures).flatMap { _ =>
+          Future.sequence(lastBatchNos.map(removeBatchesAfterBatchIdentifier(id, sessionId, _))).map { _ =>
+            logWithTime(s"Finished updating/inserting batch(es)  in AFTBatchedDataCacheRepository")
+          }
         }
       case _ =>
         logWithTime("Unable to save to Mongo repository as no session data found in repository or payload")
