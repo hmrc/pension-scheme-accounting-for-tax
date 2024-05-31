@@ -18,8 +18,6 @@ package repository
 
 import base.MongoConfig
 import config.AppConfig
-
-import java.time.Instant
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
@@ -30,7 +28,10 @@ import org.scalatestplus.mockito.MockitoSugar
 import repository.SubmitAftReturnCacheRepository.SubmitAftReturnCacheEntry
 import uk.gov.hmrc.mongo.MongoComponent
 
+import java.time.Instant
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
 
 class SubmitAftReturnCacheRepositorySpec
   extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with
@@ -38,13 +39,22 @@ class SubmitAftReturnCacheRepositorySpec
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
-  import SubmitAftReturnCacheRepositorySpec._
-
   var submitAftReturnCacheRepository: SubmitAftReturnCacheRepository = _
+
+
+  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", Instant.now())
+  private val mockAppConfig = mock[AppConfig]
+  private val collectionName = "submit-aft-return"
+  private val databaseName = "pension-scheme-accounting-for-tax"
+  private val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
+  private val mongoComponent = MongoComponent(mongoUri)
+  private def buildRepository = new SubmitAftReturnCacheRepository(mongoComponent, mockAppConfig)
 
   override def beforeAll(): Unit = {
     when(mockAppConfig.mongoDBSubmitAftReturnCollectionName).thenReturn(collectionName)
-    submitAftReturnCacheRepository = buildRepository(mongoHost, mongoPort)
+    when(mockAppConfig.mongoDBSubmitAftReturnTTL).thenReturn(1000L)
+    Await.result(mongoComponent.database.getCollection(collectionName).dropIndexes().toFuture(), 10.seconds)
+    submitAftReturnCacheRepository = buildRepository
     super.beforeAll()
   }
 
@@ -54,7 +64,6 @@ class SubmitAftReturnCacheRepositorySpec
 
   "save" must {
     "insert a row into mongo" in {
-
       val document = for {
         _ <- submitAftReturnCacheRepository.collection.drop().toFuture()
         _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry.pstr, aftCacheEntry.externalUserId)
@@ -67,18 +76,3 @@ class SubmitAftReturnCacheRepositorySpec
     }
   }
 }
-
-object SubmitAftReturnCacheRepositorySpec extends MockitoSugar {
-
-  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", Instant.now())
-  private val mockAppConfig = mock[AppConfig]
-  private val collectionName = "submit-aft-return"
-
-  private def buildRepository(mongoHost: String, mongoPort: Int): SubmitAftReturnCacheRepository = {
-    val databaseName = "pension-scheme-accounting-for-tax"
-    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-    new SubmitAftReturnCacheRepository(MongoComponent(mongoUri), mockAppConfig)
-  }
-}
-
-
