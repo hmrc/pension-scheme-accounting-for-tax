@@ -16,7 +16,9 @@
 
 package repository
 
+import base.MongoConfig
 import config.AppConfig
+
 import java.time.Instant
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
@@ -31,7 +33,7 @@ import uk.gov.hmrc.mongo.MongoComponent
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SubmitAftReturnCacheRepositorySpec
-  extends AnyWordSpec with MockitoSugar with Matchers with EmbeddedMongoDBSupport with BeforeAndAfter with
+  extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with
     BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
@@ -42,8 +44,6 @@ class SubmitAftReturnCacheRepositorySpec
 
   override def beforeAll(): Unit = {
     when(mockAppConfig.mongoDBSubmitAftReturnCollectionName).thenReturn(collectionName)
-    initMongoDExecutable()
-    startMongoD()
     submitAftReturnCacheRepository = buildRepository(mongoHost, mongoPort)
     super.beforeAll()
   }
@@ -51,9 +51,6 @@ class SubmitAftReturnCacheRepositorySpec
   override def beforeEach(): Unit = {
     super.beforeEach()
   }
-
-  override def afterAll(): Unit =
-    stopMongoD()
 
   "save" must {
     "insert a row into mongo" in {
