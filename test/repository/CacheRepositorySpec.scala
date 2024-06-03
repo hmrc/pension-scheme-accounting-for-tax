@@ -16,6 +16,7 @@
 
 package repository
 
+import base.MongoConfig
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
@@ -31,7 +32,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with EmbeddedMongoDBSupport with BeforeAndAfter with
+class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with
   BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
@@ -41,15 +42,10 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
   var cacheRepository: CacheRepository = _
 
   override def beforeAll(): Unit = {
-    initMongoDExecutable()
-    startMongoD()
     cacheRepository = buildFormRepository(mongoHost, mongoPort)
     super.beforeAll()
     reset(mockConfiguration)
   }
-
-  override def afterAll(): Unit =
-    stopMongoD()
 
 
   "remove" must {

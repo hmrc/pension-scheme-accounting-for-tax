@@ -16,6 +16,7 @@
 
 package repository
 
+import base.MongoConfig
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import config.AppConfig
 import models.BatchedRepositorySampleData._
@@ -32,7 +33,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{Format, JsArray, JsObject, JsValue, Json}
 import repository.model.SessionData
 import services.BatchService
 import services.BatchService.BatchType.{ChargeC, ChargeD, ChargeE, ChargeG}
@@ -45,7 +46,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 class AftBatchedDataCacheRepositorySpec
-  extends AnyWordSpec with MockitoSugar with Matchers with EmbeddedMongoDBSupport with BeforeAndAfter with
+  extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with
     BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
@@ -58,8 +59,6 @@ class AftBatchedDataCacheRepositorySpec
     when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
     when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
     when(mockAppConfig.mongoDBAFTBatchesCollectionName).thenReturn(collectionName)
-    initMongoDExecutable()
-    startMongoD()
     aftBatchedDataCacheRepository = buildRepository(mongoHost, mongoPort)
     super.beforeAll()
   }
@@ -68,9 +67,6 @@ class AftBatchedDataCacheRepositorySpec
     when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(2)
     super.beforeEach()
   }
-
-  override def afterAll(): Unit =
-    stopMongoD()
 
   "save" must {
     "save de-reg charge batch correctly in Mongo collection where there is some session data" in {
@@ -204,13 +200,14 @@ class AftBatchedDataCacheRepositorySpec
       when(batchService.createBatches(jsObjectCaptor.capture(), any())).thenReturn(fullSetOfBatchesToSaveToMongo)
       when(batchService.lastBatchNo(any())).thenReturn(Set(BatchIdentifier(BatchType.ChargeG, 3)))
 
-      val documentsInDB = for {
-        _ <- aftBatchedDataCacheRepository.collection.drop().toFuture()
-        _ <- aftBatchedDataCacheRepository
+
+      val documentsInDB = aftBatchedDataCacheRepository.collection.drop().toFuture().flatMap { _ =>
+        aftBatchedDataCacheRepository
           .setSessionData(id, lockDetail, dummyJson, sessionId, version = version, accessMode = accessMode,
             areSubmittedVersionsAvailable = areSubmittedVersionsAvailable)
-        res <- aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
-      } yield res
+      }.flatMap { _ =>
+        aftBatchedDataCacheRepository.collection.find(filter = Filters.eq("uniqueAftId", uniqueAftId)).toFuture()
+      }
 
       whenReady(documentsInDB) { documentsInDB =>
         jsObjectCaptor.getValue mustBe dummyJson

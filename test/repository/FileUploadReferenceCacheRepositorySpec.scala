@@ -17,6 +17,7 @@
 package repository
 
 
+import base.MongoConfig
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
@@ -34,7 +35,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 
-class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with EmbeddedMongoDBSupport with BeforeAndAfter with
+class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with
   BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
@@ -48,15 +49,10 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
       .thenReturn("file-upload-response")
     when(mockConfiguration.get[Int](ArgumentMatchers.eq("mongodb.aft-cache.file-upload-response-cache.timeToLiveInSeconds"))(ArgumentMatchers.any()))
       .thenReturn(604800)
-    initMongoDExecutable()
-    startMongoD()
     fileUploadReferenceCacheRepository = buildFormRepository(mongoHost, mongoPort)
     super.beforeAll()
     reset(mockConfiguration)
   }
-
-  override def afterAll(): Unit =
-    stopMongoD()
 
   "updateStatus" must {
     "update status correctly" in {
