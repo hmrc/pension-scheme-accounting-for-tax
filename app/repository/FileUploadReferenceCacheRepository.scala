@@ -52,7 +52,7 @@ class FileUploadReferenceCacheRepository @Inject()(
       ),
       IndexModel(
         keys = Indexes.ascending("expireAt"),
-        indexOptions = IndexOptions().name("dataExpiry").unique(true).expireAfter(0, TimeUnit.SECONDS)
+        indexOptions = IndexOptions().name("dataExpiry").expireAfter(0, TimeUnit.SECONDS)
       )
     )
   ) with Logging {
