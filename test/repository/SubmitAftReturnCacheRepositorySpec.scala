@@ -55,7 +55,6 @@ class SubmitAftReturnCacheRepositorySpec
   override def beforeAll(): Unit = {
     when(mockAppConfig.mongoDBSubmitAftReturnCollectionName).thenReturn(collectionName)
     when(mockAppConfig.mongoDBSubmitAftReturnTTL).thenReturn(1000L)
-    Await.result(mongoComponent.database.getCollection(collectionName).dropIndexes().toFuture(), 10.seconds)
     submitAftReturnCacheRepository = buildRepository
     super.beforeAll()
   }
