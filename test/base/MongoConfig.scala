@@ -16,8 +16,6 @@
 
 package base
 
-import scala.util.Random
-
 trait MongoConfig {
   val mongoHost = "localhost"
   val mongoPort = 27017
