@@ -19,12 +19,15 @@ package repository
 import base.MongoConfig
 import config.AppConfig
 import org.mockito.Mockito.when
+import org.mongodb.scala.bson.{BsonDocument, BsonString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.{Application, Configuration}
 import repository.SubmitAftReturnCacheRepository.SubmitAftReturnCacheEntry
 import uk.gov.hmrc.mongo.MongoComponent
 
@@ -41,6 +44,8 @@ class SubmitAftReturnCacheRepositorySpec
 
   var submitAftReturnCacheRepository: SubmitAftReturnCacheRepository = _
 
+  private val application: Application = new GuiceApplicationBuilder()
+    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).build()
 
   val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", Instant.now())
   private val mockAppConfig = mock[AppConfig]
@@ -48,14 +53,16 @@ class SubmitAftReturnCacheRepositorySpec
   private val databaseName = "pension-scheme-accounting-for-tax"
   private val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
   private val mongoComponent = MongoComponent(mongoUri)
-  private def buildRepository = new SubmitAftReturnCacheRepository(mongoComponent, mockAppConfig)
-
+  private def buildRepository = new SubmitAftReturnCacheRepository(mongoComponent, application.injector.instanceOf[AppConfig])
+  private val mockConfiguration = mock[Configuration]
   override def beforeAll(): Unit = {
     when(mockAppConfig.mongoDBSubmitAftReturnCollectionName).thenReturn(collectionName)
-    when(mockAppConfig.mongoDBSubmitAftReturnTTL).thenReturn(1000L)
-    Await.result(mongoComponent.database.getCollection(collectionName).dropIndexes().toFuture(), 10.seconds)
     submitAftReturnCacheRepository = buildRepository
     super.beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    Await.result(application.stop(), 10.seconds)
   }
 
   override def beforeEach(): Unit = {
@@ -72,6 +79,27 @@ class SubmitAftReturnCacheRepositorySpec
 
       whenReady(document) { documentsInDB =>
         documentsInDB mustBe 1L
+      }
+    }
+    "save insertionTime value as a date" in {
+      when(mockConfiguration.getOptional[Boolean](path= "encrypted")).thenReturn(Some(false))
+
+      val ftr = buildRepository.collection.drop().toFuture().flatMap { _ =>
+        buildRepository.insertLockData("pstr", "user-id").flatMap { _ =>
+          for {
+            stringResults <- buildRepository.collection.find(
+              BsonDocument("insertionTime" -> BsonDocument("$type" -> BsonString("string")))
+            ).toFuture()
+            dateResults <- buildRepository.collection.find(
+              BsonDocument("insertionTime" -> BsonDocument("$type" -> BsonString("date")))
+            ).toFuture()
+          } yield stringResults -> dateResults
+        }
+      }
+
+      whenReady(ftr) { case (stringResults, dateResults) =>
+        stringResults.length mustBe 0
+        dateResults.length mustBe 1
       }
     }
   }

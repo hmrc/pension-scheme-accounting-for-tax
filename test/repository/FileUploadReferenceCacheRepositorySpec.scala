@@ -18,8 +18,10 @@ package repository
 
 
 import base.MongoConfig
+import com.typesafe.config.ConfigValue
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
+import org.mongodb.scala.bson.{BsonDocument, BsonString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
@@ -120,6 +122,27 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
       )
       result.map(_.status) mustBe Some(fileUploadStatusInProgress)
       result.map(_.reference) mustBe Some(id2)
+    }
+    "save expireAt value as a date" in {
+      when(mockConfiguration.getOptional[Boolean](path= "encrypted")).thenReturn(Some(false))
+
+      val ftr = fileUploadReferenceCacheRepository.collection.drop().toFuture().flatMap { _ =>
+        fileUploadReferenceCacheRepository.requestUpload("id", "ref").flatMap { _ =>
+          for {
+            stringResults <- fileUploadReferenceCacheRepository.collection.find(
+              BsonDocument("expireAt" -> BsonDocument("$type" -> BsonString("string")))
+            ).toFuture()
+            dateResults <- fileUploadReferenceCacheRepository.collection.find(
+              BsonDocument("expireAt" -> BsonDocument("$type" -> BsonString("date")))
+            ).toFuture()
+          } yield stringResults -> dateResults
+        }
+      }
+
+      whenReady(ftr) { case (stringResults, dateResults) =>
+        stringResults.length mustBe 0
+        dateResults.length mustBe 1
+      }
     }
   }
 }

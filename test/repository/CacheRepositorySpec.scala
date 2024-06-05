@@ -18,6 +18,7 @@ package repository
 
 import base.MongoConfig
 import org.mockito.Mockito._
+import org.mongodb.scala.bson.{BsonDocument, BsonString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
@@ -97,6 +98,28 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
       )
       result mustBe Some(dummyData)
       cacheRepository.collectionName mustBe collectionName
+    }
+    "save expireAt value as a date" in {
+      when(mockConfiguration.getOptional[Boolean](path= "encrypted")).thenReturn(Some(false))
+      val cacheRepository = buildFormRepository(mongoHost, mongoPort)
+
+      val ftr = cacheRepository.collection.drop().toFuture().flatMap { _ =>
+        cacheRepository.save("id", Json.parse("{}")).flatMap { _ =>
+          for {
+            stringResults <- cacheRepository.collection.find(
+              BsonDocument("expireAt" -> BsonDocument("$type" -> BsonString("string")))
+            ).toFuture()
+            dateResults <- cacheRepository.collection.find(
+              BsonDocument("expireAt" -> BsonDocument("$type" -> BsonString("date")))
+            ).toFuture()
+          } yield stringResults -> dateResults
+        }
+      }
+
+      whenReady(ftr) { case (stringResults, dateResults) =>
+        stringResults.length mustBe 0
+        dateResults.length mustBe 1
+      }
     }
   }
 
