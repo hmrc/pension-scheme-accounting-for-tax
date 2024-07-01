@@ -157,7 +157,8 @@ class AftBatchedDataCacheRepository @Inject()(
 
     getSessionDataBatch(id, sessionId, sessionData).flatMap {
       case Some(sessionDataBatchInfo) =>
-        val batchesExcludingSessionData = batchIdentifier match {
+        println(s"-----------------userData in saveToRepository: ${userData.toString()}")
+        val batchesExcludingSessionData: Set[BatchInfo] = batchIdentifier match {
           case None =>
             batchService.createBatches(userDataFullPayload = userData.as[JsObject], userDataBatchSize = userDataBatchSize)
           case Some(BatchIdentifier(Other, _)) =>

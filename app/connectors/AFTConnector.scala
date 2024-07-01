@@ -56,6 +56,7 @@ class AFTConnector @Inject()(
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data) andThen
         fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
     } else {
+      println(s"---------fileAFTReturn else: ${data.toString()}")
       httpPostRequest(fileAFTReturnURL, data, journeyType)(hc, implicitly, implicitly) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
     }
