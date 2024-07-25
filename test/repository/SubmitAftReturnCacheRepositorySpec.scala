@@ -47,7 +47,7 @@ class SubmitAftReturnCacheRepositorySpec
   private val application: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).build()
 
-  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", Instant.now())
+  val aftCacheEntry: SubmitAftReturnCacheEntry = SubmitAftReturnCacheEntry("123", "testUser", Instant.now(), None)
   private val mockAppConfig = mock[AppConfig]
   private val collectionName = "submit-aft-return"
   private val databaseName = "pension-scheme-accounting-for-tax"
@@ -73,7 +73,7 @@ class SubmitAftReturnCacheRepositorySpec
     "insert a row into mongo" in {
       val document = for {
         _ <- submitAftReturnCacheRepository.collection.drop().toFuture()
-        _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry.pstr, aftCacheEntry.externalUserId)
+        _ <- submitAftReturnCacheRepository.insertLockData(aftCacheEntry.pstr, aftCacheEntry.externalUserId, None)
         countedDocuments <- submitAftReturnCacheRepository.collection.countDocuments().toFuture()
       } yield countedDocuments
 
@@ -85,7 +85,7 @@ class SubmitAftReturnCacheRepositorySpec
       when(mockConfiguration.getOptional[Boolean](path= "encrypted")).thenReturn(Some(false))
 
       val ftr = buildRepository.collection.drop().toFuture().flatMap { _ =>
-        buildRepository.insertLockData("pstr", "user-id").flatMap { _ =>
+        buildRepository.insertLockData("pstr", "user-id", None).flatMap { _ =>
           for {
             stringResults <- buildRepository.collection.find(
               BsonDocument("insertionTime" -> BsonDocument("$type" -> BsonString("string")))
