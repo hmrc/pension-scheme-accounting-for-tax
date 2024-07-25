@@ -35,8 +35,9 @@ import scala.concurrent.{ExecutionContext, Future}
 object SubmitAftReturnCacheRepository {
   private val pstrFieldName = "pstr"
   private val externalUserIdFieldName = "externalUserId"
+  private val compileHashFieldName = "compileHash"
 
-  case class SubmitAftReturnCacheEntry(pstr: String, externalUserId: String, insertionTime: Instant)
+  case class SubmitAftReturnCacheEntry(pstr: String, externalUserId: String, insertionTime: Instant, compileHash: Option[String])
   implicit val dateFormats: Format[Instant] = MongoJavatimeFormats.instantFormat
   implicit val format: OFormat[SubmitAftReturnCacheEntry] = Json.format[SubmitAftReturnCacheEntry]
 }
@@ -52,20 +53,21 @@ class SubmitAftReturnCacheRepository @Inject()(
     domainFormat = implicitly,
     indexes = Seq(
       IndexModel(
-        Indexes.ascending(pstrFieldName, externalUserIdFieldName),
+        Indexes.ascending(pstrFieldName, externalUserIdFieldName, compileHashFieldName),
         IndexOptions().name("primaryKey").unique(true)
       ),
       IndexModel(
         keys = Indexes.ascending("insertionTime"),
         indexOptions = IndexOptions().name("insertion").expireAfter(appConfig.mongoDBSubmitAftReturnTTL, TimeUnit.SECONDS)
       )
-    )
+    ),
+    replaceIndexes = true
   ) with Logging {
 
   private lazy val documentExistsErrorCode = 11000
 
-  def insertLockData(pstr: String, externalUserId: String): Future[Boolean] = {
-    collection.insertOne(SubmitAftReturnCacheEntry(pstr, externalUserId, Instant.now())).toFuture().map { _ => true }
+  def insertLockData(pstr: String, externalUserId: String, hash: Option[String]): Future[Boolean] = {
+    collection.insertOne(SubmitAftReturnCacheEntry(pstr, externalUserId, Instant.now(), hash)).toFuture().map { _ => true }
       .recoverWith {
         case e: MongoWriteException if e.getCode == documentExistsErrorCode =>
           Future.successful(false)

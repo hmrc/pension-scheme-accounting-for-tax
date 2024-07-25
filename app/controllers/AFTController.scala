@@ -19,7 +19,7 @@ package controllers
 import audit.FileAFTReturnAuditService
 import connectors.AFTConnector
 import models.enumeration.JourneyType
-import models.enumeration.JourneyType.AFT_SUBMIT_RETURN
+import models.enumeration.JourneyType.{AFT_COMPILE_RETURN, AFT_SUBMIT_RETURN}
 import models.{AFTSubmitterDetails, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.libs.json._
@@ -34,6 +34,7 @@ import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.JSONPayloadSchemaValidator
 
+import java.security.MessageDigest
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -108,13 +109,18 @@ class AFTController @Inject()(
                   }
 
                   journeyType match {
-                    case AFT_SUBMIT_RETURN =>
-                      submitAftReturnCacheRepository.insertLockData(pstr, externalUserId).flatMap { entryExists =>
-                        if (!entryExists && journeyType == AFT_SUBMIT_RETURN) {
-                          Future.successful(NoContent)
-                        } else {
-                          filingAftReturn
-                        }
+                    case AFT_SUBMIT_RETURN | AFT_COMPILE_RETURN =>
+                      val hash = if(journeyType == AFT_COMPILE_RETURN) {
+                        val messageDigest = MessageDigest.getInstance("SHA-256")
+                        messageDigest.update(dataToBeSendToETMP.toString().getBytes)
+                        Some(new String(messageDigest.digest))
+                      } else {
+                        None
+                      }
+
+                      submitAftReturnCacheRepository.insertLockData(pstr, externalUserId, hash).flatMap {
+                        case entryExists if !entryExists => Future.successful(NoContent)
+                        case _ => filingAftReturn
                       }
                     case _ => filingAftReturn
                   }
