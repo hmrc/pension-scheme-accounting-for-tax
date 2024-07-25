@@ -105,8 +105,6 @@ class AFTController @Inject()(
                 case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
 
                   def filingAftReturn = aftConnector.fileAFTReturn(pstr, journeyType.toString, dataToBeSendToETMP).map { response =>
-                    println("***************")
-                    println("filled")
                     Ok(response.body)
                   }
 
