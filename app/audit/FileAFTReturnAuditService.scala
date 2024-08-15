@@ -110,7 +110,8 @@ case class FileAFTReturnOneChargeAndNoValue(
     "aftStatus" -> journeyType,
     "status" -> status.toString,
     "request" -> request,
-    "response" -> response
+    "response" -> response,
+    "requestSizeInBytes" -> request.toString().getBytes.length      //TODO: This audit event may not be triggered due to frontend validation of non-zero Total Amount, but it is being retained for potential future use cases.
   )
 }
 

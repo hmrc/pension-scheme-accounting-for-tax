@@ -31,7 +31,6 @@ class AFTService {
 
     if (allNonEmptyCharges.size == 1) {
       allNonEmptyCharges.headOption match {
-        case Some((_, "chargeTypeGDetails")) => onlyLastZeroAmountMemberG(chargeType = "chargeTypeGDetails", jsValue)
         case Some((_, chargeType)) if memberLevelCharges.contains(chargeType) => onlyLastZeroAmountMember(chargeType, jsValue)
         case Some((_, chargeType)) => (jsValue \ "chargeDetails" \ chargeType \ "totalAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
         case _ => false
@@ -43,13 +42,14 @@ class AFTService {
 
   private val zeroCurrencyValue = BigDecimal(0.00)
 
-  private def onlyLastZeroAmountMemberG(chargeType: String, jsValue: JsValue): Boolean = {
-    (jsValue \ "chargeDetails" \ chargeType \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1) &&
-      (jsValue \ "chargeDetails" \ chargeType \ "totalOTCAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
+
+  private def onlyLastZeroAmountMember(chargeType: String, jsValue: JsValue) : Boolean = {
+   val isZeroCurrency =  chargeType match{
+      case "chargeTypeGDetails" => (jsValue \ "chargeDetails" \ chargeType \ "totalOTCAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
+      case _ => (jsValue \ "chargeDetails" \ chargeType \ "totalAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
+    }
+
+    isZeroCurrency && (jsValue \ "chargeDetails" \ chargeType \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1)
   }
 
-  private def onlyLastZeroAmountMember(chargeType: String, jsValue: JsValue): Boolean = {
-    (jsValue \ "chargeDetails" \ chargeType \ "memberDetails").validate[JsArray].asOpt.exists(_.value.size == 1) &&
-      (jsValue \ "chargeDetails" \ chargeType \ "totalAmount").asOpt[BigDecimal].contains(zeroCurrencyValue)
-  }
 }
