@@ -51,7 +51,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
     bind[FileUploadReferenceCacheRepository].toInstance(repo),
-    bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
     bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
     bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
     bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),

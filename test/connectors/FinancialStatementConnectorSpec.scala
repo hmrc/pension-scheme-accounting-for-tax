@@ -34,7 +34,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import repository._
-import services.{AFTService, FeatureToggleService}
+import services.AFTService
 import uk.gov.hmrc.http._
 import utils.WireMockHelper
 
@@ -51,15 +51,12 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
   private val mockAuditService = mock[AuditService]
   private val mockAftService = mock[AFTService]
-  private val mockFutureToggleService = mock[FeatureToggleService]
   private lazy val connector: FinancialStatementConnector = injector.instanceOf[FinancialStatementConnector]
 
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
       bind[AuditService].toInstance(mockAuditService),
       bind[AFTService].toInstance(mockAftService),
-      bind[FeatureToggleService].toInstance(mockFutureToggleService),
-      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
       bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
       bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),

@@ -48,7 +48,6 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[FileUploadOutcomeRepository].toInstance(repo),
-      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
       bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
       bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),

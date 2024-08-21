@@ -79,8 +79,8 @@ object AuditServiceSpec extends MockitoSugar {
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
-      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]))
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
+    )
     .build()
 
   def fakeRequest(): FakeRequest[AnyContentAsEmpty.type] = FakeRequest("", "")
@@ -92,7 +92,6 @@ object AuditServiceSpec extends MockitoSugar {
 }
 
 //noinspection ScalaDeprecation
-
 case class TestAuditEvent(payload: String) extends AuditEvent {
 
   override def auditType: String = "TestAuditEvent"

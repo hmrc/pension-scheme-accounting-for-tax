@@ -48,7 +48,6 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
-      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
       bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
       bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
