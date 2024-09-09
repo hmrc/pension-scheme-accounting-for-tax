@@ -134,7 +134,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
     "return OK with added data" in {
       when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("new-financial-statement", None, isEnabled = true))))
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModelAfterUpdateWithAFTDetails))
 
@@ -151,7 +150,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       val (charge, credit) = pairOfChargeAndCredit
       s"flip ${charge.seqSchemeFSDetail.head.chargeType} to ${credit.seqSchemeFSDetail.head.chargeType} if negative amountDue" in {
         when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-        when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(Some(ToggleDetails("new-financial-statement", None, isEnabled = true))))
         when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
           Future.successful(charge))
         val result = controller.schemeStatement()(fakeRequestWithPstr)
