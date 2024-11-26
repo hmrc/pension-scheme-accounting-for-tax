@@ -20,7 +20,7 @@ import audit.FileAFTReturnAuditService
 import connectors.AFTConnector
 import models.enumeration.JourneyType
 import models.enumeration.JourneyType.{AFT_COMPILE_RETURN, AFT_SUBMIT_RETURN}
-import models.{AFTSubmitterDetails, VersionsWithSubmitter}
+import models.{AFTSubmitterDetails, AFTVersion, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
@@ -221,22 +221,39 @@ class AFTController @Inject()(
 
   def getVersionsWithSubmitter: Action[AnyContent] = Action.async {
     implicit request =>
-      get { (pstr, startDate) =>
-        aftConnector.getAftVersions(pstr, startDate).flatMap { aftVersions =>
-          Future.sequence(aftVersions.map { version =>
-            aftConnector.getAftDetails(pstr, startDate, padVersion(version.reportVersion.toString)).map { detailsJs =>
-              detailsJs.transform(aftDetailsTransformer.transformToUserAnswers) match {
-                case JsSuccess(userAnswersJson, _) =>
-                  (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
-                    case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
-                    case JsError(_) => VersionsWithSubmitter(version, None)
-                  }
-                case JsError(errors) => throw JsResultException(errors)
-              }
-            }
-          })
-        }.map(v => Ok(Json.toJson(v)))
+
+       get { (pstr, startDate) =>
+
+        val getAFTVersions: Future[Seq[AFTVersion]] = aftConnector.getAftVersions(pstr, startDate)
+
+        val result = for {
+          aftVersions <- getAFTVersions
+          _ = logger.warn(s"number of versions: ${aftVersions.length}")
+          res: Seq[Future[VersionsWithSubmitter]] = aftVersions.map { version =>
+            val futureAFTDetails =
+              aftConnector.getAftDetails(pstr, startDate, padVersion(version.reportVersion.toString))
+            futureAFTDetails.map (detailsJsLogic(_, version))
+          }
+          ans <- Future.sequence(res)
+        } yield ans
+
+        result.map(v => Ok(Json.toJson(v)))
+
       }
+  }
+
+  private def detailsJsLogic(js:JsValue,version:AFTVersion): VersionsWithSubmitter = {
+    logger.warn(s"detailsJsLogic started for: ${version.reportVersion}")
+    val transform = js.transform(aftDetailsTransformer.transformToUserAnswers) match {
+      case JsSuccess(userAnswersJson, _) =>
+        (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
+          case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
+          case JsError(_) => VersionsWithSubmitter(version, None)
+        }
+      case JsError(errors) => throw JsResultException(errors)
+    }
+    logger.warn(s"detailsJsLogic finished for: ${version.reportVersion}")
+    transform
   }
 
   def getIsChargeNonZero: Action[AnyContent] = Action.async {

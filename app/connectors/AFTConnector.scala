@@ -130,13 +130,17 @@ class AFTConnector @Inject()(
 
     logger.debug(s"GET AFT DETAILS CALLED (IF): HC other headers = " +
       s"${hc.otherHeaders} and HC extra headers = ${hc.extraHeaders} and request headers = ${request.headers}")
-    http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
+
+    logger.warn(s"getAftDetails from (IF) started for version: $aftVersion")
+    val res = http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
       response =>
         response.status match {
           case OK => Json.parse(response.body)
           case _ => handleErrorResponse("GET", getAftUrl)(response)
         }
     } andThen aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, startDate)
+    logger.warn(s"getAftDetails from (IF) finished for version: $aftVersion")
+    res
   }
 
   def getAftDetails(pstr: String, fbNumber: String)
@@ -162,7 +166,8 @@ class AFTConnector @Inject()(
     val getAftVersionUrl: String = config.getAftVersionUrl.format(pstr, startDate)
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
 
-    http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map {
+    logger.warn(s"getAftVersions from (IF) started")
+    val res = http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map {
       response =>
         response.status match {
           case OK =>
@@ -176,5 +181,7 @@ class AFTConnector @Inject()(
             handleErrorResponse("GET", getAftVersionUrl)(response)
         }
     } andThen aftVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate)
+    logger.warn(s"getAftVersions from (IF) finished")
+    res
   }
 }
