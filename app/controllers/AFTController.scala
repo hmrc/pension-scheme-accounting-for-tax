@@ -242,15 +242,14 @@ class AFTController @Inject()(
       }
   }
 
-  private def detailsJsLogic(js:JsValue,version:AFTVersion): VersionsWithSubmitter = {
+
+
+  private def detailsJsLogic(js: JsValue, version: AFTVersion): VersionsWithSubmitter = {
+    import models.AFTSubmitterDetails._
     logger.warn(s"detailsJsLogic started for: ${version.reportVersion}")
-    val transform = js.transform(aftDetailsTransformer.transformToUserAnswers) match {
-      case JsSuccess(userAnswersJson, _) =>
-        (userAnswersJson \ "submitterDetails").validate[AFTSubmitterDetails] match {
-          case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
-          case JsError(_) => VersionsWithSubmitter(version, None)
-        }
-      case JsError(errors) => throw JsResultException(errors)
+    val transform = js.validate[AFTSubmitterDetails](readAftDetailsFromIF) match {
+      case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
+      case JsError(_) => VersionsWithSubmitter(version, None)
     }
     logger.warn(s"detailsJsLogic finished for: ${version.reportVersion}")
     transform

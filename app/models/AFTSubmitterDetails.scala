@@ -16,14 +16,27 @@
 
 package models
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{Format, Json, Reads}
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 case class AFTSubmitterDetails(submitterType: String, submitterName: String, submitterID: String, authorisingPsaId: Option[String], receiptDate: LocalDate)
 
 object AFTSubmitterDetails {
   implicit val formats: Format[AFTSubmitterDetails] = Json.format[AFTSubmitterDetails]
+
+  implicit val readAftDetailsFromIF: Reads[AFTSubmitterDetails] = Reads { json =>
+    for {
+      submitterType <- (json \ "aftDeclarationDetails" \ "submittedBy").validate[String]
+      submitterName <- (json \ "aftDeclarationDetails" \ "submitterName").validate[String]
+      submitterID <- (json \ "aftDeclarationDetails" \ "submitterId").validate[String]
+      authorisingPsaId = (json \ "aftDeclarationDetails" \ "psaId").asOpt[String]
+      receiptDate <- (json \ "aftDetails" \ "receiptDate").validate[String].map { dateTime =>
+        LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate
+      }
+    } yield AFTSubmitterDetails(submitterType, submitterName, submitterID, authorisingPsaId, receiptDate)
+  }
+
 }
 
 case class VersionsWithSubmitter(versionDetails: AFTVersion, submitterDetails: Option[AFTSubmitterDetails])
