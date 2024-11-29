@@ -39,6 +39,40 @@ object AFTSubmitterDetails {
 
 }
 
+case class AFTInput(
+                     aftDeclarationDetails: AFTDeclarationDetails,
+                     aftDetails: AFTDetails
+                   )
+
+case class AFTDeclarationDetails(
+                                  submittedBy: String,
+                                  submitterId: String,
+                                  submitterName: String,
+                                  psaId: Option[String]
+                                )
+
+case class AFTDetails(
+                       receiptDate: String
+                     )
+
+object AFTInput {
+  implicit val readsAFTDeclarationDetails: Reads[AFTDeclarationDetails] = Json.reads[AFTDeclarationDetails]
+  implicit val readsAFTDetails: Reads[AFTDetails] = Json.reads[AFTDetails]
+  implicit val readsAFTInput: Reads[AFTInput] = Json.reads[AFTInput]
+}
+
+object AFTTransformer {
+  def transform(input: AFTInput): AFTSubmitterDetails = {
+    AFTSubmitterDetails(
+      submitterType = input.aftDeclarationDetails.submittedBy,
+      submitterName = input.aftDeclarationDetails.submitterName,
+      submitterID = input.aftDeclarationDetails.submitterId,
+      authorisingPsaId = input.aftDeclarationDetails.psaId,
+      receiptDate = LocalDateTime.parse(input.aftDetails.receiptDate.dropRight(1)).toLocalDate
+    )
+  }
+}
+
 case class VersionsWithSubmitter(versionDetails: AFTVersion, submitterDetails: Option[AFTSubmitterDetails])
 
 object VersionsWithSubmitter {

@@ -20,7 +20,7 @@ import audit.FileAFTReturnAuditService
 import connectors.AFTConnector
 import models.enumeration.JourneyType
 import models.enumeration.JourneyType.{AFT_COMPILE_RETURN, AFT_SUBMIT_RETURN}
-import models.{AFTSubmitterDetails, AFTVersion, VersionsWithSubmitter}
+import models.{AFTInput, AFTSubmitterDetails, AFTTransformer, AFTVersion, VersionsWithSubmitter}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
@@ -247,8 +247,8 @@ class AFTController @Inject()(
   private def detailsJsLogic(js: JsValue, version: AFTVersion): VersionsWithSubmitter = {
     import models.AFTSubmitterDetails._
     logger.warn(s"detailsJsLogic started for: ${version.reportVersion}")
-    val transform = js.validate[AFTSubmitterDetails](readAftDetailsFromIF) match {
-      case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(subDetails))
+    val transform = js.validate[AFTInput] match {
+      case JsSuccess(subDetails, _) => VersionsWithSubmitter(version, Some(AFTTransformer.transform(subDetails)))
       case JsError(_) => VersionsWithSubmitter(version, None)
     }
     logger.warn(s"detailsJsLogic finished for: ${version.reportVersion}")
