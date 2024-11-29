@@ -140,9 +140,11 @@ class AFTSubmitterDetailsTest extends PlaySpec {
         """.stripMargin)
 
 
-      val result = aftDetailsJson.validate[AFTSubmitterDetails](readAftDetailsFromIF)
+      val result: JsResult[AFTInput] = aftDetailsJson.validate[AFTInput]
 
-      result mustBe JsSuccess(
+      val transformedResult: JsResult[AFTSubmitterDetails] = result.map(aft => AFTTransformer.transform(aft))
+
+        transformedResult mustBe JsSuccess(
         AFTSubmitterDetails(
           submitterType = "PSP",
           submitterName = "Nigel",

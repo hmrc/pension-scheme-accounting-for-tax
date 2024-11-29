@@ -24,41 +24,29 @@ case class AFTSubmitterDetails(submitterType: String, submitterName: String, sub
 
 object AFTSubmitterDetails {
   implicit val formats: Format[AFTSubmitterDetails] = Json.format[AFTSubmitterDetails]
-
-  implicit val readAftDetailsFromIF: Reads[AFTSubmitterDetails] = Reads { json =>
-    for {
-      submitterType <- (json \ "aftDeclarationDetails" \ "submittedBy").validate[String]
-      submitterName <- (json \ "aftDeclarationDetails" \ "submitterName").validate[String]
-      submitterID <- (json \ "aftDeclarationDetails" \ "submitterId").validate[String]
-      authorisingPsaId = (json \ "aftDeclarationDetails" \ "psaId").asOpt[String]
-      receiptDate <- (json \ "aftDetails" \ "receiptDate").validate[String].map { dateTime =>
-        LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate
-      }
-    } yield AFTSubmitterDetails(submitterType, submitterName, submitterID, authorisingPsaId, receiptDate)
-  }
-
 }
 
 case class AFTInput(
-                     aftDeclarationDetails: AFTDeclarationDetails,
-                     aftDetails: AFTDetails
-                   )
+    aftDeclarationDetails: AFTDeclarationDetails,
+    aftDetails: AFTDetails
+)
 
 case class AFTDeclarationDetails(
-                                  submittedBy: String,
-                                  submitterId: String,
-                                  submitterName: String,
-                                  psaId: Option[String]
-                                )
+    submittedBy: String,
+    submitterId: String,
+    submitterName: String,
+    psaId: Option[String]
+)
 
 case class AFTDetails(
-                       receiptDate: String
-                     )
+    receiptDate: String
+)
 
 object AFTInput {
-  implicit val readsAFTDeclarationDetails: Reads[AFTDeclarationDetails] = Json.reads[AFTDeclarationDetails]
-  implicit val readsAFTDetails: Reads[AFTDetails] = Json.reads[AFTDetails]
-  implicit val readsAFTInput: Reads[AFTInput] = Json.reads[AFTInput]
+  implicit val readsAFTDeclarationDetails: Format[AFTDeclarationDetails] =
+    Json.format[AFTDeclarationDetails]
+  implicit val readsAFTDetails: Format[AFTDetails] = Json.format[AFTDetails]
+  implicit val readsAFTInput: Format[AFTInput] = Json.format[AFTInput]
 }
 
 object AFTTransformer {
@@ -68,7 +56,9 @@ object AFTTransformer {
       submitterName = input.aftDeclarationDetails.submitterName,
       submitterID = input.aftDeclarationDetails.submitterId,
       authorisingPsaId = input.aftDeclarationDetails.psaId,
-      receiptDate = LocalDateTime.parse(input.aftDetails.receiptDate.dropRight(1)).toLocalDate
+      receiptDate = LocalDateTime
+        .parse(input.aftDetails.receiptDate.dropRight(1))
+        .toLocalDate
     )
   }
 }
