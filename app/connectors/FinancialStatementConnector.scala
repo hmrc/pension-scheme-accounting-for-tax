@@ -87,7 +87,7 @@ class FinancialStatementConnector @Inject()(
 
     val reads: Reads[SchemeFS] = SchemeFS.rdsSchemeFSMax
 
-    val url = url"${config.schemeFinancialStatementMaxUrl.format(pstr)}" //this call is timing out/not responding to IFS
+    val url = url"${config.schemeFinancialStatementMaxUrl.format(pstr)}"
 
 
     httpClient2
