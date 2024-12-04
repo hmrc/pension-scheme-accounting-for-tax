@@ -20,7 +20,7 @@ import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models._
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{times, verify}
+import org.mockito.Mockito.{times, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
@@ -36,9 +36,11 @@ import play.api.test.FakeRequest
 import repository._
 import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.HttpClientV2
 import utils.WireMockHelper
 
 import java.time.LocalDate
+import scala.concurrent.{Future, TimeoutException}
 
 class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with MockitoSugar with BeforeAndAfterEach {
 
@@ -189,6 +191,26 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
       connector.getSchemeFS(pstr).map { response =>
         response mustBe schemeFSWrapperModel
+      }
+    }
+
+    "timeout when ETMP takes too long to respond" in {
+      Mockito.reset(mockAuditService)
+
+      server.stubFor(
+        get(urlEqualTo(getSchemeFSMaxUrl))
+          .willReturn(
+            aResponse()
+              .withFixedDelay(41000)
+              .withHeader("Content-Type", "application/json")
+          )
+      )
+
+      recoverToExceptionIf[Exception] {
+        connector.getSchemeFS(pstr)
+      }.map { exception =>
+        exception.getMessage must include("Request timeout")
+        exception.getMessage must include("after 40000 ms")
       }
     }
 
