@@ -93,7 +93,7 @@ class FinancialStatementConnector @Inject()(
     httpClient2
               .get(url)(hc)
               .setHeader(headerUtils.integrationFrameworkHeader:_*)
-              .transform(_.withRequestTimeout(Duration(40, SECONDS)))
+              .transform(_.withRequestTimeout(config.ifsTimeout))
               .execute[HttpResponse].map{ response =>
       response.status match {
         case OK =>

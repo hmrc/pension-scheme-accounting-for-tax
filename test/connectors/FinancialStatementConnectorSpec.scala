@@ -39,6 +39,7 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
 import utils.WireMockHelper
 
+import play.api.libs.ws.WSRequest
 import java.time.LocalDate
 import scala.concurrent.{Future, TimeoutException}
 
@@ -201,7 +202,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
             aResponse()
-              .withFixedDelay(41000)
+              .withFixedDelay(2000)
               .withHeader("Content-Type", "application/json")
           )
       )
@@ -210,7 +211,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
         connector.getSchemeFS(pstr)
       }.map { exception =>
         exception.getMessage must include("Request timeout")
-        exception.getMessage must include("after 40000 ms")
+        exception.getMessage must include("after 1000 ms")
       }
     }
 
