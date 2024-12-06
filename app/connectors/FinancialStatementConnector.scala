@@ -24,13 +24,16 @@ import play.api.Logger
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
+import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialStatementConnector @Inject()(
                                              http: HttpClient,
+                                             httpClient2: HttpClientV2,
                                              config: AppConfig,
                                              headerUtils: HeaderUtils,
                                              financialInfoAuditService: FinancialInfoAuditService
@@ -83,8 +86,15 @@ class FinancialStatementConnector @Inject()(
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
 
     val reads: Reads[SchemeFS] = SchemeFS.rdsSchemeFSMax
-    val url = config.schemeFinancialStatementMaxUrl.format(pstr)
-    http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
+
+    val url = url"${config.schemeFinancialStatementMaxUrl.format(pstr)}"
+
+
+    httpClient2
+              .get(url)(hc)
+              .setHeader(headerUtils.integrationFrameworkHeader:_*)
+              .transform(_.withRequestTimeout(config.ifsTimeout))
+              .execute[HttpResponse].map{ response =>
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
@@ -104,9 +114,11 @@ class FinancialStatementConnector @Inject()(
             seqSchemeFSDetail = Seq.empty[SchemeFSDetail]
           )
         case _ =>
-          handleErrorResponse("GET", url)(response)
-      }
-    } andThen financialInfoAuditService.sendSchemeFSAuditEvent(pstr)
+          handleErrorResponse("GET", url.toString)(response)
+        }
+      } andThen financialInfoAuditService.sendSchemeFSAuditEvent(pstr)
+
+
   }
 }
 

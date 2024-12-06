@@ -20,9 +20,12 @@ import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.duration.Duration
 
 @Singleton
 class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig, runModeConfiguration: Configuration) {
+
+  val ifsTimeout: Duration = config.get[Duration]("ifs.timeout")
 
   lazy val appName: String = config.get[String](path = "appName")
   val authBaseUrl: String = servicesConfig.baseUrl(serviceName = "auth")
