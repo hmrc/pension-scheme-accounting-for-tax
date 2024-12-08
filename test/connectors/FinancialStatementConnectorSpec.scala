@@ -19,6 +19,7 @@ package connectors
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models._
+import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{times, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
@@ -26,6 +27,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.cache.AsyncCacheApi
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -38,10 +40,12 @@ import services.{AFTService, FeatureToggleService}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
 import utils.WireMockHelper
-
 import play.api.libs.ws.WSRequest
+
 import java.time.LocalDate
+import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, TimeoutException}
+import scala.reflect.ClassTag
 
 class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with MockitoSugar with BeforeAndAfterEach {
 
@@ -68,8 +72,24 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[AsyncCacheApi].toInstance(new FakeCache())
     )
+
+  class FakeCache extends AsyncCacheApi {
+    override def set(key: String, value: Any, expiration: Duration): Future[Done] = ???
+
+    override def remove(key: String): Future[Done] = ???
+
+    override def getOrElseUpdate[A](key: String, expiration: Duration)
+                                   (orElse: => Future[A])
+                                   (implicit evidence$1: ClassTag[A]): Future[A] = orElse
+
+    override def get[T](key: String)
+                       (implicit evidence$2: ClassTag[T]): Future[Option[T]] = ???
+
+    override def removeAll(): Future[Done] = ???
+  }
 
   private val psaId = "test-psa-id"
   private val pstr = "test-pstr"

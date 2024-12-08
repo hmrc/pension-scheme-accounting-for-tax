@@ -21,6 +21,7 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
 import play.api.Logger
+import play.api.cache.AsyncCacheApi
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
@@ -28,6 +29,7 @@ import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
+import java.nio.charset.StandardCharsets
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -36,7 +38,8 @@ class FinancialStatementConnector @Inject()(
                                              httpClient2: HttpClientV2,
                                              config: AppConfig,
                                              headerUtils: HeaderUtils,
-                                             financialInfoAuditService: FinancialInfoAuditService
+                                             financialInfoAuditService: FinancialInfoAuditService,
+                                             cache: AsyncCacheApi
                                            )
   extends HttpErrorFunctions with HttpResponseHelper {
 
@@ -82,6 +85,23 @@ class FinancialStatementConnector @Inject()(
   }
 
   def getSchemeFS(pstr: String)
+                      (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
+    val cacheKey = s"schemeFS-$pstr"
+    cache.getOrElseUpdate[SchemeFS](cacheKey,config.ifsCache){
+      logger.warn(s"Cache missing, reset or not instantiated, fetching getSchemeFS from IFS")
+      getSchemeFSCall(pstr)
+    }.map{ result =>
+      val sizeInBytes = getObjectSize(result)
+      logger.warn(s"Cache hit for getSchemeFS. Item size: $sizeInBytes bytes.")
+      result
+    }
+  }
+
+  private def getObjectSize[T](obj: T)(implicit writes: Writes[T]): Int = {
+    val jsonString = Json.toJson(obj).toString()
+    jsonString.getBytes(StandardCharsets.UTF_8).length
+  }
+  private def getSchemeFSCall(pstr: String)
                  (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
 

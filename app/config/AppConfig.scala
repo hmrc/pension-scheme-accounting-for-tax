@@ -26,6 +26,8 @@ import scala.concurrent.duration.Duration
 class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig, runModeConfiguration: Configuration) {
 
   val ifsTimeout: Duration = config.get[Duration]("ifs.timeout")
+  val ifsCache: Duration = config.get[Duration]("ifs.cache.timeout")
+
 
   lazy val appName: String = config.get[String](path = "appName")
   val authBaseUrl: String = servicesConfig.baseUrl(serviceName = "auth")
