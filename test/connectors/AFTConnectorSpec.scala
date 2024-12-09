@@ -20,12 +20,14 @@ import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models.enumeration.JourneyType
 import models.{AFTOverview, AFTOverviewVersion}
+import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{times, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.cache.AsyncCacheApi
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -39,6 +41,9 @@ import uk.gov.hmrc.http._
 import utils.{JsonFileReader, WireMockHelper}
 
 import java.time.LocalDate
+import scala.concurrent.Future
+import scala.reflect.ClassTag
+import scala.concurrent.duration.Duration
 
 class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with JsonFileReader with MockitoSugar { // scalastyle:off magic.number
 
@@ -64,8 +69,24 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[AsyncCacheApi].toInstance(new FakeCache())
     )
+
+  class FakeCache extends AsyncCacheApi {
+    override def set(key: String, value: Any, expiration: Duration): Future[Done] = ???
+
+    override def remove(key: String): Future[Done] = ???
+
+    override def getOrElseUpdate[A](key: String, expiration: Duration)
+                                   (orElse: => Future[A])
+                                   (implicit evidence$1: ClassTag[A]): Future[A] = orElse
+
+    override def get[T](key: String)
+                       (implicit evidence$2: ClassTag[T]): Future[Option[T]] = ???
+
+    override def removeAll(): Future[Done] = ???
+  }
 
   private val pstr = "test-pstr"
   private val startDt = "2020-01-01"
