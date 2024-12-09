@@ -21,11 +21,13 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.{AFTOverview, AFTVersion}
 import play.api.Logger
+import play.api.cache.AsyncCacheApi
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import services.AFTService
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
@@ -33,13 +35,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AFTConnector @Inject()(
                               http: HttpClient,
+                              httpClient2: HttpClientV2,
                               config: AppConfig,
                               auditService: AuditService,
                               fileAFTReturnAuditService: FileAFTReturnAuditService,
                               aftVersionsAuditEventService: GetAFTVersionsAuditService,
                               aftDetailsAuditEventService: GetAFTDetailsAuditService,
                               aftService: AFTService,
-                              headerUtils: HeaderUtils
+                              headerUtils: HeaderUtils,
+                              cache: AsyncCacheApi
                             )
   extends HttpErrorFunctions
     with HttpResponseHelper {
@@ -118,10 +122,22 @@ class AFTConnector @Inject()(
   }
 
   def getAftDetails(pstr: String, startDate: String, aftVersion: String)
+                       (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[JsValue] = {
+    val cacheKey = s"aftDetails-$pstr"
+    cache.getOrElseUpdate[JsValue](cacheKey, config.ifsCache) {
+      logger.warn(s"Cache missing, reset or not instantiated, fetching getAftDetails from IFS")
+      getAftDetailsCall(pstr,startDate,aftVersion)
+    }.map { result =>
+      logger.warn(s"Cache hit for getAftDetails.")
+      result
+    }
+  }
+
+  def getAftDetailsCall(pstr: String, startDate: String, aftVersion: String)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[JsValue] = {
 
-    val getAftUrl: String = config.getAftDetailsUrl.format(pstr)
-    val headers = integrationFrameworkHeader :+ "quarterStartDate" -> startDate :+ "aftVersion" -> aftVersion
+    val getAftUrl = url"${config.getAftDetailsUrl.format(pstr)}"
+    val headers: Seq[(String, String)] = integrationFrameworkHeader :+ "quarterStartDate" -> startDate :+ "aftVersion" -> aftVersion
 
     logger.debug(s"GET AFT DETAILS CALLED (IF): aftVersion: $aftVersion and full headers: $headers")
 
@@ -132,13 +148,16 @@ class AFTConnector @Inject()(
       s"${hc.otherHeaders} and HC extra headers = ${hc.extraHeaders} and request headers = ${request.headers}")
 
     logger.warn(s"getAftDetails from (IF) started for version: $aftVersion")
-    val res = http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
-      response =>
+    val res = httpClient2
+      .get(getAftUrl)(hc)
+      .setHeader(headers:_*)
+      .transform(_.withRequestTimeout(config.ifsTimeout))
+      .execute[HttpResponse].map{ response =>
         response.status match {
           case OK => Json.parse(response.body)
-          case _ => handleErrorResponse("GET", getAftUrl)(response)
+          case _ => handleErrorResponse("GET", getAftUrl.toString)(response)
         }
-    } andThen aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, startDate)
+      } andThen aftDetailsAuditEventService.sendAFTDetailsAuditEvent(pstr, startDate)
     logger.warn(s"getAftDetails from (IF) finished for version: $aftVersion")
     res
   }
@@ -146,16 +165,19 @@ class AFTConnector @Inject()(
   def getAftDetails(pstr: String, fbNumber: String)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Option[JsValue]] = {
 
-    val getAftUrl: String = config.getAftDetailsUrl.format(pstr)
+    val getAftUrl = url"${config.getAftDetailsUrl.format(pstr)}"
     val headers = integrationFrameworkHeader :+ "fbNumber" -> fbNumber
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headers: _*)
-
-    http.GET[HttpResponse](getAftUrl)(implicitly, hc, implicitly) map {
+    httpClient2
+      .get(getAftUrl)(hc)
+      .setHeader(headers:_*)
+      .transform(_.withRequestTimeout(config.ifsTimeout))
+      .execute[HttpResponse].map {
       response =>
         response.status match {
           case OK => Some(Json.parse(response.body))
           case NOT_FOUND | FORBIDDEN => None
-          case _ => handleErrorResponse("GET", getAftUrl)(response)
+          case _ => handleErrorResponse("GET", getAftUrl.toString)(response)
         }
     } andThen aftDetailsAuditEventService.sendOptionAFTDetailsAuditEvent(pstr, fbNumber)
   }
