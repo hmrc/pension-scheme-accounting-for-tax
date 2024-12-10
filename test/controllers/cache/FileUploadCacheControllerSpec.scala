@@ -16,9 +16,9 @@
 
 package controllers.cache
 
-import org.apache.pekko.util.ByteString
 import controllers.cache.FinancialInfoCacheController.IdNotFoundFromAuth
 import org.apache.commons.lang3.RandomUtils
+import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
@@ -51,7 +51,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
     bind[FileUploadReferenceCacheRepository].toInstance(repo),
-    bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
     bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
     bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
     bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),

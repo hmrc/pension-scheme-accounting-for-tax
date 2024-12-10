@@ -28,7 +28,6 @@ import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
-import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialStatementConnector @Inject()(
