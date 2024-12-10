@@ -56,7 +56,12 @@ class FinancialStatementConnector @Inject()(
 
     val reads: Reads[PsaFS] = PsaFS.rdsPsaFSMax
 
-    http.GET[HttpResponse](url)(implicitly, hc, implicitly).map { response =>
+    val toUrl = url"$url"
+
+    httpClient2
+      .get(toUrl)(hc)
+      .transform(_.withRequestTimeout(config.ifsTimeout))
+      .execute[HttpResponse].map { response =>
       response.status match {
         case OK =>
           logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
@@ -76,7 +81,7 @@ class FinancialStatementConnector @Inject()(
             seqPsaFSDetail = Seq.empty[PsaFSDetail]
           )
         case _ =>
-          handleErrorResponse("GET", url)(response)
+          handleErrorResponse("GET", toUrl.toString)(response)
       }
     } andThen financialInfoAuditService.sendPsaFSAuditEvent(psaId)
   }
