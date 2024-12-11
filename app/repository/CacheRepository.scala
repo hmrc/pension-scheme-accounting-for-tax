@@ -60,7 +60,7 @@ class CacheRepository @Inject()(collectionName: String,
     }
 
   def save(id: String, userData: JsValue)(implicit ec: ExecutionContext): Future[Unit] = {
-    logger.debug(s"Calling save in $collectionName Cache")
+    logger.warn(s"Calling save in $collectionName Cache")
     val upsertOptions = new FindOneAndUpdateOptions().upsert(true)
     collection.findOneAndUpdate(
       filter = Filters.eq(idKey, id),

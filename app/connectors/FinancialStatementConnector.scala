@@ -21,10 +21,10 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.{PsaFS, PsaFSDetail, SchemeFS, SchemeFSDetail}
 import play.api.Logger
-import play.api.cache.AsyncCacheApi
 import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
+import repository.SchemeFSCacheRepository
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
@@ -39,7 +39,7 @@ class FinancialStatementConnector @Inject()(
                                              config: AppConfig,
                                              headerUtils: HeaderUtils,
                                              financialInfoAuditService: FinancialInfoAuditService,
-                                             cache: AsyncCacheApi
+                                             cache: SchemeFSCacheRepository
                                            )
   extends HttpErrorFunctions with HttpResponseHelper {
 
@@ -87,15 +87,40 @@ class FinancialStatementConnector @Inject()(
   def getSchemeFS(pstr: String)
                       (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
     val cacheKey = s"schemeFS-$pstr"
-    cache.getOrElseUpdate[SchemeFS](cacheKey,config.ifsCache){
-      logger.warn(s"Cache missing, reset or not instantiated, fetching getSchemeFS from IFS")
-      getSchemeFSCall(pstr)
-    }.map{ result =>
-      val sizeInBytes = getObjectSize(result)
-      logger.warn(s"Cache hit for getSchemeFS. Item size: $sizeInBytes bytes.")
-      result
+    cache.get(cacheKey).flatMap {
+      case Some(cachedValue) =>
+        val schemeFS = cachedValue.validate[SchemeFS](SchemeFS.rdsSchemeFS)
+
+         schemeFS match {
+          case JsSuccess(value, _) => {
+            logger.warn(s"Cache hit for getSchemeFS. CacheKey: $cacheKey")
+            Future.successful(value)
+          }
+          case JsError(errors) => {
+            logger.warn(s"Failed parsing json from cache: $cacheKey: ${errors}")
+            setSchemeFsToCache(pstr, cacheKey)
+          }
+        }
+
+
+      case None =>
+        setSchemeFsToCache(pstr, cacheKey)
     }
   }
+
+  private def setSchemeFsToCache(pstr:String,cacheKey:String)
+                          (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader)
+  : Future[SchemeFS] = {
+    logger.warn(s"Cache missing for getSchemeFS. Fetching from IFS for CacheKey: $cacheKey")
+    getSchemeFSCall(pstr).flatMap { result =>
+      val jsonResult = Json.toJson(result)
+      cache.save(cacheKey, jsonResult).map { _ =>
+        logger.warn(s"Cache set for getSchemeFS. CacheKey: $cacheKey")
+        result
+      }
+    }
+  }
+
 
   private def getObjectSize[T](obj: T)(implicit writes: Writes[T]): Int = {
     val jsonString = Json.toJson(obj).toString()
@@ -121,6 +146,7 @@ class FinancialStatementConnector @Inject()(
           Json.parse(response.body).validate[SchemeFS](reads) match {
             case JsSuccess(schemeFS, _) =>
               logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFS")
+              logger.warn(s"Size of schemeFS payload: ${getObjectSize(schemeFS)} bytes")
               SchemeFS(
                 inhibitRefundSignal = schemeFS.inhibitRefundSignal,
                 seqSchemeFSDetail = schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment interest"))

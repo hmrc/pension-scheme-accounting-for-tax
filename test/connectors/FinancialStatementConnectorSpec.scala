@@ -46,6 +46,7 @@ import java.time.LocalDate
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, TimeoutException}
 import scala.reflect.ClassTag
+import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 
 class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with MockitoSugar with BeforeAndAfterEach {
 
@@ -60,6 +61,8 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
   private val mockAftService = mock[AFTService]
   private val mockFutureToggleService = mock[FeatureToggleService]
   private lazy val connector: FinancialStatementConnector = injector.instanceOf[FinancialStatementConnector]
+  private val mockRepo = mock[SchemeFSCacheRepository]
+
 
   override protected def bindings: Seq[GuiceableModule] =
     Seq(
@@ -72,29 +75,19 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
-      bind[AsyncCacheApi].toInstance(new FakeCache())
-    )
-
-  class FakeCache extends AsyncCacheApi {
-    override def set(key: String, value: Any, expiration: Duration): Future[Done] = ???
-
-    override def remove(key: String): Future[Done] = ???
-
-    override def getOrElseUpdate[A](key: String, expiration: Duration)
-                                   (orElse: => Future[A])
-                                   (implicit evidence$1: ClassTag[A]): Future[A] = orElse
-
-    override def get[T](key: String)
-                       (implicit evidence$2: ClassTag[T]): Future[Option[T]] = ???
-
-    override def removeAll(): Future[Done] = ???
-  }
+  bind[SchemeFSCacheRepository].toInstance(mockRepo))
 
   private val psaId = "test-psa-id"
   private val pstr = "test-pstr"
   private val getPsaFSMaxUrl = s"/pension-online/financial-statements/psaid/$psaId?dataset=maximum"
   private val getSchemeFSMaxUrl = s"/pension-online/financial-statements/pstr/$pstr?dataset=maximum"
+
+  override def beforeEach(): Unit = {
+
+    import org.mockito.Mockito._
+    super.beforeEach()
+    reset(mockRepo)
+  }
 
   "getPsaFS" must {
 
@@ -201,6 +194,14 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
   "getSchemeFS" must {
 
     "return maximum answer json when successful response returned from ETMP " in {
+
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+
+
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -216,7 +217,13 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     }
 
     "timeout when ETMP takes too long to respond" in {
+
       Mockito.reset(mockAuditService)
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
@@ -237,6 +244,12 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
     "send the GetSchemeFS audit event when ETMP has returned OK" in {
       Mockito.reset(mockAuditService)
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -254,6 +267,12 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     }
 
     "return a BadRequestException for a 400 INVALID_PSTR response" in {
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -272,6 +291,12 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     }
 
     "return Empty sequence - 404" in {
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -286,6 +311,11 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     }
 
     "throw UpstreamErrorResponse for server unavailable - 403" in {
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
@@ -302,6 +332,11 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     }
 
     "throw UpstreamErrorResponse for internal server error - 500 and log the event as error" in {
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
