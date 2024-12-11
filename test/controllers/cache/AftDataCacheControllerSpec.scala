@@ -59,7 +59,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(authConnector),
     bind[AftBatchedDataCacheRepository].toInstance(repo),
-    bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
     bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
     bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
     bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),

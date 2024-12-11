@@ -48,7 +48,6 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
     bind[AuthConnector].toInstance(authConnector),
     bind[FinancialInfoCreditAccessRepository].toInstance(repo),
     bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
-    bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
     bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
     bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
     bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),

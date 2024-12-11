@@ -52,7 +52,6 @@ class EmailResponseControllerSpec extends AsyncWordSpec with Matchers with Mocki
     overrides(Seq(
       bind[AuthConnector].toInstance(mockAuthConnector),
       bind[AuditService].toInstance(mockAuditService),
-      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
       bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
       bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),

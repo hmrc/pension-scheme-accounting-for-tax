@@ -32,7 +32,6 @@ import play.api.libs.json._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository._
-import services.FeatureToggleService
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
@@ -51,21 +50,18 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
   private val mockFSConnector = mock[FinancialStatementConnector]
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val mockAFTConnector = mock[AFTConnector]
-  private val mockFeatureToggle = mock[FeatureToggleService]
 
   private val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(authConnector),
       bind[FinancialStatementConnector].toInstance(mockFSConnector),
       bind[AFTConnector].toInstance(mockAFTConnector),
-      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
       bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
       bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
-      bind[FeatureToggleService].toInstance(mockFeatureToggle)
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
     )
 
   private val application: Application = new GuiceApplicationBuilder()
@@ -82,7 +78,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
   }
 
   before {
-    when(mockFeatureToggle.getToggle(any())).thenReturn(Future.successful(None))
     reset(mockFSConnector)
     reset(authConnector)
   }

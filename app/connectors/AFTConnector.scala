@@ -21,7 +21,6 @@ import com.google.inject.Inject
 import config.AppConfig
 import models.{AFTOverview, AFTVersion}
 import play.api.Logger
-import play.api.cache.AsyncCacheApi
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.libs.json._

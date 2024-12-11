@@ -33,7 +33,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.libs.json.{Format, JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import repository.model.SessionData
 import services.BatchService
 import services.BatchService.BatchType.{ChargeC, ChargeD, ChargeE, ChargeG}

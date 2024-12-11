@@ -18,8 +18,8 @@ package controllers
 
 import audit.{AuditService, FileAftReturnSchemaValidator}
 import connectors.AFTConnector
-import models.enumeration.JourneyType
 import models._
+import models.enumeration.JourneyType
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, times, verify, when}
 import org.mockito.{ArgumentCaptor, ArgumentMatchers, Mockito}
@@ -78,8 +78,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
-      bind[AdminDataRepository].toInstance(mock[AdminDataRepository])
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
     )
 
   val application: Application = new GuiceApplicationBuilder()

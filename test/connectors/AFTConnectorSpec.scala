@@ -58,7 +58,6 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       bind[AuditService].toInstance(mockAuditService),
       bind[AFTService].toInstance(mockAftService),
       bind[HeaderUtils].toInstance(mockHeaderUtils),
-      bind[AdminDataRepository].toInstance(mock[AdminDataRepository]),
       bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
       bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
