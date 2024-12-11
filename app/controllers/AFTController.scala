@@ -34,6 +34,7 @@ import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.JSONPayloadSchemaValidator
 
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -252,7 +253,13 @@ class AFTController @Inject()(
       case JsError(_) => VersionsWithSubmitter(version, None)
     }
     logger.warn(s"detailsJsLogic finished for: ${version.reportVersion}")
+    logger.warn(s"JsValue for: ${version.reportVersion} is: ${getObjectSize(js)} bytes")
     transform
+  }
+
+  private def getObjectSize[T](obj: T)(implicit writes: Writes[T]): Int = {
+    val jsonString = Json.toJson(obj).toString()
+    jsonString.getBytes(StandardCharsets.UTF_8).length
   }
 
   def getIsChargeNonZero: Action[AnyContent] = Action.async {
