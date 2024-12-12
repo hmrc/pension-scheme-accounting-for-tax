@@ -40,7 +40,6 @@ import services.AFTService
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
 import utils.WireMockHelper
-
 import play.api.libs.ws.WSRequest
 
 import java.time.LocalDate
@@ -265,6 +264,12 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     }
 
     "return a BadRequestException for a 400 INVALID_PSTR response" in {
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -283,6 +288,12 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     }
 
     "return Empty sequence - 404" in {
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
           .willReturn(
@@ -297,6 +308,11 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     }
 
     "throw UpstreamErrorResponse for server unavailable - 403" in {
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
@@ -313,6 +329,11 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
     }
 
     "throw UpstreamErrorResponse for internal server error - 500 and log the event as error" in {
+
+      when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
+        .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+
+      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
