@@ -164,6 +164,38 @@ object SchemeFS {
       (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFS(inhibitRefundSignal, transformExtraFields(seqSchemeFSDetail))
     )
   }
+
+
+  implicit val rdsSchemeFS: Reads[SchemeFS] = {
+    def transformExtraFields(seqSchemeFSDetail: Seq[SchemeFSDetail]): Seq[SchemeFSDetail] = {
+      val seqSchemeFSDetailWithIndexes = seqSchemeFSDetail.zipWithIndex.map { case (schemeFSDetail, i) =>
+        schemeFSDetail copy (index = i + 1)
+      }
+      seqSchemeFSDetailWithIndexes.map { schemeFSDetail =>
+        schemeFSDetail.sourceChargeRefForInterest match {
+          case Some(ref) => seqSchemeFSDetailWithIndexes.find(_.chargeReference == ref) match {
+            case Some(foundOriginalCharge) =>
+              schemeFSDetail copy (
+                sourceChargeInfo = Some(SchemeSourceChargeInfo(
+                  index = foundOriginalCharge.index,
+                  periodStartDate = foundOriginalCharge.periodStartDate,
+                  periodEndDate = foundOriginalCharge.periodEndDate
+                ))
+                )
+            case _ => schemeFSDetail
+          }
+          case _ => schemeFSDetail
+        }
+      }
+    }
+
+    (
+      (JsPath \ "inhibitRefundSignal").read[Boolean] and
+        (JsPath \ "seqSchemeFSDetail").read(Reads.seq(Json.reads[SchemeFSDetail]))
+      )(
+      (inhibitRefundSignal, seqSchemeFSDetail) => SchemeFS(inhibitRefundSignal, transformExtraFields(seqSchemeFSDetail))
+    )
+  }
 }
 
 object SchemeChargeType extends Enumeration {
