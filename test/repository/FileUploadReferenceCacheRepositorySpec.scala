@@ -18,7 +18,6 @@ package repository
 
 
 import base.MongoConfig
-import com.typesafe.config.ConfigValue
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mongodb.scala.bson.{BsonDocument, BsonString}
