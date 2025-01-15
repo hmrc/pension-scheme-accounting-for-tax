@@ -152,6 +152,9 @@ The terms scheme reference number and submission reference number (SRN) are inte
 | ```/journey-cache/aft               ```                               | DELETE              | Removes the data from AFT Cache based on session id, quarter start date and PSTR                                       |      
 | ```/journey-cache/aft/lock   ```                                      | GET                 | Returns the locked by user name if the data for a given session id, quarter start date and PSTR is locked in AFT Cache |
 | ```/journey-cache/aft/lock                     ```                    | POST                | Saves the lock with the name of the user for a given session id, quarter start date and PSTR in AFT Cache              |   
+
+| Service               | HTTP Method | Route                                                     | Purpose                                                                                                                |
+|-----------------------|-------------|-----------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | Accounting For Tax    | POST        | /pension-scheme-accounting-for-tax/aft-file-return        | Submits/Updates an AFT Return                                                                                          |
 | Accounting For Tax    | GET         | /pension-scheme-accounting-for-tax/get-aft-details        | Returns AFT details                                                                                                    |
 | Accounting For Tax    | GET         | /pension-scheme-accounting-for-tax/get-aft-versions       | Returns AFT reporting versions for a given period                                                                      |
