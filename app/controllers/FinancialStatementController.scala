@@ -17,9 +17,8 @@
 package controllers
 
 import connectors.FinancialStatementConnector
-import models.SchemeChargeType.{aftManualAssessment, aftManualAssessmentCredit, aftReturn, aftReturnCredit,
-  otcAftReturn, otcAftReturnCredit, otcManualAssessment, otcManualAssessmentCredit}
-import models.SchemeFSDetail
+import models.SchemeChargeType.{aftManualAssessment, aftManualAssessmentCredit, aftReturn, aftReturnCredit, otcAftReturn, otcAftReturnCredit, otcManualAssessment, otcManualAssessmentCredit}
+import models.{SchemeFSDetail, SchemeReferenceNumber}
 import play.api.libs.json._
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
@@ -36,7 +35,9 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton()
 class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
-                                             val authConnector: AuthConnector
+                                             val authConnector: AuthConnector,
+                                             psaEnrolmentAuthAction: actions.PsaEnrolmentAuthAction,
+                                             psaSchemeAuthAction: actions.PsaSchemeAuthAction
                                             )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -44,12 +45,10 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     with AuthorisedFunctions
     with HttpResponseHelper {
 
-  def psaStatement: Action[AnyContent] = Action.async {
+  def psaStatement: Action[AnyContent] = psaEnrolmentAuthAction.async {
     implicit request =>
-      get(key = "psaId") { psaId =>
-        financialStatementConnector.getPsaFS(psaId).map { data =>
-          Ok(Json.toJson(data))
-        }
+      financialStatementConnector.getPsaFS(request.psaId.id).map { data =>
+        Ok(Json.toJson(data))
       }
   }
 
@@ -70,7 +69,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
   }
 
   private def withPstrCheck(block: String => Future[Result])
-      (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
     authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId and Retrievals.allEnrolments) {
       case Some(_) ~ enrolments =>
         (getPsaId(enrolments), request.headers.get("pstr")) match {
@@ -98,17 +97,12 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       .flatMap(_.getIdentifier("PSAID"))
       .map(id => PsaId(id.value))
 
-  private def get(key: String)(block: String => Future[Result])
-                 (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(_) =>
-        request.headers.get(key) match {
-          case Some(id) => block(id)
-          case _ => Future.failed(new BadRequestException(s"Bad Request with missing $key"))
+  def schemeStatementSrn(srn: SchemeReferenceNumber): Action[AnyContent] = (psaEnrolmentAuthAction andThen psaSchemeAuthAction(srn)).async {
+    implicit request =>
+      request.headers.get("pstr").map { pstr =>
+        financialStatementConnector.getSchemeFS(pstr).map { data =>
+          Ok(Json.toJson(data.copy(seqSchemeFSDetail = updateChargeType(data.seqSchemeFSDetail))))
         }
-      case _ =>
-        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
-    }
+      }.getOrElse(Future.failed(new BadRequestException("Bad Request with missing psaId or pstr")))
   }
 }

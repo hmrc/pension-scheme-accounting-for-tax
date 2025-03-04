@@ -17,28 +17,25 @@
 package controllers.cache
 
 import com.google.inject.Inject
-import controllers.cache.FinancialInfoCacheController.IdNotFoundFromAuth
 import play.api.Logger
 import play.api.libs.json.{JsSuccess, Json}
 import play.api.mvc._
 import repository.FileUploadReferenceCacheRepository
 import repository.model.FileUploadStatus
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class FileUploadCacheController @Inject()(
                                            repository: FileUploadReferenceCacheRepository,
-                                           val authConnector: AuthConnector,
-                                           cc: ControllerComponents
-                                         )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
+                                           cc: ControllerComponents,
+                                           psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
+                                         )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   private val logger = Logger(classOf[FileUploadCacheController])
 
-  def requestUpload: Action[AnyContent] = Action.async {
+  def requestUpload: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
       getId { id =>
         request.body.asJson.map {
@@ -51,7 +48,7 @@ class FileUploadCacheController @Inject()(
       }
   }
 
-  def getUploadResult: Action[AnyContent] = Action.async {
+  def getUploadResult: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
       getId {
         id =>
@@ -64,7 +61,7 @@ class FileUploadCacheController @Inject()(
       }
   }
 
-  def registerUploadResult: Action[AnyContent] = Action.async {
+  def registerUploadResult: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
       getReferenceId { id =>
         request.body.asJson.map {
@@ -78,14 +75,10 @@ class FileUploadCacheController @Inject()(
   }
 
   private def getId(block: String => Future[Result])
-                   (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(_) =>
-        request.headers.get("uploadId") match {
-          case Some(id) => block(id)
-          case _ => Future.failed(new BadRequestException(s"Bad Request with missing uploadId"))
-        }
-      case _ => Future.failed(IdNotFoundFromAuth())
+                   (implicit request: Request[AnyContent]): Future[Result] = {
+    request.headers.get("uploadId") match {
+      case Some(id) => block(id)
+      case _ => Future.failed(new BadRequestException(s"Bad Request with missing uploadId"))
     }
   }
 
