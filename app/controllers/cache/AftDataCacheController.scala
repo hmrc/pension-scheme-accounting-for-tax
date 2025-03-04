@@ -18,6 +18,7 @@ package controllers.cache
 
 import audit.{AuditEvent, AuditService}
 import com.google.inject.Inject
+import controllers.actions.PsaPspAuthRequest
 import models.LockDetail.formats
 import models.{ChargeAndMember, ChargeType, LockDetail}
 import play.api.Logger
@@ -36,7 +37,8 @@ class AftDataCacheController @Inject()(
                                         batchedRepository: AftBatchedDataCacheRepository,
                                         val authConnector: AuthConnector,
                                         cc: ControllerComponents,
-                                        auditService: AuditService
+                                        auditService: AuditService,
+                                        psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
                                       )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
 
   import AftDataCacheController._
@@ -58,18 +60,18 @@ class AftDataCacheController @Inject()(
     }
   }
 
-  def save: Action[AnyContent] = Action.async {
+  def save: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getIdWithName { case (sessionId, id, _) =>
+      withId { case (sessionId, id) =>
         val optChargeAndMember = extractChargeAndMemberFromHeaders
         request.body.asJson.map {
           jsValue =>
             batchedRepository.save(
-              id = id,
-              sessionId = sessionId,
-              chargeAndMember = optChargeAndMember,
-              userData = jsValue
-            )
+                id = id,
+                sessionId = sessionId,
+                chargeAndMember = optChargeAndMember,
+                userData = jsValue
+              )
               .map(_ => Created)
         } getOrElse Future.successful(BadRequest)
       }
@@ -85,7 +87,7 @@ class AftDataCacheController @Inject()(
       )
   }
 
-  def setSessionData(lock: Boolean): Action[AnyContent] = Action.async {
+  def setSessionData(lock: Boolean): Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
       getIdWithNameAndPsaOrPspId { case (sessionId, id, name, psaOrPspId) =>
         request.body.asJson.map {
@@ -123,9 +125,9 @@ class AftDataCacheController @Inject()(
 
   }
 
-  def lockedBy: Action[AnyContent] = Action.async {
+  def lockedBy: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getIdWithName { case (sessionId, id, _) =>
+      withId { case (sessionId, id) =>
         batchedRepository.lockedBy(sessionId, id).map {
           case None => NotFound
           case Some(lockDetail) => Ok(Json.toJson(lockDetail))
@@ -133,9 +135,9 @@ class AftDataCacheController @Inject()(
       }
   }
 
-  def getSessionData: Action[AnyContent] = Action.async {
+  def getSessionData: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getIdWithName { case (sessionId, id, _) =>
+      withId { case (sessionId, id) =>
         batchedRepository.getSessionData(sessionId, id).map {
           case None => NotFound
           case Some(sd) => Ok(Json.toJson(sd))
@@ -143,9 +145,9 @@ class AftDataCacheController @Inject()(
       }
   }
 
-  def get: Action[AnyContent] = Action.async {
+  def get: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getIdWithName { (sessionId, id, _) =>
+      withId { (sessionId, id) =>
         batchedRepository.get(id, sessionId).map { response =>
           response.map {
             Ok(_)
@@ -154,42 +156,30 @@ class AftDataCacheController @Inject()(
       }
   }
 
-  def remove: Action[AnyContent] = Action.async {
+  def remove: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getIdWithName { (sessionId, id, _) =>
+      withId { (sessionId, id) =>
         batchedRepository.remove(id, sessionId).map(_ => Ok)
       }
   }
 
-  private def getIdWithName(block: (String, String, String) => Future[Result])
-                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name) {
-      case Some(name) =>
-        val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
-        val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
-        block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim)
-      case _ => Future.failed(CredNameNotFoundFromAuth())
-    }
+  private def withId(block: (String, String) => Future[Result])(implicit request: Request[AnyContent]) = {
+    val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
+    val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
+    block(sessionId, id)
   }
 
   private def getIdWithNameAndPsaOrPspId(block: (String, String, String, String) => Future[Result])
-                                        (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(psaEnrolment or pspEnrolment).retrieve(Retrievals.name and Retrievals.allEnrolments) {
-      case Some(name) ~ enrolments =>
-        val psaOrPspId = (
-          enrolments.getEnrolment(key = pspEnrolment.key).flatMap(_.getIdentifier("PSPID").map(_.value)),
-          enrolments.getEnrolment(key = psaEnrolment.key).flatMap(_.getIdentifier("PSAID").map(_.value))
-        ) match {
-          case (Some(pspId), _) => pspId
-          case (_, Some(psaId)) => psaId
-          case _ => throw MissingIDException
-        }
-
-        val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
-        val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
-        block(sessionId, id, s"${name.name.getOrElse("")} ${name.lastName.getOrElse("")}".trim, psaOrPspId)
-      case _ => Future.failed(CredNameNotFoundFromAuth())
-    }
+                                        (implicit request: PsaPspAuthRequest[AnyContent]): Future[Result] = {
+    val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
+    val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
+    val fullName = request.name.map { name =>
+      name.name.getOrElse("") + " " + name.lastName.getOrElse("")
+    }.getOrElse("")
+    val psaOrPspId = request.pspId.map(_.id).getOrElse(
+      request.psaId.map(_.id).getOrElse(throw MissingIDException)
+    )
+    block(sessionId, id, fullName.trim, psaOrPspId)
   }
 }
 
@@ -201,8 +191,5 @@ object AftDataCacheController {
 
   case class CredNameNotFoundFromAuth(msg: String = "Not Authorised - Unable to retrieve credentials - name")
     extends UnauthorizedException(msg)
-
-  private val psaEnrolment = Enrolment("HMRC-PODS-ORG")
-  private val pspEnrolment = Enrolment("HMRC-PODSPP-ORG")
 
 }

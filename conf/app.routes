@@ -7,12 +7,20 @@ POST          /aft-file-return/:journeyType/:srn                                
 #deprecated
 GET           /get-aft-details                                                      controllers.AFTController.getDetails
 GET           /get-aft-details/:srn                                                 controllers.AFTController.getDetailsSrn(srn: SchemeReferenceNumber)
+#deprecated
 GET           /get-is-aft-non-zero                                                  controllers.AFTController.getIsChargeNonZero
+GET           /get-is-aft-non-zero/:srn                                             controllers.AFTController.getIsChargeNonZeroSrn(srn: SchemeReferenceNumber)
 
+#deprecated
 GET           /get-aft-versions                                                     controllers.AFTController.getVersions
+GET           /get-aft-versions/:srn                                                controllers.AFTController.getVersionsSrn(srn: SchemeReferenceNumber)
+#deprecated
 GET           /get-versions-with-submitter                                          controllers.AFTController.getVersionsWithSubmitter
+GET           /get-versions-with-submitter/:srn                                     controllers.AFTController.getVersionsWithSubmitterSrn(srn: SchemeReferenceNumber)
 
+#deprecated
 GET           /get-aft-overview                                                     controllers.AFTController.getOverview
+GET           /get-aft-overview/:srn                                                controllers.AFTController.getOverviewSrn(srn: SchemeReferenceNumber)
 
 GET           /journey-cache/aft/session-data                                       controllers.cache.AftDataCacheController.getSessionData
 POST          /journey-cache/aft/session-data                                       controllers.cache.AftDataCacheController.setSessionData(lock:Boolean=false)
@@ -28,7 +36,9 @@ POST          /cache/financialInfo                                              
 DELETE        /cache/financialInfo                                                  controllers.cache.FinancialInfoCacheController.remove
 
 GET           /psa-financial-statement                                              controllers.FinancialStatementController.psaStatement
+#deprecated
 GET           /scheme-financial-statement                                           controllers.FinancialStatementController.schemeStatement
+GET           /scheme-financial-statement                                           controllers.FinancialStatementController.schemeStatementSrn(srn: SchemeReferenceNumber)
 
 POST          /email-response/:submittedBy/:journeyType/:requestId/:email/:psaId    controllers.EmailResponseController.sendAuditEvents(requestId:String, psaId:String, submittedBy:SchemeAdministratorType.SchemeAdministratorType, email:String, journeyType:JourneyType.Name)
 

@@ -33,11 +33,12 @@ class PsaPspSchemeActionImpl (srn:SchemeReferenceNumber, schemeConnector: Scheme
 
   override def invokeBlock[A](request: PsaPspAuthRequest[A], block: PsaPspAuthRequest[A] => Future[Result]): Future[Result] = {
 
-    val loggedInAsPsa = request.headers.get("loggedInAsPsa").forall {
+    val headerMsg = "loggedInAsPsa header should either be PSA or PSP"
+    val loggedInAsPsa = request.headers.get("loggedInAsPsa").map {
       case "PSA" => true
       case "PSP" => false
-      case _ => throw new RuntimeException("loggedInAsPsa should either be PSA or PSP")
-    }
+      case _ => throw new RuntimeException(headerMsg)
+    }.getOrElse(throw new RuntimeException(headerMsg))
 
     val id = if(loggedInAsPsa) {
       request.psaId.flatMap { psaId =>

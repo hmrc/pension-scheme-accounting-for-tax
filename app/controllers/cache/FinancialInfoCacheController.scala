@@ -30,49 +30,36 @@ import scala.concurrent.{ExecutionContext, Future}
 class FinancialInfoCacheController @Inject()(
                                               repository: FinancialInfoCacheRepository,
                                               val authConnector: AuthConnector,
-                                              cc: ControllerComponents
+                                              cc: ControllerComponents,
+                                              psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
                                             )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
 
   import FinancialInfoCacheController._
 
   private val logger = Logger(classOf[FinancialInfoCacheController])
 
-  def save: Action[AnyContent] = Action.async {
+  def save: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getId { id =>
-        request.body.asJson.map {
-          jsValue =>
-            repository.save(id, jsValue)
-              .map(_ => Created)
-        } getOrElse Future.successful(BadRequest)
+      request.body.asJson.map {
+        jsValue =>
+          repository.save(request.externalId, jsValue)
+            .map(_ => Created)
+      } getOrElse Future.successful(BadRequest)
+  }
+
+  def get: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
+    implicit request =>
+      repository.get(request.externalId).map { response =>
+        logger.debug(message = s"FinancialInfoCacheController.get: Response for request Id ${request.externalId} is $response")
+        response.map {
+          Ok(_)
+        } getOrElse NotFound
       }
   }
 
-  def get: Action[AnyContent] = Action.async {
+  def remove: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getId { id =>
-        repository.get(id).map { response =>
-          logger.debug(message = s"FinancialInfoCacheController.get: Response for request Id $id is $response")
-          response.map {
-            Ok(_)
-          } getOrElse NotFound
-        }
-      }
-  }
-
-  def remove: Action[AnyContent] = Action.async {
-    implicit request =>
-      getId { id =>
-        repository.remove(id).map(_ => Ok)
-      }
-  }
-
-  private def getId(block: String => Future[Result])
-                   (implicit hc: HeaderCarrier): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(id) => block(id)
-      case _ => Future.failed(IdNotFoundFromAuth())
-    }
+      repository.remove(request.externalId).map(_ => Ok)
   }
 }
 
