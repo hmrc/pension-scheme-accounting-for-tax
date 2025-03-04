@@ -1,8 +1,12 @@
 # microservice specific routes
 
-POST          /aft-file-return/:journeyType                                         controllers.AFTController.fileReturn(journeyType: JourneyType.Name)
+#deprecated
+POST          /aft-file-return/:journeyType                                         controllers.AFTController.fileReturnSrn(journeyType: JourneyType.Name)
+POST          /aft-file-return/:journeyType/:srn                                    controllers.AFTController.fileReturnSrn(journeyType: JourneyType.Name, srn: SchemeReferenceNumber)
 
+#deprecated
 GET           /get-aft-details                                                      controllers.AFTController.getDetails
+GET           /get-aft-details/:srn                                                 controllers.AFTController.getDetailsSrn(srn: SchemeReferenceNumber)
 GET           /get-is-aft-non-zero                                                  controllers.AFTController.getIsChargeNonZero
 
 GET           /get-aft-versions                                                     controllers.AFTController.getVersions
