@@ -59,8 +59,6 @@ class FinancialInfoCreditAccessController @Inject()(
 
   def getForSchemePsp(pspId: String, srn: String): Action[AnyContent] = (psaPspEnrolmentAuthAction andThen psaPspSchemeAuthAction(srn, loggedInAsPsa = false)).async {
     implicit request =>
-      println(pspId)
-      println(request.pspId)
       getForPsaOrPsp(None, request.pspId.map(_.id), srn)
   }
 
