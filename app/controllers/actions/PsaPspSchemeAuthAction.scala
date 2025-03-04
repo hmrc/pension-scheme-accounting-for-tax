@@ -26,7 +26,7 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendHeaderCarrierProvide
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class PsaPspSchemeActionImpl (srn:SchemeReferenceNumber, schemeConnector: SchemeConnector)
+class PsaPspSchemeActionImpl (srn:SchemeReferenceNumber, schemeConnector: SchemeConnector, loggedInAsPsa: Boolean)
                           (implicit val executionContext: ExecutionContext)
   extends ActionFunction[PsaPspAuthRequest, PsaPspAuthRequest] with BackendHeaderCarrierProvider with Logging {
 
@@ -34,11 +34,6 @@ class PsaPspSchemeActionImpl (srn:SchemeReferenceNumber, schemeConnector: Scheme
   override def invokeBlock[A](request: PsaPspAuthRequest[A], block: PsaPspAuthRequest[A] => Future[Result]): Future[Result] = {
 
     val headerMsg = "loggedInAsPsa header should either be PSA or PSP"
-    val loggedInAsPsa = request.headers.get("loggedInAsPsa").map {
-      case "PSA" => true
-      case "PSP" => false
-      case _ => throw new RuntimeException(headerMsg)
-    }.getOrElse(throw new RuntimeException(headerMsg))
 
     val id = if(loggedInAsPsa) {
       request.psaId.flatMap { psaId =>
@@ -79,6 +74,6 @@ class PsaPspSchemeActionImpl (srn:SchemeReferenceNumber, schemeConnector: Scheme
 
 
 class PsaPspSchemeAuthAction @Inject()(schemeService: SchemeConnector)(implicit ec: ExecutionContext){
-  def apply(srn: SchemeReferenceNumber): ActionFunction[PsaPspAuthRequest, PsaPspAuthRequest] =
-    new PsaPspSchemeActionImpl(srn, schemeService)
+  def apply(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): ActionFunction[PsaPspAuthRequest, PsaPspAuthRequest] =
+    new PsaPspSchemeActionImpl(srn, schemeService, loggedInAsPsa)
 }

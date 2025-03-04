@@ -137,8 +137,8 @@ class AFTController @Inject()(
 
   //scalastyle:off cyclomatic.complexity
   //scalastyle:off method.length
-  def fileReturnSrn(journeyType: JourneyType.Name, srn: SchemeReferenceNumber): Action[AnyContent] =
-    (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn)).async {
+  def fileReturnSrn(journeyType: JourneyType.Name, srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): Action[AnyContent] =
+    (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn, loggedInAsPsa = loggedInAsPsa)).async {
       implicit request =>
         requiredHeadersPost { (pstr, externalUserId, userAnswersJson) =>
           aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
@@ -266,7 +266,7 @@ class AFTController @Inject()(
 
   }
 
-  def getOverviewSrn(srn: SchemeReferenceNumber): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn)).async {
+  def getOverviewSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn, loggedInAsPsa)).async {
     implicit request =>
       requiredHeaders { (pstr, startDate) =>
         request.headers.get("endDate") match {
@@ -305,7 +305,7 @@ class AFTController @Inject()(
       }
   }
 
-  def getDetailsSrn(srn: SchemeReferenceNumber): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn)).async {
+  def getDetailsSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn, loggedInAsPsa)).async {
     implicit request =>
       requiredHeaders { (pstr, startDate) =>
         withAFTVersion { aftVersion =>
@@ -331,7 +331,7 @@ class AFTController @Inject()(
       }
   }
 
-  def getVersionsSrn(srn: SchemeReferenceNumber): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn)).async {
+  def getVersionsSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn, loggedInAsPsa)).async {
     implicit request =>
       requiredHeaders { (pstr, startDate) =>
         aftConnector.getAftVersions(pstr, startDate).map(v => Ok(Json.toJson(v)))

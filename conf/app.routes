@@ -2,25 +2,25 @@
 
 #deprecated
 POST          /aft-file-return/:journeyType                                         controllers.AFTController.fileReturnSrn(journeyType: JourneyType.Name)
-POST          /aft-file-return/:journeyType/:srn                                    controllers.AFTController.fileReturnSrn(journeyType: JourneyType.Name, srn: SchemeReferenceNumber)
+POST          /aft-file-return/:journeyType/:srn                                    controllers.AFTController.fileReturnSrn(journeyType: JourneyType.Name, srn: SchemeReferenceNumber, loggedInAsPsa: Boolean)
 
 #deprecated
 GET           /get-aft-details                                                      controllers.AFTController.getDetails
-GET           /get-aft-details/:srn                                                 controllers.AFTController.getDetailsSrn(srn: SchemeReferenceNumber)
+GET           /get-aft-details/:srn                                                 controllers.AFTController.getDetailsSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean)
 #deprecated
 GET           /get-is-aft-non-zero                                                  controllers.AFTController.getIsChargeNonZero
 GET           /get-is-aft-non-zero/:srn                                             controllers.AFTController.getIsChargeNonZeroSrn(srn: SchemeReferenceNumber)
 
 #deprecated
 GET           /get-aft-versions                                                     controllers.AFTController.getVersions
-GET           /get-aft-versions/:srn                                                controllers.AFTController.getVersionsSrn(srn: SchemeReferenceNumber)
+GET           /get-aft-versions/:srn                                                controllers.AFTController.getVersionsSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean)
 #deprecated
 GET           /get-versions-with-submitter                                          controllers.AFTController.getVersionsWithSubmitter
 GET           /get-versions-with-submitter/:srn                                     controllers.AFTController.getVersionsWithSubmitterSrn(srn: SchemeReferenceNumber)
 
 #deprecated
 GET           /get-aft-overview                                                     controllers.AFTController.getOverview
-GET           /get-aft-overview/:srn                                                controllers.AFTController.getOverviewSrn(srn: SchemeReferenceNumber)
+GET           /get-aft-overview/:srn                                                controllers.AFTController.getOverviewSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean)
 
 GET           /journey-cache/aft/session-data                                       controllers.cache.AftDataCacheController.getSessionData
 POST          /journey-cache/aft/session-data                                       controllers.cache.AftDataCacheController.setSessionData(lock:Boolean=false)
