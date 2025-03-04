@@ -16,6 +16,7 @@
 
 package controllers.actions
 
+import connectors.SchemeConnector
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{reset, when}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -25,15 +26,17 @@ import play.api.http.Status.{FORBIDDEN, OK}
 import play.api.mvc.AnyContent
 import play.api.mvc.Results.Ok
 import play.api.test.FakeRequest
-import play.api.test.Helpers.{contentAsString, status}
+import play.api.test.Helpers.{contentAsString, defaultAwaitTimeout, status}
 import uk.gov.hmrc.domain.PsaId
 import uk.gov.hmrc.http.HttpException
+import utils.AuthUtils
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class PsaSchemeActionSpec extends PlaySpec with MockitoSugar with BeforeAndAfterAll with BeforeAndAfterEach {
 
-  private val mockSchemeService = mock[SchemeService]
+  private val mockSchemeService = mock[SchemeConnector]
   override def beforeAll(): Unit = {
     super.beforeAll()
   }
@@ -53,7 +56,7 @@ class PsaSchemeActionSpec extends PlaySpec with MockitoSugar with BeforeAndAfter
   }
 
   private def mockCheckForAssociation = {
-    when(mockSchemeService.isAssociated(ArgumentMatchers.eq(srn), ArgumentMatchers.eq(Left(PsaId(AuthUtils.psaId))))(ArgumentMatchers.any(), ArgumentMatchers.any()))
+    when(mockSchemeService.checkForAssociation(ArgumentMatchers.eq(Left(PsaId(AuthUtils.psaId))), ArgumentMatchers.eq(srn))(ArgumentMatchers.any(), ArgumentMatchers.any()))
   }
 
   "PsaSchemeActionSpec" must {

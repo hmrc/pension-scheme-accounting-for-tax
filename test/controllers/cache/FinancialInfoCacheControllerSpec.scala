@@ -16,7 +16,6 @@
 
 package controllers.cache
 
-import controllers.cache.FinancialInfoCacheController.IdNotFoundFromAuth
 import org.apache.commons.lang3.RandomUtils
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
@@ -95,13 +94,6 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
         an[Exception] must be thrownBy status(result)
       }
 
-      "throw an exception when the call is not authorised" in {
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
-
-        val result = controller.get(fakeRequest)
-        an[IdNotFoundFromAuth] must be thrownBy status(result)
-      }
-
     }
 
     "calling save" must {
@@ -121,13 +113,6 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
         val result = controller.save(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
         status(result) mustEqual BAD_REQUEST
       }
-
-      "throw an exception when the call is not authorised" in {
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
-
-        val result = controller.save(fakePostRequest.withJsonBody(Json.obj(fields = "value" -> "data")))
-        an[IdNotFoundFromAuth] must be thrownBy status(result)
-      }
     }
 
     "calling remove" must {
@@ -137,13 +122,6 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
 
         val result = controller.remove(fakeRequest)
         status(result) mustEqual OK
-      }
-
-      "throw an exception when the call is not authorised" in {
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
-
-        val result = controller.remove(fakeRequest)
-        an[IdNotFoundFromAuth] must be thrownBy status(result)
       }
     }
   }

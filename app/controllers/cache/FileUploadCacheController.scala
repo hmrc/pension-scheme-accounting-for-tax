@@ -17,15 +17,13 @@
 package controllers.cache
 
 import com.google.inject.Inject
-import controllers.cache.FinancialInfoCacheController.IdNotFoundFromAuth
 import play.api.Logger
 import play.api.libs.json.{JsSuccess, Json}
 import play.api.mvc._
 import repository.FileUploadReferenceCacheRepository
 import repository.model.FileUploadStatus
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
+import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}

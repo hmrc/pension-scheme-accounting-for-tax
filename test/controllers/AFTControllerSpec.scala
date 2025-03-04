@@ -37,7 +37,8 @@ import repository._
 import services.AFTService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
-import utils.{ErrorReport, JSONPayloadSchemaValidator, JsonFileReader}
+import utils.AuthUtils.{FakePsaPspEnrolmentAuthAction, FakePsaPspSchemeAuthAction}
+import utils.{AuthUtils, ErrorReport, JSONPayloadSchemaValidator, JsonFileReader}
 
 import java.time.LocalDate
 import scala.concurrent.Future
@@ -49,7 +50,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val mockAuditService = mock[AuditService]
-
+  private val srn = AuthUtils.srn
   private val fakeRequest = FakeRequest("GET", "/")
   private val mockAftConnector = mock[AFTConnector]
   private val mockAftService = mock[AFTService]
@@ -78,7 +79,9 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[actions.PsaPspEnrolmentAuthAction].toInstance(new FakePsaPspEnrolmentAuthAction),
+      bind[actions.PsaPspSchemeAuthAction].toInstance(new FakePsaPspSchemeAuthAction)
     )
 
   val application: Application = new GuiceApplicationBuilder()
@@ -203,7 +206,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any(), any())).thenReturn(Future.successful(true))
-      val result = controller.fileReturnSrn(journeyType, srn)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
+      val result = controller.fileReturnSrn(journeyType, srn, true)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
     }
@@ -215,7 +218,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaFullPayloadRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any(), any())).thenReturn(Future.successful(true))
-      val result = controller.fileReturnSrn(journeyType, srn)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
+      val result = controller.fileReturnSrn(journeyType, srn, true)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
     }
@@ -227,7 +230,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         .thenReturn(Future.successful(HttpResponse(OK, fileAFTUaFullPayloadRequestJson.toString)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any(), any())).thenReturn(Future.successful(false))
-      val result = controller.fileReturnSrn(journeyType, srn)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
+      val result = controller.fileReturnSrn(journeyType, srn, true)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
       status(result) mustBe NO_CONTENT
     }
@@ -251,7 +254,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any(), any())).thenReturn(Future.successful(true))
 
       recoverToExceptionIf[AFTValidationFailureException] {
-        controller.controller.fileReturnSrn(journeyType, srn)(fakeRequest.withJsonBody(fileAFTUaInvalidPayloadRequestJson).
+        controller.fileReturnSrn(journeyType, srn, true)(fakeRequest.withJsonBody(fileAFTUaInvalidPayloadRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map { ex =>
         val expectedErrorMessage = "Invalid AFT file AFT return:-\nErrorReport(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}})"
@@ -269,7 +272,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         .thenReturn(Future.failed(UpstreamErrorResponse(message = "Internal Server Error", INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       recoverToExceptionIf[UpstreamErrorResponse] {
-        controller.controller.fileReturnSrn(journeyType, srn)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
+        controller.fileReturnSrn(journeyType, srn, true)(fakeRequest.withJsonBody(fileAFTUaRequestJson).
           withHeaders(newHeaders = "pstr" -> pstr))
       } map {
         _.statusCode mustBe INTERNAL_SERVER_ERROR
@@ -282,7 +285,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       when(mockAftConnector.fileAFTReturn(any(), any(), any())(any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(OK, jsonPayload.toString)))
-      val result = controller.fileReturnSrn(journeyType, srn)(fakeRequest.withJsonBody(jsonPayload).
+      val result = controller.fileReturnSrn(journeyType, srn, true)(fakeRequest.withJsonBody(jsonPayload).
         withHeaders(newHeaders = "pstr" -> pstr))
       status(result) mustBe OK
     }
@@ -360,7 +363,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
 
-      val result = controller.getVersionsSrn(srn)(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+      val result = controller.getVersionsSrn(srn, true)(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.arr(Json.toJson(version1))
@@ -368,7 +371,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
     "return OK with the versions if more than one versions are present" in {
       val result = controllerForGetAftVersions
-        .getVersionsSrn(srn)(fakeRequest.withHeaders(
+        .getVersionsSrn(srn, true)(fakeRequest.withHeaders(
           newHeaders = "pstr" -> pstr,
           "startDate" -> startDt
         ))
@@ -382,7 +385,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       val controller = application.injector.instanceOf[AFTController]
 
       recoverToExceptionIf[BadRequestException] {
-        controller.getVersionsSrn(srn)(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt))
+        controller.getVersionsSrn(srn, true)(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt))
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
         response.message must include("Bad Request with missing PSTR/Quarter Start Date")
@@ -397,7 +400,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL SERVER ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
-        controller.getVersionsSrn(srn)(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt, "pstr" -> pstr))
+        controller.getVersionsSrn(srn, true)(fakeRequest.withHeaders(newHeaders = "startDate" -> startDt, "pstr" -> pstr))
       } map { response =>
         response.statusCode mustBe INTERNAL_SERVER_ERROR
         response.getMessage must include("INTERNAL SERVER ERROR")
@@ -502,7 +505,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
         .thenReturn(Future.successful(etmpAFTDetailsResponse))
 
-      val result = controller.getDetailsSrn(srn)(fakeRequestForGetDetails)
+      val result = controller.getDetailsSrn(srn, true)(fakeRequestForGetDetails)
 
       status(result) mustBe OK
       contentAsJson(result) mustBe transformedAftDEtailsUAJson
@@ -513,7 +516,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       val controller = application.injector.instanceOf[AFTController]
 
       recoverToExceptionIf[BadRequestException] {
-        controller.getDetailsSrn(srn)(fakeRequest.withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
+        controller.getDetailsSrn(srn, true)(fakeRequest.withHeaders(("startDate", startDt), ("aftVersion", aftVer)))
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
         response.getMessage mustBe "Bad Request with missing PSTR/Quarter Start Date"
@@ -528,7 +531,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         .thenReturn(Future.failed(new BadRequestException(errorResponse("INVALID_START_DATE"))))
 
       recoverToExceptionIf[BadRequestException] {
-        controller.getDetailsSrn(srn)(fakeRequestForGetDetails)
+        controller.getDetailsSrn(srn, true)(fakeRequestForGetDetails)
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
         response.getMessage mustBe errorResponse("INVALID_START_DATE")
@@ -543,7 +546,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         .thenReturn(Future.failed(UpstreamErrorResponse(errorResponse("NOT_FOUND"), NOT_FOUND, NOT_FOUND)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
-        controller.getDetailsSrn(srn)(fakeRequestForGetDetails)
+        controller.getDetailsSrn(srn, true)(fakeRequestForGetDetails)
       } map { response =>
         response.statusCode mustBe NOT_FOUND
         response.getMessage mustBe errorResponse("NOT_FOUND")
@@ -558,7 +561,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         .thenReturn(Future.failed(UpstreamErrorResponse(errorResponse("INTERNAL_SERVER_ERROR"), INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR)))
 
       recoverToExceptionIf[UpstreamErrorResponse] {
-        controller.getDetailsSrn(srn)(fakeRequestForGetDetails)
+        controller.getDetailsSrn(srn, true)(fakeRequestForGetDetails)
       } map { response =>
         response.statusCode mustBe INTERNAL_SERVER_ERROR
         response.getMessage mustBe errorResponse("INTERNAL_SERVER_ERROR")
@@ -573,7 +576,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         .thenReturn(Future.failed(new Exception("Generic Exception")))
 
       recoverToExceptionIf[Exception] {
-        controller.getDetailsSrn(srn)(fakeRequestForGetDetails)
+        controller.getDetailsSrn(srn, true)(fakeRequestForGetDetails)
       } map { response =>
         response.getMessage mustBe "Generic Exception"
       }
@@ -620,7 +623,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockAftConnector.getAftDetails(ArgumentMatchers.eq(pstr), ArgumentMatchers.eq(startDt), ArgumentMatchers.eq(aftVer))(any(), any(), any()))
         .thenReturn(Future.successful(etmpAFTDetailsResponse))
 
-      val result = controller.getIsChargeNonZeroSrn(srn)(fakeRequestForGetDetails)
+      val result = controller.getIsChargeNonZeroSrn(srn, true)(fakeRequestForGetDetails)
 
       status(result) mustBe OK
       contentAsJson(result) mustBe JsBoolean(true)
@@ -634,7 +637,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
         .thenReturn(Future.successful(etmpAFTDetailsResponse))
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(true)
 
-      val result = controller.getIsChargeNonZeroSrn(srn)(fakeRequestForGetDetails)
+      val result = controller.getIsChargeNonZeroSrn(srn, true)(fakeRequestForGetDetails)
 
       status(result) mustBe OK
       contentAsJson(result) mustBe JsBoolean(false)
@@ -708,7 +711,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
       val controller = application.injector.instanceOf[AFTController]
 
-      val result = controller.getOverviewSrn(srn)(fakeRequest
+      val result = controller.getOverviewSrn(srn, true)(fakeRequest
         .withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt, "endDate" -> endDate))
 
       status(result) mustBe OK
@@ -720,7 +723,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockAftOverviewCacheRepository.get(any())(any())).thenReturn(Future.successful(Some(Json.toJson(aftOverview))))
       val controller = application.injector.instanceOf[AFTController]
 
-      val result = controller.getOverviewSrn(srn)(fakeRequest
+      val result = controller.getOverviewSrn(srn, true)(fakeRequest
         .withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt, "endDate" -> endDate))
 
       status(result) mustBe OK
@@ -732,7 +735,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       val controller = application.injector.instanceOf[AFTController]
 
       recoverToExceptionIf[BadRequestException] {
-        controller.getOverviewSrn(srn)(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+        controller.getOverviewSrn(srn, true)(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
       } map { response =>
         response.responseCode mustBe BAD_REQUEST
         response.message must include("Bad Request with no endDate")
@@ -791,7 +794,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       )
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
 
-      val result = controller.getVersionsWithSubmitterSrn(srn)(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
+      val result = controller.getVersionsWithSubmitterSrn(srn, true)(fakeRequest.withHeaders(newHeaders = "pstr" -> pstr, "startDate" -> startDt))
 
       status(result) mustBe OK
       val expectedVersionsWithSubmitter = Json.toJson(

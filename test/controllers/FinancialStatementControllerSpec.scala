@@ -36,7 +36,7 @@ import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http._
-import utils.JsonFileReader
+import utils.{AuthUtils, JsonFileReader}
 
 import java.time.LocalDate
 import scala.concurrent.Future
@@ -47,6 +47,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
+  private val srn = AuthUtils.srn
   private val mockFSConnector = mock[FinancialStatementConnector]
   private val authConnector: AuthConnector = mock[AuthConnector]
   private val mockAFTConnector = mock[AFTConnector]

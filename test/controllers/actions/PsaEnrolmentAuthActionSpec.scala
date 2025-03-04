@@ -27,7 +27,10 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.~
+import utils.AuthUtils
+import utils.AuthUtils.FakeFailingAuthConnector
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class PsaEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {

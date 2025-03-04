@@ -393,7 +393,7 @@ class AFTController @Inject()(
       }
   }
 
-  def getVersionsWithSubmitterSrn(srn: SchemeReferenceNumber): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn)).async {
+  def getVersionsWithSubmitterSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn, loggedInAsPsa)).async {
     implicit request =>
 
       requiredHeaders { (pstr, startDate) =>
@@ -403,7 +403,7 @@ class AFTController @Inject()(
         val result = for {
           aftVersions <- getAFTVersions
           _ = logger.warn(s"number of versions: ${aftVersions.length}")
-          res: Seq[Future[VersionsWithSubmitter]] = aftVersions.map { version =>
+          res = aftVersions.map { version =>
             val futureAFTDetails =
               aftConnector.getAftDetails(pstr, startDate, padVersion(version.reportVersion.toString))
             futureAFTDetails.map (detailsJsLogic(_, version))
@@ -444,7 +444,7 @@ class AFTController @Inject()(
       }
   }
 
-  def getIsChargeNonZeroSrn(srn: SchemeReferenceNumber): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn)).async {
+  def getIsChargeNonZeroSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): Action[AnyContent] = (psaPspAuthRequest andThen psaPspSchemeAuthAction(srn, loggedInAsPsa: Boolean)).async {
     implicit request =>
       requiredHeaders { (pstr, startDate) =>
         withAFTVersion { aftVersion =>

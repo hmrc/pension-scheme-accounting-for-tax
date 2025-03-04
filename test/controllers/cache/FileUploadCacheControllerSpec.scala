@@ -16,7 +16,6 @@
 
 package controllers.cache
 
-import controllers.cache.FinancialInfoCacheController.IdNotFoundFromAuth
 import org.apache.commons.lang3.RandomUtils
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
@@ -87,13 +86,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
         val result = controller.requestUpload(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes("512001".toInt))))
         status(result) mustEqual BAD_REQUEST
       }
-
-      "throw an exception when the call is not authorised" in {
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
-
-        val result = controller.requestUpload(fakePostRequest.withJsonBody(Json.obj(fields = "reference" -> "referenceId")))
-        an[IdNotFoundFromAuth] must be thrownBy status(result)
-      }
     }
 
     "calling getUploadResult" must {
@@ -122,13 +114,6 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(uploadId))
         val result = controller.getUploadResult(fakeRequest)
         an[Exception] must be thrownBy status(result)
-      }
-
-      "throw an exception when the call is not authorised" in {
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(None)
-
-        val result = controller.getUploadResult(fakeRequest)
-        an[IdNotFoundFromAuth] must be thrownBy status(result)
       }
     }
 

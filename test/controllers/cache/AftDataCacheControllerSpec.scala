@@ -110,14 +110,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
         val result = controller.get(fakeRequest)
         an[Exception] must be thrownBy status(result)
       }
-
-      "throw an exception when the call is not authorised" in {
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
-
-        val result = controller.get(fakeRequest)
-        an[CredNameNotFoundFromAuth] must be thrownBy status(result)
-      }
-
     }
 
     "calling save" must {
@@ -137,13 +129,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
         val result = controller.save(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
         status(result) mustEqual BAD_REQUEST
       }
-
-      "throw an exception when the call is not authorised" in {
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
-
-        val result = controller.save(fakePostRequest.withJsonBody(Json.obj(fields = "value" -> "data")))
-        an[CredNameNotFoundFromAuth] must be thrownBy status(result)
-      }
     }
 
     "calling remove" must {
@@ -153,13 +138,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
         val result = controller.remove(fakeRequest)
         status(result) mustEqual OK
-      }
-
-      "throw an exception when the call is not authorised" in {
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(None)
-
-        val result = controller.remove(fakeRequest)
-        an[CredNameNotFoundFromAuth] must be thrownBy status(result)
       }
     }
 
