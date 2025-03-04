@@ -33,12 +33,13 @@ import scala.concurrent.{ExecutionContext, Future}
 class FileUploadCacheController @Inject()(
                                            repository: FileUploadReferenceCacheRepository,
                                            val authConnector: AuthConnector,
-                                           cc: ControllerComponents
+                                           cc: ControllerComponents,
+                                           psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
                                          )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
 
   private val logger = Logger(classOf[FileUploadCacheController])
 
-  def requestUpload: Action[AnyContent] = Action.async {
+  def requestUpload: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
       getId { id =>
         request.body.asJson.map {
@@ -51,7 +52,7 @@ class FileUploadCacheController @Inject()(
       }
   }
 
-  def getUploadResult: Action[AnyContent] = Action.async {
+  def getUploadResult: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
       getId {
         id =>
@@ -64,7 +65,7 @@ class FileUploadCacheController @Inject()(
       }
   }
 
-  def registerUploadResult: Action[AnyContent] = Action.async {
+  def registerUploadResult: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
       getReferenceId { id =>
         request.body.asJson.map {
@@ -78,14 +79,10 @@ class FileUploadCacheController @Inject()(
   }
 
   private def getId(block: String => Future[Result])
-                   (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(_) =>
-        request.headers.get("uploadId") match {
-          case Some(id) => block(id)
-          case _ => Future.failed(new BadRequestException(s"Bad Request with missing uploadId"))
-        }
-      case _ => Future.failed(IdNotFoundFromAuth())
+                   (implicit request: Request[AnyContent]): Future[Result] = {
+    request.headers.get("uploadId") match {
+      case Some(id) => block(id)
+      case _ => Future.failed(new BadRequestException(s"Bad Request with missing uploadId"))
     }
   }
 

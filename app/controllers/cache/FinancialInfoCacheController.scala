@@ -34,8 +34,6 @@ class FinancialInfoCacheController @Inject()(
                                               psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
                                             )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
 
-  import FinancialInfoCacheController._
-
   private val logger = Logger(classOf[FinancialInfoCacheController])
 
   def save: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
@@ -61,11 +59,5 @@ class FinancialInfoCacheController @Inject()(
     implicit request =>
       repository.remove(request.externalId).map(_ => Ok)
   }
-}
-
-object FinancialInfoCacheController {
-
-  case class IdNotFoundFromAuth() extends UnauthorizedException("Not Authorised - Unable to retrieve id")
-
 }
 

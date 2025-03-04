@@ -32,7 +32,11 @@ import scala.concurrent.{ExecutionContext, Future}
 class FinancialInfoCreditAccessController @Inject()(
                                                      repository: FinancialInfoCreditAccessRepository,
                                                      val authConnector: AuthConnector,
-                                                     cc: ControllerComponents
+                                                     cc: ControllerComponents,
+                                                     psaEnrolmentAuthAction: controllers.actions.PsaEnrolmentAuthAction,
+                                                     psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction,
+                                                     psaSchemeAuthAction: controllers.actions.PsaSchemeAuthAction,
+                                                     psaPspSchemeAuthAction: controllers.actions.PsaPspSchemeAuthAction
                                                    )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
 
   private val logger = Logger(classOf[FinancialInfoCreditAccessController])
@@ -51,25 +55,19 @@ class FinancialInfoCreditAccessController @Inject()(
     }
   }
 
-  def getForSchemePsa(psaId: String, srn: String): Action[AnyContent] = Action.async {
+  def getForSchemePsa(psaId: String, srn: String): Action[AnyContent] = (psaEnrolmentAuthAction andThen psaSchemeAuthAction(srn)).async {
     implicit request =>
-      authorised(Enrolment("HMRC-PODS-ORG")) {
-        getForPsaOrPsp(Some(psaId), None, srn)
-      }
+      getForPsaOrPsp(Some(request.psaId.id), None, srn)
   }
 
-  def getForSchemePsp(pspId: String, srn: String): Action[AnyContent] = Action.async {
+  def getForSchemePsp(pspId: String, srn: String): Action[AnyContent] = (psaPspEnrolmentAuthAction andThen psaPspSchemeAuthAction(srn)).async {
     implicit request =>
-      authorised(Enrolment("HMRC-PODSPP-ORG")) {
-        getForPsaOrPsp(None, Some(pspId), srn)
-      }
+      getForPsaOrPsp(None, request.pspId.map(_.id), srn)
   }
 
-  def getForPsa(psaId: String): Action[AnyContent] = Action.async {
+  def getForPsa(psaId: String): Action[AnyContent] = psaEnrolmentAuthAction.async {
     implicit request =>
-      authorised(Enrolment("HMRC-PODS-ORG")) {
-        getForPsaOrPsp(Some(psaId), None, psaId)
-      }
+      getForPsaOrPsp(Some(request.psaId.id), None, request.psaId.id)
   }
 
   private def getForPsaOrPsp(psaId: Option[String], pspId: Option[String], srn: String): Future[Result] = {
@@ -88,8 +86,4 @@ class FinancialInfoCreditAccessController @Inject()(
       }
     }
   }
-}
-
-object FinancialInfoCreditAccessController {
-  case class IdNotFoundFromAuth() extends UnauthorizedException("Not Authorised - Unable to retrieve id")
 }

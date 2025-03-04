@@ -189,7 +189,4 @@ object AftDataCacheController {
 
   case object MissingIDException extends BadRequestException("Missing psa ID or psp ID from enrolments")
 
-  case class CredNameNotFoundFromAuth(msg: String = "Not Authorised - Unable to retrieve credentials - name")
-    extends UnauthorizedException(msg)
-
 }

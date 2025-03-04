@@ -67,6 +67,35 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
     }
   }
 
+  private def withPstrCheck(block: String => Future[Result])
+                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
+    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId and Retrievals.allEnrolments) {
+      case Some(_) ~ enrolments =>
+        (getPsaId(enrolments), request.headers.get("pstr")) match {
+          case (_, Some(pstr)) =>
+            block(pstr)
+          case _ => Future.failed(new BadRequestException("Bad Request with missing psaId or pstr"))
+        }
+      case _ =>
+        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
+    }
+  }
+
+  def schemeStatement: Action[AnyContent] = Action.async {
+    implicit request =>
+      withPstrCheck { pstr =>
+        financialStatementConnector.getSchemeFS(pstr).map { data =>
+          Ok(Json.toJson(data.copy(seqSchemeFSDetail = updateChargeType(data.seqSchemeFSDetail))))
+        }
+      }
+  }
+
+  private def getPsaId(enrolments: Enrolments): Option[PsaId] =
+    enrolments
+      .getEnrolment(key = "HMRC-PODS-ORG")
+      .flatMap(_.getIdentifier("PSAID"))
+      .map(id => PsaId(id.value))
+
   def schemeStatementSrn(srn: SchemeReferenceNumber): Action[AnyContent] = psaEnrolmentAuthAction.async {
     implicit request =>
       request.headers.get("pstr").map { pstr =>
