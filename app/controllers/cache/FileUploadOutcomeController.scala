@@ -20,7 +20,6 @@ import com.google.inject.Inject
 import play.api.Logger
 import play.api.mvc._
 import repository.FileUploadOutcomeRepository
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}

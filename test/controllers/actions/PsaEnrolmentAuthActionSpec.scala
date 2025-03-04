@@ -27,8 +27,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.~
-import utils.AuthUtils
-import utils.AuthUtils.FakeFailingAuthConnector
+import utils.AuthUtils.{FakeFailingAuthConnector, externalId, psaId}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -56,7 +55,15 @@ class PsaEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
         running(app) {
           val bodyParsers = app.injector.instanceOf[BodyParsers.Default]
 
-          AuthUtils.authStub(mockAuthConnector)
+          val authResponse = new ~(
+            Enrolments(
+              Set(
+                new Enrolment("HMRC-PODS-ORG", Seq(EnrolmentIdentifier("PsaId", psaId)), "Activated")
+              )
+            ), Some(externalId)
+          )
+
+          when(mockAuthConnector.authorise[RetrievalsType](any(), any())(any(), any())) thenReturn Future.successful(authResponse)
 
           val action = new PsaEnrolmentAuthAction(mockAuthConnector, bodyParsers)
           val controller = new Harness(action)

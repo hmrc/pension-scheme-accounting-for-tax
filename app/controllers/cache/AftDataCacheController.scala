@@ -25,7 +25,6 @@ import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
 import repository.AftBatchedDataCacheRepository
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 

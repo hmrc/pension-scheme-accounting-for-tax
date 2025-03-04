@@ -25,16 +25,14 @@ import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import repository.SchemeFSCacheRepository
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
 import java.nio.charset.StandardCharsets
-import scala.concurrent.duration.{Duration, SECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialStatementConnector @Inject()(
-                                             http: HttpClient,
                                              httpClient2: HttpClientV2,
                                              config: AppConfig,
                                              headerUtils: HeaderUtils,

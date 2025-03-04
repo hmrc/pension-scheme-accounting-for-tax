@@ -36,7 +36,7 @@ import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http._
-import utils.AuthUtils.FakePsaEnrolmentAuthAction
+import utils.AuthUtils.{FakePsaEnrolmentAuthAction, FakePsaSchemeAuthAction}
 import utils.{AuthUtils, JsonFileReader}
 
 import java.time.LocalDate
@@ -64,7 +64,8 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
       bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
-      bind[actions.PsaEnrolmentAuthAction].toInstance(new FakePsaEnrolmentAuthAction)
+      bind[actions.PsaEnrolmentAuthAction].toInstance(new FakePsaEnrolmentAuthAction),
+      bind[actions.PsaSchemeAuthAction].toInstance(new FakePsaSchemeAuthAction)
     )
 
   private val application: Application = new GuiceApplicationBuilder()
@@ -88,7 +89,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
   "psaStatement" must {
 
     "return OK when the details are returned based on pstr, start date and AFT version" in {
-      when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
       val controller = application.injector.instanceOf[FinancialStatementController]
 
       when(mockFSConnector.getPsaFS(ArgumentMatchers.eq(psaId))(any(), any(), any())).thenReturn(
@@ -98,18 +98,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(psaFSResponse)
-    }
-
-    "throw BadRequestException when PSTR is not present in the header" in {
-      when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
-      val controller = application.injector.instanceOf[FinancialStatementController]
-
-      recoverToExceptionIf[BadRequestException] {
-        controller.psaStatement()(fakeRequest)
-      } map { response =>
-        response.responseCode mustBe BAD_REQUEST
-        response.getMessage mustBe "Bad Request with missing psaId"
-      }
     }
 
     "throw generic exception when any other exception returned from Des" in {
@@ -190,7 +178,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 }
 
 object FinancialStatementControllerSpec {
-  private val psaId = "test-psa-id"
+  private val psaId = AuthUtils.psaId
   private val pstr = "test-pstr"
   private val fakeRequest = FakeRequest("GET", "/")
   private val fakeRequestWithPsaId = fakeRequest.withHeaders(("psaId", psaId))

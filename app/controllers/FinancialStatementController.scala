@@ -36,7 +36,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
                                              val authConnector: AuthConnector,
-                                             psaEnrolmentAuthAction: actions.PsaEnrolmentAuthAction
+                                             psaEnrolmentAuthAction: actions.PsaEnrolmentAuthAction,
+                                             psaSchemeAuthAction: actions.PsaSchemeAuthAction
                                             )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -96,7 +97,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       .flatMap(_.getIdentifier("PSAID"))
       .map(id => PsaId(id.value))
 
-  def schemeStatementSrn(srn: SchemeReferenceNumber): Action[AnyContent] = psaEnrolmentAuthAction.async {
+  def schemeStatementSrn(srn: SchemeReferenceNumber): Action[AnyContent] = (psaEnrolmentAuthAction andThen psaSchemeAuthAction(srn)).async {
     implicit request =>
       request.headers.get("pstr").map { pstr =>
         financialStatementConnector.getSchemeFS(pstr).map { data =>

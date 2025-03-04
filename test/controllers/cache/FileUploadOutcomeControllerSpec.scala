@@ -31,7 +31,6 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository._
-import uk.gov.hmrc.auth.core.AuthConnector
 import utils.AuthUtils
 import utils.AuthUtils.FakePsaPspEnrolmentAuthAction
 
