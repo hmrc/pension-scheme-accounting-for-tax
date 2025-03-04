@@ -32,26 +32,27 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository._
 import uk.gov.hmrc.auth.core.AuthConnector
+import utils.AuthUtils
+import utils.AuthUtils.FakePsaPspEnrolmentAuthAction
 
 import scala.concurrent.Future
 
 class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach { // scalastyle:off magic.number
 
   private val repo = mock[FileUploadOutcomeRepository]
-  private val authConnector: AuthConnector = mock[AuthConnector]
-  private val id = "id"
+  private val id = AuthUtils.externalId
   private val fakePostRequest = FakeRequest("POST", "/")
   private val fakeRequest = FakeRequest()
 
   def modules: Seq[GuiceableModule] = {
     Seq(
-      bind[AuthConnector].toInstance(authConnector),
       bind[FileUploadOutcomeRepository].toInstance(repo),
       bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
       bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[controllers.actions.PsaPspEnrolmentAuthAction].toInstance(new FakePsaPspEnrolmentAuthAction)
     )
   }
 
@@ -63,7 +64,6 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
 
   override def beforeEach(): Unit = {
     reset(repo)
-    reset(authConnector)
     super.beforeEach()
   }
 
@@ -71,7 +71,6 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
     "calling get" must {
       "return OK with the data" in {
         when(repo.get(eqTo(id))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual OK
@@ -80,7 +79,6 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
 
       "return NOT FOUND when the data doesn't exist" in {
         when(repo.get(eqTo(id))(any())) thenReturn Future.successful(None)
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual NOT_FOUND
@@ -88,7 +86,6 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
 
       "throw an exception when the repository call fails" in {
         when(repo.get(eqTo(id))(any())) thenReturn Future.failed(new Exception())
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
         val result = controller.get(fakeRequest)
         an[Exception] must be thrownBy status(result)
       }
@@ -98,7 +95,6 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
 
       "return OK when the data is saved successfully" in {
         when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
         val result = controller.post(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
         status(result) mustEqual CREATED
@@ -106,7 +102,6 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
 
       "return BAD REQUEST when the request body cannot be parsed" in {
         when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
         val result = controller.post(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
         status(result) mustEqual BAD_REQUEST
@@ -116,7 +111,6 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
     "calling delete" must {
       "return OK when the data is removed successfully" in {
         when(repo.remove(eqTo(id))(any())) thenReturn Future.successful(true)
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
         val result = controller.delete(fakeRequest)
         status(result) mustEqual OK

@@ -44,25 +44,29 @@ object AuthUtils {
   def failedAuthStub(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Unit]] =
     when(mockAuthConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.failed(InsufficientEnrolments())
 
-  def authStub(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String]]] =
-    when(mockAuthConnector.authorise[Enrolments ~ Option[String]](any(), any())(any(), any())) thenReturn Future.successful(AuthUtils.authResponse)
+  def authStub(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String] ~ Option[Name]]] =
+    when(mockAuthConnector.authorise[Enrolments ~ Option[String] ~ Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(AuthUtils.authResponse)
   val authResponse = new ~(
-    Enrolments(
-      Set(
-        new Enrolment("HMRC-PODS-ORG", Seq(EnrolmentIdentifier("PsaId", psaId)), "Activated")
-      )
-    ), Some(externalId)
+    new ~(
+      Enrolments(
+        Set(
+          new Enrolment("HMRC-PODS-ORG", Seq(EnrolmentIdentifier("PsaId", psaId)), "Activated")
+        )
+      ), Some(externalId)
+    ), Some(name)
   )
 
-  def authStubPsp(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String]]] =
-    when(mockAuthConnector.authorise[Enrolments ~ Option[String]](any(), any())(any(), any())) thenReturn
+  def authStubPsp(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String] ~ Option[Name]]] =
+    when(mockAuthConnector.authorise[Enrolments ~ Option[String] ~ Option[Name]](any(), any())(any(), any())) thenReturn
       Future.successful(AuthUtils.authResponsePsp)
   val authResponsePsp = new ~(
-    Enrolments(
-      Set(
-        new Enrolment("HMRC-PODSPP-ORG", Seq(EnrolmentIdentifier("PspId", pspId)), "Activated")
-      )
-    ), Some(externalId)
+    new ~(
+      Enrolments(
+        Set(
+          new Enrolment("HMRC-PODSPP-ORG", Seq(EnrolmentIdentifier("PspId", pspId)), "Activated")
+        )
+      ), Some(externalId)
+    ), Some(name)
   )
 
   class FakeFailingAuthConnector @Inject()(exceptionToReturn: Throwable) extends AuthConnector {
@@ -77,9 +81,9 @@ object AuthUtils {
         block(PsaAuthRequest(request, PsaId(psaId), externalId))
   }
 
-  case class FakePsaPspEnrolmentAuthAction() extends PsaPspEnrolmentAuthAction(mock[AuthConnector], mock[BodyParsers.Default]) {
+  case class FakePsaPspEnrolmentAuthAction(var mockPsaId: Option[PsaId] = Some(PsaId(psaId)), var mockPspId: Option[PspId] = Some(PspId(pspId))) extends PsaPspEnrolmentAuthAction(mock[AuthConnector], mock[BodyParsers.Default]) {
     override def invokeBlock[A](request: Request[A], block: PsaPspAuthRequest[A] => Future[Result]): Future[Result] =
-      block(PsaPspAuthRequest(request, Some(PsaId(psaId)), Some(PspId(pspId)), externalId, Some(name) ))
+      block(PsaPspAuthRequest(request, mockPsaId, mockPspId, externalId, Some(name) ))
   }
 
   case class FakePsaSchemeAuthAction() extends PsaSchemeAuthAction(mock[SchemeConnector]) {
@@ -91,10 +95,10 @@ object AuthUtils {
     }
   }
 
-  case class FakePsaPspSchemeAuthAction() extends PsaPspSchemeAuthAction(mock[SchemeConnector]) {
+  case class FakePsaPspSchemeAuthAction(mockPsaId: Option[PsaId] = Some(PsaId(psaId)), mockPspId: Option[PspId] = Some(PspId(pspId))) extends PsaPspSchemeAuthAction(mock[SchemeConnector]) {
     override def apply(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): ActionFunction[PsaPspAuthRequest, PsaPspAuthRequest] = new ActionFunction[PsaPspAuthRequest, PsaPspAuthRequest] {
       override def invokeBlock[A](request: PsaPspAuthRequest[A], block: PsaPspAuthRequest[A] => Future[Result]): Future[Result] =
-        block(PsaPspAuthRequest(request, Some(PsaId(psaId)), Some(PspId(pspId)), externalId, Some(name)))
+        block(PsaPspAuthRequest(request, mockPsaId, mockPspId, externalId, Some(name)))
 
       override protected def executionContext: ExecutionContext = global
     }

@@ -33,11 +33,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class AftDataCacheController @Inject()(
                                         batchedRepository: AftBatchedDataCacheRepository,
-                                        val authConnector: AuthConnector,
                                         cc: ControllerComponents,
                                         auditService: AuditService,
                                         psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
-                                      )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
+                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   import AftDataCacheController._
 

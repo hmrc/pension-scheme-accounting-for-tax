@@ -496,7 +496,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     }
   }
 
-  "getAftDetails" must {
+  "getAftDetailsSrn" must {
 
     "return OK when the details are returned based on pstr, start date and AFT version" in {
 

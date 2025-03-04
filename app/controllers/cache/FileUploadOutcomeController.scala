@@ -27,10 +27,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class FileUploadOutcomeController @Inject()(
                                              repository: FileUploadOutcomeRepository,
-                                             val authConnector: AuthConnector,
                                              cc: ControllerComponents,
                                              psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
-                                           )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
+                                           )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   private val logger = Logger(classOf[FileUploadOutcomeController])
 

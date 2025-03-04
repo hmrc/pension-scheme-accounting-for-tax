@@ -22,6 +22,7 @@ import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{EitherValues, OptionValues, RecoverMethods}
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.http.Status.BAD_REQUEST
 import play.api.libs.json._
 import uk.gov.hmrc.domain.PsaId
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
@@ -74,8 +75,11 @@ class SchemeConnectorSpec extends AsyncFlatSpec
         )
     )
 
-    connector.checkForAssociation(Left(psaId), srn) map { response =>
-      response.left.value shouldBe a[BadRequestException]
+    recoverToExceptionIf[BadRequestException] {
+      connector.checkForAssociation(Left(psaId), srn)
+    } map { response =>
+      response.responseCode shouldBe BAD_REQUEST
+      response.message should include("Bad Request with missing parameters PSA Id or SRN")
     }
 
   }

@@ -23,20 +23,18 @@ import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
 import repository.FinancialInfoCreditAccessRepository
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class FinancialInfoCreditAccessController @Inject()(
                                                      repository: FinancialInfoCreditAccessRepository,
-                                                     val authConnector: AuthConnector,
                                                      cc: ControllerComponents,
                                                      psaEnrolmentAuthAction: controllers.actions.PsaEnrolmentAuthAction,
                                                      psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction,
                                                      psaSchemeAuthAction: controllers.actions.PsaSchemeAuthAction,
                                                      psaPspSchemeAuthAction: controllers.actions.PsaPspSchemeAuthAction
-                                                   )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
+                                                   )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   private val logger = Logger(classOf[FinancialInfoCreditAccessController])
 
@@ -61,6 +59,8 @@ class FinancialInfoCreditAccessController @Inject()(
 
   def getForSchemePsp(pspId: String, srn: String): Action[AnyContent] = (psaPspEnrolmentAuthAction andThen psaPspSchemeAuthAction(srn, loggedInAsPsa = false)).async {
     implicit request =>
+      println(pspId)
+      println(request.pspId)
       getForPsaOrPsp(None, request.pspId.map(_.id), srn)
   }
 

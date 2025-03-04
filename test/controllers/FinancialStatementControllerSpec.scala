@@ -36,6 +36,7 @@ import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http._
+import utils.AuthUtils.FakePsaEnrolmentAuthAction
 import utils.{AuthUtils, JsonFileReader}
 
 import java.time.LocalDate
@@ -62,7 +63,8 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[actions.PsaEnrolmentAuthAction].toInstance(new FakePsaEnrolmentAuthAction)
     )
 
   private val application: Application = new GuiceApplicationBuilder()

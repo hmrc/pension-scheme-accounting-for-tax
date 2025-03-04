@@ -22,7 +22,6 @@ import play.api.libs.json.{JsSuccess, Json}
 import play.api.mvc._
 import repository.FileUploadReferenceCacheRepository
 import repository.model.FileUploadStatus
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions}
 import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -30,10 +29,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class FileUploadCacheController @Inject()(
                                            repository: FileUploadReferenceCacheRepository,
-                                           val authConnector: AuthConnector,
                                            cc: ControllerComponents,
                                            psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
-                                         )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
+                                         )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   private val logger = Logger(classOf[FileUploadCacheController])
 

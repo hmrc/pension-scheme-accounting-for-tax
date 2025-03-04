@@ -32,6 +32,8 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import repository._
 import uk.gov.hmrc.auth.core.AuthConnector
+import utils.AuthUtils
+import utils.AuthUtils.FakePsaPspEnrolmentAuthAction
 
 import scala.concurrent.Future
 
@@ -39,7 +41,7 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
 
   private val repo = mock[FinancialInfoCacheRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
-  private val id = "id"
+  private val id = AuthUtils.externalId
   private val fakeRequest = FakeRequest()
   private val fakePostRequest = FakeRequest("POST", "/")
 
@@ -51,7 +53,8 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
       bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
       bind[FileUploadReferenceCacheRepository].toInstance(mock[FileUploadReferenceCacheRepository]),
       bind[FinancialInfoCacheRepository].toInstance(repo),
-      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository])
+      bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
+      bind[controllers.actions.PsaPspEnrolmentAuthAction].toInstance(new FakePsaPspEnrolmentAuthAction)
     )
   }
 

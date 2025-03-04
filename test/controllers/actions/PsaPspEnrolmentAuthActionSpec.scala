@@ -26,7 +26,7 @@ import play.api.mvc.{Action, AnyContent, BodyParsers, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.auth.core.retrieve.{Name, ~}
 import utils.AuthUtils
 import utils.AuthUtils.FakeFailingAuthConnector
 
@@ -35,7 +35,7 @@ import scala.concurrent.Future
 
 class PsaPspEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
 
-  private type RetrievalsType = Enrolments ~ Option[String]
+  private type RetrievalsType = Enrolments ~ Option[String] ~ Option[Name]
 
   class Harness(authAction: PsaPspEnrolmentAuthAction) {
     def onPageLoad(): Action[AnyContent] = authAction { _ => Results.Ok }
@@ -90,7 +90,7 @@ class PsaPspEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
           val bodyParsers = app.injector.instanceOf[BodyParsers.Default]
 
           when(mockAuthConnector.authorise[RetrievalsType](any(), any())(any(), any()))
-            .thenReturn(Future.successful(new~(Enrolments(Set.empty), Some("id"))))
+            .thenReturn(Future.successful(new ~(new~(Enrolments(Set.empty), Some("id")), None)))
 
           val action = new PsaPspEnrolmentAuthAction(mockAuthConnector, bodyParsers)
           val controller = new Harness(action)
