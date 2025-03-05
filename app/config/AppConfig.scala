@@ -30,6 +30,8 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   lazy val appName: String = config.get[String](path = "appName")
   val authBaseUrl: String = servicesConfig.baseUrl(serviceName = "auth")
 
+  private val baseUrlPensionsScheme = servicesConfig.baseUrl(serviceName = "pensions-scheme")
+
   val auditingEnabled: Boolean = config.get[Boolean](path = "auditing.enabled")
   val graphiteHost: String = config.get[String](path = "microservice.metrics.graphite.host")
 
@@ -66,6 +68,8 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   def schemeFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement")}"
 
   def schemeFinancialStatementMaxUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement-max")}"
+
+  val checkAssociationUrl: String = s"$baseUrlPensionsScheme${runModeConfiguration.underlying.getString("serviceUrls.checkPsaAssociation")}"
 
   val mongoEncryptionKey: Option[String] = config.getOptional[String]("mongodb.encryption.key")
 }

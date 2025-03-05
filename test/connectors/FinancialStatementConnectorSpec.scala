@@ -19,15 +19,13 @@ package connectors
 import audit._
 import com.github.tomakehurst.wiremock.client.WireMock._
 import models._
-import org.apache.pekko.Done
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.{times, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AsyncWordSpec
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.cache.AsyncCacheApi
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.inject.bind
@@ -38,15 +36,10 @@ import play.api.test.FakeRequest
 import repository._
 import services.AFTService
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.client.HttpClientV2
 import utils.WireMockHelper
-import play.api.libs.ws.WSRequest
 
 import java.time.LocalDate
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Future, TimeoutException}
-import scala.reflect.ClassTag
-import org.mockito.ArgumentMatchers.{eq => eqTo, _}
+import scala.concurrent.Future
 
 class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper with MockitoSugar with BeforeAndAfterEach {
 

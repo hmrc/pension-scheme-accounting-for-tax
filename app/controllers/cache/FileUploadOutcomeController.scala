@@ -20,66 +20,41 @@ import com.google.inject.Inject
 import play.api.Logger
 import play.api.mvc._
 import repository.FileUploadOutcomeRepository
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment}
-import uk.gov.hmrc.http.{HeaderCarrier, UnauthorizedException}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class FileUploadOutcomeController @Inject()(
                                              repository: FileUploadOutcomeRepository,
-                                             val authConnector: AuthConnector,
-                                             cc: ControllerComponents
-                                           )(implicit ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions {
-
-  import FileUploadOutcomeController._
+                                             cc: ControllerComponents,
+                                             psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
+                                           )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   private val logger = Logger(classOf[FileUploadOutcomeController])
 
-  def post: Action[AnyContent] = Action.async {
+  def post: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getId { id =>
-        request.body.asJson.map {
-          jsValue =>
-            repository.save(id, jsValue)
-              .map(_ => Created)
-        } getOrElse Future.successful(BadRequest)
+      request.body.asJson.map {
+        jsValue =>
+          repository.save(request.externalId, jsValue)
+            .map(_ => Created)
+      } getOrElse Future.successful(BadRequest)
+  }
+
+  def get: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
+    implicit request =>
+      repository.get(request.externalId).map { response =>
+        logger.debug(message = s"FileUploadOutcomeController.get: Response for request Id ${request.externalId} is $response")
+        response.map {
+          Ok(_)
+        } getOrElse NotFound
       }
   }
 
-  def get: Action[AnyContent] = Action.async {
+  def delete: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getId { id =>
-        repository.get(id).map { response =>
-          logger.debug(message = s"FileUploadOutcomeController.get: Response for request Id $id is $response")
-          response.map {
-            Ok(_)
-          } getOrElse NotFound
-        }
-      }
+      repository.remove(request.externalId).map(_ => Ok)
   }
-
-  def delete: Action[AnyContent] = Action.async {
-    implicit request =>
-      getId { id =>
-        repository.remove(id).map(_ => Ok)
-      }
-  }
-
-  private def getId(block: String => Future[Result])
-                   (implicit hc: HeaderCarrier): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId) {
-      case Some(id) => block(id)
-      case _ => Future.failed(IdNotFoundFromAuth())
-    }
-  }
-}
-
-object FileUploadOutcomeController {
-
-  case class IdNotFoundFromAuth() extends UnauthorizedException("Not Authorised - Unable to retrieve id")
-
 }
 
 
