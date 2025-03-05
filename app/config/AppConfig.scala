@@ -66,4 +66,6 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   def schemeFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement")}"
 
   def schemeFinancialStatementMaxUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement-max")}"
+
+  val mongoEncryptionKey: Option[String] = config.getOptional[String]("mongodb.encryption.key")
 }

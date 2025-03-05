@@ -18,6 +18,7 @@ package repository
 
 import com.google.inject.Inject
 import com.mongodb.client.model.FindOneAndUpdateOptions
+import crypto.DataEncryptor
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
 import play.api.libs.json._
@@ -35,7 +36,8 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class FileUploadReferenceCacheRepository @Inject()(
                                                     mongoComponent: MongoComponent,
-                                                    configuration: Configuration
+                                                    configuration: Configuration,
+                                                    cipher: DataEncryptor
                                                   )(implicit val ec: ExecutionContext)
   extends PlayMongoRepository[JsValue](
     collectionName = configuration.get[String](path = "mongodb.aft-cache.file-upload-response-cache.name"),
@@ -80,7 +82,7 @@ class FileUploadReferenceCacheRepository @Inject()(
       update = Updates.combine(
         set(uploadIdKey, uploadId),
         set(referenceKey, Codecs.toBson(reference)),
-        set(statusKey, Codecs.toBson(FileUploadStatus("InProgress"))),
+        set(statusKey, Codecs.toBson(cipher.encrypt(reference, Json.toJson(FileUploadStatus("InProgress"))))),
         set(createdKey, Codecs.toBson(LocalDateTime.now(ZoneId.of("UTC")))),
         set(lastUpdatedKey, Codecs.toBson(LocalDateTime.now(ZoneId.of("UTC")))),
         set(expireAtKey, Codecs.toBson(expireInSeconds))
@@ -100,14 +102,18 @@ class FileUploadReferenceCacheRepository @Inject()(
         }
       }
       .map {
-        _.map { data =>
+        _.map { data => {
+          val referenceId = (data \ referenceKey).as[String]
+          val encryptedStatus = (data \ statusKey).as[JsValue]
+          val decryptedStatus = cipher.decrypt(referenceId, encryptedStatus)
           FileUploadDataCache.applyDataCache(
             uploadId = (data \ uploadIdKey).as[String],
             reference = (data \ referenceKey).as[String],
-            status = (data \ statusKey).as[FileUploadStatus],
+            status = decryptedStatus.as[FileUploadStatus],
             lastUpdated = expireInSeconds,
             expireAt = expireInSeconds
           )
+        }
         }
       }
   }
@@ -119,7 +125,7 @@ class FileUploadReferenceCacheRepository @Inject()(
     collection.findOneAndUpdate(
       filter = Filters.eq(referenceKey, reference),
       update = Updates.combine(
-        set(statusKey, Codecs.toBson(newStatus))
+        set(statusKey, Codecs.toBson(cipher.encrypt(reference, Json.toJson(newStatus))))
       ),
       upsertOptions
     ).toFuture().map { _ => (): Unit }
