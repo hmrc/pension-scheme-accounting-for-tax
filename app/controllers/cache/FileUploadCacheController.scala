@@ -61,7 +61,7 @@ class FileUploadCacheController @Inject()(
       }
   }
 
-  def registerUploadResult: Action[AnyContent] = psaPspEnrolmentAuthAction.async {
+  def registerUploadResult: Action[AnyContent] = Action.async {
     implicit request =>
       getReferenceId { id =>
         request.body.asJson.map {
