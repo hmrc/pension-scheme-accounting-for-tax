@@ -19,7 +19,7 @@ package repository
 import base.MongoConfig
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import config.AppConfig
-import crypto.DataEncryptor
+import crypto.{DataEncryptor, EncryptedValue}
 import models.BatchedRepositorySampleData._
 import models.{ChargeAndMember, ChargeType, LockDetail}
 import org.mockito.ArgumentMatchers._
@@ -97,18 +97,9 @@ class AftBatchedDataCacheRepositorySpec
       val batchNo = (jsValue \ "batchNo").as[Int]
       val jsData = {
         val t = jsValue \ "data"
-        //        println(s"\n===> document in dbDocumentsAsSeqBatchInfo for $whichTest: $t")
-        batchType match {
-          case BatchType.Other => cipher.decrypt(id, t.as[JsObject])
-          case BatchType.SessionData => cipher.decrypt(id, t.as[JsObject])
-          case _ => {
-            t.as[JsArray].value.map { jsValue =>
-              println(s"\n===> jsValue dbDocumentsAsSeqBatchInfo: $jsValue")
-              jsValue
-            }
-            t.as[JsArray]
-          }
-        }
+        t.validate[EncryptedValue].map { _ =>
+          cipher.decrypt(id, t.as[JsObject])
+        }.getOrElse(t.get)
       }
       BatchInfo(batchType, batchNo, jsData)
     }.toSet
