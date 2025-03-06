@@ -36,7 +36,7 @@ import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.syntax.retrieved.authSyntaxForRetrieved
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http._
-import utils.AuthUtils.{FakePsaEnrolmentAuthAction, FakePsaSchemeAuthAction}
+import utils.AuthUtils.{FakePsaEnrolmentAuthAction, FakePsaPspEnrolmentAuthAction, FakePsaPspSchemeAuthAction, FakePsaSchemeAuthAction}
 import utils.{AuthUtils, JsonFileReader}
 
 import java.time.LocalDate
@@ -65,7 +65,9 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
       bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
       bind[actions.PsaEnrolmentAuthAction].toInstance(new FakePsaEnrolmentAuthAction),
-      bind[actions.PsaSchemeAuthAction].toInstance(new FakePsaSchemeAuthAction)
+      bind[actions.PsaSchemeAuthAction].toInstance(new FakePsaSchemeAuthAction),
+      bind[actions.PsaPspEnrolmentAuthAction].toInstance(new FakePsaPspEnrolmentAuthAction),
+      bind[actions.PsaPspSchemeAuthAction].toInstance(new FakePsaPspSchemeAuthAction)
     )
 
   private val application: Application = new GuiceApplicationBuilder()
@@ -153,7 +155,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
         Future.successful(schemeModelAfterUpdateWithAFTDetails))
 
-      val result = controller.schemeStatementSrn(srn)(fakeRequestWithPstr)
+      val result = controller.schemeStatementSrn(srn, true)(fakeRequestWithPstr)
 
       status(result) mustBe OK
       contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
@@ -167,7 +169,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
           when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
           when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
             Future.successful(charge))
-          val result = controller.schemeStatementSrn(srn)(fakeRequestWithPstr)
+          val result = controller.schemeStatementSrn(srn, true)(fakeRequestWithPstr)
           status(result) mustBe OK
           contentAsJson(result) mustBe Json.toJson(credit)
         }

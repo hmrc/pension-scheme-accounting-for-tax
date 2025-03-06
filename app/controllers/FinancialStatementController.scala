@@ -37,7 +37,9 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
                                              val authConnector: AuthConnector,
                                              psaEnrolmentAuthAction: actions.PsaEnrolmentAuthAction,
-                                             psaSchemeAuthAction: actions.PsaSchemeAuthAction
+                                             psaSchemeAuthAction: actions.PsaSchemeAuthAction,
+                                             psaPspEnrolmentAuthAction: actions.PsaPspEnrolmentAuthAction,
+                                             psaPspSchemeAuthAction: actions.PsaPspSchemeAuthAction
                                             )(implicit ec: ExecutionContext)
   extends BackendController(cc)
     with HttpErrorFunctions
@@ -97,7 +99,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       .flatMap(_.getIdentifier("PSAID"))
       .map(id => PsaId(id.value))
 
-  def schemeStatementSrn(srn: SchemeReferenceNumber): Action[AnyContent] = (psaEnrolmentAuthAction andThen psaSchemeAuthAction(srn)).async {
+  def schemeStatementSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): Action[AnyContent] = (psaPspEnrolmentAuthAction andThen psaPspSchemeAuthAction(srn, loggedInAsPsa)).async {
     implicit request =>
       request.headers.get("pstr").map { pstr =>
         financialStatementConnector.getSchemeFS(pstr).map { data =>
