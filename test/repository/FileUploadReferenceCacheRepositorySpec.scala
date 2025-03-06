@@ -18,6 +18,7 @@ package repository
 
 
 import base.MongoConfig
+import crypto.DataEncryptor
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.mongodb.scala.bson.{BsonDocument, BsonString}
@@ -28,7 +29,10 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
+import play.api.inject.bind
+import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import repository.model.FileUploadStatus
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.mongo.MongoComponent
 
 import scala.concurrent.Await
@@ -44,6 +48,27 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
   import FileUploadReferenceCacheRepositorySpec._
 
   var fileUploadReferenceCacheRepository: FileUploadReferenceCacheRepository = _
+
+  private val modules: Seq[GuiceableModule] = Seq(
+    bind[AuthConnector].toInstance(mock[AuthConnector])
+  )
+
+  private val app = new GuiceApplicationBuilder()
+    .configure(
+      conf = "auditing.enabled" -> false,
+      "metrics.enabled" -> false,
+      "metrics.jvm" -> false,
+      "run.mode" -> "Test"
+    ).overrides(modules: _*).build()
+
+  private val cipher = app.injector.instanceOf[DataEncryptor]
+
+  private def buildFormRepository(mongoHost: String, mongoPort: Int): FileUploadReferenceCacheRepository = {
+    val databaseName = "pension-scheme-accounting-for-tax"
+    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
+
+    new FileUploadReferenceCacheRepository(MongoComponent(mongoUri), mockConfiguration, cipher)
+  }
 
   override def beforeAll(): Unit = {
     when(mockConfiguration.get[String](ArgumentMatchers.eq("mongodb.aft-cache.file-upload-response-cache.name"))(ArgumentMatchers.any()))
@@ -155,9 +180,5 @@ object FileUploadReferenceCacheRepositorySpec extends MockitoSugar {
   private val fileUploadStatusNotInProgress = FileUploadStatus("NotInProgress")
   private val fileUploadStatusInProgress = FileUploadStatus("InProgress")
 
-  private def buildFormRepository(mongoHost: String, mongoPort: Int): FileUploadReferenceCacheRepository = {
-    val databaseName = "pension-scheme-accounting-for-tax"
-    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-    new FileUploadReferenceCacheRepository(MongoComponent(mongoUri), mockConfiguration)
-  }
+
 }

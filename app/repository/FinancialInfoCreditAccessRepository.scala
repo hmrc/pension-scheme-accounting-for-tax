@@ -17,6 +17,7 @@
 package repository
 
 import com.google.inject.Inject
+import crypto.DataEncryptor
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
 
@@ -24,10 +25,12 @@ import scala.concurrent.ExecutionContext
 
 class FinancialInfoCreditAccessRepository @Inject()(
                                                      mongoComponent: MongoComponent,
-                                                     configuration: Configuration
+                                                     configuration: Configuration,
+                                                     cipher: DataEncryptor
                                                    )(implicit val executionContext: ExecutionContext)
   extends CacheRepository(
     collectionName = configuration.get[String](path = "mongodb.aft-cache.financial-info-credit-access.name"),
     expireInDays = Some(configuration.get[Int]("mongodb.aft-cache.financial-info-credit-access.timeToLiveInDays")),
-    mongoComponent = mongoComponent
+    mongoComponent = mongoComponent,
+    cipher = cipher
   )

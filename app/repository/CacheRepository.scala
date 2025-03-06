@@ -18,6 +18,7 @@ package repository
 
 import com.google.inject.Inject
 import com.mongodb.client.model.FindOneAndUpdateOptions
+import crypto.DataEncryptor
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
 import play.api.Logging
@@ -36,7 +37,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class CacheRepository @Inject()(collectionName: String,
                                 expireInSeconds: Option[Int] = None,
                                 expireInDays: Option[Int] = None,
-                                mongoComponent: MongoComponent
+                                mongoComponent: MongoComponent,
+                                cipher: DataEncryptor
                                )(implicit val ec: ExecutionContext)
   extends PlayMongoRepository[JsValue](
     collectionName = collectionName,
@@ -66,7 +68,7 @@ class CacheRepository @Inject()(collectionName: String,
       filter = Filters.eq(idKey, id),
       update = Updates.combine(
         set(idKey, id),
-        set(dataKey, Codecs.toBson(userData)),
+        set(dataKey, Codecs.toBson(cipher.encrypt(id, userData))),
         set(lastUpdatedKey, Codecs.toBson(Instant.now())),
         set(expireAtKey, Codecs.toBson(getExpireAt))
       ),
@@ -80,7 +82,8 @@ class CacheRepository @Inject()(collectionName: String,
       filter = Filters.eq(idKey, id)
     ).toFuture().map {
       _.headOption.map { jsValue =>
-        (jsValue \ dataKey).as[JsValue]
+        val encryptedValue = (jsValue \ dataKey).as[JsValue]
+        cipher.decrypt(id, encryptedValue)
       }
     }
   }

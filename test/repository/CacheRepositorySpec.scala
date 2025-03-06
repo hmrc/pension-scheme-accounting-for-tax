@@ -17,6 +17,7 @@
 package repository
 
 import base.MongoConfig
+import crypto.DataEncryptor
 import org.mockito.Mockito._
 import org.mongodb.scala.bson.{BsonDocument, BsonString}
 import org.scalatest.concurrent.ScalaFutures
@@ -26,7 +27,10 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Configuration
+import play.api.inject.bind
+import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.mongo.MongoComponent
 
 import scala.concurrent.Await
@@ -41,6 +45,26 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
   import CacheRepositorySpec._
 
   var cacheRepository: CacheRepository = _
+
+  private val modules: Seq[GuiceableModule] = Seq(
+    bind[AuthConnector].toInstance(mock[AuthConnector])
+  )
+
+  private val app = new GuiceApplicationBuilder()
+    .configure(
+      conf = "auditing.enabled" -> false,
+      "metrics.enabled" -> false,
+      "metrics.jvm" -> false,
+      "run.mode" -> "Test"
+    ).overrides(modules: _*).build()
+
+  private val cipher = app.injector.instanceOf[DataEncryptor]
+
+  private def buildFormRepository(mongoHost: String, mongoPort: Int): CacheRepository = {
+    val databaseName = "pension-scheme-accounting-for-tax"
+    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
+    new CacheRepository(collectionName, Some(60), None, MongoComponent(mongoUri), cipher)
+  }
 
   override def beforeAll(): Unit = {
     cacheRepository = buildFormRepository(mongoHost, mongoPort)
@@ -136,9 +160,4 @@ object CacheRepositorySpec extends MockitoSugar {
     "test" -> "test"
   )
 
-  private def buildFormRepository(mongoHost: String, mongoPort: Int): CacheRepository = {
-    val databaseName = "pension-scheme-accounting-for-tax"
-    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-    new CacheRepository(collectionName, Some(60), None, MongoComponent(mongoUri))
-  }
 }

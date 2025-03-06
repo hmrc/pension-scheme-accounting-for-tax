@@ -19,6 +19,7 @@ package repository
 import com.google.inject.Inject
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import config.AppConfig
+import crypto.DataEncryptor
 import models.{ChargeAndMember, LockDetail}
 import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.Updates.set
@@ -76,7 +77,8 @@ object AftBatchedDataCacheRepository {
 class AftBatchedDataCacheRepository @Inject()(
                                                mongoComponent: MongoComponent,
                                                batchService: BatchService,
-                                               appConfig: AppConfig
+                                               appConfig: AppConfig,
+                                               cipher: DataEncryptor
                                              )(implicit val ec: ExecutionContext)
   extends PlayMongoRepository[JsValue](
     collectionName = appConfig.mongoDBAFTBatchesCollectionName,
@@ -208,7 +210,7 @@ class AftBatchedDataCacheRepository @Inject()(
 
     val seqUpdates = Seq(
       set(idKey, id),
-      set("data", Codecs.toBson(batchInfo.jsValue)),
+      set("data", Codecs.toBson(cipher.encrypt(id, batchInfo.jsValue))),
       set("lastUpdated", LocalDateTime.now(ZoneId.of("UTC"))),
       set(expireAtKey, expireInSeconds(batchInfo.batchType))
     ) ++ userDataBatchSizeJson
@@ -373,7 +375,13 @@ class AftBatchedDataCacheRepository @Inject()(
     }
     collection.find(
       filter = selector
-    ).toFuture().map(_.toList)
+    ).toFuture().map(values => {
+      values.map { value =>
+        val encryptedValue = (value \ "data").as[JsValue]
+        val decryptedValue = cipher.decrypt(id, encryptedValue)
+        value.as[JsObject] + ("data" -> decryptedValue)
+      }.toList
+    })
   }
 
   private def getBatchesFromRepository(

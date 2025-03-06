@@ -19,6 +19,7 @@ package repository
 import base.MongoConfig
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import config.AppConfig
+import crypto.{DataEncryptor, EncryptedValue}
 import models.BatchedRepositorySampleData._
 import models.{ChargeAndMember, ChargeType, LockDetail}
 import org.mockito.ArgumentMatchers._
@@ -33,11 +34,14 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.inject.bind
+import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import repository.model.SessionData
 import services.BatchService
 import services.BatchService.BatchType.{ChargeC, ChargeD, ChargeE, ChargeG}
 import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
+import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.Codecs
 
@@ -55,6 +59,24 @@ class AftBatchedDataCacheRepositorySpec
 
   var aftBatchedDataCacheRepository: AftBatchedDataCacheRepository = _
 
+  private val modules: Seq[GuiceableModule] = Seq(
+    bind[AuthConnector].toInstance(mock[AuthConnector])
+  )
+
+  private val app = new GuiceApplicationBuilder()
+    .configure(
+      conf = "auditing.enabled" -> false,
+      "metrics.enabled" -> false,
+      "metrics.jvm" -> false,
+      "run.mode" -> "Test"
+    ).overrides(modules: _*).build()
+
+  private val cipher = app.injector.instanceOf[DataEncryptor]
+  private def buildRepository(mongoHost: String, mongoPort: Int): AftBatchedDataCacheRepository = {
+    val databaseName = "pension-scheme-accounting-for-tax"
+    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
+    new AftBatchedDataCacheRepository(MongoComponent(mongoUri), batchService, mockAppConfig, cipher)
+  }
   override def beforeAll(): Unit = {
     when(mockAppConfig.mongoDBAFTBatchesMaxTTL).thenReturn(43200)
     when(mockAppConfig.mongoDBAFTBatchesTTL).thenReturn(999999)
@@ -66,6 +88,21 @@ class AftBatchedDataCacheRepositorySpec
   override def beforeEach(): Unit = {
     when(mockAppConfig.mongoDBAFTBatchesUserDataBatchSize).thenReturn(2)
     super.beforeEach()
+  }
+
+  private def dbDocumentsAsSeqBatchInfo(s: Seq[JsValue]): Set[BatchInfo] = {
+    s.map { jsValue =>
+      val batchType = BatchType.getBatchType((jsValue \ "batchType").as[String])
+        .getOrElse(throw new RuntimeException("Unknown batch type"))
+      val batchNo = (jsValue \ "batchNo").as[Int]
+      val jsData = {
+        val t = jsValue \ "data"
+        t.validate[EncryptedValue].map { _ =>
+          cipher.decrypt(id, t.as[JsObject])
+        }.getOrElse(t.get)
+      }
+      BatchInfo(batchType, batchNo, jsData)
+    }.toSet
   }
 
   "save" must {
@@ -89,8 +126,8 @@ class AftBatchedDataCacheRepositorySpec
         val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
           .filter(filterOnBatchTypeAndNo(batchType = BatchType.Other, batchNo = 1))
         actualOtherBatch.nonEmpty mustBe true
-        actualOtherBatch.foreach {
-          _.jsValue mustBe dummyJson
+        actualOtherBatch.foreach { document =>
+          cipher.decrypt(id, document.jsValue) mustBe dummyJson
         }
       }
     }
@@ -117,8 +154,9 @@ class AftBatchedDataCacheRepositorySpec
         val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
           .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 2))
         actualOtherBatch.nonEmpty mustBe true
-        actualOtherBatch.foreach {
-          _.jsValue.as[JsArray] mustBe amendedPayload
+        actualOtherBatch.foreach { document =>
+
+          document.jsValue.as[JsArray] mustBe amendedPayload
         }
       }
     }
@@ -517,22 +555,7 @@ object AftBatchedDataCacheRepositorySpec extends MockitoSugar {
     Set(BatchInfo(BatchType.SessionData, 1, json))
   }
 
-  private def dbDocumentsAsSeqBatchInfo(s: Seq[JsValue]): Set[BatchInfo] = {
-    s.map { jsValue =>
-      val batchType = BatchType.getBatchType((jsValue \ "batchType").as[String])
-        .getOrElse(throw new RuntimeException("Unknown batch type"))
-      val batchNo = (jsValue \ "batchNo").as[Int]
-      val jsData = {
-        val t = jsValue \ "data"
-        batchType match {
-          case BatchType.Other => t.as[JsObject]
-          case BatchType.SessionData => t.as[JsObject]
-          case _ => t.as[JsArray]
-        }
-      }
-      BatchInfo(batchType, batchNo, jsData)
-    }.toSet
-  }
+
 
   private def filterOnBatchTypeAndNo(batchType: BatchType, batchNo: Int): BatchInfo => Boolean =
     bi => bi.batchType == batchType && bi.batchNo == batchNo
@@ -570,9 +593,4 @@ object AftBatchedDataCacheRepositorySpec extends MockitoSugar {
       BatchInfo(BatchType.ChargeG, 4, JsArray(Seq(jsArrayChargeG(6)))))
   }
 
-  private def buildRepository(mongoHost: String, mongoPort: Int): AftBatchedDataCacheRepository = {
-    val databaseName = "pension-scheme-accounting-for-tax"
-    val mongoUri = s"mongodb://$mongoHost:$mongoPort/$databaseName?heartbeatFrequencyMS=1000&rm.failover=default"
-    new AftBatchedDataCacheRepository(MongoComponent(mongoUri), batchService, mockAppConfig)
-  }
 }
