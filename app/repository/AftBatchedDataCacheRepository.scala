@@ -210,9 +210,7 @@ class AftBatchedDataCacheRepository @Inject()(
 
     val seqUpdates = Seq(
       set(idKey, id),
-//      set("data", Codecs.toBson(batchInfo.jsValue)),
       set("data", Codecs.toBson(cipher.encrypt(id, batchInfo.jsValue))),
-
       set("lastUpdated", LocalDateTime.now(ZoneId.of("UTC"))),
       set(expireAtKey, expireInSeconds(batchInfo.batchType))
     ) ++ userDataBatchSizeJson
@@ -375,9 +373,6 @@ class AftBatchedDataCacheRepository @Inject()(
       case (None, None) =>
         Filters.eq(idKey, id)
     }
-//    collection.find(
-//      filter = selector
-//    ).toFuture().map(_.toList)
     collection.find(
       filter = selector
     ).toFuture().map(values => {

@@ -134,8 +134,6 @@ class AftBatchedDataCacheRepositorySpec
 
     "save member-based charge batch for a member correctly in Mongo collection where there is some session data" in {
       val fullPayload = payloadOther ++ payloadChargeTypeC(5)
-              println(s"\n===> fullPayload: ${fullPayload}")
-
       val amendedPayload = payloadChargeTypeCEmployer(numberOfItems = 5, employerName = "WIDGETS INC")
       val amendedBatchInfo = Some(BatchInfo(BatchType.ChargeC, 2, amendedPayload))
       when(batchService.batchIdentifierForChargeAndMember(any(), any()))
@@ -152,8 +150,6 @@ class AftBatchedDataCacheRepositorySpec
       } yield documentsInDB
 
       whenReady(documentsInDB) { documentsInDB =>
-//        println(s"\n===> documentsInDB: ${documentsInDB}")
-
         documentsInDB.size mustBe 12
         val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
           .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 2))
