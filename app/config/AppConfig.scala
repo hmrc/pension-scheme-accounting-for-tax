@@ -28,12 +28,8 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   val ifsTimeout: Duration = config.get[Duration]("ifs.timeout")
 
   lazy val appName: String = config.get[String](path = "appName")
-  val authBaseUrl: String = servicesConfig.baseUrl(serviceName = "auth")
 
   private val baseUrlPensionsScheme = servicesConfig.baseUrl(serviceName = "pensions-scheme")
-
-  val auditingEnabled: Boolean = config.get[Boolean](path = "auditing.enabled")
-  val graphiteHost: String = config.get[String](path = "microservice.metrics.graphite.host")
 
   private val ifURL: String = servicesConfig.baseUrl(serviceName = "if-hod")
 
@@ -61,11 +57,7 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
 
   def getAftVersionUrl = s"$ifURL${config.get[String](path = "serviceUrls.get-aft-version")}"
 
-  def psaFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.psa-financial-statement")}"
-
   def psaFinancialStatementMaxUrl = s"$ifURL${config.get[String](path = "serviceUrls.psa-financial-statement-max")}"
-
-  def schemeFinancialStatementUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement")}"
 
   def schemeFinancialStatementMaxUrl = s"$ifURL${config.get[String](path = "serviceUrls.scheme-financial-statement-max")}"
 

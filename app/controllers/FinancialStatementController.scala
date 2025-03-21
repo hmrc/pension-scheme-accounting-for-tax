@@ -37,7 +37,6 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              financialStatementConnector: FinancialStatementConnector,
                                              val authConnector: AuthConnector,
                                              psaEnrolmentAuthAction: actions.PsaEnrolmentAuthAction,
-                                             psaSchemeAuthAction: actions.PsaSchemeAuthAction,
                                              psaPspEnrolmentAuthAction: actions.PsaPspEnrolmentAuthAction,
                                              psaPspSchemeAuthAction: actions.PsaPspSchemeAuthAction
                                             )(implicit ec: ExecutionContext)

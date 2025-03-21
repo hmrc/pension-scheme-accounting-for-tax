@@ -16,7 +16,6 @@
 
 package controllers.cache
 
-import org.apache.commons.lang3.RandomUtils
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
@@ -36,6 +35,7 @@ import utils.AuthUtils
 import utils.AuthUtils.FakePsaPspEnrolmentAuthAction
 
 import scala.concurrent.Future
+import scala.util.Random
 
 class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
 
@@ -44,7 +44,7 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
   private val id = AuthUtils.externalId
   private val fakeRequest = FakeRequest()
   private val fakePostRequest = FakeRequest("POST", "/")
-
+  private def randomString = ByteString(Random.alphanumeric.dropWhile(_.isDigit).take(20).mkString)
   private def modules: Seq[GuiceableModule] = {
     Seq(
       bind[AuthConnector].toInstance(authConnector),
@@ -113,7 +113,7 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
         when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
 
-        val result = controller.save(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+        val result = controller.save(fakePostRequest.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST
       }
     }

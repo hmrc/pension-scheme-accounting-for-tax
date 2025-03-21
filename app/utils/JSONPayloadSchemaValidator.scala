@@ -25,8 +25,8 @@ case class ErrorReport(instance: String, errors: String)
 
 
 class JSONPayloadSchemaValidator {
-  type ValidationReport = Either[List[ErrorReport], Boolean]
-  val basePath: String = System.getProperty("user.dir")
+  private type ValidationReport = Either[List[ErrorReport], Boolean]
+  private val basePath: String = System.getProperty("user.dir")
 
   def validateJsonPayload(jsonSchemaPath: String, data: JsValue): ValidationReport = {
     val deepValidationCheck = true
@@ -39,7 +39,7 @@ class JSONPayloadSchemaValidator {
     val isSuccess = doValidation.isSuccess
     if (!isSuccess) {
       val jsArray = Json.parse(doValidation.asInstanceOf[ListProcessingReport].asJson().toString).asInstanceOf[JsArray].value
-      val jsReport = Json.parse(jsArray.toList(index).toString()) \ "reports" \ "/oneOf/0"
+      val jsReport = Json.parse(jsArray(index).toString()) \ "reports" \ "/oneOf/0"
       val errors = jsReport.asInstanceOf[JsDefined]
       val convertedListOutput = errors.get.asInstanceOf[JsArray].value.toList.map(element =>
         ErrorReport((element \ "instance").get.toString(), removeInputData((element \ "message").get.toString())))

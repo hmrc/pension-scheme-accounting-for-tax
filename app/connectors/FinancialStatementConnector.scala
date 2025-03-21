@@ -95,14 +95,12 @@ class FinancialStatementConnector @Inject()(
         val schemeFS = cachedValue.validate[SchemeFS](SchemeFS.rdsSchemeFS)
 
          schemeFS match {
-          case JsSuccess(value, _) => {
+          case JsSuccess(value, _) =>
             logger.warn(s"Cache hit for getSchemeFS. CacheKey: $cacheKey")
             Future.successful(value)
-          }
-          case JsError(errors) => {
-            logger.warn(s"Failed parsing json from cache: $cacheKey: ${errors}")
+          case JsError(errors) =>
+            logger.warn(s"Failed parsing json from cache: $cacheKey: $errors")
             setSchemeFsToCache(pstr, cacheKey)
-          }
         }
 
 

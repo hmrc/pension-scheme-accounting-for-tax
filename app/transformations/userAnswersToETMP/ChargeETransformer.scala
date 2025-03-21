@@ -26,7 +26,7 @@ class ChargeETransformer extends JsonTransformer {
   def transformToETMPData: Reads[JsObject] =
     (__ \ Symbol("chargeEDetails")).readNullable(__.read(readsChargeE)).map(_.getOrElse(Json.obj())).orElseEmptyOnMissingFields
 
-  def readsChargeE: Reads[JsObject] =
+  private def readsChargeE: Reads[JsObject] =
     (__ \ Symbol("totalChargeAmount")).read[BigDecimal].flatMap { _ =>
       (
         ((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json.pick)
