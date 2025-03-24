@@ -17,7 +17,6 @@
 package controllers.cache
 
 import controllers.actions.PsaPspEnrolmentAuthAction
-import org.apache.commons.lang3.RandomUtils
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
@@ -37,6 +36,7 @@ import utils.AuthUtils.FakePsaPspEnrolmentAuthAction
 
 import java.time.Instant
 import scala.concurrent.Future
+import scala.util.Random
 
 class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
 
@@ -46,7 +46,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
   private val fakeRequestReference = FakeRequest().withHeaders("reference" -> referenceId)
   private val fakeRequest = FakeRequest().withHeaders("uploadId" -> uploadId)
   private val fakePostRequest = FakeRequest("POST", "/").withHeaders("uploadId" -> uploadId)
-
+  private def randomString = ByteString(Random.alphanumeric.dropWhile(_.isDigit).take(20).mkString)
   private val modules: Seq[GuiceableModule] = Seq(
     bind[FileUploadReferenceCacheRepository].toInstance(repo),
     bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
@@ -80,7 +80,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
       "return BAD REQUEST when the request body cannot be parsed" in {
         when(repo.requestUpload(any(), any())(any())) thenReturn Future.successful((): Unit)
 
-        val result = controller.requestUpload(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes("512001".toInt))))
+        val result = controller.requestUpload(fakePostRequest.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST
       }
     }
@@ -93,9 +93,9 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
         val result = controller.getUploadResult(fakeRequest)
         status(result) mustEqual OK
         val res = contentAsJson(result).as[JsObject]
-        (res \ "uploadId").as[String] contains "uploadId"
-        (res \ "reference").as[String] contains "reference"
-        (res \ "status" \ "_type").as[String] contains "InProgress"
+        (res \ "uploadId").as[String] must include("uploadId")
+        (res \ "reference").as[String] must include("reference")
+        (res \ "status" \ "_type").as[String] must include("InProgress")
       }
       "return NOT FOUND when the data doesn't exist" in {
         when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(None)
@@ -126,7 +126,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
         val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, Instant.now(), Instant.now(), Instant.now())
         when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
 
-        val result = controller.registerUploadResult(fakeRequestReference.withRawBody(ByteString(RandomUtils.nextBytes("512001".toInt))))
+        val result = controller.registerUploadResult(fakeRequestReference.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST
       }
     }

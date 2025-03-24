@@ -64,7 +64,7 @@ class ChargeCTransformer extends JsonTransformer {
           ).reduce
     }
 
-  def readsCorrespondenceAddressDetails: Reads[JsObject] =
+  private def readsCorrespondenceAddressDetails: Reads[JsObject] =
     ((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line1")).json.copyFrom((__ \ Symbol("addressLine1")).json.pick) and
       (__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line2")).json.copyFrom((__ \ Symbol("addressLine2")).json.pick) and
       ((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line3")).json.copyFrom((__ \ Symbol("addressLine3")).json.pick) orElse doNothing) and

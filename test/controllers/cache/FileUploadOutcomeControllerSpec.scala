@@ -16,7 +16,6 @@
 
 package controllers.cache
 
-import org.apache.commons.lang3.RandomUtils
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
@@ -35,6 +34,7 @@ import utils.AuthUtils
 import utils.AuthUtils.FakePsaPspEnrolmentAuthAction
 
 import scala.concurrent.Future
+import scala.util.Random
 
 class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach { // scalastyle:off magic.number
 
@@ -42,6 +42,7 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
   private val id = AuthUtils.externalId
   private val fakePostRequest = FakeRequest("POST", "/")
   private val fakeRequest = FakeRequest()
+  private def randomString = ByteString(Random.alphanumeric.dropWhile(_.isDigit).take(20).mkString)
 
   def modules: Seq[GuiceableModule] = {
     Seq(
@@ -102,7 +103,7 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
       "return BAD REQUEST when the request body cannot be parsed" in {
         when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
 
-        val result = controller.post(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+        val result = controller.post(fakePostRequest.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST
       }
     }

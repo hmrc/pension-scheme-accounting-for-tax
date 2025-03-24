@@ -79,7 +79,7 @@ class AFTDetailsTransformer @Inject()(
       }
     ).reduce
 
-  def receiptDateReads: Reads[JsObject] =
+  private def receiptDateReads: Reads[JsObject] =
     (__ \ "aftDetails" \ "receiptDate").read[LocalDate](localDateDateReads).flatMap { receiptDate =>
       (__ \ Symbol("submitterDetails") \ Symbol("receiptDate")).json.put(JsString(receiptDate.toString))
     }
@@ -88,5 +88,3 @@ class AFTDetailsTransformer @Inject()(
 object AFTDetailsTransformer {
   val localDateDateReads: Reads[LocalDate] = __.read[String].map { dateTime => LocalDateTime.parse(dateTime.dropRight(1)).toLocalDate }
 }
-
-case object ReceiptDateNotInExpectedFormat extends Exception("Get AFT details returned a receipt date which was not in expected format")

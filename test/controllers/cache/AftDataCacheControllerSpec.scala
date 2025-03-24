@@ -17,7 +17,6 @@
 package controllers.cache
 
 import models.LockDetail
-import org.apache.commons.lang3.RandomUtils
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
@@ -42,6 +41,7 @@ import utils.AuthUtils
 import utils.AuthUtils.FakePsaPspEnrolmentAuthAction
 
 import scala.concurrent.Future
+import scala.util.Random
 
 class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfter {
 
@@ -58,6 +58,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   private val pspId = AuthUtils.pspId
   private val fullName = AuthUtils.name.name.get + " " + AuthUtils.name.lastName.get
   private val fakeAuthAction = new FakePsaPspEnrolmentAuthAction
+  private def randomString = ByteString(Random.alphanumeric.dropWhile(_.isDigit).take(20).mkString)
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AftBatchedDataCacheRepository].toInstance(repo),
     bind[AftOverviewCacheRepository].toInstance(mock[AftOverviewCacheRepository]),
@@ -130,7 +131,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
         when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful((): Unit)
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
 
-        val result = controller.save(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+        val result = controller.save(fakePostRequest.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST
       }
     }
@@ -236,7 +237,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       when(repo.setSessionData(any(), any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful((): Unit)
 
       val result = controller
-        .setSessionData(true)(fakePostRequest.withRawBody(ByteString(RandomUtils.nextBytes(512001))))
+        .setSessionData(true)(fakePostRequest.withRawBody(randomString))
       status(result) mustEqual BAD_REQUEST
     }
   }

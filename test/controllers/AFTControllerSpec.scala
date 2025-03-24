@@ -1224,7 +1224,7 @@ object AFTControllerSpec {
       |}
       |""".stripMargin
 
-  val invalidJson = Json.parse(
+  val invalidJson: JsValue = Json.parse(
     """
       |{
       |  "aftDetails": {

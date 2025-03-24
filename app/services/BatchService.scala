@@ -85,7 +85,7 @@ class BatchService {
     }
   }
 
-  def getChargeTypeJsObject(payload: JsObject, batchSize: Int): Set[BatchInfo] = {
+  private def getChargeTypeJsObject(payload: JsObject, batchSize: Int): Set[BatchInfo] = {
     nodeInfoSet flatMap { ni =>
       getChargeJsArray(payload, ni.nodeNameCharge, ni.nodeNameMembers) match {
         case None => Nil

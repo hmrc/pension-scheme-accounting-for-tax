@@ -26,14 +26,14 @@ import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import services.AFTService
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HttpClient, _}
 import utils.HttpResponseHelper
 
+import java.net.URL
 import scala.concurrent.{ExecutionContext, Future}
 
 class AFTConnector @Inject()(
-                              http: HttpClient,
                               httpClient2: HttpClientV2,
                               config: AppConfig,
                               auditService: AuditService,
@@ -50,26 +50,26 @@ class AFTConnector @Inject()(
 
   def fileAFTReturn(pstr: String, journeyType: String, data: JsValue)
                    (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[HttpResponse] = {
-    val fileAFTReturnURL = config.fileAFTReturnURL.format(pstr)
+    val fileAFTReturnURL = url"${config.fileAFTReturnURL.format(pstr)}"
     logger.debug("File AFT return (IF) called - URL:" + fileAFTReturnURL)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
+    val header = integrationFrameworkHeader
     if (aftService.isChargeZeroedOut(data)) {
-      httpPostRequest(fileAFTReturnURL, data, journeyType)(hc, implicitly, implicitly) andThen
+      httpPostRequest(fileAFTReturnURL, data, journeyType, header) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data) andThen
         fileAFTReturnAuditService.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
     } else {
-      httpPostRequest(fileAFTReturnURL, data, journeyType)(hc, implicitly, implicitly) andThen
+      httpPostRequest(fileAFTReturnURL, data, journeyType, header) andThen
         fileAFTReturnAuditService.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
     }
   }
 
-  private def httpPostRequest(url: String, data: JsValue, journeyType: String)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader) =
-    http.POST[JsValue, HttpResponse](url, data)(implicitly, implicitly, hc, implicitly) map {
+  private def httpPostRequest(url: URL, data: JsValue, journeyType: String, header: Seq[(String, String)]) (implicit hc: HeaderCarrier, ec: ExecutionContext) =
+    httpClient2.post(url).withBody(data).setHeader(header: _*).execute[HttpResponse] map {
       response =>
         response.status match {
           case OK => response
           case FORBIDDEN if response.body.contains("RETURN_ALREADY_SUBMITTED") => response
-          case _ => handleErrorResponse("POST", url, journeyType)(response)
+          case _ => handleErrorResponse("POST", url.toString, journeyType)(response)
         }
     }
 
@@ -83,13 +83,11 @@ class AFTConnector @Inject()(
   def getAftOverview(pstr: String, startDate: String, endDate: String)
                     (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext): Future[Seq[AFTOverview]] = {
 
-    val getAftVersionUrl: String = config.getAftOverviewUrl.format(pstr, startDate, endDate)
+    val getAftVersionUrl = url"${config.getAftOverviewUrl.format(pstr, startDate, endDate)}"
 
     logger.debug("Get overview (IF) called - URL:" + getAftVersionUrl)
 
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
-
-    http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map { response =>
+    httpClient2.get(getAftVersionUrl).setHeader(integrationFrameworkHeader: _ *).execute[HttpResponse].map { response =>
       response.status match {
         case OK =>
           Json.parse(response.body).validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
@@ -109,12 +107,12 @@ class AFTConnector @Inject()(
                 logger.info("The remote endpoint has indicated No Scheme report was found for the given period.")
                 Seq.empty[AFTOverview]
               } else {
-                handleErrorResponse("GET", getAftVersionUrl)(response)
+                handleErrorResponse("GET", getAftVersionUrl.toString)(response)
               }
-            case _ => handleErrorResponse("GET", getAftVersionUrl)(response)
+            case _ => handleErrorResponse("GET", getAftVersionUrl.toString)(response)
           }
         case _ =>
-          handleErrorResponse("GET", getAftVersionUrl)(response)
+          handleErrorResponse("GET", getAftVersionUrl.toString)(response)
       }
     }
   }
@@ -171,11 +169,10 @@ class AFTConnector @Inject()(
   def getAftVersions(pstr: String, startDate: String)
                     (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[Seq[AFTVersion]] = {
 
-    val getAftVersionUrl: String = config.getAftVersionUrl.format(pstr, startDate)
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = integrationFrameworkHeader: _*)
+    val getAftVersionUrl = url"${config.getAftVersionUrl.format(pstr, startDate)}"
 
     logger.warn(s"getAftVersions from (IF) started")
-    val res = http.GET[HttpResponse](getAftVersionUrl)(implicitly, hc, implicitly).map {
+    val res = httpClient2.get(getAftVersionUrl).setHeader(integrationFrameworkHeader: _*).execute[HttpResponse].map {
       response =>
         response.status match {
           case OK =>
@@ -186,7 +183,7 @@ class AFTConnector @Inject()(
               case JsError(errors) => throw JsResultException(errors)
             }
           case _ =>
-            handleErrorResponse("GET", getAftVersionUrl)(response)
+            handleErrorResponse("GET", getAftVersionUrl.toString)(response)
         }
     } andThen aftVersionsAuditEventService.sendAFTVersionsAuditEvent(pstr, startDate)
     logger.warn(s"getAftVersions from (IF) finished")

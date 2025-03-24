@@ -27,8 +27,8 @@ import scala.util.{Failure, Success, Try}
 
 class GetAFTDetailsAuditService @Inject()(auditService: AuditService) {
 
-  type OptionalResultEvent = PartialFunction[Try[Option[JsValue]], Unit]
-  type MandatoryResultEvent = PartialFunction[Try[JsValue], Unit]
+  private type OptionalResultEvent = PartialFunction[Try[Option[JsValue]], Unit]
+  private type MandatoryResultEvent = PartialFunction[Try[JsValue], Unit]
 
   def sendAFTDetailsAuditEvent(pstr: String, startDate: String)
                               (implicit ec: ExecutionContext, request: RequestHeader): MandatoryResultEvent = {
