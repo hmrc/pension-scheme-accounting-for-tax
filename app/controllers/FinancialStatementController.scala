@@ -21,11 +21,8 @@ import models.SchemeChargeType.{aftManualAssessment, aftManualAssessmentCredit, 
 import models.{SchemeFSDetail, SchemeReferenceNumber}
 import play.api.libs.json._
 import play.api.mvc._
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.retrieve.~
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisedFunctions, Enrolment, Enrolments}
-import uk.gov.hmrc.domain.PsaId
-import uk.gov.hmrc.http.{UnauthorizedException, Request => _, _}
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.{Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import utils.HttpResponseHelper
 
@@ -40,11 +37,7 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
                                              psaPspEnrolmentAuthAction: actions.PsaPspEnrolmentAuthAction,
                                              psaPspSchemeAuthAction: actions.PsaPspSchemeAuthAction
                                             )(implicit ec: ExecutionContext)
-  extends BackendController(cc)
-    with HttpErrorFunctions
-    with Results
-    with AuthorisedFunctions
-    with HttpResponseHelper {
+  extends BackendController(cc) with HttpResponseHelper {
 
   def psaStatement: Action[AnyContent] = psaEnrolmentAuthAction.async {
     implicit request =>
@@ -68,35 +61,6 @@ class FinancialStatementController @Inject()(cc: ControllerComponents,
       )
     }
   }
-
-  private def withPstrCheck(block: String => Future[Result])
-                           (implicit hc: HeaderCarrier, request: Request[AnyContent]): Future[Result] = {
-    authorised(Enrolment("HMRC-PODS-ORG") or Enrolment("HMRC-PODSPP-ORG")).retrieve(Retrievals.externalId and Retrievals.allEnrolments) {
-      case Some(_) ~ enrolments =>
-        (getPsaId(enrolments), request.headers.get("pstr")) match {
-          case (_, Some(pstr)) =>
-            block(pstr)
-          case _ => Future.failed(new BadRequestException("Bad Request with missing psaId or pstr"))
-        }
-      case _ =>
-        Future.failed(new UnauthorizedException("Not Authorised - Unable to retrieve credentials - externalId"))
-    }
-  }
-
-  def schemeStatement: Action[AnyContent] = Action.async {
-    implicit request =>
-      withPstrCheck { pstr =>
-        financialStatementConnector.getSchemeFS(pstr).map { data =>
-          Ok(Json.toJson(data.copy(seqSchemeFSDetail = updateChargeType(data.seqSchemeFSDetail))))
-        }
-      }
-  }
-
-  private def getPsaId(enrolments: Enrolments): Option[PsaId] =
-    enrolments
-      .getEnrolment(key = "HMRC-PODS-ORG")
-      .flatMap(_.getIdentifier("PSAID"))
-      .map(id => PsaId(id.value))
 
   def schemeStatementSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): Action[AnyContent] = (psaPspEnrolmentAuthAction andThen psaPspSchemeAuthAction(srn, loggedInAsPsa)).async {
     implicit request =>
