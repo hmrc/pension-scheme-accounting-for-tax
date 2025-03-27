@@ -117,36 +117,6 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
     }
   }
 
-  "schemeStatement" must {
-    val controller = application.injector.instanceOf[FinancialStatementController]
-
-    "return OK with added data" in {
-      when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-      when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
-        Future.successful(schemeModelAfterUpdateWithAFTDetails))
-
-      val result = controller.schemeStatement()(fakeRequestWithPstr)
-
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
-    }
-
-    "updateChargeType" must {
-      val controller = application.injector.instanceOf[FinancialStatementController]
-      listOfChargesAndAssociatedCredits.foreach { pairOfChargeAndCredit =>
-        val (charge, credit) = pairOfChargeAndCredit
-        s"flip ${charge.seqSchemeFSDetail.head.chargeType} to ${credit.seqSchemeFSDetail.head.chargeType} if negative amountDue" in {
-          when(authConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any())).thenReturn(Future.successful(expectedAuthorisations()))
-          when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
-            Future.successful(charge))
-          val result = controller.schemeStatement()(fakeRequestWithPstr)
-          status(result) mustBe OK
-          contentAsJson(result) mustBe Json.toJson(credit)
-        }
-      }
-    }
-  }
-
   "schemeStatementSrn" must {
     val controller = application.injector.instanceOf[FinancialStatementController]
 
