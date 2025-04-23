@@ -29,7 +29,11 @@ import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-case class PsaPspAuthRequest[A](request: Request[A], psaId: Option[PsaId], pspId: Option[PspId], externalId: String, name: Option[Name]) extends WrappedRequest[A](request)
+case class PsaPspAuthRequest[A](request: Request[A],
+                                 psaId: Option[PsaId],
+                                 pspId: Option[PspId],
+                                 externalId: String,
+                                 name: Option[Name]) extends WrappedRequest[A](request)
 
 class PsaPspEnrolmentAuthAction @Inject()(
                                   override val authConnector: AuthConnector,

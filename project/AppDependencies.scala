@@ -1,5 +1,4 @@
-import play.sbt.PlayImport.ehcache
-import sbt._
+import sbt.*
 
 object AppDependencies {
   private val mongoVersion = "2.6.0"
@@ -15,12 +14,12 @@ object AppDependencies {
 
   val test: Seq[ModuleID] = Seq(
     "uk.gov.hmrc"             %%  "bootstrap-test-play-30"      % bootstrapVersion    % Test,
-    "uk.gov.hmrc.mongo"       %%  "hmrc-mongo-test-play-30"     % mongoVersion    % Test,
-    "com.vladsch.flexmark"    %   "flexmark-all"                % "0.64.8"   % Test,
-    "org.scalatest"           %%  "scalatest"                   % "3.2.19"   % Test,
-    "org.scalatestplus.play"  %%  "scalatestplus-play"          % "7.0.1"    % Test,
-    "org.scalatestplus"       %%  "mockito-4-6"                 % "3.2.15.0" % Test,
-    "org.scalatestplus"       %%  "scalacheck-1-17"             % "3.2.18.0" % Test,
-    "org.pegdown"             %   "pegdown"                     % "1.6.0"    % Test
+    "uk.gov.hmrc.mongo"       %%  "hmrc-mongo-test-play-30"     % mongoVersion        % Test,
+    "com.vladsch.flexmark"    %   "flexmark-all"                % "0.64.8"            % Test,
+    "org.scalatest"           %%  "scalatest"                   % "3.2.19"            % Test,
+    "org.scalatestplus.play"  %%  "scalatestplus-play"          % "7.0.1"             % Test,
+    "org.scalatestplus"       %%  "mockito-4-6"                 % "3.2.15.0"          % Test,
+    "org.scalatestplus"       %%  "scalacheck-1-17"             % "3.2.18.0"          % Test,
+    "org.pegdown"             %   "pegdown"                     % "1.6.0"             % Test
   )
 }
