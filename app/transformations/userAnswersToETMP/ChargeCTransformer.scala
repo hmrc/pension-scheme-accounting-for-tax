@@ -63,20 +63,6 @@ class ChargeCTransformer extends JsonTransformer {
 
     employerReads.orElseEmptyOnMissingFields
   }
-//  private def readsEmployer: Reads[JsObject] = (
-//    (
-//      (
-//      ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
-//      orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
-//      ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
-//        orElse doNothing) and
-//      readsEmployerTypeDetails and
-//      ((__ \ Symbol("correspondenceAddressDetails")).json.copyFrom(__.read(readsCorrespondenceAddress)) and
-//        (__ \ Symbol("dateOfPayment")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("paymentDate")).json.pick) and
-//        (__ \ Symbol("totalAmountOfTaxDue")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("amountTaxDue")).json.pick))
-//        .reduce: Reads[JsObject])
-//    ).reduce: Reads[JsObject])
-//    .orElseEmptyOnMissingFields
 
   private def readsEmployerTypeDetails: Reads[JsObject] =
     (__ \ Symbol("whichTypeOfSponsoringEmployer")).read[String].flatMap {
