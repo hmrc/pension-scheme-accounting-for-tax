@@ -49,7 +49,7 @@ trait JsonTransformer {
   def readsMemberDetails: Reads[JsObject] =
     ((__ \ Symbol("individualsDetails") \ Symbol("firstName")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("firstName")).json.pick) and
       (__ \ Symbol("individualsDetails") \ Symbol("lastName")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("lastName")).json.pick) and
-      (__ \ Symbol("individualsDetails") \ Symbol("nino")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("nino")).json.pick)).reduce
+      (__ \ Symbol("individualsDetails") \ Symbol("nino")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("nino")).json.pick)).reduce: Reads[JsObject]
 
   def readsFiltered[T](isA: JsValue => JsLookupResult, readsA: Reads[T]): Reads[Seq[T]] = {
     case JsArray(members) =>

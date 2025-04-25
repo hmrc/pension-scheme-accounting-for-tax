@@ -103,7 +103,7 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       )
 
       connector.getAftDetails(pstr, startDt, "001")(headerCarrier = hc, implicitly, implicitly) map { jsValue =>
-        jsValue mustBe response
+        jsValue `mustBe` response
       }
     }
   }
@@ -122,7 +122,7 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       when(mockAftService.isChargeZeroedOut(any())).thenReturn(false)
 
       connector.fileAFTReturn(pstr, journeyType, data) map {
-        _.status mustBe OK
+        _.status `mustBe` OK
       }
     }
 
@@ -228,7 +228,7 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
           )
       )
       recoverToExceptionIf[UpstreamErrorResponse](connector.fileAFTReturn(pstr, journeyType, data)) map {
-        _.statusCode mustBe INTERNAL_SERVER_ERROR
+        _.statusCode `mustBe` INTERNAL_SERVER_ERROR
       }
     }
 

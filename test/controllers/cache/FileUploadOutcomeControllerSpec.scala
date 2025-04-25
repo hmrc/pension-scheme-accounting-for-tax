@@ -58,7 +58,7 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
 
   private val application: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-    overrides(modules: _*).build()
+    overrides(modules *).build()
 
   val controller: FileUploadOutcomeController = application.injector.instanceOf[FileUploadOutcomeController]
 
@@ -70,7 +70,7 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
   "FileUploadOutcomeController" when {
     "calling get" must {
       "return OK with the data" in {
-        when(repo.get(eqTo(id))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
+        when(repo.get(eqTo(id))(any())).thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual OK
@@ -78,14 +78,14 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
       }
 
       "return NOT FOUND when the data doesn't exist" in {
-        when(repo.get(eqTo(id))(any())) thenReturn Future.successful(None)
+        when(repo.get(eqTo(id))(any())).thenReturn(Future.successful(None))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual NOT_FOUND
       }
 
       "throw an exception when the repository call fails" in {
-        when(repo.get(eqTo(id))(any())) thenReturn Future.failed(new Exception())
+        when(repo.get(eqTo(id))(any())).thenReturn(Future.failed(new Exception()))
         val result = controller.get(fakeRequest)
         an[Exception] must be thrownBy status(result)
       }
@@ -94,14 +94,14 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
     "calling save" must {
 
       "return OK when the data is saved successfully" in {
-        when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+        when(repo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
         val result = controller.post(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
         status(result) mustEqual CREATED
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+        when(repo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
         val result = controller.post(fakePostRequest.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST
@@ -110,7 +110,7 @@ class FileUploadOutcomeControllerSpec extends AsyncWordSpec with Matchers with M
 
     "calling delete" must {
       "return OK when the data is removed successfully" in {
-        when(repo.remove(eqTo(id))(any())) thenReturn Future.successful(true)
+        when(repo.remove(eqTo(id))(any())).thenReturn(Future.successful(true))
 
         val result = controller.delete(fakeRequest)
         status(result) mustEqual OK

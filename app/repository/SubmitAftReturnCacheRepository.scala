@@ -18,11 +18,10 @@ package repository
 
 import com.google.inject.Inject
 import config.AppConfig
-import org.mongodb.scala.MongoWriteException
 import org.mongodb.scala.model._
+import org.mongodb.scala.{MongoWriteException, SingleObservableFuture}
 import play.api.Logging
 import play.api.libs.json.{Format, Json, OFormat}
-import repository.SubmitAftReturnCacheRepository._
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -32,12 +31,15 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 
-object SubmitAftReturnCacheRepository {
-  private val pstrFieldName = "pstr"
-  private val externalUserIdFieldName = "externalUserId"
-  private val compileHashFieldName = "compileHash"
 
-  case class SubmitAftReturnCacheEntry(pstr: String, externalUserId: String, insertionTime: Instant, compileHash: Option[String])
+case class SubmitAftReturnCacheEntry(
+                                      pstr: String,
+                                      externalUserId: String,
+                                      insertionTime: Instant,
+                                      compileHash: Option[String]
+                                    )
+
+object SubmitAftReturnCacheEntry {
   implicit val dateFormats: Format[Instant] = MongoJavatimeFormats.instantFormat
   implicit val format: OFormat[SubmitAftReturnCacheEntry] = Json.format[SubmitAftReturnCacheEntry]
 }
@@ -50,10 +52,10 @@ class SubmitAftReturnCacheRepository @Inject()(
   extends PlayMongoRepository[SubmitAftReturnCacheEntry](
     collectionName = appConfig.mongoDBSubmitAftReturnCollectionName,
     mongoComponent = mongoComponent,
-    domainFormat = implicitly,
+    domainFormat = SubmitAftReturnCacheEntry.format,
     indexes = Seq(
       IndexModel(
-        Indexes.ascending(pstrFieldName, externalUserIdFieldName, compileHashFieldName),
+        Indexes.ascending("pstr", "externalUserId", "compileHash"),
         IndexOptions().name("primaryKey").unique(true)
       ),
       IndexModel(
@@ -61,7 +63,9 @@ class SubmitAftReturnCacheRepository @Inject()(
         indexOptions = IndexOptions().name("insertion").expireAfter(appConfig.mongoDBSubmitAftReturnTTL, TimeUnit.SECONDS)
       )
     ),
-    replaceIndexes = true
+    optSchema = None,
+    replaceIndexes = true,
+    extraCodecs = Seq.empty
   ) with Logging {
 
   private lazy val documentExistsErrorCode = 11000

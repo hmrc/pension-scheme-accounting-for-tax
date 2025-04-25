@@ -31,7 +31,7 @@ class ChargeFTransformer extends JsonTransformer {
             .json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("totalAmount")).json.pick) and
           ((__ \ Symbol("chargeDetails") \ Symbol("chargeTypeFDetails") \ Symbol("dateRegiWithdrawn"))
             .json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("deRegistrationDate")).json.pick)
-            orElse doNothing)).reduce
+            orElse doNothing)).reduce: Reads[JsObject]
       )
     }.map {
       _.getOrElse(Json.obj())

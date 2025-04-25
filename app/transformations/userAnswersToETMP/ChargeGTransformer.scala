@@ -31,13 +31,13 @@ class ChargeGTransformer extends JsonTransformer {
         orElse doNothing) and
         (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeGDetails") \ Symbol("memberDetails")).json.copyFrom((__ \ Symbol("members")).read(readsMembers)) and
         (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeGDetails") \ Symbol("totalAmount"))
-          .json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)).reduce
+          .json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)).reduce: Reads[JsObject]
     }
 
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_)).map(removeEmptyObjects)
 
   def readsMember: Reads[JsObject] =
-    (readsMemberDetails and
+    ((readsMemberDetails and
       (__ \ Symbol("individualsDetails") \ Symbol("dateOfBirth")).json.copyFrom((__ \ Symbol("memberDetails") \ Symbol("dob")).json.pick) and
       readsQrops and
       (__ \ Symbol("dateOfTransfer")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("qropsTransferDate")).json.pick) and
@@ -46,7 +46,7 @@ class ChargeGTransformer extends JsonTransformer {
       ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
         orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
       ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
-        orElse doNothing)).reduce.orElseEmptyOnMissingFields
+        orElse doNothing)).reduce: Reads[JsObject]).orElseEmptyOnMissingFields
 
   def readsQrops: Reads[JsObject] = {
     (__ \ Symbol("chargeDetails") \ Symbol("qropsReferenceNumber")).read[String].flatMap { qropsReference =>

@@ -37,7 +37,7 @@ class ChargeGTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "firstName").as[String] mustBe
+          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "firstName").as[String] `mustBe`
             (uaMemberPath(userAnswersJson, 0) \ "memberDetails" \ "firstName").as[String]
           (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "lastName").as[String] mustBe
             (uaMemberPath(userAnswersJson, 0) \ "memberDetails" \ "lastName").as[String]

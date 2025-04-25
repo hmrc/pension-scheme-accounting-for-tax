@@ -42,12 +42,12 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
         chargeGTransformer.transformToETMPData and
         transformDeclaration and
         ((__ \ Symbol("aftDeclarationDetails") \ Symbol("psaid")).json.copyFrom((__ \ Symbol("enterPsaId")).json.pick) orElse doNothing)
-      ).reduce
+      ).reduce: Reads[JsObject]
 
   private def transformToAFTDetails: Reads[JsObject] = {
     ((__ \ Symbol("aftDetails") \ Symbol("aftStatus")).json.copyFrom((__ \ "aftStatus").json.pick) and
       (__ \ Symbol("aftDetails") \ Symbol("quarterStartDate")).json.copyFrom((__ \ "quarter" \ "startDate").json.pick) and
-      (__ \ Symbol("aftDetails") \ Symbol("quarterEndDate")).json.copyFrom((__ \ "quarter" \ "endDate").json.pick)).reduce
+      (__ \ Symbol("aftDetails") \ Symbol("quarterEndDate")).json.copyFrom((__ \ "quarter" \ "endDate").json.pick)).reduce: Reads[JsObject]
   }
 
   private def transformDeclaration: Reads[JsObject] = {
@@ -59,7 +59,7 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
             (__ \ Symbol("aftDeclarationDetails") \ Symbol("psaDeclarationDetails") \ Symbol("psaDeclaration1"))
               .json.copyFrom((__ \ Symbol("hasAgreed")).json.pick) and
             (__ \ Symbol("aftDeclarationDetails") \ Symbol("psaDeclarationDetails") \ Symbol("psaDeclaration2"))
-              .json.copyFrom((__ \ Symbol("hasAgreed")).json.pick)).reduce
+              .json.copyFrom((__ \ Symbol("hasAgreed")).json.pick)).reduce: Reads[JsObject]
         case "PSP" =>
           (
             (__ \ Symbol("aftDeclarationDetails") \ Symbol("submittedBy")).json.copyFrom((__ \ Symbol("submittedBy")).json.pick) and
@@ -68,7 +68,7 @@ class AFTReturnTransformer @Inject()(chargeATransformer: ChargeATransformer,
                 .json.copyFrom((__ \ Symbol("hasAgreed")).json.pick) and
               (__ \ Symbol("aftDeclarationDetails") \ Symbol("pspDeclarationDetails") \ Symbol("pspDeclaration2"))
                 .json.copyFrom((__ \ Symbol("hasAgreed")).json.pick)
-            ).reduce
+            ).reduce: Reads[JsObject]
         case _ => doNothing
       }
     }.map {

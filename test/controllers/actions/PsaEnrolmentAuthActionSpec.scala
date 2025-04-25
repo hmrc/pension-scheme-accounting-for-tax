@@ -63,7 +63,7 @@ class PsaEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
             ), Some(externalId)
           )
 
-          when(mockAuthConnector.authorise[RetrievalsType](any(), any())(any(), any())) thenReturn Future.successful(authResponse)
+          when(mockAuthConnector.authorise[RetrievalsType](any(), any())(any(), any())).thenReturn(Future.successful(authResponse))
 
           val action = new PsaEnrolmentAuthAction(mockAuthConnector, bodyParsers)
           val controller = new Harness(action)
@@ -104,7 +104,7 @@ class PsaEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
           val controller = new Harness(authAction)
           val result = controller.onPageLoad()(FakeRequest())
 
-          status(result) mustBe UNAUTHORIZED
+          status(result).`mustBe`(UNAUTHORIZED)
         }
       }
     }

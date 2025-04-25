@@ -35,18 +35,18 @@ trait McCloudJsonTransformer extends JsonTransformer {
         (__ \ "taxQuarterReportedAndPaid" \ "startDate").json.copyFrom(Reads.pure(JsString(getQuarterStartDate(endDate)))) and
         (__ \ "taxQuarterReportedAndPaid" \ "endDate").json.copyFrom(Reads.pure(JsString(endDate))) and
         (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ amountNodeName).json.pick)
-      ).reduce
+      ).reduce: Reads[JsObject]
 
     (__ \ isOtherSchemesNodeName).readNullable[Boolean](readsBoolean).flatMap{
       case Some(areMoreSchemes) =>
         val mcCloud: Reads[JsObject] = ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
-          (__ \ "mccloudRemedy" \ "wasAnotherPensionScheme").json.put(JsBoolean(areMoreSchemes))).reduce
+          (__ \ "mccloudRemedy" \ "wasAnotherPensionScheme").json.put(JsBoolean(areMoreSchemes))).reduce: Reads[JsObject]
         val schemeObj = if (areMoreSchemes) {
           (__ \ "pensionSchemeDetails").read[JsArray].map(_.value.size).flatMap { max =>
             val readsSchemeArray = (0 until max).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
               (__ \ "pensionSchemeDetails" \ curr \ repoPeriodNodeName).read[String].flatMap { endDate =>
                 val currentJsObj = (readsDateAndChargeAmount(endDate) and
-                  (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)).reduce
+                  (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)).reduce: Reads[JsObject]
                 acc.flatMap(jsArray => currentJsObj.map(jsObject => jsArray :+ jsObject))
               }
             }
@@ -54,7 +54,7 @@ trait McCloudJsonTransformer extends JsonTransformer {
               (
                 (__ \ "mccloudRemedy" \ "schemes").json.put(schemeArrayNode) and
                   (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsTrue)
-                ).reduce
+                ).reduce: Reads[JsObject]
             }
           }
         } else {
@@ -63,13 +63,13 @@ trait McCloudJsonTransformer extends JsonTransformer {
             (
               (__ \ "mccloudRemedy").json.put(jsObject) and
                 (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsTrue)
-              ).reduce
+              ).reduce: Reads[JsObject]
           }
         }
-        (mcCloud and schemeObj).reduce
+        (mcCloud and schemeObj).reduce: Reads[JsObject]
       case None =>
         ((__ \ "mccloudRemedy" \ "isPublicServicePensionsRemedy").json.put(JsTrue) and
-          (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsFalse)).reduce
+          (__ \ "mccloudRemedy" \ "isChargeInAdditionReported").json.put(JsFalse)).reduce: Reads[JsObject]
     }
   }
 

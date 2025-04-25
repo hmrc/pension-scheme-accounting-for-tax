@@ -40,7 +40,7 @@ class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerato
       val transformer = new AFTDetailsTransformer(chargeATransformer, chargeBTransformer, chargeCTransformer,
         chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
       val transformedUserAnswersJson = etmpResponseJson.transform(transformer.transformToUserAnswers).asOpt.value
-      transformedUserAnswersJson mustBe userAnswersJson
+      transformedUserAnswersJson.mustBe(userAnswersJson)
     }
 
     "must tranform a datetime to localdate" in {
@@ -51,7 +51,7 @@ class AFTDetailsTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerato
       )
 
       val result = (aftDetailsJson \ "abc" \ "def").asOpt[LocalDate](AFTDetailsTransformer.localDateDateReads)
-      result mustBe Some(LocalDate.of(2020, 12, 12))
+      result.mustBe(Some(LocalDate.of(2020, 12, 12)))
     }
   }
 }

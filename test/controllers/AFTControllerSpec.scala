@@ -86,7 +86,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
 
   val application: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-    overrides(modules: _*).build()
+    overrides(modules *).build()
 
   private def controllerForGetAftVersions: AFTController = {
 
@@ -101,7 +101,8 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
     reset(mockAftService)
     reset(authConnector)
     reset(mockJSONPayloadSchemaValidator)
-    when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
+    when(authConnector.authorise[Option[String]](any(), any())(any(), any()))
+      .thenReturn(Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1")))
     when(mockJSONPayloadSchemaValidator.validateJsonPayload(any(), any())).thenReturn(Right(true))
   }
 
@@ -115,7 +116,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any(), any())).thenReturn(Future.successful(true))
       val result = controller.fileReturnSrn(journeyType, srn, true)(fakeRequest.withJsonBody(fileAFTUaRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
-      status(result) mustBe OK
+      status(result) `mustBe` OK
     }
 
     "return OK when valid response (full Payload) from DES" in {
@@ -127,7 +128,7 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any(), any())).thenReturn(Future.successful(true))
       val result = controller.fileReturnSrn(journeyType, srn, true)(fakeRequest.withJsonBody(fileAFTUaFullPayloadRequestJson).withHeaders(
         newHeaders = "pstr" -> pstr))
-      status(result) mustBe OK
+      status(result) `mustBe` OK
     }
 
     "return NO CONTENT when valid response (full Payload) from DES when a declaration record has already been input into the Mongo Cache" in {

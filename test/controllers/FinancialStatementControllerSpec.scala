@@ -72,7 +72,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
   private val application: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-    overrides(modules: _*).build()
+    overrides(modules *).build()
 
   private def expectedAuthorisations(psaId: String = "A2100052"): Option[String] ~ Enrolments = {
     Option("Ext-137d03b9-d807-4283-a254-fb6c30aceef1") and
@@ -98,12 +98,12 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
       val result = controller.psaStatement()(fakeRequestWithPsaId)
 
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(psaFSResponse)
+      status(result) `mustBe` OK
+      contentAsJson(result) `mustBe` Json.toJson(psaFSResponse)
     }
 
     "throw generic exception when any other exception returned from Des" in {
-      when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1"))
+      when(authConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some("Ext-137d03b9-d807-4283-a254-fb6c30aceef1")))
       val controller = application.injector.instanceOf[FinancialStatementController]
 
       when(mockFSConnector.getPsaFS(ArgumentMatchers.eq(psaId))(any(), any(), any())).thenReturn(
@@ -112,7 +112,7 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
       recoverToExceptionIf[Exception] {
         controller.psaStatement()(fakeRequestWithPsaId)
       } map { response =>
-        response.getMessage mustBe "Generic Exception"
+        response.getMessage `mustBe` "Generic Exception"
       }
     }
   }
@@ -127,8 +127,8 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
 
       val result = controller.schemeStatementSrn(srn, true)(fakeRequestWithPstr)
 
-      status(result) mustBe OK
-      contentAsJson(result) mustBe Json.toJson(schemeModelAfterUpdateWithAFTDetails)
+      status(result) `mustBe` OK
+      contentAsJson(result) `mustBe` Json.toJson(schemeModelAfterUpdateWithAFTDetails)
     }
 
     "updateChargeType" must {
@@ -140,8 +140,8 @@ class FinancialStatementControllerSpec extends AsyncWordSpec with Matchers with 
           when(mockFSConnector.getSchemeFS(ArgumentMatchers.eq(pstr))(any(), any(), any())).thenReturn(
             Future.successful(charge))
           val result = controller.schemeStatementSrn(srn, true)(fakeRequestWithPstr)
-          status(result) mustBe OK
-          contentAsJson(result) mustBe Json.toJson(credit)
+          status(result) `mustBe` OK
+          contentAsJson(result) `mustBe` Json.toJson(credit)
         }
       }
     }

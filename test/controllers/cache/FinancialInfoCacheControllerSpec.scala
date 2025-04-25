@@ -60,7 +60,7 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
 
   private val application: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).
-    overrides(modules: _*).build()
+    overrides(modules *).build()
 
   val controller: FinancialInfoCacheController = application.injector.instanceOf[FinancialInfoCacheController]
 
@@ -74,8 +74,8 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
   "FinancialInfoCacheController" when {
     "calling get" must {
       "return OK with the data" in {
-        when(repo.get(eqTo(id))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
+        when(repo.get(eqTo(id))(any())).thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some(id)))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual OK
@@ -83,16 +83,16 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
       }
 
       "return NOT FOUND when the data doesn't exist" in {
-        when(repo.get(eqTo(id))(any())) thenReturn Future.successful(None)
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
+        when(repo.get(eqTo(id))(any())).thenReturn(Future.successful(None))
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some(id)))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual NOT_FOUND
       }
 
       "throw an exception when the repository call fails" in {
-        when(repo.get(eqTo(id))(any())) thenReturn Future.failed(new Exception())
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
+        when(repo.get(eqTo(id))(any())).thenReturn(Future.failed(new Exception()))
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some(id)))
         val result = controller.get(fakeRequest)
         an[Exception] must be thrownBy status(result)
       }
@@ -102,16 +102,16 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
     "calling save" must {
 
       "return OK when the data is saved successfully" in {
-        when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
+        when(repo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some(id)))
 
         val result = controller.save(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
         status(result) mustEqual CREATED
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        when(repo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
+        when(repo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some(id)))
 
         val result = controller.save(fakePostRequest.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST
@@ -120,8 +120,8 @@ class FinancialInfoCacheControllerSpec extends AnyWordSpec with Matchers with Mo
 
     "calling remove" must {
       "return OK when the data is removed successfully" in {
-        when(repo.remove(eqTo(id))(any())) thenReturn Future.successful(true)
-        when(authConnector.authorise[Option[String]](any(), any())(any(), any())) thenReturn Future.successful(Some(id))
+        when(repo.remove(eqTo(id))(any())).thenReturn(Future.successful(true))
+        when(authConnector.authorise[Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(Some(id)))
 
         val result = controller.remove(fakeRequest)
         status(result) mustEqual OK

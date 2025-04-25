@@ -75,11 +75,11 @@ class AFTController @Inject()(
                 validationResult match {
                   case Left(errors) =>
                     val psaOrPspId: Option[String] = Try(dataToBeSendToETMP.value("aftDeclarationDetails")).toOption.map {
-                      case `value`: JsValue => value("submittedID").toString
-                      case _ => ""
+                      case value: JsValue => value("submittedID").toString
+                      case null => ""
                     }
                     val chargeType: SeqOfChargeType = dataToBeSendToETMP.value("chargeDetails").asOpt[JsValue].map {
-                      case `value`: JsValue =>
+                      case value =>
                         Seq(
                           (value \ "chargeTypeADetails").asOpt[JsValue].map(_ => "chargeTypeA"),
                           (value \ "chargeTypeBDetails").asOpt[JsValue].map(_ => "chargeTypeB"),
@@ -89,11 +89,11 @@ class AFTController @Inject()(
                           (value \ "chargeTypeFDetails").asOpt[JsValue].map(_ => "chargeTypeF"),
                           (value \ "chargeTypeGDetails").asOpt[JsValue].map(_ => "chargeTypeG")
                         )
-                      case _ => Seq.empty[Option[String]]
+                      case null => Seq.empty[Option[String]]
                     }
                     val chargeTypeList = chargeType match {
                       case Some(list) => list.filter(_.nonEmpty).flatten
-                      case None => ""
+                      case _ => ""
                     }
                     fileAFTReturnAuditService.sendFileAftReturnSchemaValidatorAuditEvent(psaOrPspId.getOrElse(""),
                       pstr,

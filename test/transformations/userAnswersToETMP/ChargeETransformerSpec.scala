@@ -41,34 +41,34 @@ class ChargeETransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "firstName").as[String] mustBe
+          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "firstName").as[String] `mustBe`
             (uaMemberPath(userAnswersJson, 0) \ "memberDetails" \ "firstName").as[String]
-          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "lastName").as[String] mustBe
+          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "lastName").as[String] `mustBe`
             (uaMemberPath(userAnswersJson, 0) \ "memberDetails" \ "lastName").as[String]
-          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "nino").as[String] mustBe
+          (etmpMemberPath(transformedJson, 0) \ "individualsDetails" \ "nino").as[String] `mustBe`
             (uaMemberPath(userAnswersJson, 0) \ "memberDetails" \ "nino").as[String]
 
 
-          (etmpMemberPath(transformedJson, 1) \ "individualsDetails" \ "firstName").as[String] mustBe
+          (etmpMemberPath(transformedJson, 1) \ "individualsDetails" \ "firstName").as[String] `mustBe`
             (uaMemberPath(userAnswersJson, 1) \ "memberDetails" \ "firstName").as[String]
 
-          (etmpMemberPath(transformedJson, 0) \ "amountOfCharge").as[BigDecimal] mustBe
+          (etmpMemberPath(transformedJson, 0) \ "amountOfCharge").as[BigDecimal] `mustBe`
             (uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "chargeAmount").as[BigDecimal]
-          (etmpMemberPath(transformedJson, 0) \ "dateOfNotice").as[String] mustBe
+          (etmpMemberPath(transformedJson, 0) \ "dateOfNotice").as[String] `mustBe`
             (uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "dateNoticeReceived").as[String]
-          (etmpMemberPath(transformedJson, 0) \ "paidUnder237b").as[String] mustBe
+          (etmpMemberPath(transformedJson, 0) \ "paidUnder237b").as[String] `mustBe`
             booleanToString((uaMemberPath(userAnswersJson, 0) \ "chargeDetails" \ "isPaymentMandatory").as[Boolean])
           // TODO PODS-8147: Once data (taxYearEnding holding startYear) has been corrected the below line should be uncommented to replace the one below it
-//          (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe ((uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String].toInt+1).toString
-          (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String]
+//          (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] `mustBe` ((uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String].toInt+1).toString
+          (etmpMemberPath(transformedJson, 0) \ "taxYearEnding").as[String] `mustBe` (uaMemberPath(userAnswersJson, 0) \ "annualAllowanceYear").as[String]
 
-          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] mustBe (uaMemberPath(userAnswersJson, 0) \ "memberStatus").as[String]
-          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").as[Int] mustBe (uaMemberPath(userAnswersJson, 0) \ "memberAFTVersion").as[Int]
+          (etmpMemberPath(transformedJson, 0) \ "memberStatus").as[String] `mustBe` (uaMemberPath(userAnswersJson, 0) \ "memberStatus").as[String]
+          (etmpMemberPath(transformedJson, 0) \ "memberAFTVersion").as[Int] `mustBe` (uaMemberPath(userAnswersJson, 0) \ "memberAFTVersion").as[Int]
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal] mustBe
+          (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "totalAmount").as[BigDecimal] `mustBe`
             (userAnswersJson \ "chargeEDetails" \ "totalChargeAmount").as[BigDecimal]
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "amendedVersion").asOpt[Int] mustBe None
+          (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "amendedVersion").asOpt[Int] `mustBe` None
 
           (transformedJson \ "chargeDetails" \ "chargeTypeEDetails" \ "memberDetails").as[Seq[JsObject]].size mustBe 6
 

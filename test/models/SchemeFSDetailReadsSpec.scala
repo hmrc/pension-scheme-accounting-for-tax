@@ -31,7 +31,7 @@ class SchemeFSDetailReadsSpec extends AnyWordSpec with OptionValues with Matcher
     "format " when {
       "reading from json" in {
         val result = Json.fromJson[SchemeFSDetail](schemeFSResponseJsonMax(chargeType = "56001000"))(SchemeFS.rdsSchemeFSDetailMax).asOpt.value
-        result mustBe schemeFSModelMax
+        result.mustBe(schemeFSModelMax)
       }
 
       "throw NoSuchElementException for invalid charge type" in {
@@ -47,13 +47,13 @@ class SchemeFSDetailReadsSpec extends AnyWordSpec with OptionValues with Matcher
       "reading from json and inhibitRefundSignal is true" in {
         val result = Json.fromJson[SchemeFS](schemeFSMaxSeqResponseJson(chargeType = "56001000", inhibitRefundSignal = true))(SchemeFS.rdsSchemeFSMax)
           .asOpt.value
-        result mustBe schemeFSMaxWrapperTrue
+        result.mustBe(schemeFSMaxWrapperTrue)
       }
 
       "reading from json and inhibitRefundSignal is false" in {
         val result = Json.fromJson[SchemeFS](schemeFSMaxSeqResponseJson(chargeType = "56001000", inhibitRefundSignal = false))(SchemeFS.rdsSchemeFSMax)
           .asOpt.value
-        result mustBe schemeFSMaxWrapperFalse
+        result.mustBe(schemeFSMaxWrapperFalse)
       }
 
       "throw NoSuchElementException for invalid charge type" in {

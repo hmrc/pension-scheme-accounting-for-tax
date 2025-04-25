@@ -31,7 +31,7 @@ class AFTUserAnswersReturnTransformerSpec extends AnyFreeSpec with AFTUserAnswer
           chargeCTransformer, chargeDTransformer, chargeETransformer, chargeFTransformer, chargeGTransformer)
 
         val transformedEtmpJson = userAnswersRequestJsonPSA.transform(transformer.transformToETMPFormat).asOpt.value
-        transformedEtmpJson mustBe etmpResponseJsonPSA
+        transformedEtmpJson `mustBe` etmpResponseJsonPSA
       }
 
     "must transform from UserAnswers to ETMP AFT Return format for PSA when a mandatory field in chargeD UserAnswers is missing" in {

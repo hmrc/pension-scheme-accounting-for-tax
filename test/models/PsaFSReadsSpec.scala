@@ -31,18 +31,18 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
     "format " when {
       "reading from json" in {
         val result = Json.fromJson[PsaFSDetail](psaFSMaxResponseJson(chargeType = "57401091"))(PsaFS.rdsPsaFSDetailMax).asOpt.value
-        result mustBe psaFSMaxModel( chargeType = "Overseas Transfer Charge 6 Months Late Payment Penalty")
+        result.mustBe(psaFSMaxModel( chargeType = "Overseas Transfer Charge 6 Months Late Payment Penalty"))
       }
 
       "reading from json where period start/end date and pstr are missing (payment on account)" in {
         val psaFSMaxResponseMissingFieldsJson = psaFSMaxResponseJson(chargeType = "00600100").as[JsObject] - "periodStartDate" - "periodEndDate" - "pstr"
-        def expectedResult: PsaFSDetail = psaFSMaxModel("Payment on Account") copy (
+        def expectedResult: PsaFSDetail = psaFSMaxModel("Payment on Account").copy(
           periodStartDate = LocalDate.of(1900, 1, 1),
           periodEndDate = LocalDate.of(2900, 12, 31),
           pstr = ""
         )
         val result = Json.fromJson[PsaFSDetail](psaFSMaxResponseMissingFieldsJson)(PsaFS.rdsPsaFSDetailMax).asOpt.value
-        result mustBe expectedResult
+        result.mustBe(expectedResult)
       }
 
       "throw NoSuchElementException for invalid charge type" in {
@@ -57,12 +57,12 @@ class PsaFSReadsSpec extends AnyWordSpec with OptionValues with Matchers {
     "format " when {
       "reading from json and inhibitRefundSignal is true" in {
         val result = Json.fromJson[PsaFS](psaFSMaxSeqResponse("58001000", "58052000", inhibitRefundSignal = true))(PsaFS.rdsPsaFSMax).asOpt.value
-        result mustBe psaFSMaxTrue
+        result.mustBe(psaFSMaxTrue)
       }
 
       "reading from json and inhibitRefundSignal is false" in {
         val result = Json.fromJson[PsaFS](psaFSMaxSeqResponse("58001000", "58052000", inhibitRefundSignal = false))(PsaFS.rdsPsaFSMax).asOpt.value
-        result mustBe psaFSMaxFalse
+        result.mustBe(psaFSMaxFalse)
       }
 
       "throw NoSuchElementException for invalid charge type" in {

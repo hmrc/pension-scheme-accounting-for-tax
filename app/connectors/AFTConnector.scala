@@ -24,6 +24,7 @@ import play.api.Logger
 import play.api.http.Status
 import play.api.http.Status._
 import play.api.libs.json._
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.mvc.RequestHeader
 import services.AFTService
 import uk.gov.hmrc.http._
@@ -64,7 +65,7 @@ class AFTConnector @Inject()(
   }
 
   private def httpPostRequest(url: URL, data: JsValue, journeyType: String, header: Seq[(String, String)]) (implicit hc: HeaderCarrier, ec: ExecutionContext) =
-    httpClient2.post(url).withBody(data).setHeader(header: _*).execute[HttpResponse] map {
+    httpClient2.post(url).withBody(data).setHeader(header *).execute[HttpResponse] map {
       response =>
         response.status match {
           case OK => response
@@ -87,7 +88,7 @@ class AFTConnector @Inject()(
 
     logger.debug("Get overview (IF) called - URL:" + getAftVersionUrl)
 
-    httpClient2.get(getAftVersionUrl).setHeader(integrationFrameworkHeader: _ *).execute[HttpResponse].map { response =>
+    httpClient2.get(getAftVersionUrl).setHeader(integrationFrameworkHeader *).execute[HttpResponse].map { response =>
       response.status match {
         case OK =>
           Json.parse(response.body).validate[Seq[AFTOverview]](Reads.seq(AFTOverview.rds)) match {
@@ -125,7 +126,7 @@ class AFTConnector @Inject()(
 
     logger.debug(s"GET AFT DETAILS CALLED (IF): aftVersion: $aftVersion and full headers: $headers")
 
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headers: _*)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headers *)
 
 
     logger.debug(s"GET AFT DETAILS CALLED (IF): HC other headers = " +
@@ -134,7 +135,7 @@ class AFTConnector @Inject()(
     logger.warn(s"getAftDetails from (IF) started for version: $aftVersion")
     val res = httpClient2
       .get(getAftUrl)(hc)
-      .setHeader(headers:_*)
+      .setHeader(headers *)
       .transform(_.withRequestTimeout(config.ifsTimeout))
       .execute[HttpResponse].map{ response =>
         response.status match {
@@ -151,10 +152,10 @@ class AFTConnector @Inject()(
 
     val getAftUrl = url"${config.getAftDetailsUrl.format(pstr)}"
     val headers = integrationFrameworkHeader :+ "fbNumber" -> fbNumber
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headers: _*)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headers *)
     httpClient2
       .get(getAftUrl)(hc)
-      .setHeader(headers:_*)
+      .setHeader(headers *)
       .transform(_.withRequestTimeout(config.ifsTimeout))
       .execute[HttpResponse].map {
       response =>
@@ -172,7 +173,7 @@ class AFTConnector @Inject()(
     val getAftVersionUrl = url"${config.getAftVersionUrl.format(pstr, startDate)}"
 
     logger.warn(s"getAftVersions from (IF) started")
-    val res = httpClient2.get(getAftVersionUrl).setHeader(integrationFrameworkHeader: _*).execute[HttpResponse].map {
+    val res = httpClient2.get(getAftVersionUrl).setHeader(integrationFrameworkHeader *).execute[HttpResponse].map {
       response =>
         response.status match {
           case OK =>

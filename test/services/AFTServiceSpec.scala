@@ -34,14 +34,14 @@ class AFTServiceSpec extends AnyWordSpec with Matchers {
       s"return true where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of zero AND NO OTHER CHARGES" in {
         aftService.isChargeZeroedOut(
-          createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))) mustBe true
+          createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))).mustBe(true)
 
       }
 
       s"return false where there is a charge of type ${memberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of non-zero AND NO OTHER CHARGES" in {
         aftService.isChargeZeroedOut(
-          createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))) mustBe false
+          createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))).mustBe(false)
 
       }
     }
@@ -51,14 +51,14 @@ class AFTServiceSpec extends AnyWordSpec with Matchers {
       s"return true where there is a charge of type ${nonMemberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of zero AND NO OTHER CHARGES" in {
         aftService.isChargeZeroedOut(
-          createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))) mustBe true
+          createAFTDetailsResponse(createChargeSection(zeroCurrencyValue))).mustBe(true)
 
       }
 
       s"return false where there is a charge of type ${nonMemberBasedChargeNames(chargeSectionIndex)} with a " +
         s"value of non-zero AND NO OTHER CHARGES" in {
         aftService.isChargeZeroedOut(
-          createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))) mustBe false
+          createAFTDetailsResponse(createChargeSection(nonZeroCurrencyValue))).mustBe(false)
 
       }
     }
@@ -72,7 +72,7 @@ class AFTServiceSpec extends AnyWordSpec with Matchers {
 
           val result = aftService.isChargeZeroedOut(
             createAFTDetailsResponse(createChargeSection(zeroCurrencyValue) ++ chargeSectionWithValue(nonMemberBasedChargeSection, nonZeroCurrencyValue)))
-          result mustBe false
+          result.mustBe(false)
         }
       }
     }
@@ -86,7 +86,7 @@ class AFTServiceSpec extends AnyWordSpec with Matchers {
 
           val result = aftService.isChargeZeroedOut(
             createAFTDetailsResponse(createChargeSection(zeroCurrencyValue) ++ memberBasedChargeSection(nonZeroCurrencyValue)))
-          result mustBe false
+          result.mustBe(false)
         }
       }
     }
@@ -100,16 +100,16 @@ object AFTServiceSpec {
   private val nonZeroCurrencyValue = BigDecimal(44.33)
 
   private val memberBasedChargeCreationFunctions = Seq(
-    chargeCSectionWithValue _,
-    chargeDSectionWithValue _,
-    chargeESectionWithValue _,
-    chargeGSectionWithValue _
+    chargeCSectionWithValue,
+    chargeDSectionWithValue,
+    chargeESectionWithValue,
+    chargeGSectionWithValue
   )
 
   private val schemeLevelChargeCreationFunctions = Seq(
-    chargeASectionWithValue _,
-    chargeBSectionWithValue _,
-    chargeFSectionWithValue _
+    chargeASectionWithValue,
+    chargeBSectionWithValue,
+    chargeFSectionWithValue
   )
   private val nonMemberBasedChargeSections = Seq("chargeTypeADetails", "chargeTypeBDetails", "chargeTypeFDetails")
   private val nonMemberBasedChargeNames = Seq("A", "B", "F")

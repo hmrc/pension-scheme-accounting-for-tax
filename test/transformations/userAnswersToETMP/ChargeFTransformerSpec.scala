@@ -33,12 +33,12 @@ class ChargeFTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
 
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount").as[BigDecimal] mustBe
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "totalAmount").as[BigDecimal] `mustBe`
             (userAnswersJson \ "chargeFDetails" \ "chargeDetails" \ "totalAmount").as[BigDecimal]
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn").asOpt[String] mustBe None
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn").asOpt[String] `mustBe` None
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "amendedVersion").asOpt[Int] mustBe None
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "amendedVersion").asOpt[Int] `mustBe` None
       }
     }
 
@@ -52,10 +52,10 @@ class ChargeFTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
 
           val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "amendedVersion").as[Int] mustBe
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "amendedVersion").as[Int] `mustBe`
             (updatedJson \ "chargeFDetails" \ "amendedVersion").as[Int]
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn").as[String] mustBe
+          (transformedJson \ "chargeDetails" \ "chargeTypeFDetails" \ "dateRegiWithdrawn").as[String] `mustBe`
             (updatedJson \ "chargeFDetails" \ "chargeDetails" \ "deRegistrationDate").as[String]
       }
     }

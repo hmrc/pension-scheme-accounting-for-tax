@@ -33,13 +33,13 @@ class ChargeBTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
         userAnswersJson =>
           val transformedJson = userAnswersJson.transform(transformer.transformToETMPData).asOpt.value
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "totalAmount").as[BigDecimal] mustBe
+          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "totalAmount").as[BigDecimal] `mustBe`
             (userAnswersJson \ "chargeBDetails" \ "chargeDetails" \ "totalAmount").as[BigDecimal]
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "numberOfMembers").as[Int] mustBe
+          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "numberOfMembers").as[Int] `mustBe`
             (userAnswersJson \ "chargeBDetails" \ "chargeDetails" \ "numberOfDeceased").as[Int]
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "amendedVersion").asOpt[Int] mustBe None
+          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "amendedVersion").asOpt[Int] `mustBe` None
       }
     }
 
@@ -49,7 +49,7 @@ class ChargeBTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           val updatedJson = userAnswersJson.transform(updateJson(__ \ Symbol("chargeBDetails"), name = "amendedVersion", version)).asOpt.value
           val transformedJson = updatedJson.transform(transformer.transformToETMPData).asOpt.value
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "amendedVersion").as[Int] mustBe
+          (transformedJson \ "chargeDetails" \ "chargeTypeBDetails" \ "amendedVersion").as[Int] `mustBe`
             (updatedJson \ "chargeBDetails" \ "amendedVersion").as[Int]
       }
     }

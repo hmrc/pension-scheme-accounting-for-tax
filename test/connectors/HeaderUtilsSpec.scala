@@ -42,9 +42,9 @@ class HeaderUtilsSpec extends AnyWordSpec with MockitoSugar with Matchers with B
 
     "return the correct headers" in {
       val result = headerUtils.desHeader
-      result.head mustBe "Environment" -> desEnv
-      result(1) mustBe "Authorization" -> desAuth
-      result(2) mustBe "Content-Type" -> "application/json"
+      result.head.`mustBe`("Environment" -> desEnv)
+      result(1).`mustBe`("Authorization" -> desAuth)
+      result(2).`mustBe`("Content-Type" -> "application/json")
     }
   }
 
@@ -52,9 +52,9 @@ class HeaderUtilsSpec extends AnyWordSpec with MockitoSugar with Matchers with B
 
     "return the correct headers" in {
       val result = headerUtils.integrationFrameworkHeader
-      result.head mustBe "Environment" -> ifEnv
-      result(1) mustBe "Authorization" -> ifAuth
-      result(2) mustBe "Content-Type" -> "application/json"
+      result.head.`mustBe`("Environment" -> ifEnv)
+      result(1).`mustBe`("Authorization" -> ifAuth)
+      result(2).`mustBe`("Content-Type" -> "application/json")
     }
   }
 

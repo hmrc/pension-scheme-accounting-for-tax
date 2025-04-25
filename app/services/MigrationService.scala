@@ -18,6 +18,7 @@ package services
 
 import com.google.inject.Inject
 import org.mongodb.scala.bson.{BsonDateTime, BsonDocument, BsonString}
+import org.mongodb.scala.{ObservableFuture, documentToUntypedDocument}
 import org.mongodb.scala.model.{Filters, Updates}
 import play.api.Logging
 import uk.gov.hmrc.mongo.MongoComponent

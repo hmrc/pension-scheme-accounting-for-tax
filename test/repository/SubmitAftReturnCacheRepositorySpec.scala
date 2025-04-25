@@ -19,6 +19,7 @@ package repository
 import base.MongoConfig
 import config.AppConfig
 import org.mockito.Mockito.when
+import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.bson.{BsonDocument, BsonString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
@@ -28,8 +29,8 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.{Application, Configuration}
-import repository.SubmitAftReturnCacheRepository.SubmitAftReturnCacheEntry
 import uk.gov.hmrc.mongo.MongoComponent
+import org.scalactic.Prettifier.default
 
 import java.time.Instant
 import scala.concurrent.Await
@@ -37,8 +38,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 
 class SubmitAftReturnCacheRepositorySpec
-  extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with
-    BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
+  extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter
+    with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
@@ -78,7 +79,7 @@ class SubmitAftReturnCacheRepositorySpec
       } yield countedDocuments
 
       whenReady(document) { documentsInDB =>
-        documentsInDB mustBe 1L
+        documentsInDB.mustBe(1L)
       }
     }
     "save insertionTime value as a date" in {
@@ -98,8 +99,8 @@ class SubmitAftReturnCacheRepositorySpec
       }
 
       whenReady(ftr) { case (stringResults, dateResults) =>
-        stringResults.length mustBe 0
-        dateResults.length mustBe 1
+        stringResults.length.mustBe(0)
+        dateResults.length.mustBe(1)
       }
     }
   }

@@ -158,7 +158,7 @@ class AFTSubmitterDetailsTest extends PlaySpec {
 
       val result = aftDetailsJson.validate[AFTSubmitterDetails](readAftDetailsFromIF)
 
-      result mustBe JsSuccess(
+      result.mustBe(JsSuccess(
         AFTSubmitterDetails(
           submitterType = "PSP",
           submitterName = "Nigel",
@@ -166,7 +166,7 @@ class AFTSubmitterDetailsTest extends PlaySpec {
           authorisingPsaId = Some("A2100005"),
           receiptDate = LocalDate.of(2016, 12, 17)
         )
-      )
+      ))
     }
   }
 }

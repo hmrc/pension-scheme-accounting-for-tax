@@ -53,7 +53,7 @@ class PsaPspSchemeActionSpec extends PlaySpec with MockitoSugar with BeforeAndAf
   private def getResult(loggedInAsPsa: Boolean, req: PsaPspAuthRequest[AnyContent]) = {
     new PsaPspSchemeAuthAction(mockSchemeService)
       .apply(srn, loggedInAsPsa)
-      .invokeBlock(req, { _: PsaPspAuthRequest[AnyContent] => Future.successful(Ok("success")) })
+      .invokeBlock(req, { (_: PsaPspAuthRequest[AnyContent]) => Future.successful(Ok("success")) })
   }
 
   private def mockCheckForAssociationPsa = {
@@ -69,22 +69,22 @@ class PsaPspSchemeActionSpec extends PlaySpec with MockitoSugar with BeforeAndAf
       "return success response if pension scheme is associated with srn" in {
         mockCheckForAssociationPsa.thenReturn(Future.successful(Right(true)))
         val result = getResult(loggedInAsPsa = true, psaAuthRequest)
-        status(result) mustBe OK
-        contentAsString(result) mustBe "success"
+        status(result).`mustBe`(OK)
+        contentAsString(result).`mustBe`("success")
       }
 
       "return Forbidden if pension scheme is not associated with srn" in {
         mockCheckForAssociationPsa.thenReturn(Future.successful(Right(false)))
-        status(getResult(loggedInAsPsa = true, psaAuthRequest)) mustBe FORBIDDEN
+        status(getResult(loggedInAsPsa = true, psaAuthRequest)).`mustBe`(FORBIDDEN)
       }
 
       "return Forbidden if no id found" in {
-        status(getResult(loggedInAsPsa = true, pspAuthRequest)) mustBe FORBIDDEN
+        status(getResult(loggedInAsPsa = true, pspAuthRequest)).`mustBe`(FORBIDDEN)
       }
 
       "return recover from error if association call fails" in {
         mockCheckForAssociationPsa.thenReturn(Future.successful(Left(new HttpException("failed", 500))))
-        getResult(loggedInAsPsa = true, psaAuthRequest).failed.map { _ mustBe new Exception("failed") }
+        getResult(loggedInAsPsa = true, psaAuthRequest).failed.map { _.`mustBe`(new Exception("failed")) }
       }
     }
 
@@ -92,22 +92,22 @@ class PsaPspSchemeActionSpec extends PlaySpec with MockitoSugar with BeforeAndAf
       "return success response if pension scheme is associated with srn" in {
         mockCheckForAssociationPsp.thenReturn(Future.successful(Right(true)))
         val result = getResult(loggedInAsPsa = false, pspAuthRequest)
-        status(result) mustBe OK
-        contentAsString(result) mustBe "success"
+        status(result).`mustBe`(OK)
+        contentAsString(result).`mustBe`("success")
       }
 
       "return Forbidden if pension scheme is not associated with srn" in {
         mockCheckForAssociationPsp.thenReturn(Future.successful(Right(false)))
-        status(getResult(loggedInAsPsa = false, pspAuthRequest)) mustBe FORBIDDEN
+        status(getResult(loggedInAsPsa = false, pspAuthRequest)).`mustBe`(FORBIDDEN)
       }
 
       "return Forbidden if no id found" in {
-        status(getResult(loggedInAsPsa = false, psaAuthRequest)) mustBe FORBIDDEN
+        status(getResult(loggedInAsPsa = false, psaAuthRequest)).`mustBe`(FORBIDDEN)
       }
 
       "return recover from error if association call fails" in {
         mockCheckForAssociationPsp.thenReturn(Future.successful(Left(new HttpException("failed", 500))))
-        getResult(loggedInAsPsa = false, pspAuthRequest).failed.map { _ mustBe new Exception("failed") }
+        getResult(loggedInAsPsa = false, pspAuthRequest).failed.map { _.`mustBe`(new Exception("failed")) }
       }
     }
 

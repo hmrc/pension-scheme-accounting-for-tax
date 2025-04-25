@@ -32,7 +32,7 @@ class ChargeCTransformer extends JsonTransformer {
         (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeCDetails") \ Symbol("memberDetails"))
           .json.copyFrom((__ \ Symbol("employers")).read(readsEmployers)) and
         (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeCDetails") \ Symbol("totalAmount"))
-          .json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)).reduce
+          .json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)).reduce: Reads[JsObject]
     }
 
 
@@ -45,16 +45,38 @@ class ChargeCTransformer extends JsonTransformer {
         }
     }.map(removeEmptyObjects)
 
-  private def readsEmployer: Reads[JsObject] = (
-    ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
-      orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
-      ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
-        orElse doNothing) and
-      readsEmployerTypeDetails and
-      ((__ \ Symbol("correspondenceAddressDetails")).json.copyFrom(__.read(readsCorrespondenceAddress)) and
+  private def readsEmployer: Reads[JsObject] = {
+    val paymentReads: Reads[JsObject] = (
+      (__ \ Symbol("correspondenceAddressDetails")).json.copyFrom(__.read(readsCorrespondenceAddress)) and
         (__ \ Symbol("dateOfPayment")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("paymentDate")).json.pick) and
-        (__ \ Symbol("totalAmountOfTaxDue")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("amountTaxDue")).json.pick)).reduce
-    ).reduce.orElseEmptyOnMissingFields
+        (__ \ Symbol("totalAmountOfTaxDue")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("amountTaxDue")).json.pick)
+      ).reduce: Reads[JsObject]
+
+    val employerReads: Reads[JsObject] = (
+      ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
+        orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
+        ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
+          orElse doNothing) and
+        readsEmployerTypeDetails and
+        paymentReads
+      ).reduce: Reads[JsObject]
+
+    employerReads.orElseEmptyOnMissingFields
+  }
+//  private def readsEmployer: Reads[JsObject] = (
+//    (
+//      (
+//      ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick)
+//      orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
+//      ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
+//        orElse doNothing) and
+//      readsEmployerTypeDetails and
+//      ((__ \ Symbol("correspondenceAddressDetails")).json.copyFrom(__.read(readsCorrespondenceAddress)) and
+//        (__ \ Symbol("dateOfPayment")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("paymentDate")).json.pick) and
+//        (__ \ Symbol("totalAmountOfTaxDue")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("amountTaxDue")).json.pick))
+//        .reduce: Reads[JsObject])
+//    ).reduce: Reads[JsObject])
+//    .orElseEmptyOnMissingFields
 
   private def readsEmployerTypeDetails: Reads[JsObject] =
     (__ \ Symbol("whichTypeOfSponsoringEmployer")).read[String].flatMap {
@@ -65,13 +87,13 @@ class ChargeCTransformer extends JsonTransformer {
           (__ \ Symbol("memberTypeDetails") \ Symbol("individualDetails") \ Symbol("lastName"))
             .json.copyFrom((__ \ Symbol("sponsoringIndividualDetails") \ Symbol("lastName")).json.pick) and
           (__ \ Symbol("memberTypeDetails") \ Symbol("individualDetails") \ Symbol("nino"))
-            .json.copyFrom((__ \ Symbol("sponsoringIndividualDetails") \ Symbol("nino")).json.pick)).reduce
+            .json.copyFrom((__ \ Symbol("sponsoringIndividualDetails") \ Symbol("nino")).json.pick)).reduce: Reads[JsObject]
       case "organisation" =>
         ((__ \ Symbol("memberTypeDetails") \ Symbol("memberType")).json.put(JsString("Organisation")) and
           (__ \ Symbol("memberTypeDetails") \ Symbol("comOrOrganisationName"))
             .json.copyFrom((__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("name")).json.pick) and
           (__ \ Symbol("memberTypeDetails") \ Symbol("crnNumber")).
-            json.copyFrom((__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("crn")).json.pick)).reduce
+            json.copyFrom((__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("crn")).json.pick)).reduce: Reads[JsObject]
     }
 
   private def readsCorrespondenceAddress: Reads[JsObject] =
@@ -83,7 +105,7 @@ class ChargeCTransformer extends JsonTransformer {
         ((__ \ Symbol("addressLine4")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line4")).json.pick) orElse doNothing) and
         (__ \ Symbol("countryCode")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("country")).json.pick) and
         ((__ \ Symbol("postalCode")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("postcode")).json.pick) orElse doNothing)
-      ).reduce
+      ).reduce: Reads[JsObject]
 
   private def readsPostalCode: Reads[JsObject] =
     (__ \ Symbol("sponsoringEmployerAddress") \ Symbol("country")).read[String].flatMap {
