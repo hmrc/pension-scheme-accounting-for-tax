@@ -59,7 +59,7 @@ class AftBatchedDataCacheRepositorySpec
 
   import AftBatchedDataCacheRepositorySpec._
 
-  var aftBatchedDataCacheRepository: AftBatchedDataCacheRepository = _
+  var aftBatchedDataCacheRepository: AftBatchedDataCacheRepository = scala.compiletime.uninitialized
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(mock[AuthConnector])

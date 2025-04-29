@@ -108,14 +108,13 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
         when(repo.getUploadResult(eqTo(uploadId))(any())).thenReturn(Future.failed(new Exception()))
         val result = controller.getUploadResult(fakeRequest)
         an[Exception] must be thrownBy status(result)
-      }
+        }
     }
 
     "calling registerUploadResult" must {
       "return OK with the data" in {
         val uploadStatus = FileUploadStatus("Success", None, None, Some("www.test.com"), Some("text/csv"), Some("test.csv"), Some("100".toLong))
-        val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, Instant.now(), Instant.now(), Instant.now())
-        when(repo.updateStatus(any(), any())).thenReturn(Future.successful(Some(fileUploadDataCache)))
+        when(repo.updateStatus(any(), any())).thenReturn(Future.successful((): Unit))
 
         val result = controller.registerUploadResult(fakeRequestReference.withJsonBody(Json.toJson(uploadStatus)))
         status(result) mustEqual OK

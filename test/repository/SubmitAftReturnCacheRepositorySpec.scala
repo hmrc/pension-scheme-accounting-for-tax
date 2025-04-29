@@ -31,6 +31,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.{Application, Configuration}
 import uk.gov.hmrc.mongo.MongoComponent
 import org.scalactic.Prettifier.default
+import scala.compiletime.uninitialized
 
 import java.time.Instant
 import scala.concurrent.Await
@@ -43,7 +44,7 @@ class SubmitAftReturnCacheRepositorySpec
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
-  var submitAftReturnCacheRepository: SubmitAftReturnCacheRepository = _
+  var submitAftReturnCacheRepository: SubmitAftReturnCacheRepository = uninitialized
 
   private val application: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false).build()

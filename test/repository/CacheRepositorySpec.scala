@@ -34,6 +34,8 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.mongo.MongoComponent
+import scala.compiletime.uninitialized
+
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -46,7 +48,7 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
 
   import CacheRepositorySpec._
 
-  var cacheRepository: CacheRepository = _
+  var cacheRepository: CacheRepository = uninitialized
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(mock[AuthConnector])

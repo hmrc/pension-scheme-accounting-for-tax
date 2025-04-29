@@ -35,6 +35,7 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import repository.model.FileUploadStatus
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.mongo.MongoComponent
+import scala.compiletime.uninitialized
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -47,7 +48,7 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
 
   import FileUploadReferenceCacheRepositorySpec._
 
-  var fileUploadReferenceCacheRepository: FileUploadReferenceCacheRepository = _
+  var fileUploadReferenceCacheRepository: FileUploadReferenceCacheRepository = uninitialized
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(mock[AuthConnector])

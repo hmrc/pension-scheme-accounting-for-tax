@@ -89,7 +89,6 @@ class AFTController @Inject()(
                           (value \ "chargeTypeFDetails").asOpt[JsValue].map(_ => "chargeTypeF"),
                           (value \ "chargeTypeGDetails").asOpt[JsValue].map(_ => "chargeTypeG")
                         )
-                      case null => Seq.empty[Option[String]]
                     }
                     val chargeTypeList = chargeType match {
                       case Some(list) => list.filter(_.nonEmpty).flatten

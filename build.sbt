@@ -12,7 +12,7 @@ lazy val microservice = Project(appName, file("."))
   .settings(
     majorVersion := 0,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
-    scalaVersion := "3.6.2",
+    scalaVersion := "3.6.4",
     scoverageSettings,
     RoutesKeys.routesImport ++= Seq(
       "models.enumeration.JourneyType",
@@ -21,12 +21,14 @@ lazy val microservice = Project(appName, file("."))
     PlayKeys.devSettings += "play.server.http.port" -> "8207",
     scalacOptions ++= Seq(
       "-feature",
-//      "-Xfatal-warnings",                        // Treat all warnings as errors
+      "-Xfatal-warnings",                        // Treat all warnings as errors
       "-Wconf:src=target/.*:s",                  // silence warnings from compiled files
       "-Wconf:src=routes/.*:silent",             // Suppress warnings from routes files
       "-Wconf:msg=Flag.*repeatedly:silent",      // Suppress warnings for repeated flags
       "-Wconf:msg=.*-Wunused.*:silent",          // Suppress unused warnings
-),
+      "-Wconf:src=.*StartupModule\\.scala.*:silent", // Suppress warning about unused Environment as it's needed
+      "-Wconf:cat=deprecation:silent" // Suppressing deprecation warn for Retrievals.name -< to be refactored
+    ),
     Test / fork := true,
     Test / javaOptions += "-Dconfig.file=conf/test.application.conf",
     resolvers += Resolver.jcenterRepo,
