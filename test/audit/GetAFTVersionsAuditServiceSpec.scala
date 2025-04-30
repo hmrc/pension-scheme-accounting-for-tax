@@ -20,6 +20,7 @@ import org.mockito.Mockito.{times, verify}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.libs.json.{JsNull, JsValue}
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http.{HttpException, UpstreamErrorResponse}
 
@@ -39,13 +40,19 @@ class GetAFTVersionsAuditServiceSpec extends AnyFreeSpec with Matchers with Mock
 
       implicit val request: RequestHeader = mock[RequestHeader]
 
-      val resultHandler = service.sendAFTVersionsAuditEvent(pstr, startDate)
+      val result = service.sendAFTVersionsAuditEvent(pstr, startDate)
 
-      resultHandler.isDefinedAt(Failure(error)) shouldBe true
-      resultHandler(Failure(error))
+      result.isDefinedAt(Failure(error)) shouldBe true
+      result(Failure(error))
 
       val expected = GetAFTVersions(pstr, startDate, error.statusCode, None)
       verify(auditService, times(1)).sendEvent(expected)
+
+      val details = expected.details
+      details("pstr").as[String] shouldBe pstr
+      details("quarterStartDate").as[String] shouldBe startDate
+      details("status").as[String] shouldBe error.statusCode.toString
+      details("response").as[JsValue] shouldBe JsNull
     }
 
     "send an audit event with HttpException" in {
@@ -58,13 +65,19 @@ class GetAFTVersionsAuditServiceSpec extends AnyFreeSpec with Matchers with Mock
 
       implicit val request: RequestHeader = mock[RequestHeader]
 
-      val resultHandler = service.sendAFTVersionsAuditEvent(pstr, startDate)
+      val result = service.sendAFTVersionsAuditEvent(pstr, startDate)
 
-      resultHandler.isDefinedAt(Failure(error)) shouldBe true
-      resultHandler(Failure(error))
+      result.isDefinedAt(Failure(error)) shouldBe true
+      result(Failure(error))
 
       val expected = GetAFTVersions(pstr, startDate, error.responseCode, None)
       verify(auditService, times(1)).sendEvent(expected)
+
+      val details = expected.details
+      details("pstr").as[String] shouldBe pstr
+      details("quarterStartDate").as[String] shouldBe startDate
+      details("status").as[String] shouldBe error.responseCode.toString
+      details("response").as[JsValue] shouldBe JsNull
     }
   }
 }

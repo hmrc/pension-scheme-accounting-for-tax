@@ -67,9 +67,9 @@ class FileAFTReturnAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
 
         val expected = FileAftReturn(pstr, journeyType, Status.BAD_GATEWAY, data, None)
 
-        val resultHandler = service.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
-        resultHandler.isDefinedAt(Failure(error)) shouldBe true
-        resultHandler(Failure(error))
+        val result = service.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
+        result.isDefinedAt(Failure(error)) shouldBe true
+        result(Failure(error))
 
         verify(auditService, times(1)).sendEvent(expected)
       }
@@ -87,9 +87,9 @@ class FileAFTReturnAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
 
         val expected = FileAftReturn(pstr, journeyType, Status.BAD_REQUEST, data, None)
 
-        val resultHandler = service.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
-        resultHandler.isDefinedAt(Failure(error)) shouldBe true
-        resultHandler(Failure(error))
+        val result = service.sendFileAFTReturnAuditEvent(pstr, journeyType, data)
+        result.isDefinedAt(Failure(error)) shouldBe true
+        result(Failure(error))
 
         verify(auditService, times(1)).sendEvent(expected)
       }
@@ -109,13 +109,63 @@ class FileAFTReturnAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
         implicit val request: RequestHeader = mock[RequestHeader]
 
         val expected = FileAFTReturnOneChargeAndNoValue(pstr, journeyType, Status.OK, data, Some(httpResponse.json))
+        expected.details("pstr").as[String] shouldBe pstr
+        expected.details("status").as[String] shouldBe Status.OK.toString
+        expected.details("requestSizeInBytes").as[Int] should be > 0
 
-        val resultHandler = service.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
-        resultHandler.isDefinedAt(Success(httpResponse)) shouldBe true
-        resultHandler(Success(httpResponse))
+        val result = service.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
+        result.isDefinedAt(Success(httpResponse)) shouldBe true
+        result(Success(httpResponse))
 
         verify(auditService, times(1)).sendEvent(expected)
       }
+
+      "should send an audit event with an UpstreamErrorResponse" in {
+        val auditService = mock[AuditService]
+        val service = new FileAFTReturnAuditService(auditService)
+
+        val pstr = "12345678AA"
+        val journeyType = "journeyType"
+        val data = Json.obj("aftDetails" -> Json.obj("quarterStartDate" -> "2020-04-01"))
+        val error = UpstreamErrorResponse("Upstream error", Status.BAD_GATEWAY)
+
+        implicit val request: RequestHeader = mock[RequestHeader]
+
+        val expected = FileAFTReturnOneChargeAndNoValue(pstr, journeyType, Status.BAD_GATEWAY, data, None)
+        expected.details("pstr").as[String] shouldBe pstr
+        expected.details("status").as[String] shouldBe Status.BAD_GATEWAY.toString
+        expected.details("requestSizeInBytes").as[Int] should be > 0
+
+        val result = service.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
+        result.isDefinedAt(Failure(error)) shouldBe true
+        result(Failure(error))
+
+        verify(auditService, times(1)).sendEvent(expected)
+      }
+
+      "should send an audit event with a HttpException" in {
+        val auditService = mock[AuditService]
+        val service = new FileAFTReturnAuditService(auditService)
+
+        val pstr = "12345678AA"
+        val journeyType = "journeyType"
+        val data = Json.obj("aftDetails" -> Json.obj("quarterStartDate" -> "2020-04-01"))
+        val error = new HttpException("Http error", Status.BAD_REQUEST)
+
+        implicit val request: RequestHeader = mock[RequestHeader]
+
+        val expected = FileAFTReturnOneChargeAndNoValue(pstr, journeyType, Status.BAD_REQUEST, data, None)
+        expected.details("pstr").as[String] shouldBe pstr
+        expected.details("status").as[String] shouldBe Status.BAD_REQUEST.toString
+        expected.details("requestSizeInBytes").as[Int] should be > 0
+
+        val result = service.sendFileAFTReturnWhereOnlyOneChargeWithNoValueAuditEvent(pstr, journeyType, data)
+        result.isDefinedAt(Failure(error)) shouldBe true
+        result(Failure(error))
+
+        verify(auditService, times(1)).sendEvent(expected)
+      }
+
 
       "sendFileAftReturnSchemaValidatorAuditEvent" - {
 
@@ -138,6 +188,24 @@ class FileAFTReturnAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
 
           verify(auditService, times(1)).sendEvent(expected)
         }
+      }
+    }
+    "FileAftReturn" - {
+
+      "should serialize and deserialize correctly using implicit format" in {
+        val original = FileAftReturn(
+          pstr = "12345678AA",
+          journeyType = "journeyType",
+          status = 200,
+          request = Json.obj("aftDetails" -> Json.obj("quarterStartDate" -> "2020-04-01")),
+          response = Some(Json.obj("result" -> "ok"))
+        )
+
+        val json = Json.toJson(original)
+        val result = json.validate[FileAftReturn]
+
+        result.isSuccess shouldBe true
+        result.get shouldBe original
       }
     }
   }

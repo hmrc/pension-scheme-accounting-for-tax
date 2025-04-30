@@ -93,6 +93,34 @@ class PsaEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
       }
     }
 
+    "when the user is logged in but externalId is missing" must {
+      "must fail with RuntimeException" in {
+        running(app) {
+          val bodyParsers = app.injector.instanceOf[BodyParsers.Default]
+
+          val authResponse = new~(
+            Enrolments(
+              Set(
+                new Enrolment("HMRC-PODS-ORG", Seq(EnrolmentIdentifier("PsaId", psaId)), "Activated")
+              )
+            ), None
+          )
+
+          when(mockAuthConnector.authorise[RetrievalsType](any(), any())(any(), any()))
+            .thenReturn(Future.successful(authResponse))
+
+          val action = new PsaEnrolmentAuthAction(mockAuthConnector, bodyParsers)
+          val controller = new Harness(action)
+
+          val thrown = intercept[RuntimeException] {
+            await(controller.onPageLoad()(FakeRequest()))
+          }
+
+          thrown.getMessage mustEqual "No externalId found"
+        }
+      }
+    }
+
     "when the user is not logged in" must {
 
       "must return Unauthorized" in {
@@ -109,5 +137,44 @@ class PsaEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
       }
     }
 
+    "when the user has insufficient enrolments" must {
+
+      "must return Forbidden" in {
+        running(app) {
+          val bodyParsers = app.injector.instanceOf[BodyParsers.Default]
+
+          when(mockAuthConnector.authorise[RetrievalsType](any(), any())(any(), any()))
+            .thenReturn(Future.failed(InsufficientEnrolments()))
+
+          val action = new PsaEnrolmentAuthAction(mockAuthConnector, bodyParsers)
+          val controller = new Harness(action)
+
+          val result = controller.onPageLoad()(FakeRequest())
+
+          status(result) mustEqual FORBIDDEN
+        }
+      }
+    }
+
+    "when the auth service throws a non-fatal error" must {
+
+      "must propagate the error" in {
+        running(app) {
+          val bodyParsers = app.injector.instanceOf[BodyParsers.Default]
+
+          when(mockAuthConnector.authorise[RetrievalsType](any(), any())(any(), any()))
+            .thenReturn(Future.failed(new RuntimeException("Something went wrong")))
+
+          val action = new PsaEnrolmentAuthAction(mockAuthConnector, bodyParsers)
+          val controller = new Harness(action)
+
+          val thrown = intercept[RuntimeException] {
+            await(controller.onPageLoad()(FakeRequest()))
+          }
+
+          thrown.getMessage must include("Something went wrong")
+        }
+      }
+    }
   }
 }

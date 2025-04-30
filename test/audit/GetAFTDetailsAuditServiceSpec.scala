@@ -21,7 +21,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status
-import play.api.libs.json.Json
+import play.api.libs.json.{JsNull, JsValue, Json}
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.http.{HttpException, UpstreamErrorResponse}
 
@@ -46,9 +46,9 @@ class GetAFTDetailsAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
 
         val expected = GetAFTDetails(pstr, startDate, Status.OK, Some(data))
 
-        val resultHandler = service.sendAFTDetailsAuditEvent(pstr, startDate)
-        resultHandler.isDefinedAt(Success(data)).shouldBe(true)
-        resultHandler(Success(data))
+        val result = service.sendAFTDetailsAuditEvent(pstr, startDate)
+        result.isDefinedAt(Success(data)).shouldBe(true)
+        result(Success(data))
 
         verify(auditService, times(1)).sendEvent(expected)
       }
@@ -65,9 +65,9 @@ class GetAFTDetailsAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
 
         val expected = GetAFTDetails(pstr, startDate, Status.BAD_GATEWAY, None)
 
-        val resultHandler = service.sendAFTDetailsAuditEvent(pstr, startDate)
-        resultHandler.isDefinedAt(Failure(error)).shouldBe(true)
-        resultHandler(Failure(error))
+        val result = service.sendAFTDetailsAuditEvent(pstr, startDate)
+        result.isDefinedAt(Failure(error)).shouldBe(true)
+        result(Failure(error))
 
         verify(auditService, times(1)).sendEvent(expected)
       }
@@ -84,9 +84,9 @@ class GetAFTDetailsAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
 
         val expected = GetAFTDetails(pstr, startDate, Status.BAD_REQUEST, None)
 
-        val resultHandler = service.sendAFTDetailsAuditEvent(pstr, startDate)
-        resultHandler.isDefinedAt(Failure(error)).shouldBe(true)
-        resultHandler(Failure(error))
+        val result = service.sendAFTDetailsAuditEvent(pstr, startDate)
+        result.isDefinedAt(Failure(error)).shouldBe(true)
+        result(Failure(error))
 
         verify(auditService, times(1)).sendEvent(expected)
       }
@@ -106,9 +106,9 @@ class GetAFTDetailsAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
 
         val expected = GetAFTDetails(pstr, startDate, Status.OK, Some(data))
 
-        val resultHandler = service.sendOptionAFTDetailsAuditEvent(pstr, startDate)
-        resultHandler.isDefinedAt(Success(Some(data))).shouldBe(true)
-        resultHandler(Success(Some(data)))
+        val result = service.sendOptionAFTDetailsAuditEvent(pstr, startDate)
+        result.isDefinedAt(Success(Some(data))).shouldBe(true)
+        result(Success(Some(data)))
 
         verify(auditService, times(1)).sendEvent(expected)
       }
@@ -125,9 +125,9 @@ class GetAFTDetailsAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
 
         val expected = GetAFTDetails(pstr, startDate, Status.BAD_GATEWAY, None)
 
-        val resultHandler = service.sendOptionAFTDetailsAuditEvent(pstr, startDate)
-        resultHandler.isDefinedAt(Failure(error)).shouldBe(true)
-        resultHandler(Failure(error))
+        val result = service.sendOptionAFTDetailsAuditEvent(pstr, startDate)
+        result.isDefinedAt(Failure(error)).shouldBe(true)
+        result(Failure(error))
 
         verify(auditService, times(1)).sendEvent(expected)
       }
@@ -144,12 +144,65 @@ class GetAFTDetailsAuditServiceSpec extends AnyFreeSpec with Matchers with Mocki
 
         val expected = GetAFTDetails(pstr, startDate, Status.BAD_REQUEST, None)
 
-        val resultHandler = service.sendOptionAFTDetailsAuditEvent(pstr, startDate)
-        resultHandler.isDefinedAt(Failure(error)).shouldBe(true)
-        resultHandler(Failure(error))
+        val result = service.sendOptionAFTDetailsAuditEvent(pstr, startDate)
+        result.isDefinedAt(Failure(error)).shouldBe(true)
+        result(Failure(error))
 
         verify(auditService, times(1)).sendEvent(expected)
       }
+    }
+  }
+  "GetAFTDetails" - {
+
+    "should return the correct details when response contains aftStatus" in {
+      val pstr = "12345678AA"
+      val startDate = "2020-04-01"
+      val status = 200
+      val response = Some(Json.obj("aftDetails" -> Json.obj("aftStatus" -> "Success")))
+
+      val getAFTDetails = GetAFTDetails(pstr, startDate, status, response)
+
+      val details = getAFTDetails.details
+
+      (details \ "pstr").as[String] shouldBe pstr
+      (details \ "quarterStartDate").as[String] shouldBe startDate
+      (details \ "aftStatus").as[String] shouldBe "Success"
+      (details \ "status").as[String] shouldBe status.toString
+      (details \ "response").as[JsValue] shouldBe response.get
+    }
+
+    "should return the correct details when response is None" in {
+      val pstr = "12345678AA"
+      val startDate = "2020-04-01"
+      val status = 502
+      val response = None
+
+      val getAFTDetails = GetAFTDetails(pstr, startDate, status, response)
+
+      val details = getAFTDetails.details
+
+      (details \ "pstr").as[String] shouldBe pstr
+      (details \ "quarterStartDate").as[String] shouldBe startDate
+      (details \ "aftStatus").asOpt[String] shouldBe None
+      (details \ "status").as[String] shouldBe status.toString
+      (details \ "response").as[JsValue] shouldBe JsNull
+    }
+
+    "should return the correct details when response contains invalid structure" in {
+      val pstr = "12345678AA"
+      val startDate = "2020-04-01"
+      val status = 200
+      val response = Some(Json.obj("incorrectField" -> "SomeValue"))
+
+      val getAFTDetails = GetAFTDetails(pstr, startDate, status, response)
+
+      val details = getAFTDetails.details
+
+      (details \ "pstr").as[String] shouldBe pstr
+      (details \ "quarterStartDate").as[String] shouldBe startDate
+      (details \ "aftStatus").asOpt[String] shouldBe None
+      (details \ "status").as[String] shouldBe status.toString
+      (details \ "response").as[JsValue] shouldBe response.get
     }
   }
 }

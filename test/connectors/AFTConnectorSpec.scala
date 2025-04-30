@@ -280,7 +280,7 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
           )
       )
       connector.getAftOverview(pstr, startDt, endDate).map { response =>
-        response mustBe aftOverview
+        response.mustBe(aftOverview)
       }
     }
 
@@ -312,7 +312,7 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       )
 
       connector.getAftOverview(pstr, startDt, endDate) map { response =>
-        response mustEqual Seq.empty
+        response.mustEqual(Seq.empty)
       }
     }
 
@@ -326,7 +326,7 @@ class AFTConnectorSpec extends AsyncWordSpec with Matchers with WireMockHelper w
       )
 
       connector.getAftOverview(pstr, startDt, endDate) map { response =>
-        response mustEqual Seq.empty
+        response.mustEqual(Seq.empty)
       }
     }
 
