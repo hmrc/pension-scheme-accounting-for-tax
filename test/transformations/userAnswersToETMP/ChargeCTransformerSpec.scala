@@ -36,13 +36,13 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           val etmpMemberDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0
           val uaChargeDetailsPath = userAnswersJson \ "chargeCDetails" \ "employers" \ 0
 
-          (etmpMemberDetailsPath \ "dateOfPayment").as[String] mustBe (uaChargeDetailsPath \ "chargeDetails" \ "paymentDate").as[String]
-          (etmpMemberDetailsPath \ "totalAmountOfTaxDue").as[BigDecimal] mustBe (uaChargeDetailsPath \ "chargeDetails" \ "amountTaxDue").as[BigDecimal]
+          (etmpMemberDetailsPath \ "dateOfPayment").as[String] `mustBe` (uaChargeDetailsPath \ "chargeDetails" \ "paymentDate").as[String]
+          (etmpMemberDetailsPath \ "totalAmountOfTaxDue").as[BigDecimal] `mustBe` (uaChargeDetailsPath \ "chargeDetails" \ "amountTaxDue").as[BigDecimal]
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "totalAmount").as[BigDecimal] mustBe
+          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "totalAmount").as[BigDecimal] `mustBe`
             (userAnswersJson \ "chargeCDetails" \ "totalChargeAmount").as[BigDecimal]
 
-          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "amendedVersion").asOpt[Int] mustBe None
+          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "amendedVersion").asOpt[Int] `mustBe` None
 
       }
     }
@@ -56,9 +56,9 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           val etmpMemberDetailsPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0
           val uaChargeDetailsPath = userAnswersJson \ "chargeCDetails" \ "employers" \ 0
 
-          (etmpMemberDetailsPath \ "memberStatus").as[String] mustBe (uaChargeDetailsPath \ "memberStatus").as[String]
-          (etmpMemberDetailsPath \ "memberAFTVersion").as[Int] mustBe (uaChargeDetailsPath \ "memberAFTVersion").as[Int]
-          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "amendedVersion").as[Int] mustBe
+          (etmpMemberDetailsPath \ "memberStatus").as[String] `mustBe` (uaChargeDetailsPath \ "memberStatus").as[String]
+          (etmpMemberDetailsPath \ "memberAFTVersion").as[Int] `mustBe` (uaChargeDetailsPath \ "memberAFTVersion").as[Int]
+          (transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "amendedVersion").as[Int] `mustBe`
             (updatedJson \ "chargeCDetails" \ "amendedVersion").as[Int]
       }
     }
@@ -72,9 +72,9 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
             "memberDetails" \ 0 \ "memberTypeDetails" \ "individualDetails"
           val uaIndividualDetailsPath = userAnswersJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringIndividualDetails"
 
-          (etmpIndividualDetailsPath \ "firstName").as[String] mustBe (uaIndividualDetailsPath \ "firstName").as[String]
-          (etmpIndividualDetailsPath \ "lastName").as[String] mustBe (uaIndividualDetailsPath \ "lastName").as[String]
-          (etmpIndividualDetailsPath \ "nino").as[String] mustBe (uaIndividualDetailsPath \ "nino").as[String]
+          (etmpIndividualDetailsPath \ "firstName").as[String] `mustBe` (uaIndividualDetailsPath \ "firstName").as[String]
+          (etmpIndividualDetailsPath \ "lastName").as[String] `mustBe` (uaIndividualDetailsPath \ "lastName").as[String]
+          (etmpIndividualDetailsPath \ "nino").as[String] `mustBe` (uaIndividualDetailsPath \ "nino").as[String]
       }
     }
 
@@ -87,10 +87,10 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
             "memberDetails" \ 2 \ "memberTypeDetails"
           val uaOrgPathWithoutFilter = userAnswersJson \ "chargeCDetails" \ "employers" \ 2 \ "sponsoringOrganisationDetails"
 
-          (etmpPathAfterTransformation \ "memberStatus").asOpt[String] mustBe None
-          (etmpPathAfterTransformation \ "memberAFTVersion").asOpt[String] mustBe None
-          (etmpPathAfterTransformation \ "comOrOrganisationName").as[String] mustBe (uaOrgPathWithoutFilter \ "name").as[String]
-          (etmpPathAfterTransformation \ "crnNumber").as[String] mustBe (uaOrgPathWithoutFilter \ "crn").as[String]
+          (etmpPathAfterTransformation \ "memberStatus").asOpt[String] `mustBe` None
+          (etmpPathAfterTransformation \ "memberAFTVersion").asOpt[String] `mustBe` None
+          (etmpPathAfterTransformation \ "comOrOrganisationName").as[String] `mustBe` (uaOrgPathWithoutFilter \ "name").as[String]
+          (etmpPathAfterTransformation \ "crnNumber").as[String] `mustBe` (uaOrgPathWithoutFilter \ "crn").as[String]
       }
     }
 
@@ -102,13 +102,13 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           val etmpAddressPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 0 \ "correspondenceAddressDetails"
           val uaAddressPath = userAnswersJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringEmployerAddress"
 
-          (etmpAddressPath \ "nonUKAddress").as[String] mustBe "False"
-          (etmpAddressPath \ "addressLine1").as[String] mustBe (uaAddressPath \ "line1").as[String]
-          (etmpAddressPath \ "addressLine2").as[String] mustBe (uaAddressPath \ "line2").as[String]
-          (etmpAddressPath \ "addressLine3").asOpt[String] mustBe (uaAddressPath \ "line3").asOpt[String]
-          (etmpAddressPath \ "addressLine4").asOpt[String] mustBe (uaAddressPath \ "line4").asOpt[String]
-          (etmpAddressPath \ "countryCode").as[String] mustBe (uaAddressPath \ "country").as[String]
-          (etmpAddressPath \ "postalCode").as[String] mustBe (uaAddressPath \ "postcode").as[String]
+          (etmpAddressPath \ "nonUKAddress").as[String] `mustBe` "False"
+          (etmpAddressPath \ "addressLine1").as[String] `mustBe` (uaAddressPath \ "line1").as[String]
+          (etmpAddressPath \ "addressLine2").as[String] `mustBe` (uaAddressPath \ "line2").as[String]
+          (etmpAddressPath \ "addressLine3").asOpt[String] `mustBe` (uaAddressPath \ "line3").asOpt[String]
+          (etmpAddressPath \ "addressLine4").asOpt[String] `mustBe` (uaAddressPath \ "line4").asOpt[String]
+          (etmpAddressPath \ "countryCode").as[String] `mustBe` (uaAddressPath \ "country").as[String]
+          (etmpAddressPath \ "postalCode").as[String] `mustBe` (uaAddressPath \ "postcode").as[String]
       }
     }
 
@@ -120,8 +120,8 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTUserAnswersGenerators w
           val etmpAddressPath = transformedJson \ "chargeDetails" \ "chargeTypeCDetails" \ "memberDetails" \ 2 \ "correspondenceAddressDetails"
           val uaAddressPath = userAnswersJson \ "chargeCDetails" \ "employers" \ 2 \ "sponsoringEmployerAddress"
 
-          (etmpAddressPath \ "nonUKAddress").as[String] mustBe "True"
-          (etmpAddressPath \ "addressLine1").as[String] mustBe (uaAddressPath \ "line1").as[String]
+          (etmpAddressPath \ "nonUKAddress").as[String] `mustBe` "True"
+          (etmpAddressPath \ "addressLine1").as[String] `mustBe` (uaAddressPath \ "line1").as[String]
           (etmpAddressPath \ "addressLine2").as[String] mustBe (uaAddressPath \ "line2").as[String]
           (etmpAddressPath \ "addressLine3").asOpt[String] mustBe (uaAddressPath \ "line3").asOpt[String]
           (etmpAddressPath \ "addressLine4").asOpt[String] mustBe (uaAddressPath \ "line4").asOpt[String]

@@ -21,6 +21,7 @@ import com.mongodb.client.model.FindOneAndUpdateOptions
 import config.AppConfig
 import crypto.DataEncryptor
 import models.{ChargeAndMember, LockDetail}
+import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
@@ -216,7 +217,7 @@ class AftBatchedDataCacheRepository @Inject()(
     ) ++ userDataBatchSizeJson
 
     Updates.combine(
-      seqUpdates: _*
+      seqUpdates *
     )
   }
 
@@ -262,7 +263,7 @@ class AftBatchedDataCacheRepository @Inject()(
         lockedBy(sessionId, id).map { lockDetail =>
           val sessionData = batchInfo.jsValue.asOpt[SessionData]
           sessionData.map {
-            _ copy (lockDetail = lockDetail)
+            _.copy (lockDetail = lockDetail)
           }
         }
       case _ =>

@@ -42,10 +42,11 @@ object AuthUtils {
   val name: Name = Name(Some("First"), Some("Last"))
 
   def failedAuthStub(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Unit]] =
-    when(mockAuthConnector.authorise[Unit](any(), any())(any(), any())) thenReturn Future.failed(InsufficientEnrolments())
+    when(mockAuthConnector.authorise[Unit](any(), any())(any(), any())).thenReturn(Future.failed(InsufficientEnrolments()))
 
   def authStub(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String] ~ Option[Name]]] =
-    when(mockAuthConnector.authorise[Enrolments ~ Option[String] ~ Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(AuthUtils.authResponse)
+    when(mockAuthConnector.authorise[Enrolments ~ Option[String] ~ Option[Name]](any(), any())(any(), any()))
+      .thenReturn(Future.successful(AuthUtils.authResponse))
   val authResponse = new ~(
     new ~(
       Enrolments(
@@ -57,8 +58,8 @@ object AuthUtils {
   )
 
   def authStubPsp(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String] ~ Option[Name]]] =
-    when(mockAuthConnector.authorise[Enrolments ~ Option[String] ~ Option[Name]](any(), any())(any(), any())) thenReturn
-      Future.successful(AuthUtils.authResponsePsp)
+    when(mockAuthConnector.authorise[Enrolments ~ Option[String] ~ Option[Name]](any(), any())(any(), any())).thenReturn(
+      Future.successful(AuthUtils.authResponsePsp))
   val authResponsePsp = new ~(
     new ~(
       Enrolments(

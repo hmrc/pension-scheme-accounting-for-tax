@@ -21,6 +21,7 @@ import base.MongoConfig
 import crypto.DataEncryptor
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
+import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.bson.{BsonDocument, BsonString}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
@@ -34,20 +35,20 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import repository.model.FileUploadStatus
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.mongo.MongoComponent
+import scala.compiletime.uninitialized
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
 
-class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with
-  BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
+class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
   import FileUploadReferenceCacheRepositorySpec._
 
-  var fileUploadReferenceCacheRepository: FileUploadReferenceCacheRepository = _
+  var fileUploadReferenceCacheRepository: FileUploadReferenceCacheRepository = uninitialized
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(mock[AuthConnector])
@@ -59,7 +60,7 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
       "metrics.enabled" -> false,
       "metrics.jvm" -> false,
       "run.mode" -> "Test"
-    ).overrides(modules: _*).build()
+    ).overrides(modules *).build()
 
   private val cipher = app.injector.instanceOf[DataEncryptor]
 
@@ -94,7 +95,7 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
 
       Await.result(result, Duration.Inf) match {
         case status =>
-          status.map(_.status) mustBe Some(fileUploadStatusNotInProgress)
+          status.map(_.status).mustBe(Some(fileUploadStatusNotInProgress))
       }
     }
   }
@@ -112,7 +113,7 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
         },
         Duration.Inf
       )
-      result.map(_.status) mustBe Some(fileUploadStatusInProgress)
+      result.map(_.status).mustBe(Some(fileUploadStatusInProgress))
     }
 
     "get none when not present" in {
@@ -127,7 +128,7 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
         },
         Duration.Inf
       )
-      result.map(_.status) mustBe None
+      result.map(_.status).mustBe(None)
     }
   }
 
@@ -144,8 +145,8 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
         },
         Duration.Inf
       )
-      result.map(_.status) mustBe Some(fileUploadStatusInProgress)
-      result.map(_.reference) mustBe Some(id2)
+      result.map(_.status).mustBe(Some(fileUploadStatusInProgress))
+      result.map(_.reference).mustBe(Some(id2))
     }
     "save expireAt value as a date" in {
       when(mockConfiguration.getOptional[Boolean](path= "encrypted")).thenReturn(Some(false))
@@ -164,8 +165,8 @@ class FileUploadReferenceCacheRepositorySpec extends AnyWordSpec with MockitoSug
       }
 
       whenReady(ftr) { case (stringResults, dateResults) =>
-        stringResults.length mustBe 0
-        dateResults.length mustBe 1
+        stringResults.length.mustBe(0)
+        dateResults.length.mustBe(1)
       }
     }
   }

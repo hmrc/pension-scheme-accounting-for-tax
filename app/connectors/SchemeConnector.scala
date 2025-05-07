@@ -54,7 +54,7 @@ class SchemeConnector @Inject()(
 
 
     httpV2Client.get(url"${config.checkAssociationUrl}")
-      .setHeader(headers: _*)
+      .setHeader(headers *)
       .execute[HttpResponse] map { response =>
       response.status match {
         case OK => Right(response.json)

@@ -27,7 +27,7 @@ class ChargeGTransformer extends JsonTransformer {
       ((__ \ Symbol("chargeGDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json
         .pick(readsVersionRemovingZeroes)) and
         (__ \ Symbol("chargeGDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
-        (__ \ Symbol("chargeGDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalOTCAmount")).json.pick)).reduce
+        (__ \ Symbol("chargeGDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalOTCAmount")).json.pick)).reduce: Reads[JsObject]
     )).map(_.getOrElse(Json.obj()))
 
   def readsMembers: Reads[JsArray] = __.read(Reads.seq(readsMember)).map(JsArray(_))

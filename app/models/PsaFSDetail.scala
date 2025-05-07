@@ -119,13 +119,13 @@ object PsaFS {
   implicit val rdsPsaFSMax: Reads[PsaFS] = {
     def transformExtraFields(seqPsaFSDetail: Seq[PsaFSDetail]): Seq[PsaFSDetail] = {
       val seqPsaFSDetailWithIndexes = seqPsaFSDetail.zipWithIndex.map { case (psaFSDetail, i) =>
-        psaFSDetail copy (index = i + 1)
+        psaFSDetail.copy (index = i + 1)
       }
       seqPsaFSDetailWithIndexes.map { psaFSDetail =>
         psaFSDetail.sourceChargeRefForInterest match {
           case Some(ref) => seqPsaFSDetailWithIndexes.find(_.chargeReference == ref) match {
             case Some(foundOriginalCharge) =>
-              psaFSDetail copy (
+              psaFSDetail.copy (
                 psaSourceChargeInfo = Some(PsaSourceChargeInfo(
                   index = foundOriginalCharge.index,
                   chargeType = foundOriginalCharge.chargeType,

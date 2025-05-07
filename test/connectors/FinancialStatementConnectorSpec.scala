@@ -91,7 +91,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
           )
       )
       connector.getPsaFS(psaId).map { response =>
-        response mustBe psaModelMax
+        response `mustBe` psaModelMax
       }
     }
 
@@ -126,7 +126,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       recoverToExceptionIf[BadRequestException] {
         connector.getPsaFS(psaId)
       } map { errorResponse =>
-        errorResponse.responseCode mustBe BAD_REQUEST
+        errorResponse.responseCode `mustBe` BAD_REQUEST
         errorResponse.message must include("INVALID_PSTR")
       }
     }
@@ -142,7 +142,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
 
       connector.getPsaFS(psaId) map {
         response =>
-          response mustBe PsaFS(inhibitRefundSignal = false, Seq.empty)
+          response `mustBe` PsaFS(inhibitRefundSignal = false, Seq.empty)
       }
     }
 
@@ -189,7 +189,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
         .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
 
-      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+      when(mockRepo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
 
       server.stubFor(
@@ -213,7 +213,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
         .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
 
-      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+      when(mockRepo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
@@ -238,7 +238,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
         .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
 
-      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+      when(mockRepo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
@@ -261,7 +261,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
         .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
 
-      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+      when(mockRepo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
@@ -285,7 +285,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
         .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
 
-      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+      when(mockRepo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
@@ -305,7 +305,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
         .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
 
-      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+      when(mockRepo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))
@@ -326,7 +326,7 @@ class FinancialStatementConnectorSpec extends AsyncWordSpec with Matchers with W
       when(mockRepo.get(eqTo(s"schemeFS-$pstr"))(any()))
         .thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
 
-      when(mockRepo.save(any(), any())(any())) thenReturn Future.successful((): Unit)
+      when(mockRepo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
       server.stubFor(
         get(urlEqualTo(getSchemeFSMaxUrl))

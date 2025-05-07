@@ -27,7 +27,7 @@ class ChargeETransformer extends McCloudJsonTransformer {
       ((__ \ Symbol("chargeEDetails") \ Symbol("amendedVersion")).json.copyFrom((__ \ Symbol("amendedVersion")).json
         .pick(readsVersionRemovingZeroes)) and
         (__ \ Symbol("chargeEDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
-        (__ \ Symbol("chargeEDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce
+        (__ \ Symbol("chargeEDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce: Reads[JsObject]
     )).map(_.getOrElse(Json.obj()))
 
   def readsMembers: Reads[JsArray] = __.read(Reads.seq(readsMember)).map(JsArray(_))
@@ -44,7 +44,7 @@ class ChargeETransformer extends McCloudJsonTransformer {
 //      (__ \ Symbol("annualAllowanceYear")).json.copyFrom((__ \ Symbol("taxYearEnding")).json.pick.map(v => JsString((v.as[String].toInt-1).toString))) and
       (__ \ Symbol("annualAllowanceYear")).json.copyFrom((__ \ Symbol("taxYearEnding")).json.pick) and
       readsMcCloudDetails(isPSRNodeName = "anAllowanceChgPblSerRem", isOtherSchemesNodeName = "orChgPaidbyAnoPS",
-        amountNodeName = "amtOrRepAaChg", repoPeriodNodeName = "repPeriodForAac")).reduce
+        amountNodeName = "amtOrRepAaChg", repoPeriodNodeName = "repPeriodForAac")).reduce: Reads[JsObject]
 
   def getPaidUnder237b: Reads[JsObject] =
     (__ \ Symbol("paidUnder237b")).read[String].flatMap { paidUnder237b =>

@@ -112,7 +112,7 @@ class PsaPspEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
           val controller = new Harness(authAction)
           val result = controller.onPageLoad()(FakeRequest())
 
-          status(result) mustBe UNAUTHORIZED
+          status(result).`mustBe`(UNAUTHORIZED)
         }
       }
     }

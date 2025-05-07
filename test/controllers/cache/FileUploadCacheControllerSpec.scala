@@ -17,7 +17,6 @@
 package controllers.cache
 
 import controllers.actions.PsaPspEnrolmentAuthAction
-import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
@@ -37,6 +36,7 @@ import utils.AuthUtils.FakePsaPspEnrolmentAuthAction
 import java.time.Instant
 import scala.concurrent.Future
 import scala.util.Random
+import org.apache.pekko.util.ByteString
 
 class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
 
@@ -46,7 +46,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
   private val fakeRequestReference = FakeRequest().withHeaders("reference" -> referenceId)
   private val fakeRequest = FakeRequest().withHeaders("uploadId" -> uploadId)
   private val fakePostRequest = FakeRequest("POST", "/").withHeaders("uploadId" -> uploadId)
-  private def randomString = ByteString(Random.alphanumeric.dropWhile(_.isDigit).take(20).mkString)
+  private def randomString: ByteString = ByteString(Random.alphanumeric.dropWhile(_.isDigit).take(20).mkString)
   private val modules: Seq[GuiceableModule] = Seq(
     bind[FileUploadReferenceCacheRepository].toInstance(repo),
     bind[AftBatchedDataCacheRepository].toInstance(mock[AftBatchedDataCacheRepository]),
@@ -59,7 +59,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
 
   val app: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-    .overrides(modules: _*).build()
+    .overrides(modules *).build()
   val controller: FileUploadCacheController = app.injector.instanceOf[FileUploadCacheController]
 
   override protected def beforeEach(): Unit = {
@@ -71,17 +71,17 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
   "FileUploadCacheController" when {
     "calling requestUpload" must {
       "return OK with the data" in {
-        when(repo.requestUpload(eqTo(uploadId), eqTo(referenceId))(any())) thenReturn Future.successful((): Unit)
+        when(repo.requestUpload(eqTo(uploadId), eqTo(referenceId))(any())).thenReturn(Future.successful((): Unit))
 
         val result = controller.requestUpload(fakePostRequest.withJsonBody(Json.obj("reference" -> referenceId)))
-        status(result) mustEqual OK
+        status(result).mustEqual(OK)
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        when(repo.requestUpload(any(), any())(any())) thenReturn Future.successful((): Unit)
+        when(repo.requestUpload(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
         val result = controller.requestUpload(fakePostRequest.withRawBody(randomString))
-        status(result) mustEqual BAD_REQUEST
+        status(result).mustEqual(BAD_REQUEST)
       }
     }
 
@@ -89,7 +89,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
       "return OK with the data" in {
         val dateTimeNow = Instant.now()
         val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, FileUploadStatus("InProgress"), dateTimeNow, dateTimeNow, dateTimeNow)
-        when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(Some(fileUploadDataCache))
+        when(repo.getUploadResult(eqTo(uploadId))(any())).thenReturn(Future.successful(Some(fileUploadDataCache)))
         val result = controller.getUploadResult(fakeRequest)
         status(result) mustEqual OK
         val res = contentAsJson(result).as[JsObject]
@@ -98,24 +98,23 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
         (res \ "status" \ "_type").as[String] must include("InProgress")
       }
       "return NOT FOUND when the data doesn't exist" in {
-        when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.successful(None)
+        when(repo.getUploadResult(eqTo(uploadId))(any())).thenReturn(Future.successful(None))
 
         val result = controller.getUploadResult(fakeRequest)
         status(result) mustEqual NOT_FOUND
       }
 
       "throw an exception when the repository call fails" in {
-        when(repo.getUploadResult(eqTo(uploadId))(any())) thenReturn Future.failed(new Exception())
+        when(repo.getUploadResult(eqTo(uploadId))(any())).thenReturn(Future.failed(new Exception()))
         val result = controller.getUploadResult(fakeRequest)
         an[Exception] must be thrownBy status(result)
-      }
+        }
     }
 
     "calling registerUploadResult" must {
       "return OK with the data" in {
         val uploadStatus = FileUploadStatus("Success", None, None, Some("www.test.com"), Some("text/csv"), Some("test.csv"), Some("100".toLong))
-        val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, Instant.now(), Instant.now(), Instant.now())
-        when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
+        when(repo.updateStatus(any(), any())).thenReturn(Future.successful((): Unit))
 
         val result = controller.registerUploadResult(fakeRequestReference.withJsonBody(Json.toJson(uploadStatus)))
         status(result) mustEqual OK
@@ -124,7 +123,7 @@ class FileUploadCacheControllerSpec extends AnyWordSpec with Matchers with Mocki
       "return BAD REQUEST when the request body cannot be parsed" in {
         val uploadStatus = FileUploadStatus("Success", None, None, Some("www.test.com"), Some("text/csv"), Some("test.csv"), Some("100".toLong))
         val fileUploadDataCache = FileUploadDataCache(uploadId, referenceId, uploadStatus, Instant.now(), Instant.now(), Instant.now())
-        when(repo.updateStatus(any(), any())) thenReturn Future.successful(Some(fileUploadDataCache))
+        when(repo.updateStatus(any(), any())).thenReturn(Future.successful(Some(fileUploadDataCache)))
 
         val result = controller.registerUploadResult(fakeRequestReference.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST

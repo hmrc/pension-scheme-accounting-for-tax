@@ -31,12 +31,12 @@ class EmailEventsSpec extends AnyWordSpec with OptionValues with Matchers {
     "format " when {
       "reading from json" in {
         val result = Json.fromJson[EmailEvents](emailResponseJson).asOpt.value
-        result mustBe emailResponseEvents
+        result.mustBe(emailResponseEvents)
       }
 
       "writing to json" in {
         val result = Json.toJson[EmailEvents](emailResponseEvents)
-        result mustBe emailResponseJson
+        result.mustBe(emailResponseJson)
       }
     }
   }

@@ -59,7 +59,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
   val app: Application = new GuiceApplicationBuilder()
     .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false, "run.mode" -> "Test")
-    .overrides(modules: _*).build()
+    .overrides(modules *).build()
   val controller: FinancialInfoCreditAccessController = app.injector.instanceOf[FinancialInfoCreditAccessController]
 
   override def beforeEach(): Unit = {
@@ -70,7 +70,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
   "FinancialInfoCreditAccessController" when {
     "calling getForSchemePsa" must {
       "when accessed by logged in PSA return OK with the accessedByCurrentPsa" in {
-        when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> psaId)))
+        when(repo.get(any())(any())).thenReturn(Future.successful(Some(Json.obj("psaId" -> psaId))))
 
         val result = controller.getForSchemePsa(psaId, srn)(fakeRequest)
         status(result) mustEqual OK
@@ -78,7 +78,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when accessed by different PSA return OK with the accessedByOtherPsa" in {
-        when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> pspId)))
+        when(repo.get(any())(any())).thenReturn(Future.successful(Some(Json.obj("psaId" -> pspId))))
 
         val result = controller.getForSchemePsa(psaId, srn)(fakeRequest)
         status(result) mustEqual OK
@@ -93,7 +93,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
         status(result) mustEqual NOT_FOUND
         val jsValueCaptor: ArgumentCaptor[JsValue] = ArgumentCaptor.forClass(classOf[JsValue])
         verify(repo, times(1)).save(ArgumentMatchers.eq(srn), jsValueCaptor.capture())(any())
-        jsValueCaptor.getValue mustBe Json.obj(
+        jsValueCaptor.getValue `mustBe` Json.obj(
           "psaId" -> psaId
         )
       }
@@ -101,7 +101,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
     "calling getForSchemePsp" must {
       "when accessed by logged in PSA return OK with the accessedByCurrentPsp" in {
-        when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("pspId" -> pspId)))
+        when(repo.get(any())(any())).thenReturn(Future.successful(Some(Json.obj("pspId" -> pspId))))
 
         val result = controller.getForSchemePsp(pspId, srn)(fakeRequest)
         status(result) mustEqual OK
@@ -109,7 +109,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when accessed by different PSA return OK with the accessedByOtherPsp" in {
-        when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("pspId" -> psaId)))
+        when(repo.get(any())(any())).thenReturn(Future.successful(Some(Json.obj("pspId" -> psaId))))
 
         val result = controller.getForSchemePsp(pspId, srn)(fakeRequest)
         status(result) mustEqual OK
@@ -117,14 +117,14 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when not accessed by any PSA or PSP return NOT_FOUND and update repo with pspId and srn" in {
-        when(repo.get(any())(any())) thenReturn Future.successful(None)
+        when(repo.get(any())(any())).thenReturn(Future.successful(None))
         when(repo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
         val result = controller.getForSchemePsp(pspId, srn)(fakeRequest)
         status(result) mustEqual NOT_FOUND
         val jsValueCaptor: ArgumentCaptor[JsValue] = ArgumentCaptor.forClass(classOf[JsValue])
         verify(repo, times(1)).save(ArgumentMatchers.eq(srn), jsValueCaptor.capture())(any())
-        jsValueCaptor.getValue mustBe Json.obj(
+        jsValueCaptor.getValue `mustBe` Json.obj(
           "pspId" -> pspId
         )
       }
@@ -132,7 +132,7 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
 
     "calling getForPsa" must {
       "when accessed by logged in PSA return OK with the accessedByCurrentPsa" in {
-        when(repo.get(any())(any())) thenReturn Future.successful(Some(Json.obj("psaId" -> psaId)))
+        when(repo.get(any())(any())).thenReturn(Future.successful(Some(Json.obj("psaId" -> psaId))))
 
         val result = controller.getForPsa(psaId)(fakeRequest)
         status(result) mustEqual OK
@@ -140,14 +140,14 @@ class FinancialInfoCreditAccessControllerSpec extends AnyWordSpec with Matchers 
       }
 
       "when not accessed by any PSA  return NOT_FOUND and update repo with psaId" in {
-        when(repo.get(any())(any())) thenReturn Future.successful(None)
+        when(repo.get(any())(any())).thenReturn(Future.successful(None))
         when(repo.save(any(), any())(any())).thenReturn(Future.successful((): Unit))
 
         val result = controller.getForPsa(psaId)(fakeRequest)
         status(result) mustEqual NOT_FOUND
         val jsValueCaptor: ArgumentCaptor[JsValue] = ArgumentCaptor.forClass(classOf[JsValue])
         verify(repo, times(1)).save(ArgumentMatchers.eq(psaId), jsValueCaptor.capture())(any())
-        jsValueCaptor.getValue mustBe Json.obj(
+        jsValueCaptor.getValue `mustBe` Json.obj(
           "psaId" -> psaId
         )
       }

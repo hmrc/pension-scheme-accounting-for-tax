@@ -18,6 +18,7 @@ package services
 
 import com.google.inject.Inject
 import org.mongodb.scala.bson.{BsonDateTime, BsonDocument, BsonString}
+import org.mongodb.scala.{ObservableFuture, documentToUntypedDocument}
 import org.mongodb.scala.model.{Filters, Updates}
 import play.api.Logging
 import uk.gov.hmrc.mongo.MongoComponent
@@ -30,7 +31,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MigrationService @Inject()(mongoLockRepository: MongoLockRepository,
                                  mongoComponent: MongoComponent)(implicit ec: ExecutionContext) extends Logging {
-  private val lock = LockService(mongoLockRepository, "file_upload_reference_data_expireAtLock", Duration(10, TimeUnit.MINUTES))
+  private val lock: LockService = LockService(mongoLockRepository, "file_upload_reference_data_expireAtLock", Duration(10, TimeUnit.MINUTES))
 
   private def fixExpireAt(collectionName: String) = {
     val collection = mongoComponent.database.getCollection(collectionName)

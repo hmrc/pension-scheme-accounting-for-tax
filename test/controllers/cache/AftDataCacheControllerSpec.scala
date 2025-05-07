@@ -77,7 +77,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
         "metrics.jvm" -> false,
         "run.mode" -> "Test"
       )
-      .overrides(modules: _*)
+      .overrides(modules *)
       .build()
 
   val controller: AftDataCacheController = app.injector.instanceOf[AftDataCacheController]
@@ -92,8 +92,9 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   "DataCacheController" when {
     "calling get" must {
       "return OK with the data" in {
-        when(repo.get(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful(Some(Json.obj("testId" -> "data")))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+        when(repo.get(eqTo(id), eqTo(sessionId))(any())).thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
+        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
+          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual OK
@@ -101,16 +102,18 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "return NOT FOUND when the data doesn't exist" in {
-        when(repo.get(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful(None)
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+        when(repo.get(eqTo(id), eqTo(sessionId))(any())).thenReturn(Future.successful(None))
+        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
+          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual NOT_FOUND
       }
 
       "throw an exception when the repository call fails" in {
-        when(repo.get(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.failed(new Exception())
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+        when(repo.get(eqTo(id), eqTo(sessionId))(any())).thenReturn(Future.failed(new Exception()))
+        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
+          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.get(fakeRequest)
         an[Exception] must be thrownBy status(result)
@@ -120,16 +123,18 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "calling save" must {
 
       "return OK when the data is saved successfully" in {
-        when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful((): Unit)
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+        when(repo.save(any(), any(), any(), any())(any())).thenReturn(Future.successful((): Unit))
+        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
+          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.save(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
         status(result) mustEqual CREATED
       }
 
       "return BAD REQUEST when the request body cannot be parsed" in {
-        when(repo.save(any(), any(), any(), any())(any())) thenReturn Future.successful((): Unit)
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+        when(repo.save(any(), any(), any(), any())(any())).thenReturn(Future.successful((): Unit))
+        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
+          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.save(fakePostRequest.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST
@@ -138,8 +143,9 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
     "calling remove" must {
       "return OK when the data is removed successfully" in {
-        when(repo.remove(eqTo(id), eqTo(sessionId))(any())) thenReturn Future.successful((): Unit)
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+        when(repo.remove(eqTo(id), eqTo(sessionId))(any())).thenReturn(Future.successful((): Unit))
+        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
+          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.remove(fakeRequest)
         status(result) mustEqual OK
@@ -151,8 +157,9 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
         val sd = SessionData("id", Some(LockDetail("test name", psaId)), 1, "", areSubmittedVersionsAvailable = false)
 
-        when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(Some(sd))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+        when(repo.getSessionData(any(), any())(any())).thenReturn(Future.successful(Some(sd)))
+        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
+          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.getSessionData(fakeRequest)
         status(result) mustEqual OK
@@ -160,8 +167,9 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       }
 
       "return Not Found when it is not locked" in {
-        when(repo.getSessionData(any(), any())(any())) thenReturn Future.successful(None)
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any())) thenReturn Future.successful(Some(Name(Some("test"), Some("name"))))
+        when(repo.getSessionData(any(), any())(any())).thenReturn(Future.successful(None))
+        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
+          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.getSessionData(fakeRequest)
         status(result) mustEqual NOT_FOUND
@@ -181,7 +189,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
         ArgumentMatchers.eq(version),
         ArgumentMatchers.eq(accessMode),
         ArgumentMatchers.eq(true)
-      )(any())) thenReturn Future.successful((): Unit)
+      )(any())).thenReturn(Future.successful((): Unit))
 
       val result = controller.setSessionData(true)(fakePostRequest
         .withJsonBody(Json.obj("value" -> "data"))
@@ -205,7 +213,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
         ArgumentMatchers.eq(version),
         ArgumentMatchers.eq(accessMode),
         ArgumentMatchers.eq(true)
-      )(any())) thenReturn Future.successful((): Unit)
+      )(any())).thenReturn(Future.successful((): Unit))
 
 
       val result = controller.setSessionData(true)(fakePostRequest
@@ -225,7 +233,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       when(repo.setSessionData(ArgumentMatchers.eq(id),
         ArgumentMatchers.eq(Some(LockDetail(fullName, psaId))), any(), any(),
-        ArgumentMatchers.eq(version), ArgumentMatchers.eq(accessMode), any())(any())) thenReturn Future.successful((): Unit)
+        ArgumentMatchers.eq(version), ArgumentMatchers.eq(accessMode), any())(any())).thenReturn(Future.successful((): Unit))
       val result = controller.setSessionData(true)(fakePostRequest
         .withJsonBody(Json.obj("value" -> "data"))
       )
@@ -234,7 +242,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
     "return BAD REQUEST when the request body cannot be parsed" in {
 
-      when(repo.setSessionData(any(), any(), any(), any(), any(), any(), any())(any())) thenReturn Future.successful((): Unit)
+      when(repo.setSessionData(any(), any(), any(), any(), any(), any(), any())(any())).thenReturn(Future.successful((): Unit))
 
       val result = controller
         .setSessionData(true)(fakePostRequest.withRawBody(randomString))
@@ -250,7 +258,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       val result = controller.lockedBy()(fakeRequest)
       status(result) mustEqual OK
-      contentAsString(result) mustBe Json.toJson(lockedByUser).toString
+      contentAsString(result) `mustBe` Json.toJson(lockedByUser).toString
     }
 
     "return NOT FOUND when not locked" in {

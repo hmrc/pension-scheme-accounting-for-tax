@@ -19,6 +19,7 @@ package repository
 import com.google.inject.Inject
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import crypto.DataEncryptor
+import org.mongodb.scala.SingleObservableFuture
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
 import play.api.libs.json._

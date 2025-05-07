@@ -46,7 +46,7 @@ class FinancialStatementConnector @Inject()(
   def getPsaFS(psaId: String)
               (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[PsaFS] = {
 
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader *)
 
     transformPSAFS(psaId, config.psaFinancialStatementMaxUrl.format(psaId))(hc, implicitly, implicitly)
   }
@@ -129,7 +129,7 @@ class FinancialStatementConnector @Inject()(
   }
   private def getSchemeFSCall(pstr: String)
                  (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
-    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader: _*)
+    implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader *)
 
     val reads: Reads[SchemeFS] = SchemeFS.rdsSchemeFSMax
 
@@ -138,7 +138,7 @@ class FinancialStatementConnector @Inject()(
 
     httpClient2
               .get(url)(hc)
-              .setHeader(headerUtils.integrationFrameworkHeader:_*)
+              .setHeader(headerUtils.integrationFrameworkHeader *)
               .transform(_.withRequestTimeout(config.ifsTimeout))
               .execute[HttpResponse].map{ response =>
       response.status match {
@@ -147,7 +147,7 @@ class FinancialStatementConnector @Inject()(
           Json.parse(response.body).validate[SchemeFS](reads) match {
             case JsSuccess(schemeFS, _) =>
               logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFS")
-              logger.warn(s"Size of schemeFS payload: ${getObjectSize(schemeFS)} bytes")
+              logger.warn(s"Size of schemeFS payload: ${getObjectSize[SchemeFS](schemeFS)} bytes")
               SchemeFS(
                 inhibitRefundSignal = schemeFS.inhibitRefundSignal,
                 seqSchemeFSDetail = schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment interest"))

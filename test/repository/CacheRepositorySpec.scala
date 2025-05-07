@@ -19,7 +19,9 @@ package repository
 import base.MongoConfig
 import crypto.DataEncryptor
 import org.mockito.Mockito._
+import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.bson.{BsonDocument, BsonString}
+import org.scalactic.Prettifier.default
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
@@ -32,19 +34,21 @@ import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.mongo.MongoComponent
+import scala.compiletime.uninitialized
+
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
-class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with
-  BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
+class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig
+  with BeforeAndAfter with BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
   import CacheRepositorySpec._
 
-  var cacheRepository: CacheRepository = _
+  var cacheRepository: CacheRepository = uninitialized
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(mock[AuthConnector])
@@ -56,7 +60,7 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
       "metrics.enabled" -> false,
       "metrics.jvm" -> false,
       "run.mode" -> "Test"
-    ).overrides(modules: _*).build()
+    ).overrides(modules *).build()
 
   private val cipher = app.injector.instanceOf[DataEncryptor]
 
@@ -87,7 +91,7 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
         },
         Duration.Inf
       )
-      result mustBe None
+      result.mustBe(None)
     }
   }
 
@@ -103,7 +107,7 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
         },
         Duration.Inf
       )
-      result mustBe None
+      result.mustBe(None)
     }
   }
 
@@ -120,8 +124,8 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
         },
         Duration.Inf
       )
-      result mustBe Some(dummyData)
-      cacheRepository.collectionName mustBe collectionName
+      result.mustBe(Some(dummyData))
+      cacheRepository.collectionName.mustBe(collectionName)
     }
     "save expireAt value as a date" in {
       when(mockConfiguration.getOptional[Boolean](path= "encrypted")).thenReturn(Some(false))
@@ -141,8 +145,8 @@ class CacheRepositorySpec extends AnyWordSpec with MockitoSugar with Matchers wi
       }
 
       whenReady(ftr) { case (stringResults, dateResults) =>
-        stringResults.length mustBe 0
-        dateResults.length mustBe 1
+        stringResults.length.mustBe(0)
+        dateResults.length.mustBe(1)
       }
     }
   }

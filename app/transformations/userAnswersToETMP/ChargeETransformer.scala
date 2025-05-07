@@ -33,13 +33,14 @@ class ChargeETransformer extends JsonTransformer {
           orElse doNothing) and
           (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("memberDetails")).json.copyFrom((__ \ Symbol("members")).read(readsMembers)) and
           (__ \ Symbol("chargeDetails") \ Symbol("chargeTypeEDetails") \ Symbol("totalAmount")).json.copyFrom((__ \ Symbol("totalChargeAmount")).json.pick)
-        ).reduce
+        ).reduce: Reads[JsObject]
     }
 
   def readsMembers: Reads[JsArray] = readsFiltered(_ \ "memberDetails", readsMember).map(JsArray(_)).map(removeEmptyObjects)
 
   def readsMember: Reads[JsObject] =
-    (readsMemberDetails and
+    (
+      (readsMemberDetails and
       (__ \ Symbol("amountOfCharge")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("chargeAmount")).json.pick) and
       (__ \ Symbol("dateOfNotice")).json.copyFrom((__ \ Symbol("chargeDetails") \ Symbol("dateNoticeReceived")).json.pick) and
       getPaidUnder237b and
@@ -50,7 +51,7 @@ class ChargeETransformer extends JsonTransformer {
         orElse (__ \ Symbol("memberStatus")).json.put(JsString("New"))) and
       ((__ \ Symbol("memberAFTVersion")).json.copyFrom((__ \ Symbol("memberAFTVersion")).json.pick)
         orElse doNothing) and readsMccloud
-      ).reduce.orElseEmptyOnMissingFields
+      ).reduce: Reads[JsObject]).orElseEmptyOnMissingFields
 
   private def getPaidUnder237b: Reads[JsObject] =
     (__ \ Symbol("chargeDetails") \ Symbol("isPaymentMandatory")).read[Boolean].flatMap { flag =>
@@ -61,7 +62,7 @@ class ChargeETransformer extends JsonTransformer {
     (__ \ Symbol("pstr")).json.copyFrom((__ \ Symbol("pstr")).json.pick) and
       (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
       (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("chargeAmountReported")).json.pick)
-    ).reduce
+    ).reduce: Reads[JsObject]
 
   private val readsAllSchemes: Reads[JsArray] =
     (__ \ Symbol("mccloudRemedy") \ "schemes").readNullable(Reads.seq(readsScheme)).flatMap {
@@ -71,9 +72,11 @@ class ChargeETransformer extends JsonTransformer {
 
   private val readsSingleScheme: Reads[JsArray] =
     (
+      (
       (__ \ Symbol("repPeriodForAac")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("taxQuarterReportedAndPaid") \ "endDate").json.pick) and
         (__ \ Symbol("amtOrRepAaChg")).json.copyFrom((__ \ Symbol("mccloudRemedy") \ Symbol("chargeAmountReported")).json.pick)
-      ).reduce.map(jsObject => Json.arr(jsObject))
+      ).reduce: Reads[JsObject])
+      .map(jsObject => Json.arr(jsObject))
 
   private def readsPensionSchemeDetails(isAnother: Boolean): Reads[JsObject] = {
     if (isAnother) {
@@ -95,7 +98,7 @@ class ChargeETransformer extends JsonTransformer {
             (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(true)) and
               (__ \ Symbol("orChgPaidbyAnoPS")).json.put(booleanToJsString(isAnother)) and
               readsPensionSchemeDetails(isAnother)
-            ).reduce
+            ).reduce: Reads[JsObject]
         case (Some(true), Some(false), _) => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(false))
         case (Some(false) | None, _, _) => (__ \ Symbol("anAllowanceChgPblSerRem")).json.put(booleanToJsString(false))
         case (a, b, c) =>

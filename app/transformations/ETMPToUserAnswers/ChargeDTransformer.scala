@@ -27,7 +27,7 @@ class ChargeDTransformer extends McCloudJsonTransformer {
       ((__ \ Symbol("chargeDDetails") \ Symbol("amendedVersion")).json
         .copyFrom((__ \ Symbol("amendedVersion")).json.pick(readsVersionRemovingZeroes)) and
         (__ \ Symbol("chargeDDetails") \ Symbol("members")).json.copyFrom((__ \ Symbol("memberDetails")).read(readsMembers)) and
-        (__ \ Symbol("chargeDDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce
+        (__ \ Symbol("chargeDDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce: Reads[JsObject]
     )).map(_.getOrElse(Json.obj()))
 
   def readsMembers: Reads[JsArray] = __.read(Reads.seq(readsMember)).map(JsArray(_))
@@ -41,5 +41,5 @@ class ChargeDTransformer extends McCloudJsonTransformer {
       (__ \ Symbol("chargeDetails") \ Symbol("taxAt25Percent")).json.copyFrom((__ \ Symbol("totalAmountDueAtLowerRate")).json.pick) and
       (__ \ Symbol("chargeDetails") \ Symbol("taxAt55Percent")).json.copyFrom((__ \ Symbol("totalAmountDueAtHigherRate")).json.pick) and
       readsMcCloudDetails(isPSRNodeName = "lfAllowanceChgPblSerRem", isOtherSchemesNodeName = "orLfChgPaidbyAnoPS",
-        amountNodeName = "amtOrRepLtaChg", repoPeriodNodeName = "repPeriodForLtac")).reduce
+        amountNodeName = "amtOrRepLtaChg", repoPeriodNodeName = "repPeriodForLtac")).reduce: Reads[JsObject]
 }

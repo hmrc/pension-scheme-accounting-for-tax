@@ -35,16 +35,16 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0
           val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 0
 
-          (uaPath \ "memberStatus").as[String] mustBe (etmpPath \ "memberStatus").as[String]
-          (uaPath \ "memberAFTVersion").as[Int] mustBe (etmpPath \ "memberAFTVersion").as[String].toInt
-          (uaPath \ "chargeDetails" \ "paymentDate").as[String] mustBe (etmpPath \ "dateOfPayment").as[String]
-          (uaPath \ "chargeDetails" \ "amountTaxDue").as[BigDecimal] mustBe (etmpPath \ "totalAmountOfTaxDue").as[BigDecimal]
+          (uaPath \ "memberStatus").as[String].mustBe((etmpPath \ "memberStatus").as[String])
+          (uaPath \ "memberAFTVersion").as[Int].mustBe((etmpPath \ "memberAFTVersion").as[String].toInt)
+          (uaPath \ "chargeDetails" \ "paymentDate").as[String].mustBe((etmpPath \ "dateOfPayment").as[String])
+          (uaPath \ "chargeDetails" \ "amountTaxDue").as[BigDecimal].mustBe((etmpPath \ "totalAmountOfTaxDue").as[BigDecimal])
 
-          (transformedJson \ "chargeCDetails" \ "amendedVersion").as[Int] mustBe
-            (etmpJson \ "chargeTypeC" \ "amendedVersion").as[String].toInt
+          (transformedJson \ "chargeCDetails" \ "amendedVersion").as[Int].mustBe(
+            (etmpJson \ "chargeTypeC" \ "amendedVersion").as[String].toInt)
 
-          (transformedJson \ "chargeCDetails" \ "totalChargeAmount").as[BigDecimal] mustBe
-            (etmpJson \ "chargeTypeC" \ "totalAmount").as[BigDecimal]
+          (transformedJson \ "chargeCDetails" \ "totalChargeAmount").as[BigDecimal].mustBe(
+            (etmpJson \ "chargeTypeC" \ "totalAmount").as[BigDecimal])
       }
     }
 
@@ -59,9 +59,9 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val etmpPath = etmpJson \ "chargeTypeC" \
             "memberDetails" \ 0 \ "individualDetails"
 
-          (uaPath \ "firstName").as[String] mustBe (etmpPath \ "firstName").as[String]
-          (uaPath \ "lastName").as[String] mustBe (etmpPath \ "lastName").as[String]
-          (uaPath \ "nino").as[String] mustBe (etmpPath \ "ninoRef").as[String]
+          (uaPath \ "firstName").as[String].mustBe((etmpPath \ "firstName").as[String])
+          (uaPath \ "lastName").as[String].mustBe((etmpPath \ "lastName").as[String])
+          (uaPath \ "nino").as[String].mustBe((etmpPath \ "ninoRef").as[String])
       }
     }
 
@@ -75,8 +75,8 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 2 \ "sponsoringOrganisationDetails"
           val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 2 \ "organisationDetails"
 
-          (uaPath \ "name").as[String] mustBe (etmpPath \ "compOrOrgName").as[String]
-          (uaPath \ "crn").as[String] mustBe (etmpPath \ "crnNumber").as[String]
+          (uaPath \ "name").as[String].mustBe((etmpPath \ "compOrOrgName").as[String])
+          (uaPath \ "crn").as[String].mustBe((etmpPath \ "crnNumber").as[String])
       }
     }
 
@@ -90,12 +90,12 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringEmployerAddress"
           val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 0 \ "addressDetails"
 
-          (uaPath \ "line1").as[String] mustBe (etmpPath \ "addressLine1").as[String]
-          (uaPath \ "line2").as[String] mustBe (etmpPath \ "addressLine2").as[String]
-          (uaPath \ "line3").asOpt[String] mustBe (etmpPath \ "addressLine3").asOpt[String]
-          (uaPath \ "line4").asOpt[String] mustBe (etmpPath \ "addressLine4").asOpt[String]
-          (uaPath \ "country").as[String] mustBe (etmpPath \ "country").as[String]
-          (uaPath \ "postcode").asOpt[String] mustBe (etmpPath \ "postCode").asOpt[String]
+          (uaPath \ "line1").as[String].mustBe((etmpPath \ "addressLine1").as[String])
+          (uaPath \ "line2").as[String].mustBe((etmpPath \ "addressLine2").as[String])
+          (uaPath \ "line3").asOpt[String].mustBe((etmpPath \ "addressLine3").asOpt[String])
+          (uaPath \ "line4").asOpt[String].mustBe((etmpPath \ "addressLine4").asOpt[String])
+          (uaPath \ "country").as[String].mustBe((etmpPath \ "country").as[String])
+          (uaPath \ "postcode").asOpt[String].mustBe((etmpPath \ "postCode").asOpt[String])
       }
     }
   }

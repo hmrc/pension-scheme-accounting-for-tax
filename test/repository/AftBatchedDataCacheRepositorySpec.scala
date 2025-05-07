@@ -25,6 +25,7 @@ import models.{ChargeAndMember, ChargeType, LockDetail}
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.{ArgumentCaptor, ArgumentMatchers}
+import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model.{Filters, Updates}
@@ -44,20 +45,21 @@ import services.BatchService.{BatchIdentifier, BatchInfo, BatchType}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.Codecs
+import org.scalactic.Prettifier.default
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 class AftBatchedDataCacheRepositorySpec
-  extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig with BeforeAndAfter with
-    BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
+  extends AnyWordSpec with MockitoSugar with Matchers with MongoConfig
+    with BeforeAndAfter with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures { // scalastyle:off magic.number
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(Span(30, Seconds), Span(1, Millis))
 
   import AftBatchedDataCacheRepositorySpec._
 
-  var aftBatchedDataCacheRepository: AftBatchedDataCacheRepository = _
+  var aftBatchedDataCacheRepository: AftBatchedDataCacheRepository = scala.compiletime.uninitialized
 
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AuthConnector].toInstance(mock[AuthConnector])
@@ -69,7 +71,7 @@ class AftBatchedDataCacheRepositorySpec
       "metrics.enabled" -> false,
       "metrics.jvm" -> false,
       "run.mode" -> "Test"
-    ).overrides(modules: _*).build()
+    ).overrides(modules *).build()
 
   private val cipher = app.injector.instanceOf[DataEncryptor]
   private def buildRepository(mongoHost: String, mongoPort: Int): AftBatchedDataCacheRepository = {
@@ -122,12 +124,12 @@ class AftBatchedDataCacheRepositorySpec
       } yield documentsInDB
 
       whenReady(documentsInDB) { documentsInDB =>
-        documentsInDB.size mustBe 12
+        documentsInDB.size.mustBe(12)
         val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
           .filter(filterOnBatchTypeAndNo(batchType = BatchType.Other, batchNo = 1))
-        actualOtherBatch.nonEmpty mustBe true
+        actualOtherBatch.nonEmpty.mustBe(true)
         actualOtherBatch.foreach { document =>
-          cipher.decrypt(id, document.jsValue) mustBe dummyJson
+          cipher.decrypt(id, document.jsValue).mustBe(dummyJson)
         }
       }
     }
@@ -150,13 +152,13 @@ class AftBatchedDataCacheRepositorySpec
       } yield documentsInDB
 
       whenReady(documentsInDB) { documentsInDB =>
-        documentsInDB.size mustBe 12
+        documentsInDB.size.mustBe(12)
         val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
           .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 2))
-        actualOtherBatch.nonEmpty mustBe true
+        actualOtherBatch.nonEmpty.mustBe(true)
         actualOtherBatch.foreach { document =>
 
-          document.jsValue.as[JsArray] mustBe amendedPayload
+          document.jsValue.as[JsArray].mustBe(amendedPayload)
         }
       }
     }
@@ -179,12 +181,12 @@ class AftBatchedDataCacheRepositorySpec
       } yield documentsInDB
 
       whenReady(documentsInDB) { documentsInDB =>
-        documentsInDB.size mustBe 5
+        documentsInDB.size.mustBe(5)
         val actualOtherBatch = dbDocumentsAsSeqBatchInfo(documentsInDB)
           .filter(filterOnBatchTypeAndNo(batchType = BatchType.ChargeC, batchNo = 3))
-        actualOtherBatch.nonEmpty mustBe true
+        actualOtherBatch.nonEmpty.mustBe(true)
         actualOtherBatch.foreach {
-          _.jsValue.as[JsArray] mustBe amendedPayload
+          _.jsValue.as[JsArray].mustBe(amendedPayload)
         }
       }
     }
@@ -210,7 +212,7 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) { _ =>
-        biCaptor.getValue.size mustBe 11
+        biCaptor.getValue.size.mustBe(11)
 
         verify(batchService, times(1)).createUserDataFullPayload(any())
         verify(batchService, times(1)).createBatches(any(), any())
@@ -227,7 +229,7 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) {
-        _.isEmpty mustBe true
+        _.isEmpty.mustBe(true)
       }
     }
   }
@@ -248,12 +250,12 @@ class AftBatchedDataCacheRepositorySpec
       }
 
       whenReady(documentsInDB) { documentsInDB =>
-        jsObjectCaptor.getValue mustBe dummyJson
-        documentsInDB.size mustBe 11
+        jsObjectCaptor.getValue.mustBe(dummyJson)
+        documentsInDB.size.mustBe(11)
         val expectedBatches =
           fullSetOfBatchesToSaveToMongo.filterNot(bi => bi.batchType == BatchType.ChargeG && bi.batchNo == 4) ++
             sessionDataBatch(sessionId, lockDetail)
-        dbDocumentsAsSeqBatchInfo(documentsInDB) mustBe expectedBatches
+        dbDocumentsAsSeqBatchInfo(documentsInDB).mustBe(expectedBatches)
       }
     }
 
@@ -290,10 +292,10 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) { documentsInDB =>
-        documentsInDB.size mustBe 3
+        documentsInDB.size.mustBe(3)
         val actualSetBatchInfo = dbDocumentsAsSeqBatchInfo(documentsInDB)
-        actualSetBatchInfo.exists(_.batchType == BatchType.ChargeE) mustBe false
-        actualSetBatchInfo.count(_.batchType == BatchType.ChargeC) mustBe 1
+        actualSetBatchInfo.exists(_.batchType == BatchType.ChargeE).mustBe(false)
+        actualSetBatchInfo.count(_.batchType == BatchType.ChargeC).mustBe(1)
       }
     }
 
@@ -311,11 +313,11 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) { documentsInDB =>
-        jsObjectCaptor.getValue mustBe dummyJson
-        documentsInDB.size mustBe 12
+        jsObjectCaptor.getValue.mustBe(dummyJson)
+        documentsInDB.size.mustBe(12)
         val expectedBatches =
           fullSetOfBatchesToSaveToMongo ++ sessionDataBatch(sessionId, None)
-        dbDocumentsAsSeqBatchInfo(documentsInDB) mustBe expectedBatches
+        dbDocumentsAsSeqBatchInfo(documentsInDB).mustBe(expectedBatches)
       }
     }
   }
@@ -333,10 +335,10 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) { result =>
-        result mustBe Some(dummyJson)
+        result.mustBe(Some(dummyJson))
         val capturedSeqBatchInfo: Seq[BatchInfo] = biCaptor.getValue
-        capturedSeqBatchInfo.size mustBe 11
-        capturedSeqBatchInfo.toSet mustBe fullSetOfBatchesToSaveToMongo
+        capturedSeqBatchInfo.size.mustBe(11)
+        capturedSeqBatchInfo.toSet.mustBe(fullSetOfBatchesToSaveToMongo)
       }
     }
 
@@ -349,8 +351,8 @@ class AftBatchedDataCacheRepositorySpec
       } yield (res1, res2)
 
       whenReady(documentsInDB) { result =>
-        result._1 mustBe None
-        result._2.isEmpty mustBe true
+        result._1.mustBe(None)
+        result._2.isEmpty.mustBe(true)
       }
     }
 
@@ -364,7 +366,7 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) {
-        _ mustBe None
+        _.mustBe(None)
       }
     }
   }
@@ -373,7 +375,7 @@ class AftBatchedDataCacheRepositorySpec
     "return the session data batch with no lock info if not locked by another user" in {
       Await.result(aftBatchedDataCacheRepository.collection.drop().toFuture(), Duration.Inf)
       Await.result(mongoCollectionInsertSessionDataBatch(aftBatchedDataCacheRepository, id, sessionId, sessionData(sessionId, None)), Duration.Inf)
-      Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf) mustBe Some(sessionData(sessionId, None))
+      Await.result(aftBatchedDataCacheRepository.getSessionData(sessionId, id), Duration.Inf).mustBe(Some(sessionData(sessionId, None)))
     }
 
     "return the session data batch with lock info if locked by another user" in {
@@ -386,7 +388,7 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) { res =>
-        res mustBe Some(sessionData(sessionId))
+        res.mustBe(Some(sessionData(sessionId)))
       }
     }
 
@@ -399,8 +401,8 @@ class AftBatchedDataCacheRepositorySpec
       } yield (res1, res2)
 
       whenReady(documentsInDB) { result =>
-        result._1 mustBe None
-        result._2.isEmpty mustBe true
+        result._1.mustBe(None)
+        result._2.isEmpty.mustBe(true)
       }
     }
   }
@@ -413,7 +415,7 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) {
-        _ mustBe None
+        _.mustBe(None)
       }
     }
 
@@ -425,7 +427,7 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) {
-        _ mustBe lockDetail
+        _.mustBe(lockDetail)
       }
     }
 
@@ -437,7 +439,7 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) {
-        _ mustBe None
+        _.mustBe(None)
       }
     }
 
@@ -449,7 +451,7 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) {
-        _ mustBe None
+        _.mustBe(None)
       }
     }
   }
@@ -464,7 +466,7 @@ class AftBatchedDataCacheRepositorySpec
       } yield res
 
       whenReady(documentsInDB) {
-        _.isEmpty mustBe true
+        _.isEmpty.mustBe(true)
       }
     }
   }

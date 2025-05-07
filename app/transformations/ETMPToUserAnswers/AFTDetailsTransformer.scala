@@ -39,17 +39,17 @@ class AFTDetailsTransformer @Inject()(
       transformSchemeDetails and
       transformChargeDetails and
       transformAftDeclarationDetails
-    ).reduce
+    ).reduce: Reads[JsObject]
 
   private def transformAFTDetails: Reads[JsObject] =
     ((__ \ Symbol("aftStatus")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("aftStatus")).json.pick) and
       (__ \ Symbol("aftVersion")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("aftVersion")).json.pick(readsVersionRemovingZeroes)) and
       (__ \ Symbol("quarter") \ Symbol("startDate")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("quarterStartDate")).json.pick) and
-      (__ \ Symbol("quarter") \ Symbol("endDate")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("quarterEndDate")).json.pick)).reduce
+      (__ \ Symbol("quarter") \ Symbol("endDate")).json.copyFrom((__ \ Symbol("aftDetails") \ Symbol("quarterEndDate")).json.pick)).reduce: Reads[JsObject]
 
   private def transformSchemeDetails: Reads[JsObject] =
     ((__ \ Symbol("pstr")).json.copyFrom((__ \ Symbol("schemeDetails") \ Symbol("pstr")).json.pick) and
-      (__ \ Symbol("schemeName")).json.copyFrom((__ \ Symbol("schemeDetails") \ Symbol("schemeName")).json.pick)).reduce
+      (__ \ Symbol("schemeName")).json.copyFrom((__ \ Symbol("schemeDetails") \ Symbol("schemeName")).json.pick)).reduce: Reads[JsObject]
 
   private def transformChargeDetails: Reads[JsObject] =
     (__ \ Symbol("chargeDetails")).read(
@@ -59,7 +59,7 @@ class AFTDetailsTransformer @Inject()(
         chargeDTransformer.transformToUserAnswers and
         chargeETransformer.transformToUserAnswers and
         chargeFTransformer.transformToUserAnswers and
-        chargeGTransformer.transformToUserAnswers).reduce
+        chargeGTransformer.transformToUserAnswers).reduce: Reads[JsObject]
     )
 
   private def transformAftDeclarationDetails: Reads[JsObject] = (
@@ -71,13 +71,13 @@ class AFTDetailsTransformer @Inject()(
           (__ \ Symbol("submittedBy")).read[String].flatMap {
             case "PSP" =>
               ((__ \ Symbol("submitterDetails") \ Symbol("submitterID")).json.copyFrom((__ \ Symbol("submitterId")).json.pick) and
-                (__ \ Symbol("submitterDetails") \ Symbol("authorisingPsaId")).json.copyFrom((__ \ Symbol("psaId")).json.pick)).reduce
+                (__ \ Symbol("submitterDetails") \ Symbol("authorisingPsaId")).json.copyFrom((__ \ Symbol("psaId")).json.pick)).reduce: Reads[JsObject]
             case _ => (__ \ Symbol("submitterDetails") \ Symbol("submitterID")).json.copyFrom((__ \ Symbol("submitterID")).json.pick)
-          }).reduce
+          }).reduce: Reads[JsObject]
       ).map {
         _.getOrElse(Json.obj())
       }
-    ).reduce
+    ).reduce: Reads[JsObject]
 
   private def receiptDateReads: Reads[JsObject] =
     (__ \ "aftDetails" \ "receiptDate").read[LocalDate](localDateDateReads).flatMap { receiptDate =>

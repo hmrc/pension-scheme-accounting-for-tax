@@ -19,11 +19,11 @@ package repository
 import com.google.inject.Inject
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import crypto.DataEncryptor
+import org.mongodb.scala.gridfs.ObservableFuture
 import org.mongodb.scala.model.Updates.set
 import org.mongodb.scala.model._
 import play.api.Logging
 import play.api.libs.json._
-import repository.CacheRepository.collectionIndexes
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
@@ -44,7 +44,7 @@ class CacheRepository @Inject()(collectionName: String,
     collectionName = collectionName,
     mongoComponent = mongoComponent,
     domainFormat = implicitly,
-    indexes = collectionIndexes
+    indexes = CacheRepository.collectionIndexes
   ) with Logging {
 
   import CacheRepository._

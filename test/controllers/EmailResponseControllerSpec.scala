@@ -79,7 +79,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with Matchers with Mocki
       val result = controller.sendAuditEvents(
         requestId, encryptedPsaId, SchemeAdministratorType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
-      status(result) mustBe OK
+      status(result).`mustBe`(OK)
       verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
       eventCaptor.getValue mustEqual EmailAuditEvent(psa, SchemeAdministratorType.PSA, email, Complained, AFT_SUBMIT_RETURN, requestId)
     }
@@ -88,7 +88,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with Matchers with Mocki
       val result = controller.sendAuditEvents(
         requestId, encryptedPspId, SchemeAdministratorType.PSP, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.toJson(emailEvents)))
 
-      status(result) mustBe OK
+      status(result).`mustBe`(OK)
       verify(mockAuditService, times(4)).sendEvent(eventCaptor.capture())(any(), any())
       eventCaptor.getValue mustEqual EmailAuditEvent(psp, SchemeAdministratorType.PSP, email, Complained, AFT_SUBMIT_RETURN, requestId)
     }
@@ -98,7 +98,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with Matchers with Mocki
         requestId, encryptedPsaId, SchemeAdministratorType.PSA, encryptedEmail, AFT_SUBMIT_RETURN)(fakeRequest.withBody(Json.obj("name" -> "invalid")))
 
       verify(mockAuditService, never).sendEvent(any())(any(), any())
-      status(result) mustBe BAD_REQUEST
+      status(result).`mustBe`(BAD_REQUEST)
     }
   }
 }
