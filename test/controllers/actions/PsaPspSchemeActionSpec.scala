@@ -46,8 +46,8 @@ class PsaPspSchemeActionSpec extends PlaySpec with MockitoSugar with BeforeAndAf
     reset(mockSchemeService)
   }
 
-  private val psaAuthRequest = PsaPspAuthRequest[AnyContent](FakeRequest("", ""), Some(PsaId(AuthUtils.psaId)), None,  AuthUtils.externalId, Some(AuthUtils.name))
-  private val pspAuthRequest = PsaPspAuthRequest[AnyContent](FakeRequest("", ""), None, Some(PspId(AuthUtils.pspId)),  AuthUtils.externalId, Some(AuthUtils.name))
+  private val psaAuthRequest = PsaPspAuthRequest[AnyContent](FakeRequest("", ""), Some(PsaId(AuthUtils.psaId)), None,  AuthUtils.externalId)
+  private val pspAuthRequest = PsaPspAuthRequest[AnyContent](FakeRequest("", ""), None, Some(PspId(AuthUtils.pspId)),  AuthUtils.externalId)
 
   private val srn = AuthUtils.srn
   private def getResult(loggedInAsPsa: Boolean, req: PsaPspAuthRequest[AnyContent]) = {

@@ -21,7 +21,7 @@ import play.api.mvc.Results._
 import play.api.mvc._
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.retrieve.{Name, ~}
+import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.domain.{PsaId, PspId}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -32,8 +32,7 @@ import scala.util.control.NonFatal
 case class PsaPspAuthRequest[A](request: Request[A],
                                  psaId: Option[PsaId],
                                  pspId: Option[PspId],
-                                 externalId: String,
-                                 name: Option[Name]) extends WrappedRequest[A](request)
+                                 externalId: String) extends WrappedRequest[A](request)
 
 class PsaPspEnrolmentAuthAction @Inject()(
                                   override val authConnector: AuthConnector,
@@ -66,8 +65,8 @@ class PsaPspEnrolmentAuthAction @Inject()(
   private def invoke[A](request: Request[A], block: PsaPspAuthRequest[A] => Future[Result])
                        (implicit hc: HeaderCarrier): Future[Result] = {
     authorised(Enrolment(PSAEnrolmentKey) or Enrolment(PSPEnrolmentKey))
-      .retrieve(Retrievals.authorisedEnrolments and Retrievals.externalId and Retrievals.name) {
-        case enrolments ~ Some(externalId) ~ name =>
+      .retrieve(Retrievals.authorisedEnrolments and Retrievals.externalId) {
+        case enrolments ~ Some(externalId) =>
           val psaId = getEnrolmentIdentifier(
             enrolments,
             PSAEnrolmentKey,
@@ -84,7 +83,7 @@ class PsaPspEnrolmentAuthAction @Inject()(
             case (None, None) =>
               logger.warn("Failed to authorise due to insufficient enrolments")
               Future.successful(Forbidden("Enrolments not present"))
-            case _ => block(PsaPspAuthRequest(request, psaId.map(PsaId), pspId.map(PspId), externalId, name))
+            case _ => block(PsaPspAuthRequest(request, psaId.map(PsaId), pspId.map(PspId), externalId))
           }
 
         case _ => Future.failed(new RuntimeException("No externalId found"))
