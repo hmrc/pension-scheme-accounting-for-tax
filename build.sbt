@@ -26,8 +26,7 @@ lazy val microservice = Project(appName, file("."))
       "-Wconf:src=routes/.*:silent",             // Suppress warnings from routes files
       "-Wconf:msg=Flag.*repeatedly:silent",      // Suppress warnings for repeated flags
       "-Wconf:msg=.*-Wunused.*:silent",          // Suppress unused warnings
-      "-Wconf:src=.*StartupModule\\.scala.*:silent", // Suppress warning about unused Environment
-      "-Wconf:cat=deprecation:silent"            // Suppressing deprecation warn for Retrievals.name
+      "-Wconf:src=.*StartupModule\\.scala.*:silent" // Suppress warning about unused Environment
     ),
     Test / fork := true,
     Test / javaOptions += "-Dconfig.file=conf/test.application.conf",
