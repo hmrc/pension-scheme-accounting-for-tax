@@ -544,7 +544,7 @@ object AftBatchedDataCacheRepositorySpec extends MockitoSugar {
   private val sessionId = "session-1"
   private val anotherSessionId = "session-2"
   private val uniqueAftId = id + sessionId
-  private val lockDetail = Some(LockDetail(name = "Billy Wiggins", "A123456"))
+  private val lockDetail = Some(LockDetail("A123456"))
   private val batchService = mock[BatchService]
   private val collectionName = "aft-batches"
 
