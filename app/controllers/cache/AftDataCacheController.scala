@@ -87,7 +87,7 @@ class AftDataCacheController @Inject()(
 
   def setSessionData(lock: Boolean): Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getIdWithNameAndPsaOrPspId(lock) { case (sessionId, id, name, psaOrPspId) =>
+      getIdWithOptNameAndPsaOrPspId(lock) { case (sessionId, id, optName, psaOrPspId) =>
         request.body.asJson.map {
           jsValue => {
             (
@@ -97,7 +97,7 @@ class AftDataCacheController @Inject()(
             ) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
                 batchedRepository.setSessionData(id,
-                  if (lock) Some(LockDetail(name.get, psaOrPspId)) else None,
+                  if (lock) Some(LockDetail(optName.get, psaOrPspId)) else None,
                   jsValue,
                   sessionId,
                   version.toInt,
@@ -167,7 +167,7 @@ class AftDataCacheController @Inject()(
     block(sessionId, id)
   }
 
-  private def getIdWithNameAndPsaOrPspId(lock: Boolean)
+  private def getIdWithOptNameAndPsaOrPspId(lock: Boolean)
                                         (block: (String, String, Option[String], String) => Future[Result])
                                         (implicit request: PsaPspAuthRequest[AnyContent]): Future[Result] = {
 

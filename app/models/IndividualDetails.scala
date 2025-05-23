@@ -24,9 +24,7 @@ case class IndividualDetails(
   lastName: String
 ) {
   def fullName: String =
-    Seq(Some(firstName), middleName, Some(lastName))
-      .flatten
-      .mkString(" ")
+    Seq(Some(firstName), middleName, Some(lastName)).flatten.mkString(" ")
 }
 
 object IndividualDetails {

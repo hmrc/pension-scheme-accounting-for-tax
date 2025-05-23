@@ -24,7 +24,7 @@ case class MinimalDetails(
 ) {
 
   def name: String =
-    Seq(individualDetails.map(_.fullName), organisationName).flatten.mkString
+    Seq(individualDetails.map(_.fullName), organisationName).flatten.mkString(" ")
 }
 
 object MinimalDetails {
