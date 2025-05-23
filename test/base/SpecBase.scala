@@ -31,8 +31,7 @@ trait SpecBase extends PlaySpec with GuiceOneAppPerSuite {
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .configure(
       //turn off metrics
-      "metrics.jvm" -> false,
-      "metrics.enabled" -> false
+      "metrics.jvm" -> false
     )
     .overrides(bindings *)
     .build()

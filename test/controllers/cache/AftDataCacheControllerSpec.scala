@@ -16,7 +16,8 @@
 
 package controllers.cache
 
-import models.LockDetail
+import connectors.MinimalDetailsConnector
+import models.{IndividualDetails, LockDetail, MinimalDetails}
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.{eq => eqTo, _}
@@ -34,7 +35,6 @@ import play.api.test.Helpers._
 import repository._
 import repository.model.SessionData
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.domain.{PsaId, PspId}
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.AuthUtils
@@ -50,12 +50,14 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
   private val repo = mock[AftBatchedDataCacheRepository]
   private val authConnector: AuthConnector = mock[AuthConnector]
+  private val mockMinimalDetailsConnector: MinimalDetailsConnector = mock[MinimalDetailsConnector]
   private val id = "id"
   private val sessionId = "sessionId"
   private val fakeRequest = FakeRequest().withHeaders("X-Session-ID" -> sessionId, "id" -> id)
   private val fakePostRequest = FakeRequest("POST", "/").withHeaders("X-Session-ID" -> sessionId, "id" -> id)
   private val psaId = AuthUtils.psaId
   private val pspId = AuthUtils.pspId
+  private val individualDetails: IndividualDetails = IndividualDetails("firstName", None, "lastName")
   private val fakeAuthAction = new FakePsaPspEnrolmentAuthAction
   private def randomString = ByteString(Random.alphanumeric.dropWhile(_.isDigit).take(20).mkString)
   private val modules: Seq[GuiceableModule] = Seq(
@@ -65,7 +67,8 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     bind[FileUploadOutcomeRepository].toInstance(mock[FileUploadOutcomeRepository]),
     bind[FinancialInfoCacheRepository].toInstance(mock[FinancialInfoCacheRepository]),
     bind[FinancialInfoCreditAccessRepository].toInstance(mock[FinancialInfoCreditAccessRepository]),
-    bind[controllers.actions.PsaPspEnrolmentAuthAction].toInstance(fakeAuthAction)
+    bind[controllers.actions.PsaPspEnrolmentAuthAction].toInstance(fakeAuthAction),
+    bind[MinimalDetailsConnector].toInstance(mockMinimalDetailsConnector)
   )
 
   lazy val app: Application =
@@ -92,8 +95,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "calling get" must {
       "return OK with the data" in {
         when(repo.get(eqTo(id), eqTo(sessionId))(any())).thenReturn(Future.successful(Some(Json.obj("testId" -> "data"))))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual OK
@@ -102,8 +103,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       "return NOT FOUND when the data doesn't exist" in {
         when(repo.get(eqTo(id), eqTo(sessionId))(any())).thenReturn(Future.successful(None))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.get(fakeRequest)
         status(result) mustEqual NOT_FOUND
@@ -111,8 +110,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       "throw an exception when the repository call fails" in {
         when(repo.get(eqTo(id), eqTo(sessionId))(any())).thenReturn(Future.failed(new Exception()))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.get(fakeRequest)
         an[Exception] must be thrownBy status(result)
@@ -123,8 +120,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       "return OK when the data is saved successfully" in {
         when(repo.save(any(), any(), any(), any())(any())).thenReturn(Future.successful((): Unit))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.save(fakePostRequest.withJsonBody(Json.obj("value" -> "data")))
         status(result) mustEqual CREATED
@@ -132,8 +127,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       "return BAD REQUEST when the request body cannot be parsed" in {
         when(repo.save(any(), any(), any(), any())(any())).thenReturn(Future.successful((): Unit))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.save(fakePostRequest.withRawBody(randomString))
         status(result) mustEqual BAD_REQUEST
@@ -143,8 +136,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "calling remove" must {
       "return OK when the data is removed successfully" in {
         when(repo.remove(eqTo(id), eqTo(sessionId))(any())).thenReturn(Future.successful((): Unit))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.remove(fakeRequest)
         status(result) mustEqual OK
@@ -154,11 +145,9 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "calling getSessionData" must {
       "return OK with locked by user name" in {
 
-        val sd = SessionData("id", Some(LockDetail(psaId)), 1, "", areSubmittedVersionsAvailable = false)
+        val sd = SessionData("id", Some(LockDetail("test name", psaId)), 1, "", areSubmittedVersionsAvailable = false)
 
         when(repo.getSessionData(any(), any())(any())).thenReturn(Future.successful(Some(sd)))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.getSessionData(fakeRequest)
         status(result) mustEqual OK
@@ -167,8 +156,6 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       "return Not Found when it is not locked" in {
         when(repo.getSessionData(any(), any())(any())).thenReturn(Future.successful(None))
-        when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
-          .thenReturn(Future.successful(Some(Name(Some("test"), Some("name")))))
 
         val result = controller.getSessionData(fakeRequest)
         status(result) mustEqual NOT_FOUND
@@ -178,13 +165,16 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
   "calling setSessionData" must {
     "return OK when the data is saved successfully for a PSA ID" in {
+      when(mockMinimalDetailsConnector.getMinimalDetails(any(), any()))
+        .thenReturn(Future.successful(MinimalDetails(None, Some(individualDetails))))
+
       fakeAuthAction.mockPspId = None
       val accessMode = "compile"
       val version = 1
 
       when(repo.setSessionData(
         ArgumentMatchers.eq(id),
-        ArgumentMatchers.eq(Some(LockDetail(psaId))), any(), any(),
+        ArgumentMatchers.eq(Some(LockDetail(individualDetails.fullName, psaId))), any(), any(),
         ArgumentMatchers.eq(version),
         ArgumentMatchers.eq(accessMode),
         ArgumentMatchers.eq(true)
@@ -202,13 +192,16 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     }
 
     "return OK when the data is saved successfully for a PSP ID" in {
+      when(mockMinimalDetailsConnector.getMinimalDetails(any(), any()))
+        .thenReturn(Future.successful(MinimalDetails(None, Some(individualDetails))))
+
       fakeAuthAction.mockPsaId = None
       val accessMode = "compile"
       val version = 1
 
       when(repo.setSessionData(
         ArgumentMatchers.eq(id),
-        ArgumentMatchers.eq(Some(LockDetail(pspId))), any(), any(),
+        ArgumentMatchers.eq(Some(LockDetail(individualDetails.fullName, pspId))), any(), any(),
         ArgumentMatchers.eq(version),
         ArgumentMatchers.eq(accessMode),
         ArgumentMatchers.eq(true)
@@ -227,11 +220,14 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     }
 
     "return BAD REQUEST when header data is missing" in {
+      when(mockMinimalDetailsConnector.getMinimalDetails(any(), any()))
+        .thenReturn(Future.successful(MinimalDetails(None, Some(individualDetails))))
+
       val accessMode = "compile"
       val version = 1
 
       when(repo.setSessionData(ArgumentMatchers.eq(id),
-        ArgumentMatchers.eq(Some(LockDetail(psaId))), any(), any(),
+        ArgumentMatchers.eq(Some(LockDetail("", psaId))), any(), any(),
         ArgumentMatchers.eq(version), ArgumentMatchers.eq(accessMode), any())(any())).thenReturn(Future.successful((): Unit))
       val result = controller.setSessionData(true)(fakePostRequest
         .withJsonBody(Json.obj("value" -> "data"))
@@ -251,7 +247,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
   "calling lockedBy" must {
     "return OK when the data is retrieved" in {
-      val lockedByUser = LockDetail(psaId)
+      val lockedByUser = LockDetail("bob", psaId)
 
       when(repo.lockedBy(any(), any())(any())).thenReturn(Future.successful(Some(lockedByUser)))
 

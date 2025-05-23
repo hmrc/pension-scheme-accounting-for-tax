@@ -44,26 +44,20 @@ object AuthUtils {
     when(mockAuthConnector.authorise[Unit](any(), any())(any(), any())).thenReturn(Future.failed(InsufficientEnrolments()))
 
   def authStub(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String]]] =
-    when(mockAuthConnector.authorise[Enrolments ~ Option[String]](any(), any())(any(), any()))
-      .thenReturn(Future.successful(AuthUtils.authResponse))
-  val authResponse = new ~(
-      Enrolments(
-        Set(
-          new Enrolment("HMRC-PODS-ORG", Seq(EnrolmentIdentifier("PsaId", psaId)), "Activated")
-        )
-      ), Some(externalId)
-  )
+    when(mockAuthConnector.authorise[Enrolments ~ Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(
+      new~(
+        Enrolments(Set(new Enrolment("HMRC-PODS-ORG", Seq(EnrolmentIdentifier("PsaId", psaId)), "Activated"))),
+        Some(externalId)
+      )
+    ))
 
   def authStubPsp(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String]]] =
-    when(mockAuthConnector.authorise[Enrolments ~ Option[String]](any(), any())(any(), any())).thenReturn(
-      Future.successful(AuthUtils.authResponsePsp))
-  val authResponsePsp = new ~(
-      Enrolments(
-        Set(
-          new Enrolment("HMRC-PODSPP-ORG", Seq(EnrolmentIdentifier("PspId", pspId)), "Activated")
-        )
-      ), Some(externalId)
-  )
+    when(mockAuthConnector.authorise[Enrolments ~ Option[String]](any(), any())(any(), any())).thenReturn(Future.successful(
+      new~(
+        Enrolments(Set(new Enrolment("HMRC-PODSPP-ORG", Seq(EnrolmentIdentifier("PspId", pspId)), "Activated"))),
+        Some(externalId)
+      ))
+    )
 
   class FakeFailingAuthConnector @Inject()(exceptionToReturn: Throwable) extends AuthConnector {
     val serviceUrl: String = ""
