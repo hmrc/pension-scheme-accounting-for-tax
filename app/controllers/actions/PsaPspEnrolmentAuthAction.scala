@@ -82,7 +82,8 @@ class PsaPspEnrolmentAuthAction @Inject()(
             case (None, None) =>
               logger.warn("Failed to authorise due to insufficient enrolments")
               Future.successful(Forbidden("Enrolments not present"))
-            case _ => block(PsaPspAuthRequest(request, psaId.map(PsaId), pspId.map(PspId), externalId))
+            case _ =>
+              block(PsaPspAuthRequest(request, psaId.map(PsaId), pspId.map(PspId), externalId))
           }
 
         case _ => Future.failed(new RuntimeException("No externalId found"))

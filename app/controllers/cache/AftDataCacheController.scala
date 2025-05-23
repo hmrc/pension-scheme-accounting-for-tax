@@ -96,7 +96,8 @@ class AftDataCacheController @Inject()(
               request.headers.get("areSubmittedVersionsAvailable")
             ) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
-                batchedRepository.setSessionData(id,
+                batchedRepository.setSessionData(
+                  id,
                   if (lock) Some(LockDetail(optName.get, psaOrPspId)) else None,
                   jsValue,
                   sessionId,
@@ -115,7 +116,7 @@ class AftDataCacheController @Inject()(
           }
         } getOrElse {
           logger.warn("BAD Request returned when setting session data for session due to invalid JSON body: " +
-            s"ID $sessionId, id $id and psaOrPspId $psaOrPspId.")
+            s"ID $sessionId, id $id, ${optName.map(name => s"name $name")} and psaOrPspId $psaOrPspId.")
           auditService.sendEvent(RequestBodyAuditEvent(psaOrPspId, request.body.asText))
           Future.successful(BadRequest)
         }
@@ -202,8 +203,8 @@ class AftDataCacheController @Inject()(
 
 object AftDataCacheController {
 
-  case object MissingHeadersException extends BadRequestException("Missing id(pstr and startDate) or Session Id from headers")
+  private case object MissingHeadersException extends BadRequestException("Missing id(pstr and startDate) or Session Id from headers")
 
-  case object MissingIDException extends BadRequestException("Missing psa ID or psp ID from enrolments")
+  private case object MissingIDException extends BadRequestException("Missing psa ID or psp ID from enrolments")
 
 }
