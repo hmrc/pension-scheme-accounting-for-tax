@@ -23,7 +23,6 @@ case class IndividualDetails(
   middleName: Option[String],
   lastName: String
 ) {
-
   def fullName: String =
     Seq(Some(firstName), middleName, Some(lastName))
       .flatten
