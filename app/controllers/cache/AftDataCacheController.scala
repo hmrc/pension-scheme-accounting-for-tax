@@ -96,8 +96,7 @@ class AftDataCacheController @Inject()(
               request.headers.get("areSubmittedVersionsAvailable")
             ) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
-                batchedRepository.setSessionData(
-                  id,
+                batchedRepository.setSessionData(id,
                   if (lock) Some(LockDetail(optName.get, psaOrPspId)) else None,
                   jsValue,
                   sessionId,
