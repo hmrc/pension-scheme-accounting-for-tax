@@ -168,8 +168,8 @@ class AftDataCacheController @Inject()(
   }
 
   private def getIdWithOptNameAndPsaOrPspId(lock: Boolean)
-                                        (block: (String, String, Option[String], String) => Future[Result])
-                                        (implicit request: PsaPspAuthRequest[AnyContent]): Future[Result] = {
+                                           (block: (String, String, Option[String], String) => Future[Result])
+                                           (implicit request: PsaPspAuthRequest[AnyContent]): Future[Result] = {
 
     val id: String =
       request
