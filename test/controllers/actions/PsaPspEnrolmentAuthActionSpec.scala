@@ -51,7 +51,7 @@ class PsaPspEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
 
     "when the user is logged in and has a PODS enrolment" must {
 
-      "must succeed with PSA credentials" in {
+      "succeed with PSA credentials" in {
 
         running(app) {
           val bodyParsers = app.injector.instanceOf[BodyParsers.Default]
@@ -66,7 +66,7 @@ class PsaPspEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
         }
       }
 
-      "must succeed with PSP credentials" in {
+      "succeed with PSP credentials" in {
 
         running(app) {
           val bodyParsers = app.injector.instanceOf[BodyParsers.Default]
@@ -84,13 +84,13 @@ class PsaPspEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
 
     "when the user is logged in without a PODS enrolment" must {
 
-      "must return Unauthorized" in {
+      "return Unauthorized" in {
 
         running(app) {
           val bodyParsers = app.injector.instanceOf[BodyParsers.Default]
 
           when(mockAuthConnector.authorise[RetrievalsType](any(), any())(any(), any()))
-            .thenReturn(Future.successful(new ~(Enrolments(Set.empty), Some("externalId"))))
+            .thenReturn(Future.successful(new~(Enrolments(Set.empty), Some("id"))))
 
           val action = new PsaPspEnrolmentAuthAction(mockAuthConnector, bodyParsers)
           val controller = new Harness(action)
@@ -103,7 +103,7 @@ class PsaPspEnrolmentAuthActionSpec extends SpecBase with BeforeAndAfterEach {
 
     "when the user is not logged in" must {
 
-      "must return Unauthorized" in {
+      "return Unauthorized" in {
 
         running(app) {
           val bodyParsers = app.injector.instanceOf[BodyParsers.Default]

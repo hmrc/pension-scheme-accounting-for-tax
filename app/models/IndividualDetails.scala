@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 HM Revenue & Customs
+ * Copyright 2025 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,18 @@ package models
 
 import play.api.libs.json.{Format, Json}
 
-case class LockDetail(name: String, psaOrPspId: String)
+case class IndividualDetails(
+  firstName: String,
+  middleName: Option[String],
+  lastName: String
+) {
 
-object LockDetail {
-  implicit val formats: Format[LockDetail] = Json.format[LockDetail]
+  def fullName: String =
+    Seq(Some(firstName), middleName, Some(lastName))
+      .flatten
+      .mkString(" ")
+}
+
+object IndividualDetails {
+  implicit val format: Format[IndividualDetails] = Json.format[IndividualDetails]
 }

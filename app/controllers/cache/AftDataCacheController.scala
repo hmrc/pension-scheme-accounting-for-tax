@@ -18,7 +18,8 @@ package controllers.cache
 
 import audit.{AuditEvent, AuditService}
 import com.google.inject.Inject
-import controllers.actions.PsaPspAuthRequest
+import connectors.MinimalDetailsConnector
+import controllers.actions.{PsaPspAuthRequest, PsaPspEnrolmentAuthAction}
 import models.LockDetail.formats
 import models.{ChargeAndMember, ChargeType, LockDetail}
 import play.api.Logger
@@ -34,7 +35,8 @@ class AftDataCacheController @Inject()(
                                         batchedRepository: AftBatchedDataCacheRepository,
                                         cc: ControllerComponents,
                                         auditService: AuditService,
-                                        psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
+                                        psaPspEnrolmentAuthAction: PsaPspEnrolmentAuthAction,
+                                        minimalConnector: MinimalDetailsConnector
                                       )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   import AftDataCacheController._
@@ -85,7 +87,7 @@ class AftDataCacheController @Inject()(
 
   def setSessionData(lock: Boolean): Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getIdWithPsaOrPspId { case (sessionId, id, psaOrPspId) =>
+      getIdWithNameAndPsaOrPspId(lock) { case (sessionId, id, name, psaOrPspId) =>
         request.body.asJson.map {
           jsValue => {
             (
@@ -95,7 +97,7 @@ class AftDataCacheController @Inject()(
             ) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
                 batchedRepository.setSessionData(id,
-                  if (lock) Some(LockDetail(psaOrPspId)) else None,
+                  if (lock) Some(LockDetail(name.get, psaOrPspId)) else None,
                   jsValue,
                   sessionId,
                   version.toInt,
@@ -165,15 +167,36 @@ class AftDataCacheController @Inject()(
     block(sessionId, id)
   }
 
-  private def getIdWithPsaOrPspId(block: (String, String, String) => Future[Result])
+  private def getIdWithNameAndPsaOrPspId(lock: Boolean)
+                                        (block: (String, String, Option[String], String) => Future[Result])
                                         (implicit request: PsaPspAuthRequest[AnyContent]): Future[Result] = {
-    val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
-    val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
-    val psaOrPspId = request.pspId.map(_.id).getOrElse(
-      request.psaId.map(_.id).getOrElse(throw MissingIDException)
-    )
-    block(sessionId, id, psaOrPspId)
 
+    val id: String =
+      request
+        .headers
+        .get("id")
+        .getOrElse(throw MissingHeadersException)
+
+    val sessionId: String =
+      request
+        .headers
+        .get("X-Session-ID")
+        .getOrElse(throw MissingHeadersException)
+
+    val psaOrPspId: String =
+      (request.pspId, request.psaId) match {
+        case (Some(psp), _) => psp.id
+        case (_, Some(psa)) => psa.id
+        case _ => throw MissingIDException
+      }
+
+    if (lock)
+      minimalConnector.getMinimalDetails.flatMap {
+        minimalDetails =>
+          block(sessionId, id, Some(minimalDetails.name.trim), psaOrPspId)
+      }
+    else
+      block(sessionId, id, None, psaOrPspId)
   }
 }
 
