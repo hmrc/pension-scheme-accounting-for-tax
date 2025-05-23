@@ -73,7 +73,7 @@ class MinimalDetailsConnectorSpec
   private val invalidJson =
     Json.stringify(Json.obj("blah" -> "blah"))
 
-  "getMinimalPsaDetails" must "return successfully when the get min details has returned OK for org" in {
+  "getMinimalDetails" must "return successfully when the get min details has returned OK for org" in {
     wireMockServer.stubFor(
       get(urlEqualTo(minimalPsaDetailsUrl))
         .willReturn(ok(validOrgJson).withHeader("Content-Type", "application/json"))
