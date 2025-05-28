@@ -49,6 +49,9 @@ class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig,
   lazy val integrationframeworkAuthorization: String = "Bearer " + runModeConfiguration.getOptional[String](
     path = "microservice.services.if-hod.authorizationToken").getOrElse("local")
 
+  lazy val minimalPsaDetailsUrl: String =
+    s"${servicesConfig.baseUrl("pension-administrator")}${config.get[String]("serviceUrls.minimalPsaDetails")}"
+
   val fileAFTReturnURL: String = s"$ifURL${config.get[String](path = "serviceUrls.file-aft-return")}"
 
   def getAftOverviewUrl = s"$ifURL${config.get[String](path = "serviceUrls.get-aft-overview")}"
