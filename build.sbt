@@ -17,7 +17,8 @@ lazy val microservice = Project(appName, file("."))
     RoutesKeys.routesImport ++= Seq(
       "models.enumeration.JourneyType",
       "models.enumeration.SchemeAdministratorType",
-      "models.SchemeReferenceNumber"),
+      "models.SchemeReferenceNumber"
+    ),
     PlayKeys.devSettings += "play.server.http.port" -> "8207",
     scalacOptions ++= Seq(
       "-feature",
@@ -30,7 +31,6 @@ lazy val microservice = Project(appName, file("."))
     ),
     Test / fork := true,
     Test / javaOptions += "-Dconfig.file=conf/test.application.conf",
-    resolvers += Resolver.jcenterRepo,
     Test / parallelExecution := true
   )
 
