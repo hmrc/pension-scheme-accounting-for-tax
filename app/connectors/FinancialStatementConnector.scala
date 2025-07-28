@@ -48,53 +48,45 @@ class FinancialStatementConnector @Inject()(
 
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader *)
 
-    transformPSAFS(psaId, config.psaFinancialStatementMaxUrl.format(psaId))(hc, implicitly, implicitly)
-  }
-
-  //scalastyle:off cyclomatic.complexity
-  private def transformPSAFS(psaId: String, url: String)
-                            (implicit hc: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[PsaFS] = {
-
-    val reads: Reads[PsaFS] = PsaFS.rdsPsaFSMax
-
-    val toUrl = url"$url"
+    val url = s"${config.psaFinancialStatementMaxUrl.format(psaId)}"
 
     httpClient2
-      .get(toUrl)(hc)
+      .get(url"$url")(hc)
       .transform(_.withRequestTimeout(config.ifsTimeout))
-      .execute[HttpResponse].map { response =>
-      response.status match {
-        case OK =>
-          logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
-          Json.parse(response.body).validate[PsaFS](reads) match {
-            case JsSuccess(psaFS, _) =>
-              logger.debug(s"Response received from psaFinInfo api transformed successfully to $psaFS")
-              PsaFS(
-                inhibitRefundSignal = psaFS.inhibitRefundSignal,
-                seqPsaFSDetail = psaFS.seqPsaFSDetail.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
-              )
-            case JsError(errors) =>
-              throw JsResultException(errors)
-          }
-        case NOT_FOUND =>
-          PsaFS(
-            inhibitRefundSignal = false,
-            seqPsaFSDetail = Seq.empty[PsaFSDetail]
-          )
-        case _ =>
-          handleErrorResponse("GET", toUrl.toString)(response)
-      }
-    } andThen financialInfoAuditService.sendPsaFSAuditEvent(psaId)
+      .execute[HttpResponse]
+      .map { response =>
+        response.status match {
+          case OK =>
+            logger.debug(s"Ok response received from psaFinInfo api with body: ${response.body}")
+            Json.parse(response.body).validate[PsaFS](PsaFS.rdsPsaFSMax) match {
+              case JsSuccess(psaFS, _) =>
+                logger.debug(s"Response received from psaFinInfo api transformed successfully to $psaFS")
+                PsaFS(
+                  inhibitRefundSignal = psaFS.inhibitRefundSignal,
+                  seqPsaFSDetail = psaFS.seqPsaFSDetail.filterNot(charge => charge.chargeType.equals("Repayment Interest"))
+                )
+              case JsError(errors) =>
+                throw JsResultException(errors)
+            }
+          case NOT_FOUND =>
+            PsaFS(
+              inhibitRefundSignal = false,
+              seqPsaFSDetail = Seq.empty[PsaFSDetail]
+            )
+          case _ =>
+            handleErrorResponse("GET", url)(response)
+        }
+      } andThen financialInfoAuditService.sendPsaFSAuditEvent(psaId)
   }
 
   def getSchemeFS(pstr: String)
-                      (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
+                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
     val cacheKey = s"schemeFS-$pstr"
     cache.get(cacheKey).flatMap {
       case Some(cachedValue) =>
         val schemeFS = cachedValue.validate[SchemeFS](SchemeFS.rdsSchemeFS)
 
-         schemeFS match {
+        schemeFS match {
           case JsSuccess(value, _) =>
             logger.warn(s"Cache hit for getSchemeFS. CacheKey: $cacheKey")
             Future.successful(value)
@@ -109,9 +101,8 @@ class FinancialStatementConnector @Inject()(
     }
   }
 
-  private def setSchemeFsToCache(pstr:String,cacheKey:String)
-                          (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader)
-  : Future[SchemeFS] = {
+  private def setSchemeFsToCache(pstr: String, cacheKey: String)
+                                (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
     logger.warn(s"Cache missing for getSchemeFS. Fetching from IFS for CacheKey: $cacheKey")
     getSchemeFSCall(pstr).flatMap { result =>
       val jsonResult = Json.toJson(result)
@@ -127,41 +118,41 @@ class FinancialStatementConnector @Inject()(
     val jsonString = Json.toJson(obj).toString()
     jsonString.getBytes(StandardCharsets.UTF_8).length
   }
+
   private def getSchemeFSCall(pstr: String)
-                 (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
+                             (implicit headerCarrier: HeaderCarrier, ec: ExecutionContext, request: RequestHeader): Future[SchemeFS] = {
     implicit val hc: HeaderCarrier = headerCarrier.withExtraHeaders(headers = headerUtils.integrationFrameworkHeader *)
 
     val reads: Reads[SchemeFS] = SchemeFS.rdsSchemeFSMax
 
-    val url = url"${config.schemeFinancialStatementMaxUrl.format(pstr)}"
-
+    val url = s"${config.schemeFinancialStatementMaxUrl.format(pstr)}"
 
     httpClient2
-              .get(url)(hc)
-              .setHeader(headerUtils.integrationFrameworkHeader *)
-              .transform(_.withRequestTimeout(config.ifsTimeout))
-              .execute[HttpResponse].map{ response =>
-      response.status match {
-        case OK =>
-          logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
-          Json.parse(response.body).validate[SchemeFS](reads) match {
-            case JsSuccess(schemeFS, _) =>
-              logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFS")
-              logger.warn(s"Size of schemeFS payload: ${getObjectSize[SchemeFS](schemeFS)} bytes")
-              SchemeFS(
-                inhibitRefundSignal = schemeFS.inhibitRefundSignal,
-                seqSchemeFSDetail = schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment interest"))
-              )
-            case JsError(errors) =>
-              throw JsResultException(errors)
-          }
-        case NOT_FOUND =>
-          SchemeFS(
-            inhibitRefundSignal = false,
-            seqSchemeFSDetail = Seq.empty[SchemeFSDetail]
-          )
-        case _ =>
-          handleErrorResponse("GET", url.toString)(response)
+      .get(url"$url")(hc)
+      .setHeader(headerUtils.integrationFrameworkHeader *)
+      .transform(_.withRequestTimeout(config.ifsTimeout))
+      .execute[HttpResponse].map { response =>
+        response.status match {
+          case OK =>
+            logger.debug(s"Ok response received from schemeFinInfo api with body: ${response.body}")
+            Json.parse(response.body).validate[SchemeFS](reads) match {
+              case JsSuccess(schemeFS, _) =>
+                logger.debug(s"Response received from schemeFinInfo api transformed successfully to $schemeFS")
+                logger.warn(s"Size of schemeFS payload: ${getObjectSize[SchemeFS](schemeFS)} bytes")
+                SchemeFS(
+                  inhibitRefundSignal = schemeFS.inhibitRefundSignal,
+                  seqSchemeFSDetail = schemeFS.seqSchemeFSDetail.filterNot(charge => charge.chargeType.equals("Repayment interest"))
+                )
+              case JsError(errors) =>
+                throw JsResultException(errors)
+            }
+          case NOT_FOUND =>
+            SchemeFS(
+              inhibitRefundSignal = false,
+              seqSchemeFSDetail = Seq.empty[SchemeFSDetail]
+            )
+          case _ =>
+            handleErrorResponse("GET", url)(response)
         }
       } andThen financialInfoAuditService.sendSchemeFSAuditEvent(pstr)
 

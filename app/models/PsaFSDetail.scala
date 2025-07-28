@@ -61,14 +61,14 @@ object PsaFS {
 
   implicit val writesPsaFS: Writes[PsaFS] = (
     (JsPath \ "inhibitRefundSignal").write[Boolean] and
-      (JsPath \ "seqPsaFSDetail").write[Seq[PsaFSDetail]]) (x => (x.inhibitRefundSignal, x.seqPsaFSDetail))
+      (JsPath \ "seqPsaFSDetail").write[Seq[PsaFSDetail]])(x => (x.inhibitRefundSignal, x.seqPsaFSDetail))
 
   implicit val rdsDocumentLineItemDetail: Reads[DocumentLineItemDetail] = (
     (JsPath \ "clearedAmountItem").read[BigDecimal] and
       (JsPath \ "clearingDate").readNullable[LocalDate] and
       (JsPath \ "paymDateOrCredDueDate").readNullable[LocalDate] and
       (JsPath \ "clearingReason").readNullable[String]
-    ) (
+    )(
     (clearedAmountItem, clearingDate, paymDateOrCredDueDate, clearingReason) =>
       DocumentLineItemDetail(
         clearedAmountItem,
@@ -119,23 +119,27 @@ object PsaFS {
   implicit val rdsPsaFSMax: Reads[PsaFS] = {
     def transformExtraFields(seqPsaFSDetail: Seq[PsaFSDetail]): Seq[PsaFSDetail] = {
       val seqPsaFSDetailWithIndexes = seqPsaFSDetail.zipWithIndex.map { case (psaFSDetail, i) =>
-        psaFSDetail.copy (index = i + 1)
+        psaFSDetail.copy(index = i + 1)
       }
+
       seqPsaFSDetailWithIndexes.map { psaFSDetail =>
         psaFSDetail.sourceChargeRefForInterest match {
-          case Some(ref) => seqPsaFSDetailWithIndexes.find(_.chargeReference == ref) match {
-            case Some(foundOriginalCharge) =>
-              psaFSDetail.copy (
-                psaSourceChargeInfo = Some(PsaSourceChargeInfo(
-                  index = foundOriginalCharge.index,
-                  chargeType = foundOriginalCharge.chargeType,
-                  periodStartDate = foundOriginalCharge.periodStartDate,
-                  periodEndDate = foundOriginalCharge.periodEndDate
-                ))
+          case Some(ref) =>
+            seqPsaFSDetailWithIndexes.find(_.chargeReference == ref) match {
+              case Some(foundOriginalCharge) =>
+                psaFSDetail.copy(
+                  psaSourceChargeInfo = Some(PsaSourceChargeInfo(
+                    index = foundOriginalCharge.index,
+                    chargeType = foundOriginalCharge.chargeType,
+                    periodStartDate = foundOriginalCharge.periodStartDate,
+                    periodEndDate = foundOriginalCharge.periodEndDate
+                  ))
                 )
-            case _ => psaFSDetail
-          }
-          case _ => psaFSDetail
+              case _ =>
+                psaFSDetail
+            }
+          case _ =>
+            psaFSDetail
         }
       }
     }
@@ -143,8 +147,9 @@ object PsaFS {
     (
       (JsPath \ "accountHeaderDetails").read((JsPath \ "inhibitRefundSignal").read[Boolean]) and
         (JsPath \ "documentHeaderDetails").read(Reads.seq(rdsPsaFSDetailMax))
-      ) (
-      (inhibitRefundSignal, seqPsaFSDetail) => PsaFS(inhibitRefundSignal, transformExtraFields(seqPsaFSDetail))
+    )(
+      (inhibitRefundSignal, seqPsaFSDetail) =>
+        PsaFS(inhibitRefundSignal, transformExtraFields(seqPsaFSDetail))
     )
   }
 }
@@ -173,6 +178,8 @@ object PsaChargeType extends Enumeration {
   val ltaDischargeAssessment30DayLpp: TypeValue = TypeValue("56991080", "Lifetime Allowance Discharge Assessment 30 Days Late Payment Penalty")
   val ltaDischargeAssessment6MonthLpp: TypeValue = TypeValue("56991091", "Lifetime Allowance Discharge Assessment 6 Months Late Payment Penalty")
   val ltaDischargeAssessment12MonthLpp: TypeValue = TypeValue("56991092", "Lifetime Allowance Discharge Assessment 12 Months Late Payment Penalty")
+  val psrInitialLFP: TypeValue = TypeValue("60511080", "Pension Scheme Return Initial Late Filing Penalty")
+  val psrDailyLFP: TypeValue = TypeValue("60511091", "Pension Scheme Return Daily Late Filing Penalty")
 
   def valueWithName(name: String): String = {
     withName(name).asInstanceOf[TypeValue].value
