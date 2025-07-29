@@ -21,12 +21,11 @@ import com.mongodb.client.model.FindOneAndUpdateOptions
 import config.AppConfig
 import crypto.DataEncryptor
 import models.{ChargeAndMember, LockDetail}
-import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.bson.conversions.Bson
+import org.mongodb.scala.model.*
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model._
 import play.api.Logging
-import play.api.libs.json._
+import play.api.libs.json.*
 import repository.model.SessionData
 import services.BatchService
 import services.BatchService.BatchType.Other
@@ -88,7 +87,7 @@ class AftBatchedDataCacheRepository @Inject()(
     indexes = AftBatchedDataCacheRepository.indexes
   ) with Logging {
 
-  import AftBatchedDataCacheRepository._
+  import AftBatchedDataCacheRepository.*
 
   private def expireInSeconds(batchType: BatchType): LocalDateTime = {
     val ttlConfigItem = batchType match {
