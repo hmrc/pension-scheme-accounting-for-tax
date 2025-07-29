@@ -85,7 +85,7 @@ class AftDataCacheController @Inject()(
 
   def setSessionData(lock: Boolean): Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getIdWithPsaOrPspId { case (sessionId, id, psaOrPspId) =>
+      getIdWithNameAndPsaOrPspId { case (sessionId, id, name, psaOrPspId) =>
         request.body.asJson.map {
           jsValue => {
             (
@@ -95,7 +95,7 @@ class AftDataCacheController @Inject()(
             ) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
                 batchedRepository.setSessionData(id,
-                  if (lock) Some(LockDetail(psaOrPspId)) else None,
+                  if (lock) Some(LockDetail(name, psaOrPspId)) else None,
                   jsValue,
                   sessionId,
                   version.toInt,
@@ -113,7 +113,7 @@ class AftDataCacheController @Inject()(
           }
         } getOrElse {
           logger.warn("BAD Request returned when setting session data for session due to invalid JSON body: " +
-            s"ID $sessionId, id $id and psaOrPspId $psaOrPspId.")
+            s"ID $sessionId, id $id, name $name and psaOrPspId $psaOrPspId.")
           auditService.sendEvent(RequestBodyAuditEvent(psaOrPspId, request.body.asText))
           Future.successful(BadRequest)
         }
@@ -165,14 +165,17 @@ class AftDataCacheController @Inject()(
     block(sessionId, id)
   }
 
-  private def getIdWithPsaOrPspId(block: (String, String, String) => Future[Result])
+  private def getIdWithNameAndPsaOrPspId(block: (String, String, String, String) => Future[Result])
                                         (implicit request: PsaPspAuthRequest[AnyContent]): Future[Result] = {
     val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
     val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
+    val fullName = request.name.map { name =>
+      name.name.getOrElse("") + " " + name.lastName.getOrElse("")
+    }.getOrElse("")
     val psaOrPspId = request.pspId.map(_.id).getOrElse(
       request.psaId.map(_.id).getOrElse(throw MissingIDException)
     )
-    block(sessionId, id, psaOrPspId)
+    block(sessionId, id, fullName.trim, psaOrPspId)
 
   }
 }

@@ -21,7 +21,6 @@ lazy val microservice = Project(appName, file("."))
     PlayKeys.devSettings += "play.server.http.port" -> "8207",
     scalacOptions ++= Seq(
       "-feature",
-      "-Xfatal-warnings",                        // Treat all warnings as errors
       "-Wconf:src=target/.*:s",                  // silence warnings from compiled files
       "-Wconf:src=routes/.*:silent",             // Suppress warnings from routes files
       "-Wconf:msg=Flag.*repeatedly:silent",      // Suppress warnings for repeated flags

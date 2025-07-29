@@ -57,6 +57,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
   private val psaId = AuthUtils.psaId
   private val pspId = AuthUtils.pspId
   private val fakeAuthAction = new FakePsaPspEnrolmentAuthAction
+  private val fullName = AuthUtils.name.name.get + " " + AuthUtils.name.lastName.get
   private def randomString = ByteString(Random.alphanumeric.dropWhile(_.isDigit).take(20).mkString)
   private val modules: Seq[GuiceableModule] = Seq(
     bind[AftBatchedDataCacheRepository].toInstance(repo),
@@ -154,7 +155,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
     "calling getSessionData" must {
       "return OK with locked by user name" in {
 
-        val sd = SessionData("id", Some(LockDetail(psaId)), 1, "", areSubmittedVersionsAvailable = false)
+        val sd = SessionData("id", Some(LockDetail("test name",psaId)), 1, "", areSubmittedVersionsAvailable = false)
 
         when(repo.getSessionData(any(), any())(any())).thenReturn(Future.successful(Some(sd)))
         when(authConnector.authorise[Option[Name]](any(), any())(any(), any()))
@@ -184,7 +185,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       when(repo.setSessionData(
         ArgumentMatchers.eq(id),
-        ArgumentMatchers.eq(Some(LockDetail(psaId))), any(), any(),
+        ArgumentMatchers.eq(Some(LockDetail(fullName, psaId))), any(), any(),
         ArgumentMatchers.eq(version),
         ArgumentMatchers.eq(accessMode),
         ArgumentMatchers.eq(true)
@@ -208,7 +209,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
       when(repo.setSessionData(
         ArgumentMatchers.eq(id),
-        ArgumentMatchers.eq(Some(LockDetail(pspId))), any(), any(),
+        ArgumentMatchers.eq(Some(LockDetail(fullName, pspId))), any(), any(),
         ArgumentMatchers.eq(version),
         ArgumentMatchers.eq(accessMode),
         ArgumentMatchers.eq(true)
@@ -231,7 +232,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
       val version = 1
 
       when(repo.setSessionData(ArgumentMatchers.eq(id),
-        ArgumentMatchers.eq(Some(LockDetail(psaId))), any(), any(),
+        ArgumentMatchers.eq(Some(LockDetail(fullName, psaId))), any(), any(),
         ArgumentMatchers.eq(version), ArgumentMatchers.eq(accessMode), any())(any())).thenReturn(Future.successful((): Unit))
       val result = controller.setSessionData(true)(fakePostRequest
         .withJsonBody(Json.obj("value" -> "data"))
@@ -251,7 +252,7 @@ class AftDataCacheControllerSpec extends AnyWordSpec with Matchers with MockitoS
 
   "calling lockedBy" must {
     "return OK when the data is retrieved" in {
-      val lockedByUser = LockDetail(psaId)
+      val lockedByUser = LockDetail("bob", psaId)
 
       when(repo.lockedBy(any(), any())(any())).thenReturn(Future.successful(Some(lockedByUser)))
 
