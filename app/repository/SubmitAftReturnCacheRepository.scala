@@ -18,8 +18,8 @@ package repository
 
 import com.google.inject.Inject
 import config.AppConfig
-import org.mongodb.scala.model._
-import org.mongodb.scala.{MongoWriteException, SingleObservableFuture}
+import org.mongodb.scala.model.*
+import org.mongodb.scala.MongoWriteException
 import play.api.Logging
 import play.api.libs.json.{Format, Json, OFormat}
 import uk.gov.hmrc.mongo.MongoComponent

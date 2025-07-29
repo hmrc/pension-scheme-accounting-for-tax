@@ -29,7 +29,6 @@ lazy val microservice = Project(appName, file("."))
     ),
     Test / fork := true,
     Test / javaOptions += "-Dconfig.file=conf/test.application.conf",
-    resolvers += Resolver.jcenterRepo,
     Test / parallelExecution := true
   )
 

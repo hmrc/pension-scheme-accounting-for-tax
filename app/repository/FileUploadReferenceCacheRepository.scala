@@ -19,12 +19,11 @@ package repository
 import com.google.inject.Inject
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import crypto.DataEncryptor
-import org.mongodb.scala.SingleObservableFuture
+import org.mongodb.scala.model.*
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model._
-import play.api.libs.json._
+import play.api.libs.json.*
 import play.api.{Configuration, Logging}
-import repository.model._
+import repository.model.*
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
