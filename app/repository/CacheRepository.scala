@@ -19,11 +19,10 @@ package repository
 import com.google.inject.Inject
 import com.mongodb.client.model.FindOneAndUpdateOptions
 import crypto.DataEncryptor
-import org.mongodb.scala.gridfs.ObservableFuture
+import org.mongodb.scala.model.*
 import org.mongodb.scala.model.Updates.set
-import org.mongodb.scala.model._
 import play.api.Logging
-import play.api.libs.json._
+import play.api.libs.json.*
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
@@ -47,7 +46,7 @@ class CacheRepository @Inject()(collectionName: String,
     indexes = CacheRepository.collectionIndexes
   ) with Logging {
 
-  import CacheRepository._
+  import CacheRepository.*
 
   private def getExpireAt: Instant =
     (expireInSeconds, expireInDays) match {
