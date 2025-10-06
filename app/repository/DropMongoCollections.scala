@@ -30,7 +30,7 @@ class DropMongoCollections @Inject()(
   extends Logging {
 
   lazy val collectionNamesToDrop: Seq[String] =
-    Seq("toggle-data")
+    Seq("admin-data", "toggle-data")
 
   if (configuration.getOptional[Boolean]("mongodb.drop-unused-collections").getOrElse(false)) {
     logger.info("mongodb.drop-unused-collections: true")
