@@ -31,9 +31,37 @@ trait JsonTransformer {
       (__ \ Symbol("memberDetails") \ Symbol("nino")).json.copyFrom((__ \ Symbol("individualDetails") \ Symbol("ninoRef")).json.pick)
       ).reduce: Reads[JsObject]
 
-  protected val readsVersionRemovingZeroes: Reads[JsValue] = Reads{
+  protected val readsVersionRemovingZeroes: Reads[JsValue] = Reads {
     case JsString(s) => JsSuccess(JsNumber(s.toInt))
     case e => JsError(s"Not a Json string value: $e")
   }
 
+  protected def ninoOf(memDetails: JsObject): String =
+    (memDetails \ "memberDetails" \ "nino").asOpt[String].getOrElse("").trim
+
+  protected def memberVersion(memVer: JsObject): Int =
+    (memVer \ "memberAFTVersion").asOpt[Int].getOrElse(0)
+
+  protected def deDupeAndSortMembers(
+                                      members: Seq[JsObject],
+                                      key: JsObject => (String, String, String)
+                                    ): JsArray = {
+    val grouped = members.groupBy(key)
+
+    val deduped = grouped.values.map { group =>
+      group.maxBy(memberVersion)
+    }.toSeq
+
+    val ordered = members.foldLeft(Seq.empty[JsObject]) { (acc, member) =>
+      val k = key(member)
+      if (acc.exists(account => key(account) == k)) acc
+      else acc :+ deduped.find(duplicate => key(duplicate) == k).get
+    }
+
+    JsArray(ordered)
+  }
+
+  def defaultReadsMembers(readsMember: Reads[JsObject], chargeTypeCode: String): Reads[JsArray] = __.read(Reads.seq(readsMember)).map { seq =>
+    deDupeAndSortMembers(seq, (member: JsObject) => (ninoOf(member), (member \ "memberStatus").asOpt[String].getOrElse(""), chargeTypeCode))
+  }
 }

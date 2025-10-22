@@ -30,7 +30,7 @@ class ChargeDTransformer extends McCloudJsonTransformer {
         (__ \ Symbol("chargeDDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce: Reads[JsObject]
     )).map(_.getOrElse(Json.obj()))
 
-  def readsMembers: Reads[JsArray] = __.read(Reads.seq(readsMember)).map(JsArray(_))
+  def readsMembers: Reads[JsArray] = defaultReadsMembers(readsMember, "D")
 
   def readsMember: Reads[JsObject] =
     (readsMemberDetails and

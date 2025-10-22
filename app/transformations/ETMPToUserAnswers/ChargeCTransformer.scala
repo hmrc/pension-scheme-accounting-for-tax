@@ -30,7 +30,7 @@ class ChargeCTransformer extends JsonTransformer {
         (__ \ Symbol("chargeCDetails") \ Symbol("totalChargeAmount")).json.copyFrom((__ \ Symbol("totalAmount")).json.pick)).reduce: Reads[JsObject]
     )).map(_.getOrElse(Json.obj()))
 
-  def readsMembers: Reads[JsArray] = __.read(Reads.seq(readsMember)).map(JsArray(_))
+  def readsMembers: Reads[JsArray] = defaultReadsMembers(readsMember, "C")
 
   def readsMember: Reads[JsObject] =
     ((__ \ Symbol("memberStatus")).json.copyFrom((__ \ Symbol("memberStatus")).json.pick) and

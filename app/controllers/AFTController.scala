@@ -18,6 +18,9 @@ package controllers
 
 import audit.FileAFTReturnAuditService
 import connectors.AFTConnector
+import java.util.Base64
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import models.enumeration.JourneyType
 import models.enumeration.JourneyType.{AFT_COMPILE_RETURN, AFT_SUBMIT_RETURN}
 import models.{AFTSubmitterDetails, AFTVersion, SchemeReferenceNumber, VersionsWithSubmitter}
@@ -112,8 +115,8 @@ class AFTController @Inject()(
                       case AFT_SUBMIT_RETURN | AFT_COMPILE_RETURN =>
                         val hash = if(journeyType == AFT_COMPILE_RETURN) {
                           val messageDigest = MessageDigest.getInstance("SHA-256")
-                          messageDigest.update(dataToBeSendToETMP.toString().getBytes)
-                          Some(new String(messageDigest.digest))
+                          messageDigest.update(dataToBeSendToETMP.toString().getBytes(StandardCharsets.UTF_8))
+                          Some(Base64.getEncoder.encodeToString(messageDigest.digest))
                         } else {
                           None
                         }
