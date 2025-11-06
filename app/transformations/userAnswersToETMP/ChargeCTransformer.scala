@@ -19,6 +19,7 @@ package transformations.userAnswersToETMP
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
+import utils.RemoveSpaces.*
 
 class ChargeCTransformer extends JsonTransformer {
 
@@ -90,7 +91,9 @@ class ChargeCTransformer extends JsonTransformer {
         ((__ \ Symbol("addressLine3")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line3")).json.pick) orElse doNothing) and
         ((__ \ Symbol("addressLine4")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("line4")).json.pick) orElse doNothing) and
         (__ \ Symbol("countryCode")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("country")).json.pick) and
-        ((__ \ Symbol("postalCode")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("postcode")).json.pick) orElse doNothing)
+        ((__ \ Symbol("postalCode")).json.copyFrom((__ \ Symbol("sponsoringEmployerAddress") \ Symbol("postcode")).json.pick
+          .map(_.postcodeChange())
+          ) orElse doNothing)
       ).reduce: Reads[JsObject]
 
   private def readsPostalCode: Reads[JsObject] =
