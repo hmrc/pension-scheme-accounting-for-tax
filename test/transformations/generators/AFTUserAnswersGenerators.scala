@@ -29,6 +29,8 @@ import java.time.{LocalDate, Year}
 trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyle:off magic.number
   val ninoGen: Gen[String] = Gen.oneOf(Seq("AB123456C", "CD123456E"))
 
+  private def arbitraryString: Gen[String] =  Gen.alphaStr suchThat (_.nonEmpty)
+
   val dateGenerator: Gen[LocalDate] = for {
     day <- Gen.choose(min = 1, max = 28)
     month <- Gen.choose(min = 1, max = 12)
@@ -40,7 +42,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
     line2 <- nonEmptyString
     line3 <- Gen.option(nonEmptyString)
     line4 <- Gen.option(nonEmptyString)
-    postalCode <- nonEmptyString
+    postalCode <- arbitraryString
   } yield {
     Json.obj(
       "line1" -> line1,
@@ -57,7 +59,7 @@ trait AFTUserAnswersGenerators extends Matchers with OptionValues { // scalastyl
     line2 <- nonEmptyString
     line3 <- Gen.option(nonEmptyString)
     line4 <- Gen.option(nonEmptyString)
-    postalCode <- Gen.option(nonEmptyString)
+    postalCode <- arbitraryString
     country <- Gen.listOfN(2, nonEmptyString).map(_.mkString)
   } yield {
     Json.obj(
