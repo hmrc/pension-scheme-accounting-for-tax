@@ -17,7 +17,7 @@
 package utils
 
 
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsValue, Json, Reads}
 
 object RemoveSpaces {
 
@@ -26,8 +26,8 @@ object RemoveSpaces {
 
   extension(postCode: String) private def oneSpace(): String = postCode.replaceAll("\\s+", " ")
 
-  extension(value: JsValue) def postcodeChange(): JsValue = Json.toJson(Json.stringify(value).oneSpace())
+  extension(value: JsValue) def postcodeChange(): JsValue = Json.toJson(Json.fromJson[String](value).asOpt.map(_.oneSpace()))
   
-  extension(value: JsValue) def crnChange(): JsValue = Json.toJson(Json.stringify(value).removeSpaces())
+  extension(value: JsValue) def crnChange(): JsValue = Json.toJson(Json.fromJson[String](value).asOpt.map(_.removeSpaces()))
 
 }
