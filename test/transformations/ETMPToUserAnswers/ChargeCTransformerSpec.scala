@@ -98,5 +98,22 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
           (uaPath \ "postcode").asOpt[String].mustBe((etmpPath \ "postCode").asOpt[String])
       }
     }
+
+
+
+    "must read postcode removing whitespace from postcode" in {
+      forAll(chargeCETMPGeneratorDodgyAddress) {
+        etmpJson =>
+
+          val transformer = new ChargeCTransformer
+          val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
+
+          val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringEmployerAddress"
+          val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 0 \ "addressDetails"
+
+          (uaPath \ "postcode").asOpt[String].mustBe((etmpPath \ "postCode").asOpt[String])
+      }
+    }
+
   }
 }
