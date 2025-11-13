@@ -24,7 +24,7 @@ object RemoveSpaces {
   extension(value: String) def removeSpaces(): String = value.trim.replaceAll("\\s+", "")
   extension(value: Option[String]) def removeSpaces(): Option[String] = value.map(_.trim.replaceAll("\\s+", ""))
 
-  extension(postCode: String) private def oneSpace(): String = postCode.replaceAll("\\s+", " ")
+  extension(postCode: String) private def oneSpace(): String = postCode.trim.replaceAll("\\s+", " ")
 
   extension(value: JsValue) def postcodeChange(): JsValue = Json.toJson(Json.fromJson[String](value).asOpt.map(_.oneSpace()))
   

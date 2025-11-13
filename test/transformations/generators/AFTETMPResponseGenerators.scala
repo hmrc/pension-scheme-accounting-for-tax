@@ -65,6 +65,11 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     )
   }
 
+  val addressWithWhiteSpacePostCode: Gen[JsObject] =
+    addressGenerator.map { address =>
+      address ++ Json.obj("postCode" -> " ZZ1 1ZZ ")
+    }
+
   private def padVersion(version: Int): String = ("00" + version.toString).takeRight(3)
 
   val aftDetailsGenerator: Gen[JsObject] =
@@ -124,11 +129,11 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "totalAmount" -> totalAmount
         ))
 
-  val chargeCIndividualMember: Gen[JsObject] =
+  def chargeCIndividualMember(addressGen: Gen[JsObject] = addressGenerator): Gen[JsObject] = {
     for {
       memberStatus <- nonEmptyString
       memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
-      address <- addressGenerator
+      address <- addressGen
       individual <- individualGen
       dateOfPayment <- dateGenerator
       totalAmountTaxDue <- arbitrary[BigDecimal]
@@ -143,6 +148,9 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         "totalAmountOfTaxDue" -> totalAmountTaxDue
       )
     }
+  }
+
+  val chargeCWithWhiteSpacePostCode: Gen[JsObject] = chargeCIndividualMember(addressWithWhiteSpacePostCode)
 
   val chargeCOrgMember: Gen[JsObject] =
     for {
@@ -168,10 +176,10 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       )
     }
 
-  val chargeCETMPGenerator: Gen[JsObject] =
+  val chargeCETMPGenerator: Gen[JsObject] = {
     for {
       amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
-      indvMembers <- Gen.listOfN(2, chargeCIndividualMember)
+      indvMembers <- Gen.listOfN(2, chargeCIndividualMember())
       orgMembers <- Gen.listOfN(1, chargeCOrgMember)
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
@@ -181,6 +189,22 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "memberDetails" -> (indvMembers ++ orgMembers),
           "totalAmount" -> totalAmount
         ))
+  }
+
+  val chargeCETMPGeneratorDodgyAddress: Gen[JsObject] = {
+    for {
+      amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
+      indvMembers <- Gen.listOfN(2, chargeCWithWhiteSpacePostCode)
+      orgMembers <- Gen.listOfN(1, chargeCOrgMember)
+      totalAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      "chargeTypeC" -> Json.obj(
+        "amendedVersion" -> amendedVersion,
+        "memberDetails" -> (indvMembers ++ orgMembers),
+        "totalAmount" -> totalAmount
+      )
+    )
+  }
 
   private def schemes(howManySchemes: Int, optPstrGen: Gen[Option[String]], amountNodeName: String, repoPeriodNodeName: String): Gen[JsObject] = {
     val seqInt: Seq[Int] = 1 to howManySchemes
