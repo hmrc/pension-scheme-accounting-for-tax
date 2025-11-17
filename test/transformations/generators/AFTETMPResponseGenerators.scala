@@ -21,7 +21,6 @@ import org.scalacheck.Gen
 import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsArray, JsObject, JsString, Json}
-import uk.gov.hmrc.domain.Generator
 
 import java.time.{LocalDate, Year}
 
@@ -151,8 +150,6 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       address ++ Json.obj("postCode" -> " ZZ1 1ZZ ")
     }
 
-  val chargeCWithWhiteSpacePostCode: Gen[JsObject] = chargeCIndividualMember(addressWithWhiteSpacePostCode)
-
   def chargeCOrgMember(crnNumberGen: Option[String] = None): Gen[JsObject] =
     for {
       memberStatus <- nonEmptyString
@@ -177,16 +174,6 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       )
     }
 
-//  val crnNumberWithWhiteSpace: Gen[JsObject] = {
-//    val charGen: Gen[Char] =
-//      Gen.oneOf(('a' to 'z') ++ ('A' to 'Z') ++ Seq(' '))
-//
-//    val stringGen: Gen[String] =
-//      Gen.listOf(charGen).map(_.mkString)
-//
-//    chargeCOrgMember(stringGen)
-//  }
-
   val chargeCETMPGenerator: Gen[JsObject] = {
     for {
       amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
@@ -205,7 +192,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   def chargeCETMPGeneratorWithWhiteSpace(crn: Option[String] = None): Gen[JsObject] = {
     for {
       amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
-      indvMembers <- Gen.listOfN(2, chargeCWithWhiteSpacePostCode)
+      indvMembers <- Gen.listOfN(2, chargeCIndividualMember(addressWithWhiteSpacePostCode))
       orgMembers <- Gen.listOfN(1, chargeCOrgMember(crn))
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
