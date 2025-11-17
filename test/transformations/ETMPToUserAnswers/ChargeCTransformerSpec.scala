@@ -115,7 +115,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
             val transformer = new ChargeCTransformer
             val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
 
-            val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringOrganisationDetails"
+            val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 2 \ "sponsoringOrganisationDetails"
 
             (uaPath \ "crn").asOpt[String].mustBe(Some("crnwithwhitespace"))
 
