@@ -61,7 +61,7 @@ class ChargeCTransformer extends JsonTransformer {
             (__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("name")).json
               .copyFrom((__ \ Symbol("organisationDetails") \ Symbol("compOrOrgName")).json.pick) and
             (__ \ Symbol("sponsoringOrganisationDetails") \ Symbol("crn")).json
-              .copyFrom((__ \ Symbol("organisationDetails") \ Symbol("crnNumber")).json.pick)
+              .copyFrom((__ \ Symbol("organisationDetails") \ Symbol("crnNumber")).json.pick.map(_.crnChange()))
           ).reduce: Reads[JsObject]
     }
 

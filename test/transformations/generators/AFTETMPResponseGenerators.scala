@@ -21,6 +21,7 @@ import org.scalacheck.Gen
 import org.scalatest.OptionValues
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsArray, JsObject, JsString, Json}
+import uk.gov.hmrc.domain.Generator
 
 import java.time.{LocalDate, Year}
 
@@ -64,11 +65,6 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       "country" -> country
     )
   }
-
-  val addressWithWhiteSpacePostCode: Gen[JsObject] =
-    addressGenerator.map { address =>
-      address ++ Json.obj("postCode" -> " ZZ1 1ZZ ")
-    }
 
   private def padVersion(version: Int): String = ("00" + version.toString).takeRight(3)
 
@@ -150,15 +146,20 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
     }
   }
 
+  private val addressWithWhiteSpacePostCode: Gen[JsObject] =
+    addressGenerator.map { address =>
+      address ++ Json.obj("postCode" -> " ZZ1 1ZZ ")
+    }
+
   val chargeCWithWhiteSpacePostCode: Gen[JsObject] = chargeCIndividualMember(addressWithWhiteSpacePostCode)
 
-  val chargeCOrgMember: Gen[JsObject] =
+  def chargeCOrgMember(crnNumberGen: Option[String] = None): Gen[JsObject] =
     for {
       memberStatus <- nonEmptyString
       memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       address <- addressGenerator
       comOrOrganisationName <- nonEmptyString
-      crnNumber <- nonEmptyString
+      crnNumber <- crnNumberGen.getOrElse(nonEmptyString)
       dateOfPayment <- dateGenerator
       totalAmountTaxDue <- arbitrary[BigDecimal]
     } yield {
@@ -168,7 +169,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         "memberType" -> "Organisation",
         "organisationDetails" -> Json.obj(
           "compOrOrgName" -> comOrOrganisationName,
-          "crnNumber" -> crnNumber
+          "crnNumber" -> crnNumber.toString
         ),
         "addressDetails" -> address,
         "dateOfPayment" -> dateOfPayment,
@@ -176,11 +177,21 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       )
     }
 
+//  val crnNumberWithWhiteSpace: Gen[JsObject] = {
+//    val charGen: Gen[Char] =
+//      Gen.oneOf(('a' to 'z') ++ ('A' to 'Z') ++ Seq(' '))
+//
+//    val stringGen: Gen[String] =
+//      Gen.listOf(charGen).map(_.mkString)
+//
+//    chargeCOrgMember(stringGen)
+//  }
+
   val chargeCETMPGenerator: Gen[JsObject] = {
     for {
       amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       indvMembers <- Gen.listOfN(2, chargeCIndividualMember())
-      orgMembers <- Gen.listOfN(1, chargeCOrgMember)
+      orgMembers <- Gen.listOfN(1, chargeCOrgMember())
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
       fields = "chargeTypeC" ->
@@ -191,11 +202,11 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         ))
   }
 
-  val chargeCETMPGeneratorDodgyAddress: Gen[JsObject] = {
+  def chargeCETMPGeneratorWithWhiteSpace(crn: Option[String] = None): Gen[JsObject] = {
     for {
       amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       indvMembers <- Gen.listOfN(2, chargeCWithWhiteSpacePostCode)
-      orgMembers <- Gen.listOfN(1, chargeCOrgMember)
+      orgMembers <- Gen.listOfN(1, chargeCOrgMember(crn))
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
       "chargeTypeC" -> Json.obj(

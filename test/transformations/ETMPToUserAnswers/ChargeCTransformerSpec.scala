@@ -26,8 +26,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
   "A Charge C Transformer" - {
 
     "must transform member details and total amount for an Individual from ETMP format to UserAnswers format" in {
-      forAll(chargeCETMPGenerator) {
-        etmpJson =>
+      forAll(chargeCETMPGenerator) { etmpJson =>
 
           val transformer = new ChargeCTransformer
           val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
@@ -49,8 +48,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     }
 
     "must transform individual details for an Individual from ETMP format to UserAnswers format" in {
-      forAll(chargeCETMPGenerator) {
-        etmpJson =>
+      forAll(chargeCETMPGenerator) { etmpJson =>
 
           val transformer = new ChargeCTransformer
           val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
@@ -66,8 +64,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     }
 
     "must transform Organisation details for an Organisation from ETMP format to UserAnswers format" in {
-      forAll(chargeCETMPGenerator) {
-        etmpJson =>
+      forAll(chargeCETMPGenerator) { etmpJson =>
 
           val transformer = new ChargeCTransformer
           val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
@@ -81,8 +78,7 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
     }
 
     "must transform UK correspondence address from ETMP to UserAnswers format" in {
-      forAll(chargeCETMPGenerator) {
-        etmpJson =>
+      forAll(chargeCETMPGenerator) { etmpJson =>
 
           val transformer = new ChargeCTransformer
           val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
@@ -99,21 +95,35 @@ class ChargeCTransformerSpec extends AnyFreeSpec with AFTETMPResponseGenerators 
       }
     }
 
+    "data with whitespace in" - {
+      "must read postcode removing whitespace from postcode" in {
+        forAll(chargeCETMPGeneratorWithWhiteSpace()) { etmpJson =>
 
+            val transformer = new ChargeCTransformer
+            val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
 
-    "must read postcode removing whitespace from postcode" in {
-      forAll(chargeCETMPGeneratorDodgyAddress) {
-        etmpJson =>
+            val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringEmployerAddress"
 
-          val transformer = new ChargeCTransformer
-          val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
-
-          val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringEmployerAddress"
-          val etmpPath = etmpJson \ "chargeTypeC" \ "memberDetails" \ 0 \ "addressDetails"
-
-          (uaPath \ "postcode").asOpt[String].mustBe((etmpPath \ "postCode").asOpt[String])
+            (uaPath \ "postcode").asOpt[String].mustBe(Some("ZZ1 1ZZ"))
+        }
       }
+
+      "must read crn number removing the whitespace from crn number" in {
+        forAll(chargeCETMPGeneratorWithWhiteSpace(crn = Some("crn with white space"))) {
+          etmpJson =>
+
+            val transformer = new ChargeCTransformer
+            val transformedJson = etmpJson.transform(transformer.transformToUserAnswers).asOpt.value
+
+            val uaPath = transformedJson \ "chargeCDetails" \ "employers" \ 0 \ "sponsoringOrganisationDetails"
+
+            (uaPath \ "crn").asOpt[String].mustBe(Some("crnwithwhitespace"))
+
+        }
+      }
+
     }
+
 
   }
 }
