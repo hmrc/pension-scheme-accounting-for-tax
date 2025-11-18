@@ -34,8 +34,8 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
   } yield LocalDate.of(year, month, day)
 
   val individualGen: Gen[JsObject] = for {
-    firstName <- arbitrary[String]
-    lastName <- arbitrary[String]
+    firstName <- nonEmptyString
+    lastName <- nonEmptyString
     nino <- ninoGen
   } yield {
     Json.obj(
@@ -74,7 +74,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       quarterStartDate <- dateGenerator
       quarterEndDate <- dateGenerator
       aftReturnType <- Gen.oneOf(Seq("1", "2"))
-      receiptDate <- arbitrary[String]
+      receiptDate <- nonEmptyString
     } yield Json.obj(
       fields =
         "aftVersion" -> aftVersion,
@@ -87,8 +87,8 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val schemeDetailsGenerator: Gen[JsObject] =
     for {
-      pstr <- arbitrary[String]
-      schemeName <- arbitrary[String]
+      pstr <- nonEmptyString
+      schemeName <- nonEmptyString
     } yield Json.obj(
       "pstr" -> pstr,
       "schemeName" -> schemeName
@@ -124,11 +124,11 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "totalAmount" -> totalAmount
         ))
 
-  val chargeCIndividualMember: Gen[JsObject] =
+  def chargeCIndividualMember(addressGen: Gen[JsObject] = addressGenerator): Gen[JsObject] = {
     for {
-      memberStatus <- arbitrary[String]
+      memberStatus <- nonEmptyString
       memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
-      address <- addressGenerator
+      address <- addressGen
       individual <- individualGen
       dateOfPayment <- dateGenerator
       totalAmountTaxDue <- arbitrary[BigDecimal]
@@ -143,14 +143,20 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         "totalAmountOfTaxDue" -> totalAmountTaxDue
       )
     }
+  }
 
-  val chargeCOrgMember: Gen[JsObject] =
+  private val addressWithWhiteSpacePostCode: Gen[JsObject] =
+    addressGenerator.map { address =>
+      address ++ Json.obj("postCode" -> " ZZ1 1ZZ ")
+    }
+
+  def chargeCOrgMember(crnNumberGen: Option[String] = None): Gen[JsObject] =
     for {
-      memberStatus <- arbitrary[String]
+      memberStatus <- nonEmptyString
       memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       address <- addressGenerator
-      comOrOrganisationName <- arbitrary[String]
-      crnNumber <- arbitrary[String]
+      comOrOrganisationName <- nonEmptyString
+      crnNumber <- crnNumberGen.getOrElse(nonEmptyString)
       dateOfPayment <- dateGenerator
       totalAmountTaxDue <- arbitrary[BigDecimal]
     } yield {
@@ -160,7 +166,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
         "memberType" -> "Organisation",
         "organisationDetails" -> Json.obj(
           "compOrOrgName" -> comOrOrganisationName,
-          "crnNumber" -> crnNumber
+          "crnNumber" -> crnNumber.toString
         ),
         "addressDetails" -> address,
         "dateOfPayment" -> dateOfPayment,
@@ -168,11 +174,11 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
       )
     }
 
-  val chargeCETMPGenerator: Gen[JsObject] =
+  val chargeCETMPGenerator: Gen[JsObject] = {
     for {
       amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
-      indvMembers <- Gen.listOfN(2, chargeCIndividualMember)
-      orgMembers <- Gen.listOfN(1, chargeCOrgMember)
+      indvMembers <- Gen.listOfN(2, chargeCIndividualMember())
+      orgMembers <- Gen.listOfN(1, chargeCOrgMember())
       totalAmount <- arbitrary[BigDecimal]
     } yield Json.obj(
       fields = "chargeTypeC" ->
@@ -181,6 +187,22 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
           "memberDetails" -> (indvMembers ++ orgMembers),
           "totalAmount" -> totalAmount
         ))
+  }
+
+  def chargeCETMPGeneratorWithWhiteSpace(crn: Option[String] = None): Gen[JsObject] = {
+    for {
+      amendedVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
+      indvMembers <- Gen.listOfN(2, chargeCIndividualMember(addressWithWhiteSpacePostCode))
+      orgMembers <- Gen.listOfN(1, chargeCOrgMember(crn))
+      totalAmount <- arbitrary[BigDecimal]
+    } yield Json.obj(
+      "chargeTypeC" -> Json.obj(
+        "amendedVersion" -> amendedVersion,
+        "memberDetails" -> (indvMembers ++ orgMembers),
+        "totalAmount" -> totalAmount
+      )
+    )
+  }
 
   private def schemes(howManySchemes: Int, optPstrGen: Gen[Option[String]], amountNodeName: String, repoPeriodNodeName: String): Gen[JsObject] = {
     val seqInt: Seq[Int] = 1 to howManySchemes
@@ -241,7 +263,7 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeDMember: Gen[JsObject] =
     for {
-      memberStatus <- arbitrary[String]
+      memberStatus <- nonEmptyString
       memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
       individual <- individualGen
       dateOfBenefitCrystalizationEvent <- dateGenerator
@@ -275,10 +297,10 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeEMember: Gen[JsObject] =
     for {
-      memberStatus <- arbitrary[String]
+      memberStatus <- nonEmptyString
       memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
-      firstName <- arbitrary[String]
-      lastName <- arbitrary[String]
+      firstName <- nonEmptyString
+      lastName <- nonEmptyString
       nino <- ninoGen
       chargeAmount <- arbitrary[BigDecimal]
       date <- dateGenerator
@@ -336,10 +358,10 @@ trait AFTETMPResponseGenerators extends Matchers with OptionValues { // scalasty
 
   val chargeGMember: Gen[JsObject] =
     for {
-      memberStatus <- arbitrary[String]
+      memberStatus <- nonEmptyString
       memberAFTVersion <- arbitrary[Int].suchThat(_ > 0).map(padVersion)
-      firstName <- arbitrary[String]
-      lastName <- arbitrary[String]
+      firstName <- nonEmptyString
+      lastName <- nonEmptyString
       nino <- ninoGen
       dob <- dateGenerator
       qropsReferenceNumber <- qropsGenerator
