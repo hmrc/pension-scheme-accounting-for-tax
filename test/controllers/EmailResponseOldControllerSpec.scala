@@ -34,29 +34,27 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.*
-import services.JsonCryptoService
 import uk.gov.hmrc.auth.core.*
-import uk.gov.hmrc.crypto.PlainText
+import uk.gov.hmrc.crypto.{ApplicationCrypto, PlainText}
 
 import java.time.Instant
 import scala.concurrent.Future
 
-class EmailResponseControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach { // scalastyle:off magic.number
-
+class EmailResponseOldControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar with BeforeAndAfterEach { // scalastyle:off magic.number
   private val psa = "A7654321"
   private val psp = "21111111"
   private val email = "test@test.com"
   private val requestId = "test-request-id"
   private val fakeRequest = FakeRequest("", "")
   private val enrolments = Enrolments(Set(
-    Enrolment("HMRC-PODS-ORG", Seq(
-      EnrolmentIdentifier("PSAID", "A0000000")
-    ), "Activated", None)
+    Enrolment("HMRC-PODS-ORG",
+      Seq(EnrolmentIdentifier("PSAID", "A0000000")),
+      "Activated",
+      None)
   ))
   private val eventCaptor = ArgumentCaptor.forClass(classOf[EmailAuditEvent])
   private val emailEvents = EmailEvents(Seq(EmailEvent(Sent, Instant.now()), EmailEvent(Delivered, Instant.now()),
     EmailEvent(PermanentBounce, Instant.now()), EmailEvent(Opened, Instant.now()), EmailEvent(Complained, Instant.now())))
-
   private val mockAuditService = mock[AuditService]
   private val mockAuthConnector = mock[AuthConnector]
 
@@ -74,12 +72,12 @@ class EmailResponseControllerSpec extends AsyncWordSpec with Matchers with Mocki
     )).build()
 
   private val injector = application.injector
-  private val controller = injector.instanceOf[EmailResponseController]
+  private val controller = injector.instanceOf[EmailResponseOldController]
 
-  private val crypto = injector.instanceOf[JsonCryptoService]
-  private val encryptedPsaId = crypto.jsonCrypto.encrypt(PlainText(psa)).value
-  private val encryptedPspId = crypto.jsonCrypto.encrypt(PlainText(psp)).value
-  private val encryptedEmail = crypto.jsonCrypto.encrypt(PlainText(email)).value
+  private val crypto = injector.instanceOf[ApplicationCrypto]
+  private val encryptedPsaId = crypto.QueryParameterCrypto.encrypt(PlainText(psa)).value
+  private val encryptedPspId = crypto.QueryParameterCrypto.encrypt(PlainText(psp)).value
+  private val encryptedEmail = crypto.QueryParameterCrypto.encrypt(PlainText(email)).value
 
   override def beforeEach(): Unit = {
     Mockito.reset(mockAuditService)
@@ -88,7 +86,7 @@ class EmailResponseControllerSpec extends AsyncWordSpec with Matchers with Mocki
       .thenReturn(Future.successful(enrolments))
   }
 
-  "EmailResponseController" must {
+  "EmailResponseOldController" must {
 
     "respond OK when given EmailEvents for PSA" in {
       val result = controller.sendAuditEvents(
