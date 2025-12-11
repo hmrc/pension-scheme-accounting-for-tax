@@ -47,7 +47,7 @@ class EmailResponseOldController @Inject()(
                       journeyType: JourneyType.Name
                      ): Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
-      logger.warn("Json encrypted psaId email status parameter")
+      logger.warn("Application encrypted psaOrPspId email status parameter")
       auditEmailStatus(requestId, encryptedPsaOrPspId, submittedBy, email, journeyType)
   }
 
