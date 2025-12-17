@@ -22,22 +22,23 @@ import models.enumeration.{JourneyType, SchemeAdministratorType}
 import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.mvc.*
-import services.JsonCryptoService
 import uk.gov.hmrc.auth.core.*
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{ApplicationCrypto, Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
-class EmailResponseController @Inject()(
-                                         val auditService: AuditService,
-                                         cc: ControllerComponents,
-                                         jsonCrypto: JsonCryptoService,
-                                         parser: PlayBodyParsers,
-                                         val authConnector: AuthConnector
-                                       )(implicit val ec: ExecutionContext) extends BackendController(cc) with AuthorisedFunctions with AuditEmailStatus {
-  override protected val logger = Logger(classOf[EmailResponseController])
-  override protected val crypto: Encrypter & Decrypter = jsonCrypto.jsonCrypto
+class EmailResponseOldController @Inject()(
+                                            val auditService: AuditService,
+                                            cc: ControllerComponents,
+                                            applicationCrypto: ApplicationCrypto,
+                                            parser: PlayBodyParsers,
+                                            val authConnector: AuthConnector
+                                          )(implicit val ec: ExecutionContext)
+  extends BackendController(cc) with AuthorisedFunctions with AuditEmailStatus {
+
+  override protected val logger = Logger(classOf[EmailResponseOldController])
+  override protected val crypto: Encrypter & Decrypter = applicationCrypto.QueryParameterCrypto
 
   def sendAuditEvents(requestId: String,
                       encryptedPsaOrPspId: String,
@@ -46,7 +47,8 @@ class EmailResponseController @Inject()(
                       journeyType: JourneyType.Name
                      ): Action[JsValue] = Action(parser.tolerantJson) {
     implicit request =>
-      logger.warn("Json encrypted psaOrPspId email status parameter")
+      logger.warn("Application encrypted psaOrPspId email status parameter")
       auditEmailStatus(requestId, encryptedPsaOrPspId, submittedBy, email, journeyType)
   }
+
 }
