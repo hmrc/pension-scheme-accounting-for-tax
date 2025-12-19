@@ -27,7 +27,6 @@ GET           /psa-financial-statement                                          
 GET           /scheme-financial-statement/:srn                                             controllers.FinancialStatementController.schemeStatementSrn(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean)
 
 POST          /email-status-response/:submittedBy/:journeyType/:requestId/:email/:psaId    controllers.EmailResponseController.sendAuditEvents(requestId:String, psaId:String, submittedBy:SchemeAdministratorType.SchemeAdministratorType, email:String, journeyType:JourneyType.Name)
-POST          /email-response/:submittedBy/:journeyType/:requestId/:email/:psaId           controllers.EmailResponseOldController.sendAuditEvents(requestId:String, psaId:String, submittedBy:SchemeAdministratorType.SchemeAdministratorType, email:String, journeyType:JourneyType.Name)
 
 GET           /cache/fileUpload                                                            controllers.cache.FileUploadCacheController.getUploadResult
 POST          /cache/fileUpload                                                            controllers.cache.FileUploadCacheController.requestUpload
