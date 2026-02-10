@@ -39,38 +39,35 @@ object AuthUtils {
   val pspId = "21000005"
   val srn: SchemeReferenceNumber = SchemeReferenceNumber("S2400000006")
   val externalId = "externalId"
-  val name: Name = Name(Some("First"), Some("Last"))
 
   def failedAuthStub(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Unit]] =
     when(mockAuthConnector.authorise[Unit](any(), any())(any(), any())).thenReturn(Future.failed(InsufficientEnrolments()))
 
-  def authStub(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String] ~ Option[Name]]] =
-    when(mockAuthConnector.authorise[Enrolments ~ Option[String] ~ Option[Name]](any(), any())(any(), any()))
-      .thenReturn(Future.successful(AuthUtils.authResponse))
-  val authResponse =
-    new~(
-      new~(
-        Enrolments(
-          Set(
-            new Enrolment("HMRC-PODS-ORG", Seq(EnrolmentIdentifier("PsaId", psaId)), "Activated")
-          )
-        ), Some(externalId)
-      ), Some(name)
-    )
+  def authStub(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String]]] =
+    when(mockAuthConnector.authorise[Enrolments ~ Option[String]](any(), any())(any(), any()))
+      .thenReturn(Future.successful(
+        new~(
+          Enrolments(
+            Set(
+              new Enrolment("HMRC-PODS-ORG", Seq(EnrolmentIdentifier("PsaId", psaId)), "Activated")
+            )
+          ),
+          Some(externalId)
+        )
+      ))
 
-  def authStubPsp(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String] ~ Option[Name]]] =
-    when(mockAuthConnector.authorise[Enrolments ~ Option[String] ~ Option[Name]](any(), any())(any(), any())).thenReturn(
-      Future.successful(AuthUtils.authResponsePsp))
-  val authResponsePsp =
-    new~(
-      new~(
-        Enrolments(
-          Set(
-            new Enrolment("HMRC-PODSPP-ORG", Seq(EnrolmentIdentifier("PspId", pspId)), "Activated")
-          )
-        ), Some(externalId)
-      ), Some(name)
-    )
+  def authStubPsp(mockAuthConnector: AuthConnector): OngoingStubbing[Future[Enrolments ~ Option[String]]] =
+    when(mockAuthConnector.authorise[Enrolments ~ Option[String]](any(), any())(any(), any())).thenReturn(
+      Future.successful(
+        new~(
+          Enrolments(
+            Set(
+              new Enrolment("HMRC-PODSPP-ORG", Seq(EnrolmentIdentifier("PspId", pspId)), "Activated")
+            )
+          ),
+          Some(externalId)
+        )
+      ))
 
   class FakeFailingAuthConnector @Inject()(exceptionToReturn: Throwable) extends AuthConnector {
     val serviceUrl: String = ""
@@ -80,13 +77,13 @@ object AuthUtils {
   }
 
   case class FakePsaEnrolmentAuthAction() extends PsaEnrolmentAuthAction(mock[AuthConnector], mock[BodyParsers.Default]) {
-      override def invokeBlock[A](request: Request[A], block: PsaAuthRequest[A] => Future[Result]): Future[Result] =
-        block(PsaAuthRequest(request, PsaId(psaId), externalId))
+    override def invokeBlock[A](request: Request[A], block: PsaAuthRequest[A] => Future[Result]): Future[Result] =
+      block(PsaAuthRequest(request, PsaId(psaId), externalId))
   }
 
   case class FakePsaPspEnrolmentAuthAction(var mockPsaId: Option[PsaId] = Some(PsaId(psaId)), var mockPspId: Option[PspId] = Some(PspId(pspId))) extends PsaPspEnrolmentAuthAction(mock[AuthConnector], mock[BodyParsers.Default]) {
     override def invokeBlock[A](request: Request[A], block: PsaPspAuthRequest[A] => Future[Result]): Future[Result] =
-      block(PsaPspAuthRequest(request, mockPsaId, mockPspId, externalId, Some(name)))
+      block(PsaPspAuthRequest(request, mockPsaId, mockPspId, externalId))
   }
 
   case class FakePsaSchemeAuthAction() extends PsaSchemeAuthAction(mock[SchemeConnector]) {
@@ -101,7 +98,7 @@ object AuthUtils {
   case class FakePsaPspSchemeAuthAction(mockPsaId: Option[PsaId] = Some(PsaId(psaId)), mockPspId: Option[PspId] = Some(PspId(pspId))) extends PsaPspSchemeAuthAction(mock[SchemeConnector]) {
     override def apply(srn: SchemeReferenceNumber, loggedInAsPsa: Boolean): ActionFunction[PsaPspAuthRequest, PsaPspAuthRequest] = new ActionFunction[PsaPspAuthRequest, PsaPspAuthRequest] {
       override def invokeBlock[A](request: PsaPspAuthRequest[A], block: PsaPspAuthRequest[A] => Future[Result]): Future[Result] =
-        block(PsaPspAuthRequest(request, mockPsaId, mockPspId, externalId, Some(name)))
+        block(PsaPspAuthRequest(request, mockPsaId, mockPspId, externalId))
 
       override protected def executionContext: ExecutionContext = global
     }

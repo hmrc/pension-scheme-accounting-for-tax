@@ -18,12 +18,13 @@ package controllers.cache
 
 import audit.{AuditEvent, AuditService}
 import com.google.inject.Inject
-import controllers.actions.PsaPspAuthRequest
+import connectors.MinimalDetailsConnector
+import controllers.actions.{PsaPspAuthRequest, PsaPspEnrolmentAuthAction}
 import models.LockDetail.formats
 import models.{ChargeAndMember, ChargeType, LockDetail}
 import play.api.Logger
 import play.api.libs.json.{JsObject, Json}
-import play.api.mvc._
+import play.api.mvc.*
 import repository.AftBatchedDataCacheRepository
 import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -34,10 +35,11 @@ class AftDataCacheController @Inject()(
                                         batchedRepository: AftBatchedDataCacheRepository,
                                         cc: ControllerComponents,
                                         auditService: AuditService,
-                                        psaPspEnrolmentAuthAction: controllers.actions.PsaPspEnrolmentAuthAction
+                                        psaPspEnrolmentAuthAction: PsaPspEnrolmentAuthAction,
+                                        minimalConnector: MinimalDetailsConnector
                                       )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
-  import AftDataCacheController._
+  import AftDataCacheController.*
 
   private val logger = Logger(classOf[AftDataCacheController])
 
@@ -85,7 +87,7 @@ class AftDataCacheController @Inject()(
 
   def setSessionData(lock: Boolean): Action[AnyContent] = psaPspEnrolmentAuthAction.async {
     implicit request =>
-      getIdWithNameAndPsaOrPspId { case (sessionId, id, name, psaOrPspId) =>
+      getIdWithOptNameAndPsaOrPspId(lock) { case (sessionId, id, optName, psaOrPspId) =>
         request.body.asJson.map {
           jsValue => {
             (
@@ -94,8 +96,9 @@ class AftDataCacheController @Inject()(
               request.headers.get("areSubmittedVersionsAvailable")
             ) match {
               case (Some(version), Some(accessMode), Some(areSubmittedVersionsAvailable)) =>
-                batchedRepository.setSessionData(id,
-                  if (lock) Some(LockDetail(name, psaOrPspId)) else None,
+                batchedRepository.setSessionData(
+                  id,
+                  if (lock) Some(LockDetail(optName.get, psaOrPspId)) else None,
                   jsValue,
                   sessionId,
                   version.toInt,
@@ -113,7 +116,7 @@ class AftDataCacheController @Inject()(
           }
         } getOrElse {
           logger.warn("BAD Request returned when setting session data for session due to invalid JSON body: " +
-            s"ID $sessionId, id $id, name $name and psaOrPspId $psaOrPspId.")
+            s"ID $sessionId, id $id, ${optName.map(n => s"name $n")} and psaOrPspId $psaOrPspId.")
           auditService.sendEvent(RequestBodyAuditEvent(psaOrPspId, request.body.asText))
           Future.successful(BadRequest)
         }
@@ -165,25 +168,45 @@ class AftDataCacheController @Inject()(
     block(sessionId, id)
   }
 
-  private def getIdWithNameAndPsaOrPspId(block: (String, String, String, String) => Future[Result])
-                                        (implicit request: PsaPspAuthRequest[AnyContent]): Future[Result] = {
-    val id = request.headers.get("id").getOrElse(throw MissingHeadersException)
-    val sessionId = request.headers.get("X-Session-ID").getOrElse(throw MissingHeadersException)
-    val fullName = request.name.map { name =>
-      name.name.getOrElse("") + " " + name.lastName.getOrElse("")
-    }.getOrElse("")
-    val psaOrPspId = request.pspId.map(_.id).getOrElse(
-      request.psaId.map(_.id).getOrElse(throw MissingIDException)
-    )
-    block(sessionId, id, fullName.trim, psaOrPspId)
+  private def getIdWithOptNameAndPsaOrPspId(lock: Boolean)
+                                           (block: (String, String, Option[String], String) => Future[Result])
+                                           (implicit request: PsaPspAuthRequest[AnyContent]): Future[Result] = {
+    val id: String =
+      request
+        .headers
+        .get("id")
+        .getOrElse(throw MissingHeadersException)
+        
+    val sessionId: String =
+      request
+        .headers
+        .get("X-Session-ID")
+        .getOrElse(throw MissingHeadersException)
+    
+    val psaOrPspId: String =
+      (request.pspId, request.psaId) match {
+        case (Some(psp), _) => psp.id
+        case (_, Some(psa)) => psa.id
+        case _ => throw MissingIDException
+      }
+
+    if (lock)
+      minimalConnector.getMinimalDetails.flatMap {
+        minimalDetails =>
+          block(sessionId, id, Some(minimalDetails.name.trim), psaOrPspId)
+      }
+    else
+      block(sessionId, id, None, psaOrPspId)
 
   }
 }
 
 object AftDataCacheController {
 
-  case object MissingHeadersException extends BadRequestException("Missing id(pstr and startDate) or Session Id from headers")
+  private case object MissingHeadersException
+    extends BadRequestException("Missing id(pstr and startDate) or Session Id from headers")
 
-  case object MissingIDException extends BadRequestException("Missing psa ID or psp ID from enrolments")
+  private case object MissingIDException
+    extends BadRequestException("Missing psa ID or psp ID from enrolments")
 
 }

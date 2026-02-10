@@ -17,11 +17,11 @@
 package controllers.actions
 
 import play.api.Logging
-import play.api.mvc.Results._
-import play.api.mvc._
-import uk.gov.hmrc.auth.core._
+import play.api.mvc.*
+import play.api.mvc.Results.*
+import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import uk.gov.hmrc.auth.core.retrieve.{Name, ~}
+import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.domain.{PsaId, PspId}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -29,18 +29,18 @@ import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
+
 case class PsaPspAuthRequest[A](
                                  request: Request[A],
                                  psaId: Option[PsaId],
                                  pspId: Option[PspId],
-                                 externalId: String,
-                                 name: Option[Name]
+                                 externalId: String
                                ) extends WrappedRequest[A](request)
 
 class PsaPspEnrolmentAuthAction @Inject()(
-                                  override val authConnector: AuthConnector,
-                                  val parser: BodyParsers.Default
-                                )(implicit val executionContext: ExecutionContext)
+                                           override val authConnector: AuthConnector,
+                                           val parser: BodyParsers.Default
+                                         )(implicit val executionContext: ExecutionContext)
   extends ActionBuilder[PsaPspAuthRequest, AnyContent]
     with ActionFunction[Request, PsaPspAuthRequest]
     with AuthorisedFunctions
@@ -58,18 +58,15 @@ class PsaPspEnrolmentAuthAction @Inject()(
     for {
       enrolment <- enrolments.getEnrolment(enrolmentKey)
       identifier <- enrolment.getIdentifier(enrolmentIdKey)
-    }
-    yield identifier.value
+    } yield identifier.value
 
-  override def
-  invokeBlock[A](request: Request[A], block: PsaPspAuthRequest[A] => Future[Result]): Future[Result] =
-    invoke(request, block)(HeaderCarrierConverter.fromRequest(request))
-
-  private def invoke[A](request: Request[A], block: PsaPspAuthRequest[A] => Future[Result])
-                       (implicit hc: HeaderCarrier): Future[Result] = {
+  override def invokeBlock[A](request: Request[A], block: PsaPspAuthRequest[A] => Future[Result]): Future[Result] = {
+    
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
+    
     authorised(Enrolment(PSAEnrolmentKey) or Enrolment(PSPEnrolmentKey))
-      .retrieve(Retrievals.authorisedEnrolments and Retrievals.externalId and Retrievals.name) {
-        case enrolments ~ Some(externalId) ~ name =>
+      .retrieve(Retrievals.authorisedEnrolments and Retrievals.externalId) {
+        case enrolments ~ Some(externalId) =>
           val psaId = getEnrolmentIdentifier(
             enrolments,
             PSAEnrolmentKey,
@@ -87,7 +84,7 @@ class PsaPspEnrolmentAuthAction @Inject()(
               logger.warn("Failed to authorise due to insufficient enrolments")
               Future.successful(Forbidden("Enrolments not present"))
             case _ =>
-              block(PsaPspAuthRequest(request, psaId.map(PsaId), pspId.map(PspId), externalId, name))
+              block(PsaPspAuthRequest(request, psaId.map(PsaId), pspId.map(PspId), externalId))
           }
 
         case _ => Future.failed(new RuntimeException("No externalId found"))
