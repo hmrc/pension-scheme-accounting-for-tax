@@ -48,7 +48,7 @@ class IndividualDetailsSpec
         IndividualDetails("firstName", Some("middleName"), "lastName")
 
       val json: String =
-        """{"firstName":"firstName","lastName":"lastName","middleName":"middleName"}""".stripMargin
+        """{"firstName":"firstName","middleName":"middleName","lastName":"lastName"}""".stripMargin
 
       val parsed: IndividualDetails =
         Json.parse(json).as[IndividualDetails]
