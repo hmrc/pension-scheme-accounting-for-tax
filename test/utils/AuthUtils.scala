@@ -19,15 +19,15 @@ package utils
 import audit.AuditServiceSpec.mock
 import com.google.inject.Inject
 import connectors.SchemeConnector
-import controllers.actions._
+import controllers.actions.*
 import models.SchemeReferenceNumber
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.stubbing.OngoingStubbing
 import play.api.mvc.{ActionFunction, BodyParsers, Request, Result}
-import uk.gov.hmrc.auth.core._
+import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.authorise.Predicate
-import uk.gov.hmrc.auth.core.retrieve.{Name, Retrieval, ~}
+import uk.gov.hmrc.auth.core.retrieve.{Retrieval, ~}
 import uk.gov.hmrc.domain.{PsaId, PspId}
 import uk.gov.hmrc.http.HeaderCarrier
 

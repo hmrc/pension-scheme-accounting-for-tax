@@ -35,7 +35,6 @@ import play.api.test.Helpers._
 import repository._
 import repository.model.SessionData
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.auth.core.retrieve.Name
 import uk.gov.hmrc.domain.{PsaId, PspId}
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.AuthUtils
