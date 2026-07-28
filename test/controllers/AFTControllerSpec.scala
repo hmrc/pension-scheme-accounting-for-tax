@@ -161,14 +161,15 @@ class AFTControllerSpec extends AsyncWordSpec with Matchers with MockitoSugar wi
       when(mockAftOverviewCacheRepository.remove(any())(any())).thenReturn(Future.successful(true))
       when(mockSubmitAftReturnCacheRepository.insertLockData(any(), any(), any())).thenReturn(Future.successful(true))
 
+      val request = fakeRequest.withJsonBody(fileAFTUaInvalidPayloadRequestJson)
       recoverToExceptionIf[AFTValidationFailureException] {
-        controller.fileReturnSrn(journeyType, srn, true)(fakeRequest.withJsonBody(fileAFTUaInvalidPayloadRequestJson).
+        controller.fileReturnSrn(journeyType, srn, true)(request.
           withHeaders(newHeaders = "pstr" -> pstr))
       } map { ex =>
         val expectedErrorMessage = "Invalid AFT file AFT return:-\nErrorReport(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}})"
         val expectedSchemaErrorMessage = "ErrorReport(test,{\"schemaPath\":\"#\",\"keyword\":\"oneOf\",\"instancePath\":\"\",\"errors\":{\"/oneOf/0\":[{\"schemaPath\":\"#/oneOf/0/definitions/totalAmountType\",\"errors\":{},\"keyword\":\"type\",\"msgs\":[\"Wrong type. Expected number, was string.\"],\"instancePath\":\"/chargeDetails/chargeTypeFDetails/totalAmount\"}]}})"
         verify(mockAuditService, times(1)).sendEvent(eventCaptor.capture())(any(), any())
-        eventCaptor.getValue mustBe FileAftReturnSchemaValidator(psaIdJsValue.toString(), pstr, expectedChargeType, invalidJson, expectedSchemaErrorMessage, 1)
+        eventCaptor.getValue mustBe FileAftReturnSchemaValidator(psaIdJsValue.toString(), pstr, expectedChargeType, invalidJson, expectedSchemaErrorMessage, 1, request.body.asJson)
         ex.exMessage mustBe expectedErrorMessage
       }
     }

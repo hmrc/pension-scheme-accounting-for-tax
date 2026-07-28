@@ -99,7 +99,8 @@ class AFTController @Inject()(
                       chargeTypeList.toString,
                       dataToBeSendToETMP,
                       errors.mkString,
-                      errors.size)
+                      errors.size,
+                      Some(userAnswersJson))
                     throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
 
                   case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")
