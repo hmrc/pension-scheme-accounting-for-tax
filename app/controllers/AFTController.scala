@@ -22,16 +22,16 @@ import models.enumeration.JourneyType
 import models.enumeration.JourneyType.{AFT_COMPILE_RETURN, AFT_SUBMIT_RETURN}
 import models.{AFTSubmitterDetails, AFTVersion, SchemeReferenceNumber, VersionsWithSubmitter}
 import play.api.Logger
-import play.api.libs.json.*
-import play.api.mvc.*
+import play.api.libs.json._
+import play.api.mvc._
 import repository.{AftOverviewCacheRepository, SubmitAftReturnCacheRepository}
 import services.AFTService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.http.{Request as _, *}
+import uk.gov.hmrc.http.{Request => _, _}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import utils.{DataObfuscator, JSONPayloadSchemaValidator}
+import utils.JSONPayloadSchemaValidator
 
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -68,7 +68,8 @@ class AFTController @Inject()(
       implicit request =>
         requiredHeadersPost { (pstr, externalUserId, userAnswersJson) =>
           aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
-            logger.warn(message = s"[Compile File Return: Incoming-Payload]${DataObfuscator.obfuscate(userAnswersJson)}")
+            logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
+            extractAndLogMccloudRemedyDetails(userAnswersJson)
             userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
               case JsSuccess(dataToBeSendToETMP, _) =>
                 val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
@@ -131,6 +132,23 @@ class AFTController @Inject()(
           }
         }
     }
+
+  private def extractAndLogMccloudRemedyDetails(ua: JsValue): Unit = {
+    val members: Seq[JsValue] = (ua \ "chargeEDetails" \ "members").asOpt[Seq[JsValue]].getOrElse(Seq.empty)
+
+    val remedies: Seq[JsValue] = members.flatMap { member =>
+      (member \ "mccloudRemedy").asOpt[JsValue]
+    }
+
+    if (remedies.isEmpty) {
+      logger.warn("No mccloudRemedy details found")
+    } else {
+      remedies.zipWithIndex.foreach { (remedy, index) =>
+        logger.warn(s"mccloudRemedy for a member $index: ${Json.prettyPrint(remedy)}"
+        )
+      }
+    }
+  }
 
   private def requiredHeadersPost(block: (String, String, JsValue) => Future[Result])
                   (implicit request: actions.PsaPspAuthRequest[AnyContent]): Future[Result] = {
