@@ -22,16 +22,16 @@ import models.enumeration.JourneyType
 import models.enumeration.JourneyType.{AFT_COMPILE_RETURN, AFT_SUBMIT_RETURN}
 import models.{AFTSubmitterDetails, AFTVersion, SchemeReferenceNumber, VersionsWithSubmitter}
 import play.api.Logger
-import play.api.libs.json._
-import play.api.mvc._
+import play.api.libs.json.*
+import play.api.mvc.*
 import repository.{AftOverviewCacheRepository, SubmitAftReturnCacheRepository}
 import services.AFTService
 import transformations.ETMPToUserAnswers.AFTDetailsTransformer
 import transformations.userAnswersToETMP.AFTReturnTransformer
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.http.{Request => _, _}
+import uk.gov.hmrc.http.{Request as _, *}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import utils.JSONPayloadSchemaValidator
+import utils.{DataObfuscator, JSONPayloadSchemaValidator}
 
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -68,7 +68,7 @@ class AFTController @Inject()(
       implicit request =>
         requiredHeadersPost { (pstr, externalUserId, userAnswersJson) =>
           aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
-            logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
+            logger.warn(message = s"[Compile File Return: Incoming-Payload]${DataObfuscator.obfuscate(userAnswersJson)}")
             userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
               case JsSuccess(dataToBeSendToETMP, _) =>
                 val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
@@ -99,8 +99,7 @@ class AFTController @Inject()(
                       chargeTypeList.toString,
                       dataToBeSendToETMP,
                       errors.mkString,
-                      errors.size,
-                      Some(userAnswersJson))
+                      errors.size)
                     throw AFTValidationFailureException(s"Invalid AFT file AFT return:-\n${errors.mkString}")
 
                   case Right(_) => logger.debug(message = s"[Compile File Return: Outgoing-Payload]$dataToBeSendToETMP")

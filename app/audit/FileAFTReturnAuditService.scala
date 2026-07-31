@@ -49,10 +49,10 @@ class FileAFTReturnAuditService @Inject()(auditService: AuditService) {
   }
 
   def sendFileAftReturnSchemaValidatorAuditEvent(psaOrPspId: String, pstr: String, chargeType: String, data: JsValue,
-                                                 failureResponse: String, numberOfFailures: Int, userAnswers: Option[JsValue] = None)
+                                                 failureResponse: String, numberOfFailures: Int)
                                                 (implicit ec: ExecutionContext, request: RequestHeader): Unit = {
     auditService.sendEvent(FileAftReturnSchemaValidator(psaOrPspId, pstr, chargeType, data,
-      failureResponse, numberOfFailures, userAnswers))
+      failureResponse, numberOfFailures))
   }
 }
 
@@ -81,8 +81,7 @@ case class FileAftReturnSchemaValidator(
                                          chargeType: String,
                                          request: JsValue,
                                          failureResponse: String,
-                                         numberOfFailures: Int,
-                                         userAnswers: Option[JsValue] = None
+                                         numberOfFailures: Int
                                        ) extends AuditEvent {
   override def auditType: String = "AFTSchemaValidationPostCheck"
 
@@ -93,9 +92,7 @@ case class FileAftReturnSchemaValidator(
     "request" -> request,
     "failureResponse" -> failureResponse,
     "numberOfFailures" -> numberOfFailures.toString
-  ) ++ userAnswers
-    .map(value => Json.obj("userAnswers" -> value))
-    .getOrElse(Json.obj())
+  )
 }
 
 case class FileAFTReturnOneChargeAndNoValue(
@@ -103,8 +100,7 @@ case class FileAFTReturnOneChargeAndNoValue(
                                              journeyType: String,
                                              status: Int,
                                              request: JsValue,
-                                             response: Option[JsValue],
-                                             userAnswers: Option[JsValue] = None
+                                             response: Option[JsValue]
                                            ) extends AuditEvent {
   override def auditType: String = "AFTPostOneChargeWithNoValue"
 
@@ -116,9 +112,7 @@ case class FileAFTReturnOneChargeAndNoValue(
     "request" -> request,
     "response" -> response,
     "requestSizeInBytes" -> request.toString().getBytes.length      //TODO: This audit event may not be triggered due to frontend validation of non-zero Total Amount, but it is being retained for potential future use cases.
-  ) ++ userAnswers
-    .map(value => Json.obj("userAnswers" -> value))
-    .getOrElse(Json.obj())
+  )
 }
 
 object FileAftReturn {
