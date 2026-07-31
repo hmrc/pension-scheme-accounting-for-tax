@@ -19,33 +19,17 @@ package utils
 import play.api.libs.json._
 
 object DataObfuscator {
+  private lazy val keysToObfuscate: Set[String] =   Set("firstname", "lastname", "dob", "nino", "crn")
 
   def obfuscate(json: JsValue): JsValue =
     json match {
       case JsObject(fields) =>
-        JsObject(
-          fields.map {
-            case (key, _) if shouldObfuscate(key) =>
-              key -> JsString("[REDACTED]")
-
-            case (key, value) =>
-              key -> obfuscate(value)
+        JsObject(fields.map {
+            case (key, _) if keysToObfuscate.contains(key.toLowerCase) => key -> JsString("[REDACTED]")
+            case (key, value) => key -> obfuscate(value)
           }
         )
-
-      case JsArray(values) =>
-        JsArray(values.map(obfuscate))
-
-      case value =>
-        value
+      case JsArray(values) => JsArray(values.map(obfuscate))
+      case value => value
     }
-
-  private def shouldObfuscate(key: String): Boolean =
-    Set(
-      "firstname",
-      "lastname",
-      "dob",
-      "nino",
-      "crn"
-    ).contains(key.toLowerCase)
 }
