@@ -30,11 +30,11 @@ trait McCloudJsonTransformer extends JsonTransformer {
   }
 
   private def readsScheme(isOtherSchemesNodeName: String, amountNodeName: String, repoPeriodNodeName: String): Reads[JsObject] = {
-    def readsDateAndChargeAmount(endDate: String): Reads[JsObject] = (
-      (__ \ "taxYearReportedAndPaidPage").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).json.pick.map(McCloudExtractTaxYear)) and
+    def readsDateAndChargeAmount(endDate: String, index: Int = 0): Reads[JsObject] = (
+      (__ \ "taxYearReportedAndPaidPage").json.copyFrom((__ \ "pensionSchemeDetails" \ index \ repoPeriodNodeName).json.pick.map(McCloudExtractTaxYear)) and
         (__ \ "taxQuarterReportedAndPaid" \ "startDate").json.copyFrom(Reads.pure(JsString(getQuarterStartDate(endDate)))) and
         (__ \ "taxQuarterReportedAndPaid" \ "endDate").json.copyFrom(Reads.pure(JsString(endDate))) and
-        (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ 0 \ amountNodeName).json.pick)
+        (__ \ "chargeAmountReported").json.copyFrom((__ \ "pensionSchemeDetails" \ index \ amountNodeName).json.pick)
       ).reduce: Reads[JsObject]
 
     (__ \ isOtherSchemesNodeName).readNullable[Boolean](readsBoolean).flatMap{
@@ -45,7 +45,7 @@ trait McCloudJsonTransformer extends JsonTransformer {
           (__ \ "pensionSchemeDetails").read[JsArray].map(_.value.size).flatMap { max =>
             val readsSchemeArray = (0 until max).foldLeft[Reads[JsArray]](Reads.pure(Json.arr())) { (acc: Reads[JsArray], curr: Int) =>
               (__ \ "pensionSchemeDetails" \ curr \ repoPeriodNodeName).read[String].flatMap { endDate =>
-                val currentJsObj = (readsDateAndChargeAmount(endDate) and
+                val currentJsObj = (readsDateAndChargeAmount(endDate, curr) and
                   (__ \ "pstr").json.copyFrom((__ \ "pensionSchemeDetails" \ curr \ "pstr").json.pick)).reduce: Reads[JsObject]
                 acc.flatMap(jsArray => currentJsObj.map(jsObject => jsArray :+ jsObject))
               }
@@ -58,7 +58,7 @@ trait McCloudJsonTransformer extends JsonTransformer {
             }
           }
         } else {
-          val mcCloudDetailReads = (__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).read[String].flatMap(readsDateAndChargeAmount)
+          val mcCloudDetailReads = (__ \ "pensionSchemeDetails" \ 0 \ repoPeriodNodeName).read[String].flatMap(readsDateAndChargeAmount(_))
           mcCloudDetailReads.flatMap { jsObject =>
             (
               (__ \ "mccloudRemedy").json.put(jsObject) and

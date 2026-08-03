@@ -69,6 +69,7 @@ class AFTController @Inject()(
         requiredHeadersPost { (pstr, externalUserId, userAnswersJson) =>
           aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
             logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
+            extractAndLogSchemeDetails(userAnswersJson)
             userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
               case JsSuccess(dataToBeSendToETMP, _) =>
                 val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
@@ -132,6 +133,47 @@ class AFTController @Inject()(
         }
     }
 
+  def extractAndLogSchemeDetails(ua: JsValue): Unit = {
+    val members: Seq[JsValue] =
+      (ua \ "chargeEDetails" \ "members")
+        .asOpt[Seq[JsValue]]
+        .getOrElse(Seq.empty)
+
+    val schemes: Seq[JsValue] = members.flatMap { member =>
+      (member \ "mccloudRemedy" \ "schemes")
+        .asOpt[Seq[JsValue]]
+        .getOrElse(Seq.empty)
+    }
+
+    if (schemes.isEmpty) {
+      logger.warn("No McCloud remedy scheme details found")
+    } else {
+      schemes.foreach { scheme =>
+        val pstr =
+          (scheme \ "pstr").asOpt[String].getOrElse("Not provided")
+
+        val startDate =
+          (scheme \ "taxQuarterReportedAndPaid" \ "startDate")
+            .asOpt[String]
+            .getOrElse("Not provided")
+
+        val endDate =
+          (scheme \ "taxQuarterReportedAndPaid" \ "endDate")
+            .asOpt[String]
+            .getOrElse("Not provided")
+
+        val chargeAmountReported =
+          (scheme \ "chargeAmountReported")
+            .asOpt[BigDecimal]
+            .map(_.toString)
+            .getOrElse("Not provided")
+
+        logger.warn(s"McCloud remedy scheme: pstr=$pstr, quarterStartDate=$startDate, " +
+          s"quarterEndDate=$endDate, chargeAmountReported=$chargeAmountReported")
+      }
+    }
+  }
+  
   private def requiredHeadersPost(block: (String, String, JsValue) => Future[Result])
                   (implicit request: actions.PsaPspAuthRequest[AnyContent]): Future[Result] = {
 
