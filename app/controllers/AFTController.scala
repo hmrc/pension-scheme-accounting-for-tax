@@ -69,7 +69,6 @@ class AFTController @Inject()(
         requiredHeadersPost { (pstr, externalUserId, userAnswersJson) =>
           aftOverviewCacheRepository.remove(pstr).flatMap { _ =>
             logger.debug(message = s"[Compile File Return: Incoming-Payload]$userAnswersJson")
-            extractAndLogMccloudRemedyDetails(userAnswersJson)
             userAnswersJson.transform(aftReturnTransformer.transformToETMPFormat) match {
               case JsSuccess(dataToBeSendToETMP, _) =>
                 val validationResult = jsonPayloadSchemaValidator.validateJsonPayload(schemaPath, dataToBeSendToETMP)
@@ -132,23 +131,6 @@ class AFTController @Inject()(
           }
         }
     }
-
-  private def extractAndLogMccloudRemedyDetails(ua: JsValue): Unit = {
-    val members: Seq[JsValue] = (ua \ "chargeEDetails" \ "members").asOpt[Seq[JsValue]].getOrElse(Seq.empty)
-
-    val remedies: Seq[JsValue] = members.flatMap { member =>
-      (member \ "mccloudRemedy").asOpt[JsValue]
-    }
-
-    if (remedies.isEmpty) {
-      logger.warn("No mccloudRemedy details found")
-    } else {
-      remedies.zipWithIndex.foreach { (remedy, index) =>
-        logger.warn(s"mccloudRemedy for a member $index: ${Json.prettyPrint(remedy)}"
-        )
-      }
-    }
-  }
 
   private def requiredHeadersPost(block: (String, String, JsValue) => Future[Result])
                   (implicit request: actions.PsaPspAuthRequest[AnyContent]): Future[Result] = {
